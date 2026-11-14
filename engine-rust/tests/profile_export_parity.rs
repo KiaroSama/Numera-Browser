@@ -3,6 +3,8 @@ use serde_json::Value;
 use std::{fs, path::PathBuf};
 
 mod common;
+#[path = "support/platform_text.rs"]
+mod platform_text;
 
 #[test]
 fn withheld_text_admission_matches_original_without_replacing_bytes()
@@ -83,6 +85,11 @@ fn exported_profile_bytes_match_original_text_format_and_preserve_refusals()
             Err(error) => assert_eq!(Some(error.to_string().as_str()), row["error"].as_str()),
         }
         let expected: Vec<u8> = serde_json::from_value(row["bytes"].clone())?;
+        let expected = if row["result"] == true {
+            platform_text::written_bytes(expected)
+        } else {
+            expected
+        };
         assert_eq!(
             fs::read(dest)?,
             expected,

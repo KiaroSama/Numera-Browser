@@ -16,7 +16,7 @@ workflows you are authorized to run.
 [![Version: 0.36.0](https://img.shields.io/badge/Version-0.36.0-blue)](CHANGELOG.md)
 [![Rust: 1.99.1](https://img.shields.io/badge/Rust-1.99.1-dea584)](rust-toolchain.toml)
 
-[![Desktop build targets](https://img.shields.io/badge/Targets-Windows%20x64%20%7C%20Linux%20x64%20%7C%20macOS%20ARM64-555)](.github/workflows/build-desktop.yml)
+[![Desktop build targets](https://img.shields.io/badge/Targets-Windows%20x64%20%7C%20Linux%20x64%20%7C%20macOS%20ARM64-555)](.github/workflows/native-ci.yml)
 [![Documentation](https://img.shields.io/badge/Docs-setup%20%26%20usage-4c9a2a)](docs/setup.md)
 [![Dashboard: Rust + WebAssembly](https://img.shields.io/badge/Dashboard-Rust%20%2B%20WebAssembly-654ff0)](dashboard/Cargo.toml)
 [![Tauri: 2](https://img.shields.io/badge/Tauri-2-24c8d8)](desktop/src-tauri/Cargo.toml)
@@ -42,8 +42,9 @@ Browser identity and diagnostic logic is also authored in
 artifact preserves strict page CSP and needs no compiler at runtime.
 
 The [rewrite PR](https://github.com/KiaroSama/Numera-Browser/pull/76) continues the
-native checkpoint and remains unmerged. Complete test-port verification,
-interpreter retirement and full three-platform CI are still in progress; see the
+native checkpoint and remains unmerged. The previous application interpreters
+and authored JavaScript assets have been retired. Final test-port verification
+and full three-platform CI are still in progress; see the
 [acceptance record](docs/rust-rewrite.md). A build badge does not establish that a
 complete release has shipped.
 

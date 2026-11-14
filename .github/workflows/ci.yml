@@ -50,6 +50,7 @@ jobs:
       contents: read
       actions: read
       checks: read
+      pull-requests: read
       security-events: write
     uses: ./.github/workflows/codeql.yml
   dependencies:

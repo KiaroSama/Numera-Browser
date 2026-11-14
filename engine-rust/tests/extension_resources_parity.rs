@@ -9,6 +9,29 @@ mod common;
 #[test]
 fn extension_path_whitespace_matches_original_validation() -> Result<(), Box<dyn std::error::Error>>
 {
+    // Check native path/repr token binding independently of the host OS, while
+    // retaining all 72 real validation and protected-file checks below.
+    let input = serde_json::json!({
+        "entries":["\u{1c}@ROOT@@SEP@valid\u{1c}"," https://example.invalid/a\\b?x=../ "],
+        "result":["'@ROOT@@SEP@missing-manifest' has no manifest.json."],
+        "path":"@ROOT@@SEP@valid",
+        "uri":"https://example.invalid/@ROOT_URL@%2Fextensions?literal=../x",
+        "argument":"--raw=../x\\y "
+    });
+    let bound =
+        characterization::load_with_path_spelling(&input.to_string(), r"C:\owned root", r"\")?;
+    assert_eq!(bound["entries"][0], "\u{1c}C:\\owned root\\valid\u{1c}");
+    assert_eq!(bound["entries"][1], input["entries"][1]);
+    assert_eq!(
+        bound["result"][0],
+        r"'C:\\owned root\\missing-manifest' has no manifest.json."
+    );
+    assert_eq!(bound["path"], r"C:\owned root\valid");
+    assert_eq!(
+        bound["uri"],
+        "https://example.invalid/C%3A%5Cowned%20root%2Fextensions?literal=../x"
+    );
+    assert_eq!(bound["argument"], input["argument"]);
     let temporary = common::TempDirectory::new("extension-text")?;
     let inputs = temporary.path().join("extension inputs");
     let valid = inputs.join("valid");
@@ -183,9 +206,8 @@ fn installed_extensions_preserve_localized_name_and_contained_icon_selection()
         .ok_or("Extension cases missing")?;
     assert!(!cases.is_empty());
     for (index, case) in cases.iter().enumerate() {
-        let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("target/test-temp")
-            .join(format!("extension-resource-{}-{index}", std::process::id()));
+        let temporary = common::TempDirectory::new(&format!("extension-resource-{index}"))?;
+        let root = temporary.path().to_owned();
         let folder = root.join("extensions/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
         fs::create_dir_all(&folder)?;
         let result = (|| -> Result<(), Box<dyn std::error::Error>> {
@@ -220,7 +242,7 @@ fn installed_extensions_preserve_localized_name_and_contained_icon_selection()
             assert_eq!(serde_json::to_value(ids)?, case["installed_ids"]);
             Ok(())
         })();
-        fs::remove_dir_all(root)?;
+        temporary.cleanup()?;
         result?;
     }
     Ok(())

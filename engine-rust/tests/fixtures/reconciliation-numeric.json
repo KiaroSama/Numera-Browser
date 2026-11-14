@@ -1,0 +1,214 @@
+{
+  "git_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+  "original_source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+  "development_oracle": "CPython 3.12.14; unmodified full original ProfileStore/ProfileRepo public divergence + refuse_unresolved_secret over independently loaded files; no Python runtime in native tests",
+  "source_sha256": {
+    "engine/numera/repo.py": "c16d6546366eb78f1a4ce0d720cdac11ad7434ab207405d5a2e0963339198985",
+    "engine/numera/vault.py": "072e61698ae89788d4bcc0426143ac727c92c2b1b9ca4561e5e6d7381d2eb0be",
+    "engine/numera/crypto.py": "b07f26b57a617273db643a7bccd6304e0b625ddd20887ac372a3bd7c66b80bbf",
+    "engine/numera/convert.py": "60dbfa148ade557de5233c63ec9866aa1bb7f63931840c7a96b603c4fb3f856b",
+    "engine/numera/models.py": "6c4257f0fedd6544c575881ef7a4d63d8dbe6bfddf083ce79a339f87d852ba43",
+    "engine/numera/store.py": "e3a0c86795e391e09330694d0626efe9d0d34285b1e73d639b8d04eb2c6b7381"
+  },
+  "ast_sha256": {
+    "repo_helpers": "0e8028c00234fcedaee651e41a09cd6ab088998075bd300f2d9a5f940bae44b7",
+    "vault_decrypt_for_read": "1976698dea8a877986da5ce3408eac6c255de93915d656426993badabc31dd83",
+    "crypto_is_envelope": "2fb6b47ab8e4647e165558505e2ab3e9fda3e8a6f8664f144dc0b9253bffeb17"
+  },
+  "nan_decoder_observation": {
+    "default_decoder_nan_is_same_object_across_independent_loads": true,
+    "default_scalar_nan_equal": false,
+    "default_array_nan_equal": true,
+    "default_object_nan_equal": true,
+    "fresh_nan_array_equal": false
+  },
+  "cases": [
+    {
+      "left": "1",
+      "right": "1",
+      "python_equal": true,
+      "same_decoded_object": true,
+      "secret_write_allowed": true,
+      "divergence": [],
+      "independent_raw_reads_secret_write_allowed": true
+    },
+    {
+      "left": "1",
+      "right": "1.0",
+      "python_equal": true,
+      "same_decoded_object": false,
+      "secret_write_allowed": true,
+      "divergence": [],
+      "independent_raw_reads_secret_write_allowed": true
+    },
+    {
+      "left": "1",
+      "right": "true",
+      "python_equal": true,
+      "same_decoded_object": false,
+      "secret_write_allowed": true,
+      "divergence": [],
+      "independent_raw_reads_secret_write_allowed": true
+    },
+    {
+      "left": "0",
+      "right": "false",
+      "python_equal": true,
+      "same_decoded_object": false,
+      "secret_write_allowed": true,
+      "divergence": [],
+      "independent_raw_reads_secret_write_allowed": true
+    },
+    {
+      "left": "-0.0",
+      "right": "0",
+      "python_equal": true,
+      "same_decoded_object": false,
+      "secret_write_allowed": true,
+      "divergence": [],
+      "independent_raw_reads_secret_write_allowed": true
+    },
+    {
+      "left": "9007199254740993",
+      "right": "9007199254740993",
+      "python_equal": true,
+      "same_decoded_object": false,
+      "secret_write_allowed": true,
+      "divergence": [],
+      "independent_raw_reads_secret_write_allowed": true
+    },
+    {
+      "left": "9007199254740993",
+      "right": "9007199254740992.0",
+      "python_equal": false,
+      "same_decoded_object": false,
+      "secret_write_allowed": false,
+      "divergence": [
+        "name"
+      ],
+      "independent_raw_reads_secret_write_allowed": false
+    },
+    {
+      "left": "9007199254740992",
+      "right": "9007199254740992.0",
+      "python_equal": true,
+      "same_decoded_object": false,
+      "secret_write_allowed": true,
+      "divergence": [],
+      "independent_raw_reads_secret_write_allowed": true
+    },
+    {
+      "left": "18446744073709551616",
+      "right": "18446744073709551616.0",
+      "python_equal": true,
+      "same_decoded_object": false,
+      "secret_write_allowed": true,
+      "divergence": [],
+      "independent_raw_reads_secret_write_allowed": true
+    },
+    {
+      "left": "18446744073709551617",
+      "right": "18446744073709551616.0",
+      "python_equal": false,
+      "same_decoded_object": false,
+      "secret_write_allowed": false,
+      "divergence": [
+        "name"
+      ],
+      "independent_raw_reads_secret_write_allowed": false
+    },
+    {
+      "left": "1e100",
+      "right": "1e100",
+      "python_equal": true,
+      "same_decoded_object": false,
+      "secret_write_allowed": true,
+      "divergence": [],
+      "independent_raw_reads_secret_write_allowed": true
+    },
+    {
+      "left": "NaN",
+      "right": "NaN",
+      "python_equal": false,
+      "same_decoded_object": true,
+      "secret_write_allowed": false,
+      "divergence": [
+        "name"
+      ],
+      "independent_raw_reads_secret_write_allowed": false
+    },
+    {
+      "left": "Infinity",
+      "right": "Infinity",
+      "python_equal": true,
+      "same_decoded_object": true,
+      "secret_write_allowed": true,
+      "divergence": [],
+      "independent_raw_reads_secret_write_allowed": true
+    },
+    {
+      "left": "-Infinity",
+      "right": "Infinity",
+      "python_equal": false,
+      "same_decoded_object": false,
+      "secret_write_allowed": false,
+      "divergence": [
+        "name"
+      ],
+      "independent_raw_reads_secret_write_allowed": false
+    },
+    {
+      "left": "1e400",
+      "right": "1e400",
+      "python_equal": true,
+      "same_decoded_object": false,
+      "secret_write_allowed": true,
+      "divergence": [],
+      "independent_raw_reads_secret_write_allowed": true
+    },
+    {
+      "left": "[NaN]",
+      "right": "[NaN]",
+      "python_equal": true,
+      "same_decoded_object": false,
+      "secret_write_allowed": true,
+      "divergence": [],
+      "independent_raw_reads_secret_write_allowed": true
+    },
+    {
+      "left": "{\"a\":NaN}",
+      "right": "{\"a\":NaN}",
+      "python_equal": true,
+      "same_decoded_object": false,
+      "secret_write_allowed": true,
+      "divergence": [],
+      "independent_raw_reads_secret_write_allowed": true
+    },
+    {
+      "left": "{\"a\":1}",
+      "right": "{\"a\":true}",
+      "python_equal": true,
+      "same_decoded_object": false,
+      "secret_write_allowed": true,
+      "divergence": [],
+      "independent_raw_reads_secret_write_allowed": true
+    },
+    {
+      "left": "-0",
+      "right": "0",
+      "python_equal": true,
+      "same_decoded_object": true,
+      "secret_write_allowed": true,
+      "divergence": [],
+      "independent_raw_reads_secret_write_allowed": true
+    }
+  ],
+  "base_observation": {
+    "fixture": "engine-rust/tests/fixtures/characterization/public_divergence_reports_all_ordered_fields_without_mutation.json",
+    "case": "healthy",
+    "fixture_sha256": "eb151010f26aa73a8b0081812c95cc676a8d04fd68da12419b6157cb03fe3000",
+    "engine_input_sha256": "fb87672d7bb401a9762ed87287cbf8f6d9d0195b0e1f7c46c0d0f984e30a0ee5",
+    "dashboard_input_sha256": "44b0578e08c2fcbb99f69cc5de845e2985cf39233d47c79a6c14426f261f5862",
+    "profile_id": "fixture00001"
+  }
+}

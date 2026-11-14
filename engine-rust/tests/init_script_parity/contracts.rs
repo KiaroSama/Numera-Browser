@@ -13,6 +13,7 @@ fn root() -> &'static Path {
         .expect("repository root")
 }
 pub(super) fn artifact() -> Result<()> {
+    source_remapping()?;
     compiler_artifact::check_generated(root())?;
     let artifact = page_runtime::artifact().as_bytes();
     let receipt: Value = serde_json::from_slice(&fs::read(
@@ -109,6 +110,63 @@ pub(super) fn artifact() -> Result<()> {
     fs::write(generated.join("runtime.js"), artifact)?;
     fs::write(generated.join("receipt.json"), b"{}")?;
     assert!(compiler_artifact::check_generated(owned.path()).is_err());
+    owned.cleanup()?;
+    Ok(())
+}
+fn source_remapping() -> Result<()> {
+    let owned = common::TempDirectory::new("page-source-remapping")?;
+    let metadata = |root: &Path| -> Result<Value> {
+        let directory = root.join("registry/src/cache-layout/fixture-crate-1.2.3");
+        fs::create_dir_all(&directory)?;
+        let manifest = directory.join("Cargo.toml");
+        fs::write(
+            &manifest,
+            b"[package]\nname='fixture-crate'\nversion='1.2.3'\n",
+        )?;
+        Ok(
+            json!({"version":1,"packages":[{"source":"registry+https://example.invalid/index","name":"fixture-crate","version":"1.2.3","manifest_path":manifest}]}),
+        )
+    };
+    let first = metadata(&owned.path().join("canonical-home"))?;
+    let second = metadata(&owned.path().join("alternate-home"))?;
+    let first_flags = source_paths::dependency_remaps(&first)?;
+    let second_flags = source_paths::dependency_remaps(&second)?;
+    assert_ne!(first_flags, second_flags);
+    for flags in [&first_flags, &second_flags] {
+        assert!(!flags.is_empty());
+        assert!(
+            flags
+                .iter()
+                .all(|flag| flag.ends_with("=crates/fixture-crate-1.2.3/"))
+        );
+    }
+    let mut duplicate = first.clone();
+    duplicate["packages"]
+        .as_array_mut()
+        .ok_or("packages")?
+        .push(second["packages"][0].clone());
+    assert!(source_paths::dependency_remaps(&duplicate).is_err());
+    for invalid in [
+        Value::Null,
+        json!({"version":2,"packages":[]}),
+        json!({"version":1,"packages":[]}),
+        json!({"version":1,"packages":[{"source":null}]}),
+    ] {
+        assert!(source_paths::dependency_remaps(&invalid).is_err());
+    }
+    for (field, value) in [
+        ("name", json!("../escape")),
+        ("version", json!("bad/version")),
+        ("source", json!("unknown-source")),
+        ("manifest_path", json!("relative/Cargo.toml")),
+    ] {
+        let mut invalid = first.clone();
+        invalid["packages"][0][field] = value;
+        assert!(source_paths::dependency_remaps(&invalid).is_err());
+    }
+    let mut many = first.clone();
+    many["packages"] = json!(vec![first["packages"][0].clone(); 513]);
+    assert!(source_paths::dependency_remaps(&many).is_err());
     owned.cleanup()?;
     Ok(())
 }

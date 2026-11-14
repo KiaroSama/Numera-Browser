@@ -42,6 +42,10 @@ jobs:
         with:
           toolchain: 1.99.1
           targets: wasm32-unknown-unknown
+      - name: Disable optional Visual Studio DevCmd telemetry on Windows
+        if: runner.os == 'Windows'
+        shell: bash
+        run: echo 'VSCMD_SKIP_SENDTELEMETRY=1' >> "$GITHUB_ENV"
       - uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c
         with:
           workspaces: |
@@ -85,6 +89,25 @@ jobs:
         run: cargo xtask ci owned --wall 1800 --idle 300 -- cargo xtask provision-resources "${{ runner.temp }}/numera-resources"
       - name: Build unsigned native desktop installers and portable server
         run: cargo xtask ci owned --wall 1800 --idle 300 -- cargo xtask build-product build/native-product --resources "${{ runner.temp }}/numera-resources"
+      - name: Preserve complete failed native packaging evidence
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: native-product-diagnostics-${{ matrix.platform }}-${{ github.sha }}
+          path: |
+            build/native-product/.desktop-build/tauri-build*.log
+            build/native-product/.desktop-build/tauri.product.json
+            build/native-product/**/PROVENANCE.json
+            build/native-product/**/FILES.json
+            build/native-product/distribution.json
+            build/native-phase-*.log
+            build/owned-command-failure-*.log
+            build/owned-members-*.json
+            .ci-work/logs/ci-owned_*.log
+            engine-rust/target/cargo-timings/
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 7
       - name: Preserve reviewable unsigned artifacts, exact source and receipts
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
@@ -158,7 +181,28 @@ jobs:
           tar -xzf "$directory/download.tar.gz" -C "$directory" binaryen-version_133/bin/wasm2js
           echo "52597efec0ad2416f8b5c245864960e775b8ffc94c751cc0b016c4b4986d3bcb  $directory/binaryen-version_133/bin/wasm2js" | sha256sum --check --strict
       - name: Recompile and verify committed browser code and source receipt
+        id: browser-page-compile
         run: cargo xtask ci owned --wall 900 --idle 300 -- cargo run --manifest-path browser-page-rust/Cargo.toml --locked --bin browser-page-build -- --check --wasm2js "$RUNNER_TEMP/numera-binaryen-133/binaryen-version_133/bin/wasm2js"
+      - name: Record exact browser compiler failure hashes
+        if: failure() && steps.browser-page-compile.outcome == 'failure'
+        run: |
+          mkdir -p build/browser-page-repro
+          sha256sum browser-page-rust/generated/runtime.js browser-page-rust/generated/receipt.json browser-page-rust/target/wasm32-unknown-unknown/release/numera_browser_page.wasm browser-page-rust/target/browser-page-generated/numera_browser_page_bg.wasm browser-page-rust/target/browser-page-generated/numera_browser_page.js browser-page-rust/target/browser-page-generated/compiled.js > build/browser-page-repro/sha256.txt
+      - name: Preserve actual browser compiler failure outputs
+        if: failure() && steps.browser-page-compile.outcome == 'failure'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: browser-page-repro-${{ github.sha }}
+          path: |
+            build/browser-page-repro/sha256.txt
+            browser-page-rust/generated/runtime.js
+            browser-page-rust/generated/receipt.json
+            browser-page-rust/target/wasm32-unknown-unknown/release/numera_browser_page.wasm
+            browser-page-rust/target/browser-page-generated/numera_browser_page_bg.wasm
+            browser-page-rust/target/browser-page-generated/numera_browser_page.js
+            browser-page-rust/target/browser-page-generated/compiled.js
+          if-no-files-found: error
+          retention-days: 7
       - run: cargo xtask ci counted-tests 6 build/xtask-unit.log -- cargo test --manifest-path tools/xtask/Cargo.toml --locked --bin numera-xtask -- --test-threads=2 --color=never
       - run: cargo xtask ci counted-tests 643 build/source-ci.log -- cargo test --manifest-path tools/xtask/Cargo.toml --locked --test source_ci -- --test-threads=2 --color=never
       - run: cargo xtask ci counted-tests 123 build/source-acceptance.log -- cargo test --manifest-path tools/xtask/Cargo.toml --locked --test source_acceptance -- --test-threads=2 --color=never
@@ -168,6 +212,10 @@ jobs:
     needs: [coverage, dashboard]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
+    env:
+      NUMERA_NATIVE_CANDIDATE: ${{ github.workspace }}/engine-rust/target/debug/numera-engine${{ matrix.os == 'windows-latest' && '.exe' || '' }}
+      NUMERA_NATIVE_ENGINE: ${{ github.workspace }}/engine-rust/target/debug/numera-engine${{ matrix.os == 'windows-latest' && '.exe' || '' }}
+      NUMERA_BROWSER_RUNTIME: ${{ github.workspace }}/engine-rust/target/debug/numera-browser-runtime${{ matrix.os == 'windows-latest' && '.exe' || '' }}
     strategy:
       fail-fast: false
       matrix:
@@ -192,13 +240,29 @@ jobs:
           path: dashboard/dist
       - run: cargo build --manifest-path tools/xtask/Cargo.toml --locked
       - run: cargo xtask ci owned --wall 900 --idle 300 -- cargo xtask ci native-phase build
+      - name: Compile the actual native supervisor and browser fixtures
+        run: cargo xtask ci owned --wall 900 --idle 300 -- cargo build --manifest-path engine-rust/Cargo.toml --locked --features native-product,native-browser,test-support --bin numera-engine --bin numera-browser-runtime
       - run: cargo xtask ci owned --wall 1800 --idle 180 -- cargo xtask ci native-phase test
+      - name: Preserve complete failed functional test evidence
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: native-functional-${{ matrix.os }}-${{ github.sha }}
+          path: |
+            build/native-phase-*.log
+            build/owned-command-failure-*.log
+            build/owned-members-*.json
+            .ci-work/logs/ci-owned_*.log
+          if-no-files-found: error
 
   live:
     name: Required real SDK (${{ matrix.os }}, ${{ matrix.engine }})
     needs: [coverage, dashboard]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 35
+    concurrency:
+      group: ${{ matrix.engine == 'cloak' && 'numera-cloak-vendor-seat' || format('numera-sdk-{0}-{1}-{2}', github.run_id, matrix.os, matrix.engine) }}
+      cancel-in-progress: false
     strategy:
       fail-fast: false
       max-parallel: 2
@@ -254,13 +318,22 @@ jobs:
             build/logs/camoufox-runtime_*.log
             build/native-candidate/entry-performance.json
             build/native-candidate/browser-performance.json
+            build/owned-command-failure-*.log
+            build/owned-members-*.json
+            engine-rust/target/release/*.build.json
+            ${{ runner.temp }}/numera-native-checkpoint.receipt.json
+            ${{ runner.temp }}/numera-native-checkpoint.target/release/*.build.json
           if-no-files-found: error
 
   history:
-    name: Exact historical native negative controls
+    name: Exact historical native negative controls (${{ matrix.os }})
     needs: coverage
-    runs-on: windows-latest
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-latest]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -284,8 +357,12 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
-          name: native-history-diagnostics-${{ github.sha }}
-          path: build/history/
+          name: native-history-diagnostics-${{ matrix.os }}-${{ github.sha }}
+          path: |
+            build/history/
+            build/owned-command-failure-*.log
+            build/owned-members-*.json
+            .ci-work/logs/ci-owned_*.log
           if-no-files-found: warn
           retention-days: 7
 
@@ -334,6 +411,7 @@ jobs:
       contents: read
       actions: read
       checks: read
+      pull-requests: read
       security-events: write
     uses: ./.github/workflows/codeql.yml
   dependencies:

@@ -2,6 +2,40 @@ use numera_core::{ownership::capture, storage::first_run::run_if_needed};
 use serde_json::{Map, Value};
 use std::{fs, path::Path, process::Command, time::Duration};
 
+// The immutable observation contains this particular readdir order. Replay
+// only the order; the entries, FIFOs, permissions and copy operations are real.
+fn frozen_order(_: &Path, entries: &mut [fs::DirEntry]) {
+    entries.sort_by_key(|entry| {
+        use std::os::unix::ffi::OsStrExt;
+        let name = entry.file_name();
+        let bytes = name.as_bytes();
+        match bytes {
+            b"z-good.bin" => 0,
+            name if name.starts_with(b"raw-") => 1,
+            b"c-pipe" => 2,
+            b"a-pipe" => 3,
+            b"b-nested" => 4,
+            _ => 5,
+        }
+    });
+}
+
+fn reverse_order(path: &Path, entries: &mut [fs::DirEntry]) {
+    frozen_order(path, entries);
+    entries.reverse();
+}
+
+fn failure_tuples(summary: &Value) -> Vec<String> {
+    let message = summary["failed"][0].as_str().expect("one aggregate");
+    let tuples = message
+        .strip_prefix("profiles: [(")
+        .and_then(|text| text.strip_suffix(")]"))
+        .expect("complete failure tuples");
+    let mut result = tuples.split("), (").map(str::to_owned).collect::<Vec<_>>();
+    result.sort();
+    result
+}
+
 fn snapshot(base: &Path, directory: &Path) -> Result<Value, Box<dyn std::error::Error>> {
     let mut result = Map::new();
     for entry in fs::read_dir(directory)? {
@@ -45,7 +79,10 @@ fn new_subtree_errors_match_original_continuation_summaries_and_retry()
                 for name in &denied {
                     fs::set_permissions(source.join(name), fs::Permissions::from_mode(0o0))?;
                 }
-                let result = run_if_needed(destination, &[source.to_owned()]);
+                let result = numera_core::storage::first_run_test_support::with_directory_order(
+                    frozen_order,
+                    || run_if_needed(destination, &[source.to_owned()]),
+                );
                 for name in &denied {
                     fs::set_permissions(source.join(name), fs::Permissions::from_mode(0o700))?;
                 }
@@ -62,6 +99,42 @@ fn new_subtree_errors_match_original_continuation_summaries_and_retry()
                 row["mode"]
             );
             assert_eq!(snapshot(destination, destination)?, row["written"]);
+            if row["mode"] == "new" {
+                // Counterexample: reverse the same real entries into a fresh
+                // destination. All three original FIFO errors must survive,
+                // together with both healthy-file copies and retryability.
+                let alternate = destination.with_file_name("alternate-order");
+                let result = numera_core::storage::first_run_test_support::with_directory_order(
+                    reverse_order,
+                    || run_if_needed(&alternate, &[source.to_owned()]),
+                )?
+                .ok_or("Alternate copy not attempted")?;
+                let mut observed = serde_json::to_value(result)?;
+                fn rebase(value: &mut Value, old: &str, new: &str) {
+                    match value {
+                        Value::String(text) => *text = text.replace(old, new),
+                        Value::Array(rows) => rows.iter_mut().for_each(|row| rebase(row, old, new)),
+                        Value::Object(rows) => {
+                            rows.values_mut().for_each(|row| rebase(row, old, new))
+                        }
+                        _ => {}
+                    }
+                }
+                rebase(
+                    &mut observed,
+                    alternate.to_str().ok_or("Alternate path")?,
+                    destination.to_str().ok_or("Destination path")?,
+                );
+                assert_eq!(failure_tuples(&observed), failure_tuples(&row["first"]));
+                assert_ne!(
+                    observed["failed"], row["first"]["failed"],
+                    "the alternate order must actually differ"
+                );
+                observed["failed"] = row["first"]["failed"].clone();
+                assert_eq!(observed, row["first"], "alternate summary fields");
+                assert_eq!(snapshot(&alternate, &alternate)?, row["written"]);
+                assert!(!alternate.join(".imported").exists());
+            }
             assert!(!destination.join(".imported").exists());
             assert_eq!(fs::read(source.join("schedules.json"))?, b"independent");
             if let Some(bytes) = row["nonunicode"].as_array() {
@@ -99,7 +172,7 @@ fn new_subtree_errors_match_original_continuation_summaries_and_retry()
     let temporary = super::common::TempDirectory::new("copytree-errors")?;
     let root: std::path::PathBuf = temporary.path().components().collect();
     // Frozen immutable source observation; all native assertions below remain live.
-    let rows: Vec<Value> = super::support::load(
+    let mut rows: Vec<Value> = super::support::load(
         include_str!(
             "../fixtures/characterization/new_subtree_errors_match_original_continuation_summaries_and_retry.json"
         ),
@@ -107,11 +180,12 @@ fn new_subtree_errors_match_original_continuation_summaries_and_retry()
     )?;
     assert_eq!(rows.len(), 6, "Copytree failure observations missing");
     let document = root.join("observations.json");
-    for row in &rows {
+    for row in &mut rows {
         use std::os::unix::ffi::OsStrExt;
-        let source = Path::new(row["source"].as_str().ok_or("Source missing")?);
-        let destination = Path::new(row["destination"].as_str().ok_or("Destination missing")?);
-        let mode = row["mode"].as_str().ok_or("Mode missing")?;
+        let source = std::path::PathBuf::from(row["source"].as_str().ok_or("Source missing")?);
+        let destination =
+            std::path::PathBuf::from(row["destination"].as_str().ok_or("Destination missing")?);
+        let mode = row["mode"].as_str().ok_or("Mode missing")?.to_owned();
         fs::create_dir_all(source.join("profiles/branch"))?;
         super::fifo(&source.join("profiles/branch/c-pipe"))?;
         fs::create_dir(source.join("profiles/branch/b-nested"))?;
@@ -134,11 +208,56 @@ fn new_subtree_errors_match_original_continuation_summaries_and_retry()
                         .ok_or("Invalid filename byte")
                 })
                 .collect::<Result<Vec<_>, _>>()?;
-            super::fifo(&source.join(std::ffi::OsStr::from_bytes(&bytes)))?;
+            let original = source.join(std::ffi::OsStr::from_bytes(&bytes));
+            match super::fifo(&original) {
+                Ok(()) => {}
+                #[cfg(target_os = "macos")]
+                Err(error) if error.raw_os_error() == Some(libc::EILSEQ) => {
+                    assert_eq!(
+                        original.strip_prefix(&source)?.as_os_str().as_bytes(),
+                        bytes,
+                        "the rejected OS path retained every original filename byte"
+                    );
+                    assert_eq!(
+                        fs::symlink_metadata(&original)
+                            .expect_err("APFS refused filename")
+                            .raw_os_error(),
+                        Some(libc::EILSEQ)
+                    );
+                    let target = destination.join(std::ffi::OsStr::from_bytes(&bytes));
+                    let diagnostic = numera_core::storage::first_run_test_support::pipe_failure(
+                        &original, &target,
+                    );
+                    assert!(
+                        row["first"]["failed"][0]
+                            .as_str()
+                            .ok_or("Frozen failure")?
+                            .contains(&diagnostic[1..diagnostic.len() - 1]),
+                        "raw OS-byte diagnostic changed"
+                    );
+                    // APFS cannot own the Linux byte filename. Retain the
+                    // original pure diagnostic above, and exercise its FIFO
+                    // copy/retry effects using a clearly identified alias.
+                    let alias = b"profiles/branch/raw-platform-unrepresentable-pipe";
+                    super::fifo(&source.join(std::ffi::OsStr::from_bytes(alias)))?;
+                    for phase in ["first", "again"] {
+                        if let Some(message) = row[phase]["failed"][0].as_str() {
+                            row[phase]["failed"][0] = message
+                                .replace(
+                                    "raw-\\udcff-\\udce2\\udc82-pipe",
+                                    "raw-platform-unrepresentable-pipe",
+                                )
+                                .into();
+                        }
+                    }
+                    row["nonunicode"] = serde_json::to_value(alias.as_slice())?;
+                }
+                Err(error) => return Err(error.into()),
+            }
         }
         fs::write(source.join("schedules.json"), b"independent")?;
-        fs::create_dir_all(destination)?;
-        if ["existing", "mixed"].contains(&mode) {
+        fs::create_dir_all(&destination)?;
+        if ["existing", "mixed"].contains(&mode.as_str()) {
             fs::create_dir_all(destination.join("profiles/branch"))?;
         }
         if mode == "mixed" {

@@ -3,6 +3,7 @@ source_test!(
     rotation_moves_every_secret_and_retires_the_old_password,
     "tests/test_vault_rotation.py::test_rotation_moves_every_secret_and_retires_the_old_password",
     {
+        missing_or_nontext_salt_refuses_before_rotation_journal();
         let temp = common::TempDirectory::new("source-vault").expect("temporary root");
         let root = temp.path();
         let prof = saved(root, "p1", 1, Some("PROXY-PASSWORD"));
@@ -34,6 +35,71 @@ source_test!(
         );
     }
 );
+fn missing_or_nontext_salt_refuses_before_rotation_journal() {
+    let verifier = vault::encrypt(MASTER, "", "numera-vault-ok").expect("empty-salt verifier");
+    let ciphertext = vault::encrypt(MASTER, "", "original-secret").expect("empty-salt secret");
+    let mut accepted = Vec::new();
+    for salt in [
+        None,
+        Some(Value::Null),
+        Some(json!(17)),
+        Some(json!(false)),
+        Some(json!([])),
+        Some(json!({})),
+    ] {
+        let temp = common::TempDirectory::new("malformed-rotation-salt").expect("owned root");
+        let root = temp.path();
+        let profile = saved(root, "rotation-refusal", 22, Some("original-secret"));
+        let (mut engine, mut dashboard) = raw_pair(root, &profile.id);
+        engine["proxy"]["password"] = ciphertext.clone().into();
+        dashboard["proxy"]["pass"] = ciphertext.clone().into();
+        write(root, &format!("profiles/{}.json", profile.id), engine);
+        write(root, &format!("dashboard/{}.json", profile.id), dashboard);
+        let mut descriptor = json!({"verifier":verifier});
+        if let Some(value) = &salt {
+            descriptor["salt"] = value.clone();
+        }
+        write(root, "config.json", json!({"vault":descriptor}));
+        let before = snapshot(root);
+        let reached = Arc::new(Mutex::new(Vec::new()));
+        let observed = reached.clone();
+        let result = testing::with_observer(
+            move |event| {
+                if matches!(
+                    event.operation,
+                    "before-vault-salt-randomness" | "before-migration"
+                ) {
+                    observed
+                        .lock()
+                        .expect("rotation observations")
+                        .push(event.operation);
+                }
+                Ok(Action::Continue)
+            },
+            || transaction::rotate(root, MASTER, NEW),
+        );
+        match result {
+            Ok(_) => accepted.push(format!("salt={salt:?}")),
+            Err(error) => {
+                assert_eq!(
+                    error.kind,
+                    recovery::RecoveryErrorKind::VaultRecoveryRequired
+                );
+                assert!(error.to_string().contains("descriptor"));
+                assert!(
+                    reached.lock().expect("rotation observations").is_empty(),
+                    "Refusal reached new randomness or journal publication"
+                );
+                assert_eq!(snapshot(root), before);
+                assert!(!root.join("vault-migration.json").exists());
+            }
+        }
+    }
+    assert!(
+        accepted.is_empty(),
+        "Malformed descriptors entered actual rotation: {accepted:?}"
+    );
+}
 source_test!(
     the_cli_rotates,
     "tests/test_vault_rotation.py::test_the_cli_rotates",

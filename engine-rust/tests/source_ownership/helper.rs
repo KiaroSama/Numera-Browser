@@ -131,8 +131,56 @@ fn descriptors() -> io::Result<usize> {
         Ok(count as usize)
     }
 }
+fn capture_initialization_diagnostic() -> io::Result<serde_json::Value> {
+    #[cfg(windows)]
+    {
+        // Diagnostics deliberately follow the existing baseline. Equality
+        // assertions stay unchanged until the owning Windows run classifies
+        // every persistent initialization handle; no tolerance is introduced.
+        let cold = descriptors()?;
+        let mut entropy = [0u8; 16];
+        getrandom::fill(&mut entropy).map_err(io::Error::other)?;
+        let rng_first = descriptors()?;
+        getrandom::fill(&mut entropy).map_err(io::Error::other)?;
+        let rng_second = descriptors()?;
+        let mut pipe_closed = Vec::new();
+        for _ in 0..2 {
+            // Independent std primitives, not production capture. Rust1.99.1
+            // child_pipe.rs caches exactly one NamedPipe filesystem handle.
+            let mut child = Command::new(std::env::current_exe()?)
+                .args(["emit", "warm", "0"])
+                .stdin(Stdio::null())
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped())
+                .spawn()?;
+            let status = match child.wait() {
+                Ok(status) => status,
+                Err(error) => {
+                    let _ = child.kill();
+                    let _ = child.wait();
+                    return Err(error);
+                }
+            };
+            drop(child);
+            if !status.success() {
+                return Err(io::Error::other(
+                    "Independent stdio diagnostic fixture failed",
+                ));
+            }
+            pipe_closed.push(descriptors()?);
+        }
+        Ok(
+            serde_json::json!({"cold":cold,"rng_first":rng_first,"rng_second":rng_second,"stdio_closed":pipe_closed}),
+        )
+    }
+    #[cfg(not(windows))]
+    {
+        Ok(serde_json::Value::Null)
+    }
+}
 fn fd_capture(timeout: bool) -> Result<i32, Box<dyn std::error::Error>> {
     let before = descriptors()?;
+    let initialization = capture_initialization_diagnostic()?;
     #[cfg(target_os = "linux")]
     let threads_before = fs::read_dir("/proc/self/task")?.count();
     let mut child = Command::new(std::env::current_exe()?);
@@ -169,7 +217,7 @@ fn fd_capture(timeout: bool) -> Result<i32, Box<dyn std::error::Error>> {
     let threads_unchanged: Option<bool> = None;
     println!(
         "{}",
-        serde_json::json!({"before":before,"after":after,"timed_out":timed_out,"threads_unchanged":threads_unchanged})
+        serde_json::json!({"before":before,"after":after,"timed_out":timed_out,"threads_unchanged":threads_unchanged,"initialization":initialization})
     );
     Ok(0)
 }
@@ -197,6 +245,7 @@ fn fd_failure(marker: &Path) -> Result<i32, Box<dyn std::error::Error>> {
         extra
     };
     let before = descriptors()?;
+    let initialization = capture_initialization_diagnostic()?;
     struct Refused {
         marker: std::path::PathBuf,
         record: Mutex<Option<serde_json::Value>>,
@@ -257,7 +306,7 @@ fn fd_failure(marker: &Path) -> Result<i32, Box<dyn std::error::Error>> {
     let after_cleanup = descriptors()?;
     println!(
         "{}",
-        serde_json::json!({"before":before,"owner_extra":owner_extra,"before_cleanup":before_cleanup,"after_cleanup":after_cleanup,"writer_live":writer_live,"retained":retained,"elapsed_ms":elapsed.as_millis()})
+        serde_json::json!({"before":before,"owner_extra":owner_extra,"before_cleanup":before_cleanup,"after_cleanup":after_cleanup,"writer_live":writer_live,"retained":retained,"elapsed_ms":elapsed.as_millis(),"initialization":initialization})
     );
     Ok(0)
 }
@@ -297,6 +346,7 @@ fn fd_pipe_failure(stage: &str) -> Result<i32, Box<dyn std::error::Error>> {
         }
     }
     let before = descriptors()?;
+    let initialization = capture_initialization_diagnostic()?;
     let fault = Arc::new(Fault {
         stage: stage.into(),
         born: Mutex::new(None),
@@ -337,7 +387,7 @@ fn fd_pipe_failure(stage: &str) -> Result<i32, Box<dyn std::error::Error>> {
     let after = descriptors()?;
     println!(
         "{}",
-        serde_json::json!({"before":before,"after":after,"child_live":child_live,"error":first,"prepared":fault.prepared.load(Ordering::SeqCst),"reads":fault.reads.load(Ordering::SeqCst),"elapsed_ms":begin.elapsed().as_millis()})
+        serde_json::json!({"before":before,"after":after,"child_live":child_live,"error":first,"prepared":fault.prepared.load(Ordering::SeqCst),"reads":fault.reads.load(Ordering::SeqCst),"elapsed_ms":begin.elapsed().as_millis(),"initialization":initialization})
     );
     Ok(0)
 }
@@ -518,7 +568,13 @@ fn run() -> Result<i32, Box<dyn std::error::Error>> {
         return adapter(&std::env::current_dir()?);
     }
     match args[0].as_str() {
-        "--metadata"=>{println!("{}",serde_json::json!({"backends":{"playwright":{"installed":true},"patchright":{"installed":true},"camoufox":{"installed":true},"cloak":{"installed":true}},"default_addons":[]}));Ok(0)}
+        "--metadata" => {
+            println!(
+                "{}",
+                serde_json::json!({"backends":{"playwright":{"installed":true},"patchright":{"installed":true},"camoufox":{"installed":true},"cloak":{"installed":true}},"default_addons":[]})
+            );
+            Ok(0)
+        }
 
         "closed-writers" => {
             fs::write(&args[1], std::process::id().to_string())?;
@@ -638,7 +694,7 @@ fn run() -> Result<i32, Box<dyn std::error::Error>> {
                 environment,
                 root,
                 std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
-                &numera_core::runtime_log::RuntimeLog::new(&root.join("logs"),"fixture-entry"),
+                &numera_core::runtime_log::RuntimeLog::new(&root.join("logs"), "fixture-entry"),
             )?)
         }
         "partial-writer" => {

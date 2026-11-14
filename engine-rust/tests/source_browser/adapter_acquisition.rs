@@ -296,6 +296,89 @@ fn pipe(mode: &str) {
     tree.settle(Duration::from_secs(2))
         .expect("browser contract");
 }
+#[cfg(unix)]
+fn uncertain_birth_during_settlement() {
+    use numera_core::ownership::{test_support, tree::OwnedTree};
+    use std::sync::atomic::AtomicUsize;
+    struct Uncertain {
+        transient: bool,
+        snapshot: AtomicBool,
+        births: AtomicUsize,
+        signals: AtomicUsize,
+    }
+    impl test_support::Backend for Uncertain {
+        fn birth(&self, _pid: u32) -> Option<io::Result<Option<u64>>> {
+            let calls = self.births.fetch_add(1, Ordering::SeqCst);
+            if self.transient && calls > 0 {
+                None
+            } else {
+                Some(Err(io::Error::from_raw_os_error(libc::EPERM)))
+            }
+        }
+        fn group_empty(&self, _group: i32) -> Option<io::Result<bool>> {
+            if self.snapshot.swap(false, Ordering::SeqCst) {
+                // An earlier snapshot can still contain a just-exited leader.
+                Some(Ok(false))
+            } else {
+                None // Require the real kernel observation thereafter.
+            }
+        }
+        fn signal(&self, _target: i32, _force: bool) -> Option<io::Result<()>> {
+            self.signals.fetch_add(1, Ordering::SeqCst);
+            Some(Err(io::Error::other(
+                "Uncertain leader must not be signalled",
+            )))
+        }
+    }
+    let fault = |transient| {
+        Arc::new(Uncertain {
+            transient,
+            snapshot: AtomicBool::new(transient),
+            births: AtomicUsize::new(0),
+            signals: AtomicUsize::new(0),
+        })
+    };
+    let mut command = std::process::Command::new(support::fixture());
+    command.arg("pipe").arg("ready").stdout(Stdio::piped());
+    let mut exited = OwnedTree::spawn(&mut command).expect("owned exited fixture");
+    let mut bytes = Vec::new();
+    exited
+        .child_mut()
+        .stdout
+        .take()
+        .expect("stdout")
+        .read_to_end(&mut bytes)
+        .expect("real EOF");
+    assert_eq!(bytes, b"{\"value\":1}\n");
+    let probe = fault(true);
+    test_support::with_backend(probe.clone(), || exited.settle(Duration::from_secs(2)))
+        .expect("Retry uncertainty until a complete real empty-group proof");
+    assert_eq!(probe.births.load(Ordering::SeqCst), 1);
+    assert_eq!(probe.signals.load(Ordering::SeqCst), 0);
+
+    let mut command = std::process::Command::new(support::fixture());
+    command
+        .arg("pipe")
+        .arg("idle")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::null());
+    let mut live = OwnedTree::spawn(&mut command).expect("owned live fixture");
+    let writer = live.child_mut().stdin.take().expect("held input");
+    let probe = fault(false);
+    let budget = Duration::from_millis(40);
+    let start = Instant::now();
+    let error = test_support::with_backend(probe.clone(), || live.settle(budget))
+        .expect_err("Persistent uncertainty retains the live tree");
+    assert_eq!(error.raw_os_error(), Some(libc::EPERM));
+    assert!(start.elapsed() >= budget);
+    assert!(start.elapsed() < Duration::from_secs(1));
+    assert!(probe.births.load(Ordering::SeqCst) > 0);
+    assert_eq!(probe.signals.load(Ordering::SeqCst), 0);
+    assert!(live.child_mut().try_wait().expect("live status").is_none());
+    drop(writer);
+    live.settle(Duration::from_secs(2))
+        .expect("settle retained actual fixture");
+}
 fn framing(mode: &str) {
     match mode {
         "ready" => {
@@ -580,6 +663,8 @@ source_test!(
     "tests/test_adapter_acquisition.py::test_windows_frame_wait_stops_on_readiness_or_its_deadline[ready]",
     {
         pipe("ready");
+        #[cfg(unix)]
+        uncertain_birth_during_settlement();
     }
 );
 source_test!(

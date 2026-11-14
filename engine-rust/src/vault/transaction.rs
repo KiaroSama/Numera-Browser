@@ -220,11 +220,13 @@ pub fn rotate(root: &Path, old_password: &str, password: &str) -> Result<usize, 
             "There is no vault to rotate. Use `numera vault enable` first.",
         ));
     }
-    if !check_password(
-        old_password,
-        old["salt"].as_str().unwrap_or(""),
-        old["verifier"].as_str().unwrap_or(""),
-    ) {
+    let (Some(old_salt), Some(old_verifier)) = (old["salt"].as_str(), old["verifier"].as_str())
+    else {
+        return Err(refusal(
+            "The active vault descriptor needs text salt and verifier fields; nothing was changed",
+        ));
+    };
+    if !check_password(old_password, old_salt, old_verifier) {
         return Err(refusal("that is not the current master password"));
     }
     let descriptor = new_descriptor(root, password, None)?;
@@ -236,7 +238,7 @@ pub fn rotate(root: &Path, old_password: &str, password: &str) -> Result<usize, 
         let count = step
             .rekey_all(
                 old_password,
-                old["salt"].as_str().unwrap_or(""),
+                old_salt,
                 password,
                 descriptor["salt"].as_str().unwrap_or(""),
                 false,

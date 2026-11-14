@@ -517,6 +517,16 @@ fn sign_file(path: &Path, certificate: &Certificate) -> io::Result<()> {
     }
     Ok(())
 }
+fn flip_control_byte(path: &Path, offset: u64) -> io::Result<()> {
+    let mut output = fs::OpenOptions::new().read(true).write(true).open(path)?;
+    output.seek(SeekFrom::Start(offset))?;
+    let mut byte = [0];
+    output.read_exact(&mut byte)?;
+    byte[0] ^= 1;
+    output.seek(SeekFrom::Start(offset))?;
+    output.write_all(&byte)?;
+    output.sync_all()
+}
 pub(super) fn sign(
     stage: &Path,
     pfx: &[u8],
@@ -579,21 +589,26 @@ pub(super) fn sign(
             Err(error) if error.kind() == io::ErrorKind::PermissionDenied => {}
             _ => return Err(refusal("Wrong Authenticode signer was not rejected")),
         }
-        let copy = scratch.join(format!("tampered-{index}.exe"));
+        // Preserve the legacy byte-64 negative control. A DOS-stub mutation can
+        // be rejected as NOSIGNATURE; that is categorical rejection, not proof
+        // of an Authenticode image-digest comparison.
+        let legacy = scratch.join(format!("header-tampered-{index}.exe"));
+        fs::copy(&path, &legacy)?;
+        flip_control_byte(&legacy, 64)?;
+        if verify(&legacy, expected).is_ok() {
+            return Err(refusal(
+                "Legacy Authenticode byte-64 tamper control was accepted",
+            ));
+        }
+        let copy = scratch.join(format!("code-tampered-{index}.exe"));
         fs::copy(&path, &copy)?;
-        let mut output = fs::OpenOptions::new().read(true).write(true).open(&copy)?;
-        output.seek(SeekFrom::Start(0x3c))?;
-        let mut pe_offset = [0; 4];
-        output.read_exact(&mut pe_offset)?;
-        let pe_offset = u32::from_le_bytes(pe_offset);
-        output.seek(SeekFrom::Start(64))?;
-        let mut byte = [0];
-        output.read_exact(&mut byte)?;
-        byte[0] ^= 1;
-        output.seek(SeekFrom::Start(64))?;
-        output.write_all(&byte)?;
-        output.sync_all()?;
-        drop(output);
+        let offset = super::pe::executable_byte(&copy)?;
+        flip_control_byte(&copy, offset)?;
+        if signed_blob(&copy)? != signed_blob(&path)? {
+            return Err(refusal(
+                "Image digest control changed the certificate table",
+            ));
+        }
         match verify(&copy, expected) {
             Err(error)
                 if error
@@ -603,12 +618,12 @@ pub(super) fn sign(
             Err(error) => {
                 let detail: String = error.to_string().chars().take(256).collect();
                 return Err(io::Error::other(format!(
-                    "Authenticode tamper control {index} (byte 64, PE header {pe_offset}) expected BAD_DIGEST (0x80096010), but verification returned {detail}"
+                    "Authenticode digest control {index} (executable byte {offset}) expected BAD_DIGEST (0x80096010), but verification returned {detail}"
                 )));
             }
             Ok(()) => {
                 return Err(io::Error::other(format!(
-                    "Authenticode tamper control {index} (byte 64, PE header {pe_offset}) unexpectedly passed verification"
+                    "Authenticode digest control {index} (executable byte {offset}) unexpectedly passed verification"
                 )));
             }
         }

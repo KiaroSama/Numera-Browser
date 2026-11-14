@@ -611,6 +611,41 @@ source_test!(
             !tree.all_job_members_exited()?,
             "A live member must forbid accounting settlement"
         );
+        let diagnostics = tree.job_member_diagnostics()?;
+        assert_eq!(diagnostics["complete"], true);
+        let rows = diagnostics["members"]
+            .as_array()
+            .ok_or("retained Job diagnostic rows absent")?;
+        assert!(rows.len() <= 512);
+        assert!(rows.iter().any(|row| row["pid"] == tree.pid()
+            && row["leader"] == true
+            && row["membership"] == "retained_leader"
+            && row["wait"] == "live"));
+        for row in rows {
+            assert!(matches!(
+                row["image_class"].as_str(),
+                Some(
+                    "cargo"
+                        | "rustc"
+                        | "lld-link"
+                        | "link"
+                        | "mspdbsrv"
+                        | "vctip"
+                        | "conhost"
+                        | "cmd"
+                        | "powershell"
+                        | "rustup"
+                        | "numera-engine"
+                        | "numera-browser-runtime"
+                        | "numera-xtask"
+                        | "numera-native-candidate"
+                        | "numera-http-observer"
+                        | "unclassified"
+                )
+            ));
+            assert!(row.get("argv").is_none());
+            assert!(row.get("path").is_none());
+        }
         struct UncertainJob;
         impl test_support::Backend for UncertainJob {
             fn job_query(&self) -> Option<io::Result<()>> {
@@ -626,6 +661,7 @@ source_test!(
         tree.settle(Duration::from_secs(2))?;
         assert!(tree.empty()?);
         assert!(tree.all_job_members_exited()?);
+        assert_eq!(tree.job_member_diagnostics()?["member_count"], 0);
         assert!(!identity::alive(tree.pid(), Some(token))?);
         assert!(recorded_tree::empty(&record)?);
         Ok(())

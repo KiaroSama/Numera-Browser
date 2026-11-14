@@ -34,12 +34,12 @@
   "native_only": true,
   "verification": {
     "status": "passed",
-    "command": "cargo test --locked --manifest-path engine-rust/Cargo.toml --test source_vault --no-default-features --features test-support -- --test-threads=8",
+    "command": "cargo test --locked --manifest-path engine-rust/Cargo.toml --features test-support --test source_vault",
     "reported": 292,
     "passed": 292,
     "failed": 0,
     "ignored": 0,
-    "elapsed_seconds": 258.97,
+    "elapsed_seconds": 203.35,
     "targeted_followup": {
       "case": "vault_propagation::the_password_never_appears_in_a_child_argv",
       "reason": "Approved dynamic browser environment restriction helper extracted and updater-token protection added after full suite.",
@@ -49,13 +49,16 @@
     "source_oracle_processes": 0,
     "individually_reported_cases": 292,
     "mapping_set_equals_frozen_baseline_subset": true,
-    "clippy": "passed: cargo clippy --locked --manifest-path engine-rust/Cargo.toml --test source_vault --features test-support --no-default-features -- -D warnings",
+    "clippy": "passed: cargo clippy --locked --manifest-path engine-rust/Cargo.toml --features test-support --lib --test source_vault --test source_performance --test repo_write_parity -- -D warnings",
     "typed_rollback": {
       "kind": "RollbackFailed",
       "cause_chain": "primary syscall error and every failed restore remain inspectable",
       "targeted_cases_passed": 2,
       "full_suite_passed": 292
-    }
+    },
+    "log": "/tmp/vault-salt-descriptor-vault292-green.log",
+    "clippy_log": "/tmp/vault-salt-descriptor-clippy.log",
+    "working_tree_followup": "2026-11-14 typed salt descriptor fix; same292originalIDs/types, no fresh hosted-platform claim."
   },
   "source_hashes": {
     "tests/test_locked_cli_and_vault.py": "655026144c4a7b070659a80fcc6c5ab40325e63a983729fec69d91d35a9f0abb",
@@ -741,7 +744,8 @@
       "original_fixtures": [
         "tmp_path"
       ],
-      "native_type": "#[test]"
+      "native_type": "#[test]",
+      "native_adaptation": "Also exercises actual engine/dashboard/pool writes against missing/null/number/bool/array/object salt with a verifier valid under empty salt:18controls refuse without changing stored JSON. The existing case ID and all original assertions remain."
     },
     {
       "python_id": "tests/test_vault.py::test_non_secret_profiles_save_fine_while_locked",
@@ -3008,7 +3012,8 @@
       "original_fixtures": [
         "tmp_path"
       ],
-      "native_type": "#[test]"
+      "native_type": "#[test]",
+      "native_adaptation": "Also exercises6malformed-salt rotation controls using real empty-salt ciphertext/verifier; refusal precedes new salt randomness and journal publication, retains exact bytes and leaves no journal. The existing case ID and all original assertions remain."
     },
     {
       "python_id": "tests/test_vault_rotation.py::test_the_cli_rotates",

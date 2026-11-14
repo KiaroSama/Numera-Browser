@@ -141,6 +141,14 @@ pub(super) fn worker() {
                 json!({"won":result.is_some_and(|s|!s.copied.is_empty())}),
             );
         }
+        "dead-pid" => {
+            write(
+                &root,
+                &format!("worker-{who}-result.json"),
+                json!({"pid":std::process::id(),"token":process_identity::started_at(std::process::id()).expect("kernel birth").expect("live owner")}),
+            );
+            park(&root, &who, "ready");
+        }
         "birth" => {
             let pid = extra.parse().expect("observed pid");
             write(

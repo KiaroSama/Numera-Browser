@@ -221,7 +221,7 @@
           "symbols": [
             "ProfileRepo::save_many"
           ],
-          "sha256": "0bacbd0fc1e4e0ff7da774c254828d7cf673f33a3f9aaf1018c406e58949e71d"
+          "sha256": "3abeb2b5efe12f88ad0ca617ecaec275817e20947faaeb5891699cfbef58d9d1"
         }
       ],
       "source_test_ids": [
@@ -316,7 +316,7 @@
           "symbols": [
             "SessionStranded"
           ],
-          "sha256": "8f72ee2f76263dcf9e2b8949d5126b16494bc271606a38bf18fc589b1985262b"
+          "sha256": "85d572c196895517200e3150bc44486baa8b626ac62d170ba1f5089aa7dd8713"
         }
       ],
       "source_test_ids": [
@@ -458,7 +458,7 @@
             "safe_id",
             "id_path"
           ],
-          "sha256": "8f72ee2f76263dcf9e2b8949d5126b16494bc271606a38bf18fc589b1985262b"
+          "sha256": "85d572c196895517200e3150bc44486baa8b626ac62d170ba1f5089aa7dd8713"
         },
         {
           "path": "engine-rust/src/storage/archive_paths.rs",
@@ -505,7 +505,8 @@
           "map": "docs/source-storage-test-map.json",
           "recorded_suite_verdict": "passed"
         }
-      ]
+      ],
+      "functional_review_20261114": "2026-11-14 functional review: symlink/canonical-parent containment remains; differing resolved filename spelling is accepted only with actual matching file identity. Existing cross-ID refusal plus real same-file alias control pass in archive51. Windows owned-root observer normalization is fixture-only; host rerun pending."
     },
     "portable-root": {
       "rust": [
@@ -738,7 +739,7 @@
             "import_from",
             "run_if_needed"
           ],
-          "sha256": "ffb5bb06003beb5a1cf3234817f4e852622dd65bf921bb397dbe4cf03a61ac04"
+          "sha256": "fbfc1e58ce715833d1f096b2e790538310708af3c3fcebf81da0586a1b57bd12"
         }
       ],
       "source_test_ids": [
@@ -791,7 +792,8 @@
           "map": "docs/source-storage-test-map.json",
           "recorded_suite_verdict": "passed"
         }
-      ]
+      ],
+      "functional_review_20261114": "2026-11-14 functional review: default native readdir order remains unchanged. Historical test-only replay validates exact real-entry permutation and retains actual FIFO/permissions/copy/retry; reverse-order counterexample proves error completeness/healthy continuation. On APFS invalid byte filenames require actual EILSEQ and original pure byte diagnostic plus representable physical FIFO alias. first_run_failure4 pass Linux; Mac runtime pending; historical case94 needs separate attribution review."
     },
     "locks": {
       "rust": [
@@ -1172,7 +1174,7 @@
           "symbols": [
             "is_supported_envelope"
           ],
-          "sha256": "bf1d3cf2da498dd07ab845acfa52e92a61ca3c9242185d6158410f31b6f9ec16"
+          "sha256": "2727287024b060c1b5d87fa15748f00d9bf33416923250daf2cfa8fe3c66d860"
         },
         {
           "path": "engine-rust/src/vault/encryption.rs",
@@ -1280,29 +1282,66 @@
             "VaultState",
             "write_secret"
           ],
-          "sha256": "bf1d3cf2da498dd07ab845acfa52e92a61ca3c9242185d6158410f31b6f9ec16"
+          "sha256": "2727287024b060c1b5d87fa15748f00d9bf33416923250daf2cfa8fe3c66d860"
         },
         {
           "path": "engine-rust/src/storage/repo_write.rs",
           "symbols": [
             "ProfileRepo::save_many"
           ],
-          "sha256": "0bacbd0fc1e4e0ff7da774c254828d7cf673f33a3f9aaf1018c406e58949e71d"
+          "sha256": "3abeb2b5efe12f88ad0ca617ecaec275817e20947faaeb5891699cfbef58d9d1"
+        },
+        {
+          "path": "engine-rust/src/vault/policy.rs",
+          "symbols": [
+            "SecretWriter",
+            "SecretWriter::new",
+            "SecretWriter::state",
+            "SecretWriter::seal"
+          ],
+          "sha256": "2727287024b060c1b5d87fa15748f00d9bf33416923250daf2cfa8fe3c66d860"
+        },
+        {
+          "path": "engine-rust/src/storage/dashboard.rs",
+          "symbols": [
+            "DashboardStore::prepare"
+          ],
+          "sha256": "4bb211c86583e057ab3d9d919cd8a726a407ee411ddce60b64256fbac4ac0db7"
+        },
+        {
+          "path": "engine-rust/src/storage/pool.rs",
+          "symbols": [
+            "ProxyPool::save"
+          ],
+          "sha256": "73c58c7f4ebe58eaa8439e80c962ee2eeddb7d136085b77dd86c6ba85097ec18"
+        },
+        {
+          "path": "engine-rust/src/storage/repo_write.rs",
+          "symbols": [
+            "ProfileRepo::records"
+          ],
+          "sha256": "3abeb2b5efe12f88ad0ca617ecaec275817e20947faaeb5891699cfbef58d9d1"
         }
       ],
       "source_test_ids": [
         "tests/test_locked_cli_and_vault.py::test_a_withheld_value_preserves_the_secret_and_an_empty_one_clears",
         "tests/test_repo_secrets.py::test_a_locked_password_replacement_is_refused_and_changes_nothing",
-        "tests/test_proxy_removal_intent.py::test_an_unrelated_edit_over_a_divergence_is_still_refused"
+        "tests/test_proxy_removal_intent.py::test_an_unrelated_edit_over_a_divergence_is_still_refused",
+        "tests/test_vault.py::test_saving_a_secret_while_locked_is_refused"
       ],
       "native_tests": [
         {
           "rust_test": "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift",
           "log": "/tmp/native-storage-retirement-final.log",
           "log_sha256": "bbdedf19bba68a3aec07896f54d697a5c66f44b9ffceb39f595cd0c39f77b3df"
+        },
+        {
+          "rust_test": "vault_cases::saving_a_secret_while_locked_is_refused",
+          "log": "/tmp/vault-salt-descriptor-vault292-green.log",
+          "log_sha256": "db41a7ead20055db881179aaf27d56874a79a6911e3276fc5511addb34607466"
         }
       ],
-      "assertion_mechanism": "Actual locked/unlocked/missing/future/corrupt credentials retain withheld-vs-clear-vs-replace-vs-remove semantics;26 encrypted read/reconcile rows inspect both copies and exact original bytes; unsafe writes refuse atomically.",
+      "assertion_mechanism": "Actual locked/unlocked/missing/future/corrupt credentials retain withheld-vs-clear-vs-replace-vs-remove semantics;26 encrypted read/reconcile rows inspect both copies and exact original bytes; unsafe writes refuse atomically. Confirmed SARIF paths1/3/4 exposed an implicit empty-salt authentication mismatch: a verifier under empty salt unlocked missing/non-string descriptors in actual engine/dashboard/pool writes while reads remained locked. SecretWriter now binds authentication and sealing to the same present fields. The existing source ID includes18actual writer controls (3sites times missing/null/number/bool/array/object); all refuse with exact JSON-byte preservation. Disabled, preserve and already-enveloped behavior remain covered by the same292-case suite.",
       "limits": [],
       "source_tests": [
         {
@@ -1323,6 +1362,13 @@
           "source_id": "tests/test_proxy_removal_intent.py::test_an_unrelated_edit_over_a_divergence_is_still_refused",
           "rust_test": "proxy_removal_intent::an_unrelated_edit_over_a_divergence_is_still_refused",
           "rust_file": "engine-rust/tests/source_vault/proxy_removal_intent.rs",
+          "map": "docs/source-vault-test-map.json",
+          "recorded_suite_verdict": "passed"
+        },
+        {
+          "source_id": "tests/test_vault.py::test_saving_a_secret_while_locked_is_refused",
+          "rust_test": "vault_cases::saving_a_secret_while_locked_is_refused",
+          "rust_file": "engine-rust/tests/source_vault/vault.rs",
           "map": "docs/source-vault-test-map.json",
           "recorded_suite_verdict": "passed"
         }
@@ -1449,7 +1495,7 @@
             "commit_and_verify",
             "finish"
           ],
-          "sha256": "09455cb29f59983d127ad06f7d18bfe767f1f673e8f7b3842b01cc430a31b51d"
+          "sha256": "bf895fd1b47f7281e166285306ab5dc33e9a80da2ff8ec956c1e0a5ed1ff12d1"
         },
         {
           "path": "engine-rust/src/storage/atomic.rs",
@@ -1481,9 +1527,14 @@
           "rust_test": "public_password_change_updates_only_the_successful_store_instance",
           "log": "/tmp/native-storage-vault-retirement-final.log",
           "log_sha256": "f1b3088d2c7b9fec1e7e7adbab1880589c65aeea94a744785eaf4d371bad3769"
+        },
+        {
+          "rust_test": "vault_rotation::rotation_moves_every_secret_and_retires_the_old_password",
+          "log": "/tmp/vault-salt-descriptor-vault292-green.log",
+          "log_sha256": "db41a7ead20055db881179aaf27d56874a79a6911e3276fc5511addb34607466"
         }
       ],
-      "assertion_mechanism": "Real multi-file encryption/rekey and externally persisted config are one batch; injected secret/config/rollback failures check exact bytes, journal ownership and typed primary/all restore failures. Public store password state changes only after successful commit.",
+      "assertion_mechanism": "Real multi-file encryption/rekey and externally persisted config are one batch; injected secret/config/rollback failures check exact bytes, journal ownership and typed primary/all restore failures. Public store password state changes only after successful commit. Confirmed SARIF path17 allowed the same malformed active descriptor to enter real rotation. Typed old-salt/verifier extraction now precedes authentication, new randomness and journal creation. Six actual old-ciphertext/verifier controls refuse before those boundaries and retain every original JSON byte. Existing descriptor text/base64/whitespace grammar is unchanged.",
       "limits": [],
       "source_tests": [
         {
@@ -1568,7 +1619,7 @@
           "symbols": [
             "begin"
           ],
-          "sha256": "09455cb29f59983d127ad06f7d18bfe767f1f673e8f7b3842b01cc430a31b51d"
+          "sha256": "bf895fd1b47f7281e166285306ab5dc33e9a80da2ff8ec956c1e0a5ed1ff12d1"
         },
         {
           "path": "engine-rust/src/vault/recovery.rs",
@@ -1673,14 +1724,14 @@
             "sync_config",
             "end_journal"
           ],
-          "sha256": "71c871c096971d5885139937db9718133705e6f6ed3d3bbec14c3084f5aec928"
+          "sha256": "24c78df916a3285972ca1154495aa6393640bd67b096bd01563ef3d1526e32e7"
         },
         {
           "path": "engine-rust/src/vault/transaction.rs",
           "symbols": [
             "commit_and_verify"
           ],
-          "sha256": "09455cb29f59983d127ad06f7d18bfe767f1f673e8f7b3842b01cc430a31b51d"
+          "sha256": "bf895fd1b47f7281e166285306ab5dc33e9a80da2ff8ec956c1e0a5ed1ff12d1"
         }
       ],
       "source_test_ids": [
@@ -1753,7 +1804,8 @@
           "map": "docs/source-vault-test-map.json",
           "recorded_suite_verdict": "passed"
         }
-      ]
+      ],
+      "functional_review_20261114": "2026-11-14 functional review: ERROR_NOT_SUPPORTED50 from Windows FlushFileBuffers is specifically tolerated despite Rust Uncategorized; Linux-labeled95 is injected as native libc::ENOTSUP on Mac. Case013 passes Linux; actual Mac/Windows runtime confirmation remains pending."
     },
     "vault-recover": {
       "rust": [
@@ -1794,7 +1846,7 @@
           "symbols": [
             "commit_and_verify"
           ],
-          "sha256": "09455cb29f59983d127ad06f7d18bfe767f1f673e8f7b3842b01cc430a31b51d"
+          "sha256": "bf895fd1b47f7281e166285306ab5dc33e9a80da2ff8ec956c1e0a5ed1ff12d1"
         }
       ],
       "source_test_ids": [
@@ -2146,7 +2198,7 @@
             "ProfileRepo::held_names",
             "ProfileRepo::save_many"
           ],
-          "sha256": "0bacbd0fc1e4e0ff7da774c254828d7cf673f33a3f9aaf1018c406e58949e71d"
+          "sha256": "3abeb2b5efe12f88ad0ca617ecaec275817e20947faaeb5891699cfbef58d9d1"
         },
         {
           "path": "engine-rust/src/storage/repo_lookup.rs",
@@ -2226,7 +2278,7 @@
             "ProfileRepo::read_disagrees",
             "ProfileRepo::disagreements"
           ],
-          "sha256": "c7893606cfccb608ab8d65b23b615aa972435b7dcbfa07e0222b65560594e1e2"
+          "sha256": "265d2c0ef2cadc8e225ee5dc269b6787f7c5b12a0455fafc7067f2fcde1bcb61"
         }
       ],
       "source_test_ids": [
@@ -2254,10 +2306,43 @@
           "rust_test": "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift",
           "log": "/tmp/native-storage-retirement-final.log",
           "log_sha256": "bbdedf19bba68a3aec07896f54d697a5c66f44b9ffceb39f595cd0c39f77b3df"
+        },
+        {
+          "rust_test": "public_divergence_reports_all_ordered_fields_without_mutation",
+          "log": "/workspace/work/http-list-snapshot-review/numeric-borrowed-green.txt",
+          "log_sha256": "7443987b69ae4c9330bac1dd44171be990d2fb5f091af892dc977d61b8632c1e"
+        },
+        {
+          "rust_test": "two_store_convergence::the_same_secret_encrypted_twice_is_not_a_divergence",
+          "log": "/workspace/work/http-list-snapshot-review/snapshot-cipher-green.txt",
+          "log_sha256": "fbc1825cca5144d6968671a9c5fa164a1783b69a00d3946f65a2e76937f34a40"
+        },
+        {
+          "rust_test": "two_store_convergence::a_locked_vault_keeps_both_ciphertexts_exactly",
+          "log": "/workspace/work/http-list-snapshot-review/snapshot-cipher-green.txt",
+          "log_sha256": "fbc1825cca5144d6968671a9c5fa164a1783b69a00d3946f65a2e76937f34a40"
         }
       ],
-      "assertion_mechanism": "Actual store union/reconciliation preserves engine-only fields, exact numeric comparisons, encrypted credential generation and dashboard-only metadata; real cross-process/API/CLI drift and unchanged-byte reads are checked, not just serialized fixture equality.",
+      "assertion_mechanism": "Actual store union/reconciliation preserves engine-only fields, exact numeric comparisons, encrypted credential generation and dashboard-only metadata; real cross-process/API/CLI drift and unchanged-byte reads are checked, not just serialized fixture equality. The final borrowed comparison preserves the47original divergence controls and adds19data-only observations from the unmodified full13b public repository/store APIs, including NaN scalar/container identity behavior. A real NaN disagreement/guard regression was captured before correction; current native repository4 and performance16 targets pass. Source/runtime provenance is explicit in the separate numeric observation receipt.",
       "limits": [],
+      "additional_receipts": [
+        {
+          "path": "/workspace/work/http-list-snapshot-review/reconciliation-numeric-full-original.json",
+          "sha256": "ad052b307dc4a4f361f1fbb1356c8fed1a47711accd56cfa403204bb6c44ecb6"
+        },
+        {
+          "path": "/workspace/work/http-list-snapshot-review/numeric-red.txt",
+          "sha256": "cd50e9dd119433eec6485115846af46eb78aae37ba17edac29895304f7610fe8"
+        },
+        {
+          "path": "/workspace/work/http-list-snapshot-review/numeric-guard-red.txt",
+          "sha256": "9e7f0dca1b5f9b3166c330ec2bf6d79f9515ea0baa70b3fc87b72d31b375ff76"
+        },
+        {
+          "path": "/workspace/work/http-list-snapshot-review/numeric-borrowed-green.txt",
+          "sha256": "7443987b69ae4c9330bac1dd44171be990d2fb5f091af892dc977d61b8632c1e"
+        }
+      ],
       "source_tests": [
         {
           "source_id": "tests/test_two_store_convergence.py::test_a_dashboard_only_profile_is_listed",
@@ -2329,7 +2414,7 @@
             "ProfileRepo::records",
             "ProfileRepo::validate_write"
           ],
-          "sha256": "0bacbd0fc1e4e0ff7da774c254828d7cf673f33a3f9aaf1018c406e58949e71d"
+          "sha256": "3abeb2b5efe12f88ad0ca617ecaec275817e20947faaeb5891699cfbef58d9d1"
         },
         {
           "path": "engine-rust/src/storage/repo.rs",
@@ -2407,7 +2492,7 @@
           "symbols": [
             "SessionStranded"
           ],
-          "sha256": "8f72ee2f76263dcf9e2b8949d5126b16494bc271606a38bf18fc589b1985262b"
+          "sha256": "85d572c196895517200e3150bc44486baa8b626ac62d170ba1f5089aa7dd8713"
         }
       ],
       "source_test_ids": [
@@ -2462,7 +2547,7 @@
             "enable",
             "rotate"
           ],
-          "sha256": "09455cb29f59983d127ad06f7d18bfe767f1f673e8f7b3842b01cc430a31b51d"
+          "sha256": "bf895fd1b47f7281e166285306ab5dc33e9a80da2ff8ec956c1e0a5ed1ff12d1"
         },
         {
           "path": "engine-rust/src/vault/recovery.rs",
@@ -9985,15 +10070,44 @@
           "symbols": [
             "ProfileRepo::save_many"
           ]
+        },
+        {
+          "path": "engine-rust/src/vault/policy.rs",
+          "symbols": [
+            "SecretWriter",
+            "SecretWriter::new",
+            "SecretWriter::state",
+            "SecretWriter::seal"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/dashboard.rs",
+          "symbols": [
+            "DashboardStore::prepare"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/pool.rs",
+          "symbols": [
+            "ProxyPool::save"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/repo_write.rs",
+          "symbols": [
+            "ProfileRepo::records"
+          ]
         }
       ],
       "source_test_ids": [
         "tests/test_locked_cli_and_vault.py::test_a_withheld_value_preserves_the_secret_and_an_empty_one_clears",
         "tests/test_repo_secrets.py::test_a_locked_password_replacement_is_refused_and_changes_nothing",
-        "tests/test_proxy_removal_intent.py::test_an_unrelated_edit_over_a_divergence_is_still_refused"
+        "tests/test_proxy_removal_intent.py::test_an_unrelated_edit_over_a_divergence_is_still_refused",
+        "tests/test_vault.py::test_saving_a_secret_while_locked_is_refused"
       ],
       "native_test_ids": [
-        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift"
+        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift",
+        "vault_cases::saving_a_secret_while_locked_is_refused"
       ],
       "evidence_bundle": "vault-secret-policy",
       "replacement_reason": "Four-way proxy intent and authenticated secret comparison are shared repository/vault policies, preserving explicit removal/clear and withholding rather than guessing from null/empty data.",
@@ -10052,7 +10166,10 @@
       "native_test_ids": [
         "dual_store_derivation_preserves_viewport_credentials_and_unchanged_bytes",
         "public_divergence_reports_all_ordered_fields_without_mutation",
-        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift"
+        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift",
+        "public_divergence_reports_all_ordered_fields_without_mutation",
+        "two_store_convergence::the_same_secret_encrypted_twice_is_not_a_divergence",
+        "two_store_convergence::a_locked_vault_keeps_both_ciphertexts_exactly"
       ],
       "evidence_bundle": "repo-reconcile",
       "replacement_reason": "The original divergence exception is the explicit native RepoError::Diverged refusal, produced from the inspected ordered disagreement set; real encrypted/plaintext read and write conflicts preserve both copies.",
@@ -10111,7 +10228,10 @@
       "native_test_ids": [
         "dual_store_derivation_preserves_viewport_credentials_and_unchanged_bytes",
         "public_divergence_reports_all_ordered_fields_without_mutation",
-        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift"
+        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift",
+        "public_divergence_reports_all_ordered_fields_without_mutation",
+        "two_store_convergence::the_same_secret_encrypted_twice_is_not_a_divergence",
+        "two_store_convergence::a_locked_vault_keeps_both_ciphertexts_exactly"
       ],
       "evidence_bundle": "repo-reconcile",
       "replacement_reason": "The two Python store/repository objects are one root-backed ProfileRepo with raw/typed read views and explicit reconcile/adopt/materialize methods. Private raw/path/merge/noop/factory helpers are fused into that authority; real two-copy and byte-preservation tests exercise them.",
@@ -10170,7 +10290,10 @@
       "native_test_ids": [
         "dual_store_derivation_preserves_viewport_credentials_and_unchanged_bytes",
         "public_divergence_reports_all_ordered_fields_without_mutation",
-        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift"
+        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift",
+        "public_divergence_reports_all_ordered_fields_without_mutation",
+        "two_store_convergence::the_same_secret_encrypted_twice_is_not_a_divergence",
+        "two_store_convergence::a_locked_vault_keeps_both_ciphertexts_exactly"
       ],
       "evidence_bundle": "repo-reconcile",
       "replacement_reason": "The two Python store/repository objects are one root-backed ProfileRepo with raw/typed read views and explicit reconcile/adopt/materialize methods. Private raw/path/merge/noop/factory helpers are fused into that authority; real two-copy and byte-preservation tests exercise them.",
@@ -10229,7 +10352,10 @@
       "native_test_ids": [
         "dual_store_derivation_preserves_viewport_credentials_and_unchanged_bytes",
         "public_divergence_reports_all_ordered_fields_without_mutation",
-        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift"
+        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift",
+        "public_divergence_reports_all_ordered_fields_without_mutation",
+        "two_store_convergence::the_same_secret_encrypted_twice_is_not_a_divergence",
+        "two_store_convergence::a_locked_vault_keeps_both_ciphertexts_exactly"
       ],
       "evidence_bundle": "repo-reconcile",
       "replacement_reason": "The two Python store/repository objects are one root-backed ProfileRepo with raw/typed read views and explicit reconcile/adopt/materialize methods. Private raw/path/merge/noop/factory helpers are fused into that authority; real two-copy and byte-preservation tests exercise them.",
@@ -10288,7 +10414,10 @@
       "native_test_ids": [
         "dual_store_derivation_preserves_viewport_credentials_and_unchanged_bytes",
         "public_divergence_reports_all_ordered_fields_without_mutation",
-        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift"
+        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift",
+        "public_divergence_reports_all_ordered_fields_without_mutation",
+        "two_store_convergence::the_same_secret_encrypted_twice_is_not_a_divergence",
+        "two_store_convergence::a_locked_vault_keeps_both_ciphertexts_exactly"
       ],
       "evidence_bundle": "repo-reconcile",
       "replacement_reason": "The two Python store/repository objects are one root-backed ProfileRepo with raw/typed read views and explicit reconcile/adopt/materialize methods. Private raw/path/merge/noop/factory helpers are fused into that authority; real two-copy and byte-preservation tests exercise them.",
@@ -10593,7 +10722,10 @@
       "native_test_ids": [
         "dual_store_derivation_preserves_viewport_credentials_and_unchanged_bytes",
         "public_divergence_reports_all_ordered_fields_without_mutation",
-        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift"
+        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift",
+        "public_divergence_reports_all_ordered_fields_without_mutation",
+        "two_store_convergence::the_same_secret_encrypted_twice_is_not_a_divergence",
+        "two_store_convergence::a_locked_vault_keeps_both_ciphertexts_exactly"
       ],
       "evidence_bundle": "repo-reconcile",
       "replacement_reason": "The two Python store/repository objects are one root-backed ProfileRepo with raw/typed read views and explicit reconcile/adopt/materialize methods. Private raw/path/merge/noop/factory helpers are fused into that authority; real two-copy and byte-preservation tests exercise them.",
@@ -10632,15 +10764,44 @@
           "symbols": [
             "ProfileRepo::save_many"
           ]
+        },
+        {
+          "path": "engine-rust/src/vault/policy.rs",
+          "symbols": [
+            "SecretWriter",
+            "SecretWriter::new",
+            "SecretWriter::state",
+            "SecretWriter::seal"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/dashboard.rs",
+          "symbols": [
+            "DashboardStore::prepare"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/pool.rs",
+          "symbols": [
+            "ProxyPool::save"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/repo_write.rs",
+          "symbols": [
+            "ProfileRepo::records"
+          ]
         }
       ],
       "source_test_ids": [
         "tests/test_locked_cli_and_vault.py::test_a_withheld_value_preserves_the_secret_and_an_empty_one_clears",
         "tests/test_repo_secrets.py::test_a_locked_password_replacement_is_refused_and_changes_nothing",
-        "tests/test_proxy_removal_intent.py::test_an_unrelated_edit_over_a_divergence_is_still_refused"
+        "tests/test_proxy_removal_intent.py::test_an_unrelated_edit_over_a_divergence_is_still_refused",
+        "tests/test_vault.py::test_saving_a_secret_while_locked_is_refused"
       ],
       "native_test_ids": [
-        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift"
+        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift",
+        "vault_cases::saving_a_secret_while_locked_is_refused"
       ],
       "evidence_bundle": "vault-secret-policy",
       "replacement_reason": "Four-way proxy intent and authenticated secret comparison are shared repository/vault policies, preserving explicit removal/clear and withholding rather than guessing from null/empty data.",
@@ -10679,15 +10840,44 @@
           "symbols": [
             "ProfileRepo::save_many"
           ]
+        },
+        {
+          "path": "engine-rust/src/vault/policy.rs",
+          "symbols": [
+            "SecretWriter",
+            "SecretWriter::new",
+            "SecretWriter::state",
+            "SecretWriter::seal"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/dashboard.rs",
+          "symbols": [
+            "DashboardStore::prepare"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/pool.rs",
+          "symbols": [
+            "ProxyPool::save"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/repo_write.rs",
+          "symbols": [
+            "ProfileRepo::records"
+          ]
         }
       ],
       "source_test_ids": [
         "tests/test_locked_cli_and_vault.py::test_a_withheld_value_preserves_the_secret_and_an_empty_one_clears",
         "tests/test_repo_secrets.py::test_a_locked_password_replacement_is_refused_and_changes_nothing",
-        "tests/test_proxy_removal_intent.py::test_an_unrelated_edit_over_a_divergence_is_still_refused"
+        "tests/test_proxy_removal_intent.py::test_an_unrelated_edit_over_a_divergence_is_still_refused",
+        "tests/test_vault.py::test_saving_a_secret_while_locked_is_refused"
       ],
       "native_test_ids": [
-        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift"
+        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift",
+        "vault_cases::saving_a_secret_while_locked_is_refused"
       ],
       "evidence_bundle": "vault-secret-policy",
       "replacement_reason": "Four-way proxy intent and authenticated secret comparison are shared repository/vault policies, preserving explicit removal/clear and withholding rather than guessing from null/empty data.",
@@ -10726,15 +10916,44 @@
           "symbols": [
             "ProfileRepo::save_many"
           ]
+        },
+        {
+          "path": "engine-rust/src/vault/policy.rs",
+          "symbols": [
+            "SecretWriter",
+            "SecretWriter::new",
+            "SecretWriter::state",
+            "SecretWriter::seal"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/dashboard.rs",
+          "symbols": [
+            "DashboardStore::prepare"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/pool.rs",
+          "symbols": [
+            "ProxyPool::save"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/repo_write.rs",
+          "symbols": [
+            "ProfileRepo::records"
+          ]
         }
       ],
       "source_test_ids": [
         "tests/test_locked_cli_and_vault.py::test_a_withheld_value_preserves_the_secret_and_an_empty_one_clears",
         "tests/test_repo_secrets.py::test_a_locked_password_replacement_is_refused_and_changes_nothing",
-        "tests/test_proxy_removal_intent.py::test_an_unrelated_edit_over_a_divergence_is_still_refused"
+        "tests/test_proxy_removal_intent.py::test_an_unrelated_edit_over_a_divergence_is_still_refused",
+        "tests/test_vault.py::test_saving_a_secret_while_locked_is_refused"
       ],
       "native_test_ids": [
-        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift"
+        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift",
+        "vault_cases::saving_a_secret_while_locked_is_refused"
       ],
       "evidence_bundle": "vault-secret-policy",
       "replacement_reason": "Four-way proxy intent and authenticated secret comparison are shared repository/vault policies, preserving explicit removal/clear and withholding rather than guessing from null/empty data.",
@@ -10773,15 +10992,44 @@
           "symbols": [
             "ProfileRepo::save_many"
           ]
+        },
+        {
+          "path": "engine-rust/src/vault/policy.rs",
+          "symbols": [
+            "SecretWriter",
+            "SecretWriter::new",
+            "SecretWriter::state",
+            "SecretWriter::seal"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/dashboard.rs",
+          "symbols": [
+            "DashboardStore::prepare"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/pool.rs",
+          "symbols": [
+            "ProxyPool::save"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/repo_write.rs",
+          "symbols": [
+            "ProfileRepo::records"
+          ]
         }
       ],
       "source_test_ids": [
         "tests/test_locked_cli_and_vault.py::test_a_withheld_value_preserves_the_secret_and_an_empty_one_clears",
         "tests/test_repo_secrets.py::test_a_locked_password_replacement_is_refused_and_changes_nothing",
-        "tests/test_proxy_removal_intent.py::test_an_unrelated_edit_over_a_divergence_is_still_refused"
+        "tests/test_proxy_removal_intent.py::test_an_unrelated_edit_over_a_divergence_is_still_refused",
+        "tests/test_vault.py::test_saving_a_secret_while_locked_is_refused"
       ],
       "native_test_ids": [
-        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift"
+        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift",
+        "vault_cases::saving_a_secret_while_locked_is_refused"
       ],
       "evidence_bundle": "vault-secret-policy",
       "replacement_reason": "Four-way proxy intent and authenticated secret comparison are shared repository/vault policies, preserving explicit removal/clear and withholding rather than guessing from null/empty data.",
@@ -10820,15 +11068,44 @@
           "symbols": [
             "ProfileRepo::save_many"
           ]
+        },
+        {
+          "path": "engine-rust/src/vault/policy.rs",
+          "symbols": [
+            "SecretWriter",
+            "SecretWriter::new",
+            "SecretWriter::state",
+            "SecretWriter::seal"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/dashboard.rs",
+          "symbols": [
+            "DashboardStore::prepare"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/pool.rs",
+          "symbols": [
+            "ProxyPool::save"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/repo_write.rs",
+          "symbols": [
+            "ProfileRepo::records"
+          ]
         }
       ],
       "source_test_ids": [
         "tests/test_locked_cli_and_vault.py::test_a_withheld_value_preserves_the_secret_and_an_empty_one_clears",
         "tests/test_repo_secrets.py::test_a_locked_password_replacement_is_refused_and_changes_nothing",
-        "tests/test_proxy_removal_intent.py::test_an_unrelated_edit_over_a_divergence_is_still_refused"
+        "tests/test_proxy_removal_intent.py::test_an_unrelated_edit_over_a_divergence_is_still_refused",
+        "tests/test_vault.py::test_saving_a_secret_while_locked_is_refused"
       ],
       "native_test_ids": [
-        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift"
+        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift",
+        "vault_cases::saving_a_secret_while_locked_is_refused"
       ],
       "evidence_bundle": "vault-secret-policy",
       "replacement_reason": "Four-way proxy intent and authenticated secret comparison are shared repository/vault policies, preserving explicit removal/clear and withholding rather than guessing from null/empty data.",
@@ -10867,15 +11144,44 @@
           "symbols": [
             "ProfileRepo::save_many"
           ]
+        },
+        {
+          "path": "engine-rust/src/vault/policy.rs",
+          "symbols": [
+            "SecretWriter",
+            "SecretWriter::new",
+            "SecretWriter::state",
+            "SecretWriter::seal"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/dashboard.rs",
+          "symbols": [
+            "DashboardStore::prepare"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/pool.rs",
+          "symbols": [
+            "ProxyPool::save"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/repo_write.rs",
+          "symbols": [
+            "ProfileRepo::records"
+          ]
         }
       ],
       "source_test_ids": [
         "tests/test_locked_cli_and_vault.py::test_a_withheld_value_preserves_the_secret_and_an_empty_one_clears",
         "tests/test_repo_secrets.py::test_a_locked_password_replacement_is_refused_and_changes_nothing",
-        "tests/test_proxy_removal_intent.py::test_an_unrelated_edit_over_a_divergence_is_still_refused"
+        "tests/test_proxy_removal_intent.py::test_an_unrelated_edit_over_a_divergence_is_still_refused",
+        "tests/test_vault.py::test_saving_a_secret_while_locked_is_refused"
       ],
       "native_test_ids": [
-        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift"
+        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift",
+        "vault_cases::saving_a_secret_while_locked_is_refused"
       ],
       "evidence_bundle": "vault-secret-policy",
       "replacement_reason": "Four-way proxy intent and authenticated secret comparison are shared repository/vault policies, preserving explicit removal/clear and withholding rather than guessing from null/empty data.",
@@ -10934,7 +11240,10 @@
       "native_test_ids": [
         "dual_store_derivation_preserves_viewport_credentials_and_unchanged_bytes",
         "public_divergence_reports_all_ordered_fields_without_mutation",
-        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift"
+        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift",
+        "public_divergence_reports_all_ordered_fields_without_mutation",
+        "two_store_convergence::the_same_secret_encrypted_twice_is_not_a_divergence",
+        "two_store_convergence::a_locked_vault_keeps_both_ciphertexts_exactly"
       ],
       "evidence_bundle": "repo-reconcile",
       "replacement_reason": "The two Python store/repository objects are one root-backed ProfileRepo with raw/typed read views and explicit reconcile/adopt/materialize methods. Private raw/path/merge/noop/factory helpers are fused into that authority; real two-copy and byte-preservation tests exercise them.",
@@ -10993,7 +11302,10 @@
       "native_test_ids": [
         "dual_store_derivation_preserves_viewport_credentials_and_unchanged_bytes",
         "public_divergence_reports_all_ordered_fields_without_mutation",
-        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift"
+        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift",
+        "public_divergence_reports_all_ordered_fields_without_mutation",
+        "two_store_convergence::the_same_secret_encrypted_twice_is_not_a_divergence",
+        "two_store_convergence::a_locked_vault_keeps_both_ciphertexts_exactly"
       ],
       "evidence_bundle": "repo-reconcile",
       "replacement_reason": "The two Python store/repository objects are one root-backed ProfileRepo with raw/typed read views and explicit reconcile/adopt/materialize methods. Private raw/path/merge/noop/factory helpers are fused into that authority; real two-copy and byte-preservation tests exercise them.",
@@ -11052,7 +11364,10 @@
       "native_test_ids": [
         "dual_store_derivation_preserves_viewport_credentials_and_unchanged_bytes",
         "public_divergence_reports_all_ordered_fields_without_mutation",
-        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift"
+        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift",
+        "public_divergence_reports_all_ordered_fields_without_mutation",
+        "two_store_convergence::the_same_secret_encrypted_twice_is_not_a_divergence",
+        "two_store_convergence::a_locked_vault_keeps_both_ciphertexts_exactly"
       ],
       "evidence_bundle": "repo-reconcile",
       "replacement_reason": "The two Python store/repository objects are one root-backed ProfileRepo with raw/typed read views and explicit reconcile/adopt/materialize methods. Private raw/path/merge/noop/factory helpers are fused into that authority; real two-copy and byte-preservation tests exercise them.",
@@ -11111,7 +11426,10 @@
       "native_test_ids": [
         "dual_store_derivation_preserves_viewport_credentials_and_unchanged_bytes",
         "public_divergence_reports_all_ordered_fields_without_mutation",
-        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift"
+        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift",
+        "public_divergence_reports_all_ordered_fields_without_mutation",
+        "two_store_convergence::the_same_secret_encrypted_twice_is_not_a_divergence",
+        "two_store_convergence::a_locked_vault_keeps_both_ciphertexts_exactly"
       ],
       "evidence_bundle": "repo-reconcile",
       "replacement_reason": "The two Python store/repository objects are one root-backed ProfileRepo with raw/typed read views and explicit reconcile/adopt/materialize methods. Private raw/path/merge/noop/factory helpers are fused into that authority; real two-copy and byte-preservation tests exercise them.",
@@ -11170,7 +11488,10 @@
       "native_test_ids": [
         "dual_store_derivation_preserves_viewport_credentials_and_unchanged_bytes",
         "public_divergence_reports_all_ordered_fields_without_mutation",
-        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift"
+        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift",
+        "public_divergence_reports_all_ordered_fields_without_mutation",
+        "two_store_convergence::the_same_secret_encrypted_twice_is_not_a_divergence",
+        "two_store_convergence::a_locked_vault_keeps_both_ciphertexts_exactly"
       ],
       "evidence_bundle": "repo-reconcile",
       "replacement_reason": "The two Python store/repository objects are one root-backed ProfileRepo with raw/typed read views and explicit reconcile/adopt/materialize methods. Private raw/path/merge/noop/factory helpers are fused into that authority; real two-copy and byte-preservation tests exercise them.",
@@ -11297,15 +11618,44 @@
           "symbols": [
             "ProfileRepo::save_many"
           ]
+        },
+        {
+          "path": "engine-rust/src/vault/policy.rs",
+          "symbols": [
+            "SecretWriter",
+            "SecretWriter::new",
+            "SecretWriter::state",
+            "SecretWriter::seal"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/dashboard.rs",
+          "symbols": [
+            "DashboardStore::prepare"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/pool.rs",
+          "symbols": [
+            "ProxyPool::save"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/repo_write.rs",
+          "symbols": [
+            "ProfileRepo::records"
+          ]
         }
       ],
       "source_test_ids": [
         "tests/test_locked_cli_and_vault.py::test_a_withheld_value_preserves_the_secret_and_an_empty_one_clears",
         "tests/test_repo_secrets.py::test_a_locked_password_replacement_is_refused_and_changes_nothing",
-        "tests/test_proxy_removal_intent.py::test_an_unrelated_edit_over_a_divergence_is_still_refused"
+        "tests/test_proxy_removal_intent.py::test_an_unrelated_edit_over_a_divergence_is_still_refused",
+        "tests/test_vault.py::test_saving_a_secret_while_locked_is_refused"
       ],
       "native_test_ids": [
-        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift"
+        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift",
+        "vault_cases::saving_a_secret_while_locked_is_refused"
       ],
       "evidence_bundle": "vault-secret-policy",
       "replacement_reason": "Four-way proxy intent and authenticated secret comparison are shared repository/vault policies, preserving explicit removal/clear and withholding rather than guessing from null/empty data.",
@@ -11425,7 +11775,10 @@
       "native_test_ids": [
         "dual_store_derivation_preserves_viewport_credentials_and_unchanged_bytes",
         "public_divergence_reports_all_ordered_fields_without_mutation",
-        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift"
+        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift",
+        "public_divergence_reports_all_ordered_fields_without_mutation",
+        "two_store_convergence::the_same_secret_encrypted_twice_is_not_a_divergence",
+        "two_store_convergence::a_locked_vault_keeps_both_ciphertexts_exactly"
       ],
       "evidence_bundle": "repo-reconcile",
       "replacement_reason": "The two Python store/repository objects are one root-backed ProfileRepo with raw/typed read views and explicit reconcile/adopt/materialize methods. Private raw/path/merge/noop/factory helpers are fused into that authority; real two-copy and byte-preservation tests exercise them.",
@@ -11527,7 +11880,10 @@
       "native_test_ids": [
         "dual_store_derivation_preserves_viewport_credentials_and_unchanged_bytes",
         "public_divergence_reports_all_ordered_fields_without_mutation",
-        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift"
+        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift",
+        "public_divergence_reports_all_ordered_fields_without_mutation",
+        "two_store_convergence::the_same_secret_encrypted_twice_is_not_a_divergence",
+        "two_store_convergence::a_locked_vault_keeps_both_ciphertexts_exactly"
       ],
       "evidence_bundle": "repo-reconcile",
       "replacement_reason": "The two Python store/repository objects are one root-backed ProfileRepo with raw/typed read views and explicit reconcile/adopt/materialize methods. Private raw/path/merge/noop/factory helpers are fused into that authority; real two-copy and byte-preservation tests exercise them.",
@@ -11586,7 +11942,10 @@
       "native_test_ids": [
         "dual_store_derivation_preserves_viewport_credentials_and_unchanged_bytes",
         "public_divergence_reports_all_ordered_fields_without_mutation",
-        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift"
+        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift",
+        "public_divergence_reports_all_ordered_fields_without_mutation",
+        "two_store_convergence::the_same_secret_encrypted_twice_is_not_a_divergence",
+        "two_store_convergence::a_locked_vault_keeps_both_ciphertexts_exactly"
       ],
       "evidence_bundle": "repo-reconcile",
       "replacement_reason": "The two Python store/repository objects are one root-backed ProfileRepo with raw/typed read views and explicit reconcile/adopt/materialize methods. Private raw/path/merge/noop/factory helpers are fused into that authority; real two-copy and byte-preservation tests exercise them.",
@@ -11817,7 +12176,10 @@
       "native_test_ids": [
         "dual_store_derivation_preserves_viewport_credentials_and_unchanged_bytes",
         "public_divergence_reports_all_ordered_fields_without_mutation",
-        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift"
+        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift",
+        "public_divergence_reports_all_ordered_fields_without_mutation",
+        "two_store_convergence::the_same_secret_encrypted_twice_is_not_a_divergence",
+        "two_store_convergence::a_locked_vault_keeps_both_ciphertexts_exactly"
       ],
       "evidence_bundle": "repo-reconcile",
       "replacement_reason": "The two Python store/repository objects are one root-backed ProfileRepo with raw/typed read views and explicit reconcile/adopt/materialize methods. Private raw/path/merge/noop/factory helpers are fused into that authority; real two-copy and byte-preservation tests exercise them.",
@@ -12032,7 +12394,10 @@
       "native_test_ids": [
         "dual_store_derivation_preserves_viewport_credentials_and_unchanged_bytes",
         "public_divergence_reports_all_ordered_fields_without_mutation",
-        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift"
+        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift",
+        "public_divergence_reports_all_ordered_fields_without_mutation",
+        "two_store_convergence::the_same_secret_encrypted_twice_is_not_a_divergence",
+        "two_store_convergence::a_locked_vault_keeps_both_ciphertexts_exactly"
       ],
       "evidence_bundle": "repo-reconcile",
       "replacement_reason": "ProfileStore storage/read/repair behavior is fused into ProfileRepo::open/new and its typed/raw union reads. Real roots, paths, malformed bytes, ambiguity and cross-store repair remain observed.",
@@ -12175,7 +12540,10 @@
       "native_test_ids": [
         "dual_store_derivation_preserves_viewport_credentials_and_unchanged_bytes",
         "public_divergence_reports_all_ordered_fields_without_mutation",
-        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift"
+        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift",
+        "public_divergence_reports_all_ordered_fields_without_mutation",
+        "two_store_convergence::the_same_secret_encrypted_twice_is_not_a_divergence",
+        "two_store_convergence::a_locked_vault_keeps_both_ciphertexts_exactly"
       ],
       "evidence_bundle": "repo-reconcile",
       "replacement_reason": "ProfileStore storage/read/repair behavior is fused into ProfileRepo::open/new and its typed/raw union reads. Real roots, paths, malformed bytes, ambiguity and cross-store repair remain observed.",
@@ -12214,15 +12582,44 @@
           "symbols": [
             "ProfileRepo::save_many"
           ]
+        },
+        {
+          "path": "engine-rust/src/vault/policy.rs",
+          "symbols": [
+            "SecretWriter",
+            "SecretWriter::new",
+            "SecretWriter::state",
+            "SecretWriter::seal"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/dashboard.rs",
+          "symbols": [
+            "DashboardStore::prepare"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/pool.rs",
+          "symbols": [
+            "ProxyPool::save"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/repo_write.rs",
+          "symbols": [
+            "ProfileRepo::records"
+          ]
         }
       ],
       "source_test_ids": [
         "tests/test_locked_cli_and_vault.py::test_a_withheld_value_preserves_the_secret_and_an_empty_one_clears",
         "tests/test_repo_secrets.py::test_a_locked_password_replacement_is_refused_and_changes_nothing",
-        "tests/test_proxy_removal_intent.py::test_an_unrelated_edit_over_a_divergence_is_still_refused"
+        "tests/test_proxy_removal_intent.py::test_an_unrelated_edit_over_a_divergence_is_still_refused",
+        "tests/test_vault.py::test_saving_a_secret_while_locked_is_refused"
       ],
       "native_test_ids": [
-        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift"
+        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift",
+        "vault_cases::saving_a_secret_while_locked_is_refused"
       ],
       "evidence_bundle": "vault-secret-policy",
       "replacement_reason": "Store-level descriptor/authentication/secret helpers consume the shared vault policy, preserving withheld ciphertext and nonsecret writes while locked across both copies.",
@@ -12261,15 +12658,44 @@
           "symbols": [
             "ProfileRepo::save_many"
           ]
+        },
+        {
+          "path": "engine-rust/src/vault/policy.rs",
+          "symbols": [
+            "SecretWriter",
+            "SecretWriter::new",
+            "SecretWriter::state",
+            "SecretWriter::seal"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/dashboard.rs",
+          "symbols": [
+            "DashboardStore::prepare"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/pool.rs",
+          "symbols": [
+            "ProxyPool::save"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/repo_write.rs",
+          "symbols": [
+            "ProfileRepo::records"
+          ]
         }
       ],
       "source_test_ids": [
         "tests/test_locked_cli_and_vault.py::test_a_withheld_value_preserves_the_secret_and_an_empty_one_clears",
         "tests/test_repo_secrets.py::test_a_locked_password_replacement_is_refused_and_changes_nothing",
-        "tests/test_proxy_removal_intent.py::test_an_unrelated_edit_over_a_divergence_is_still_refused"
+        "tests/test_proxy_removal_intent.py::test_an_unrelated_edit_over_a_divergence_is_still_refused",
+        "tests/test_vault.py::test_saving_a_secret_while_locked_is_refused"
       ],
       "native_test_ids": [
-        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift"
+        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift",
+        "vault_cases::saving_a_secret_while_locked_is_refused"
       ],
       "evidence_bundle": "vault-secret-policy",
       "replacement_reason": "Store-level descriptor/authentication/secret helpers consume the shared vault policy, preserving withheld ciphertext and nonsecret writes while locked across both copies.",
@@ -12308,15 +12734,44 @@
           "symbols": [
             "ProfileRepo::save_many"
           ]
+        },
+        {
+          "path": "engine-rust/src/vault/policy.rs",
+          "symbols": [
+            "SecretWriter",
+            "SecretWriter::new",
+            "SecretWriter::state",
+            "SecretWriter::seal"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/dashboard.rs",
+          "symbols": [
+            "DashboardStore::prepare"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/pool.rs",
+          "symbols": [
+            "ProxyPool::save"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/repo_write.rs",
+          "symbols": [
+            "ProfileRepo::records"
+          ]
         }
       ],
       "source_test_ids": [
         "tests/test_locked_cli_and_vault.py::test_a_withheld_value_preserves_the_secret_and_an_empty_one_clears",
         "tests/test_repo_secrets.py::test_a_locked_password_replacement_is_refused_and_changes_nothing",
-        "tests/test_proxy_removal_intent.py::test_an_unrelated_edit_over_a_divergence_is_still_refused"
+        "tests/test_proxy_removal_intent.py::test_an_unrelated_edit_over_a_divergence_is_still_refused",
+        "tests/test_vault.py::test_saving_a_secret_while_locked_is_refused"
       ],
       "native_test_ids": [
-        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift"
+        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift",
+        "vault_cases::saving_a_secret_while_locked_is_refused"
       ],
       "evidence_bundle": "vault-secret-policy",
       "replacement_reason": "Store-level descriptor/authentication/secret helpers consume the shared vault policy, preserving withheld ciphertext and nonsecret writes while locked across both copies.",
@@ -12355,15 +12810,44 @@
           "symbols": [
             "ProfileRepo::save_many"
           ]
+        },
+        {
+          "path": "engine-rust/src/vault/policy.rs",
+          "symbols": [
+            "SecretWriter",
+            "SecretWriter::new",
+            "SecretWriter::state",
+            "SecretWriter::seal"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/dashboard.rs",
+          "symbols": [
+            "DashboardStore::prepare"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/pool.rs",
+          "symbols": [
+            "ProxyPool::save"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/repo_write.rs",
+          "symbols": [
+            "ProfileRepo::records"
+          ]
         }
       ],
       "source_test_ids": [
         "tests/test_locked_cli_and_vault.py::test_a_withheld_value_preserves_the_secret_and_an_empty_one_clears",
         "tests/test_repo_secrets.py::test_a_locked_password_replacement_is_refused_and_changes_nothing",
-        "tests/test_proxy_removal_intent.py::test_an_unrelated_edit_over_a_divergence_is_still_refused"
+        "tests/test_proxy_removal_intent.py::test_an_unrelated_edit_over_a_divergence_is_still_refused",
+        "tests/test_vault.py::test_saving_a_secret_while_locked_is_refused"
       ],
       "native_test_ids": [
-        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift"
+        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift",
+        "vault_cases::saving_a_secret_while_locked_is_refused"
       ],
       "evidence_bundle": "vault-secret-policy",
       "replacement_reason": "Store-level descriptor/authentication/secret helpers consume the shared vault policy, preserving withheld ciphertext and nonsecret writes while locked across both copies.",
@@ -12420,7 +12904,8 @@
       ],
       "native_test_ids": [
         "public_enable_preserves_instance_state_and_every_secret_site",
-        "public_password_change_updates_only_the_successful_store_instance"
+        "public_password_change_updates_only_the_successful_store_instance",
+        "vault_rotation::rotation_moves_every_secret_and_retires_the_old_password"
       ],
       "evidence_bundle": "vault-migrate",
       "replacement_reason": "Mutable public store password state changes only after successful native transaction/recovery; enable/change/resume retains all secret sites and no half-committed config generation.",
@@ -12477,7 +12962,8 @@
       ],
       "native_test_ids": [
         "public_enable_preserves_instance_state_and_every_secret_site",
-        "public_password_change_updates_only_the_successful_store_instance"
+        "public_password_change_updates_only_the_successful_store_instance",
+        "vault_rotation::rotation_moves_every_secret_and_retires_the_old_password"
       ],
       "evidence_bundle": "vault-migrate",
       "replacement_reason": "Mutable public store password state changes only after successful native transaction/recovery; enable/change/resume retains all secret sites and no half-committed config generation.",
@@ -12534,7 +13020,8 @@
       ],
       "native_test_ids": [
         "public_enable_preserves_instance_state_and_every_secret_site",
-        "public_password_change_updates_only_the_successful_store_instance"
+        "public_password_change_updates_only_the_successful_store_instance",
+        "vault_rotation::rotation_moves_every_secret_and_retires_the_old_password"
       ],
       "evidence_bundle": "vault-migrate",
       "replacement_reason": "Mutable public store password state changes only after successful native transaction/recovery; enable/change/resume retains all secret sites and no half-committed config generation.",
@@ -12573,15 +13060,44 @@
           "symbols": [
             "ProfileRepo::save_many"
           ]
+        },
+        {
+          "path": "engine-rust/src/vault/policy.rs",
+          "symbols": [
+            "SecretWriter",
+            "SecretWriter::new",
+            "SecretWriter::state",
+            "SecretWriter::seal"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/dashboard.rs",
+          "symbols": [
+            "DashboardStore::prepare"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/pool.rs",
+          "symbols": [
+            "ProxyPool::save"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/repo_write.rs",
+          "symbols": [
+            "ProfileRepo::records"
+          ]
         }
       ],
       "source_test_ids": [
         "tests/test_locked_cli_and_vault.py::test_a_withheld_value_preserves_the_secret_and_an_empty_one_clears",
         "tests/test_repo_secrets.py::test_a_locked_password_replacement_is_refused_and_changes_nothing",
-        "tests/test_proxy_removal_intent.py::test_an_unrelated_edit_over_a_divergence_is_still_refused"
+        "tests/test_proxy_removal_intent.py::test_an_unrelated_edit_over_a_divergence_is_still_refused",
+        "tests/test_vault.py::test_saving_a_secret_while_locked_is_refused"
       ],
       "native_test_ids": [
-        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift"
+        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift",
+        "vault_cases::saving_a_secret_while_locked_is_refused"
       ],
       "evidence_bundle": "vault-secret-policy",
       "replacement_reason": "Store-level descriptor/authentication/secret helpers consume the shared vault policy, preserving withheld ciphertext and nonsecret writes while locked across both copies.",
@@ -12620,15 +13136,44 @@
           "symbols": [
             "ProfileRepo::save_many"
           ]
+        },
+        {
+          "path": "engine-rust/src/vault/policy.rs",
+          "symbols": [
+            "SecretWriter",
+            "SecretWriter::new",
+            "SecretWriter::state",
+            "SecretWriter::seal"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/dashboard.rs",
+          "symbols": [
+            "DashboardStore::prepare"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/pool.rs",
+          "symbols": [
+            "ProxyPool::save"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/repo_write.rs",
+          "symbols": [
+            "ProfileRepo::records"
+          ]
         }
       ],
       "source_test_ids": [
         "tests/test_locked_cli_and_vault.py::test_a_withheld_value_preserves_the_secret_and_an_empty_one_clears",
         "tests/test_repo_secrets.py::test_a_locked_password_replacement_is_refused_and_changes_nothing",
-        "tests/test_proxy_removal_intent.py::test_an_unrelated_edit_over_a_divergence_is_still_refused"
+        "tests/test_proxy_removal_intent.py::test_an_unrelated_edit_over_a_divergence_is_still_refused",
+        "tests/test_vault.py::test_saving_a_secret_while_locked_is_refused"
       ],
       "native_test_ids": [
-        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift"
+        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift",
+        "vault_cases::saving_a_secret_while_locked_is_refused"
       ],
       "evidence_bundle": "vault-secret-policy",
       "replacement_reason": "Store-level descriptor/authentication/secret helpers consume the shared vault policy, preserving withheld ciphertext and nonsecret writes while locked across both copies.",
@@ -12687,7 +13232,10 @@
       "native_test_ids": [
         "dual_store_derivation_preserves_viewport_credentials_and_unchanged_bytes",
         "public_divergence_reports_all_ordered_fields_without_mutation",
-        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift"
+        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift",
+        "public_divergence_reports_all_ordered_fields_without_mutation",
+        "two_store_convergence::the_same_secret_encrypted_twice_is_not_a_divergence",
+        "two_store_convergence::a_locked_vault_keeps_both_ciphertexts_exactly"
       ],
       "evidence_bundle": "repo-reconcile",
       "replacement_reason": "ProfileStore storage/read/repair behavior is fused into ProfileRepo::open/new and its typed/raw union reads. Real roots, paths, malformed bytes, ambiguity and cross-store repair remain observed.",
@@ -12852,15 +13400,44 @@
           "symbols": [
             "ProfileRepo::save_many"
           ]
+        },
+        {
+          "path": "engine-rust/src/vault/policy.rs",
+          "symbols": [
+            "SecretWriter",
+            "SecretWriter::new",
+            "SecretWriter::state",
+            "SecretWriter::seal"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/dashboard.rs",
+          "symbols": [
+            "DashboardStore::prepare"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/pool.rs",
+          "symbols": [
+            "ProxyPool::save"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/repo_write.rs",
+          "symbols": [
+            "ProfileRepo::records"
+          ]
         }
       ],
       "source_test_ids": [
         "tests/test_locked_cli_and_vault.py::test_a_withheld_value_preserves_the_secret_and_an_empty_one_clears",
         "tests/test_repo_secrets.py::test_a_locked_password_replacement_is_refused_and_changes_nothing",
-        "tests/test_proxy_removal_intent.py::test_an_unrelated_edit_over_a_divergence_is_still_refused"
+        "tests/test_proxy_removal_intent.py::test_an_unrelated_edit_over_a_divergence_is_still_refused",
+        "tests/test_vault.py::test_saving_a_secret_while_locked_is_refused"
       ],
       "native_test_ids": [
-        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift"
+        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift",
+        "vault_cases::saving_a_secret_while_locked_is_refused"
       ],
       "evidence_bundle": "vault-secret-policy",
       "replacement_reason": "Store-level descriptor/authentication/secret helpers consume the shared vault policy, preserving withheld ciphertext and nonsecret writes while locked across both copies.",
@@ -12919,7 +13496,10 @@
       "native_test_ids": [
         "dual_store_derivation_preserves_viewport_credentials_and_unchanged_bytes",
         "public_divergence_reports_all_ordered_fields_without_mutation",
-        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift"
+        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift",
+        "public_divergence_reports_all_ordered_fields_without_mutation",
+        "two_store_convergence::the_same_secret_encrypted_twice_is_not_a_divergence",
+        "two_store_convergence::a_locked_vault_keeps_both_ciphertexts_exactly"
       ],
       "evidence_bundle": "repo-reconcile",
       "replacement_reason": "ProfileStore storage/read/repair behavior is fused into ProfileRepo::open/new and its typed/raw union reads. Real roots, paths, malformed bytes, ambiguity and cross-store repair remain observed.",
@@ -12978,7 +13558,10 @@
       "native_test_ids": [
         "dual_store_derivation_preserves_viewport_credentials_and_unchanged_bytes",
         "public_divergence_reports_all_ordered_fields_without_mutation",
-        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift"
+        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift",
+        "public_divergence_reports_all_ordered_fields_without_mutation",
+        "two_store_convergence::the_same_secret_encrypted_twice_is_not_a_divergence",
+        "two_store_convergence::a_locked_vault_keeps_both_ciphertexts_exactly"
       ],
       "evidence_bundle": "repo-reconcile",
       "replacement_reason": "ProfileStore storage/read/repair behavior is fused into ProfileRepo::open/new and its typed/raw union reads. Real roots, paths, malformed bytes, ambiguity and cross-store repair remain observed.",
@@ -13037,7 +13620,10 @@
       "native_test_ids": [
         "dual_store_derivation_preserves_viewport_credentials_and_unchanged_bytes",
         "public_divergence_reports_all_ordered_fields_without_mutation",
-        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift"
+        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift",
+        "public_divergence_reports_all_ordered_fields_without_mutation",
+        "two_store_convergence::the_same_secret_encrypted_twice_is_not_a_divergence",
+        "two_store_convergence::a_locked_vault_keeps_both_ciphertexts_exactly"
       ],
       "evidence_bundle": "repo-reconcile",
       "replacement_reason": "ProfileStore storage/read/repair behavior is fused into ProfileRepo::open/new and its typed/raw union reads. Real roots, paths, malformed bytes, ambiguity and cross-store repair remain observed.",
@@ -13096,7 +13682,10 @@
       "native_test_ids": [
         "dual_store_derivation_preserves_viewport_credentials_and_unchanged_bytes",
         "public_divergence_reports_all_ordered_fields_without_mutation",
-        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift"
+        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift",
+        "public_divergence_reports_all_ordered_fields_without_mutation",
+        "two_store_convergence::the_same_secret_encrypted_twice_is_not_a_divergence",
+        "two_store_convergence::a_locked_vault_keeps_both_ciphertexts_exactly"
       ],
       "evidence_bundle": "repo-reconcile",
       "replacement_reason": "ProfileStore storage/read/repair behavior is fused into ProfileRepo::open/new and its typed/raw union reads. Real roots, paths, malformed bytes, ambiguity and cross-store repair remain observed.",
@@ -13155,7 +13744,10 @@
       "native_test_ids": [
         "dual_store_derivation_preserves_viewport_credentials_and_unchanged_bytes",
         "public_divergence_reports_all_ordered_fields_without_mutation",
-        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift"
+        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift",
+        "public_divergence_reports_all_ordered_fields_without_mutation",
+        "two_store_convergence::the_same_secret_encrypted_twice_is_not_a_divergence",
+        "two_store_convergence::a_locked_vault_keeps_both_ciphertexts_exactly"
       ],
       "evidence_bundle": "repo-reconcile",
       "replacement_reason": "ProfileStore storage/read/repair behavior is fused into ProfileRepo::open/new and its typed/raw union reads. Real roots, paths, malformed bytes, ambiguity and cross-store repair remain observed.",
@@ -13214,7 +13806,10 @@
       "native_test_ids": [
         "dual_store_derivation_preserves_viewport_credentials_and_unchanged_bytes",
         "public_divergence_reports_all_ordered_fields_without_mutation",
-        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift"
+        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift",
+        "public_divergence_reports_all_ordered_fields_without_mutation",
+        "two_store_convergence::the_same_secret_encrypted_twice_is_not_a_divergence",
+        "two_store_convergence::a_locked_vault_keeps_both_ciphertexts_exactly"
       ],
       "evidence_bundle": "repo-reconcile",
       "replacement_reason": "ProfileStore storage/read/repair behavior is fused into ProfileRepo::open/new and its typed/raw union reads. Real roots, paths, malformed bytes, ambiguity and cross-store repair remain observed.",
@@ -13273,7 +13868,10 @@
       "native_test_ids": [
         "dual_store_derivation_preserves_viewport_credentials_and_unchanged_bytes",
         "public_divergence_reports_all_ordered_fields_without_mutation",
-        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift"
+        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift",
+        "public_divergence_reports_all_ordered_fields_without_mutation",
+        "two_store_convergence::the_same_secret_encrypted_twice_is_not_a_divergence",
+        "two_store_convergence::a_locked_vault_keeps_both_ciphertexts_exactly"
       ],
       "evidence_bundle": "repo-reconcile",
       "replacement_reason": "ProfileStore storage/read/repair behavior is fused into ProfileRepo::open/new and its typed/raw union reads. Real roots, paths, malformed bytes, ambiguity and cross-store repair remain observed.",
@@ -13332,7 +13930,10 @@
       "native_test_ids": [
         "dual_store_derivation_preserves_viewport_credentials_and_unchanged_bytes",
         "public_divergence_reports_all_ordered_fields_without_mutation",
-        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift"
+        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift",
+        "public_divergence_reports_all_ordered_fields_without_mutation",
+        "two_store_convergence::the_same_secret_encrypted_twice_is_not_a_divergence",
+        "two_store_convergence::a_locked_vault_keeps_both_ciphertexts_exactly"
       ],
       "evidence_bundle": "repo-reconcile",
       "replacement_reason": "ProfileStore storage/read/repair behavior is fused into ProfileRepo::open/new and its typed/raw union reads. Real roots, paths, malformed bytes, ambiguity and cross-store repair remain observed.",
@@ -13651,15 +14252,44 @@
           "symbols": [
             "ProfileRepo::save_many"
           ]
+        },
+        {
+          "path": "engine-rust/src/vault/policy.rs",
+          "symbols": [
+            "SecretWriter",
+            "SecretWriter::new",
+            "SecretWriter::state",
+            "SecretWriter::seal"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/dashboard.rs",
+          "symbols": [
+            "DashboardStore::prepare"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/pool.rs",
+          "symbols": [
+            "ProxyPool::save"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/repo_write.rs",
+          "symbols": [
+            "ProfileRepo::records"
+          ]
         }
       ],
       "source_test_ids": [
         "tests/test_locked_cli_and_vault.py::test_a_withheld_value_preserves_the_secret_and_an_empty_one_clears",
         "tests/test_repo_secrets.py::test_a_locked_password_replacement_is_refused_and_changes_nothing",
-        "tests/test_proxy_removal_intent.py::test_an_unrelated_edit_over_a_divergence_is_still_refused"
+        "tests/test_proxy_removal_intent.py::test_an_unrelated_edit_over_a_divergence_is_still_refused",
+        "tests/test_vault.py::test_saving_a_secret_while_locked_is_refused"
       ],
       "native_test_ids": [
-        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift"
+        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift",
+        "vault_cases::saving_a_secret_while_locked_is_refused"
       ],
       "evidence_bundle": "vault-secret-policy",
       "replacement_reason": "Store-level descriptor/authentication/secret helpers consume the shared vault policy, preserving withheld ciphertext and nonsecret writes while locked across both copies.",
@@ -14033,7 +14663,8 @@
       ],
       "native_test_ids": [
         "public_enable_preserves_instance_state_and_every_secret_site",
-        "public_password_change_updates_only_the_successful_store_instance"
+        "public_password_change_updates_only_the_successful_store_instance",
+        "vault_rotation::rotation_moves_every_secret_and_retires_the_old_password"
       ],
       "evidence_bundle": "vault-migrate",
       "replacement_reason": "The native Migration owns Batch snapshots for secrets and externally written config; transaction::finish commits or performs typed rollback. Contextmanager/private class helpers are real owned transaction state, not silently deprecated capabilities.",
@@ -14090,7 +14721,8 @@
       ],
       "native_test_ids": [
         "public_enable_preserves_instance_state_and_every_secret_site",
-        "public_password_change_updates_only_the_successful_store_instance"
+        "public_password_change_updates_only_the_successful_store_instance",
+        "vault_rotation::rotation_moves_every_secret_and_retires_the_old_password"
       ],
       "evidence_bundle": "vault-migrate",
       "replacement_reason": "The native Migration owns Batch snapshots for secrets and externally written config; transaction::finish commits or performs typed rollback. Contextmanager/private class helpers are real owned transaction state, not silently deprecated capabilities.",
@@ -14147,7 +14779,8 @@
       ],
       "native_test_ids": [
         "public_enable_preserves_instance_state_and_every_secret_site",
-        "public_password_change_updates_only_the_successful_store_instance"
+        "public_password_change_updates_only_the_successful_store_instance",
+        "vault_rotation::rotation_moves_every_secret_and_retires_the_old_password"
       ],
       "evidence_bundle": "vault-migrate",
       "replacement_reason": "The native Migration owns Batch snapshots for secrets and externally written config; transaction::finish commits or performs typed rollback. Contextmanager/private class helpers are real owned transaction state, not silently deprecated capabilities.",
@@ -14204,7 +14837,8 @@
       ],
       "native_test_ids": [
         "public_enable_preserves_instance_state_and_every_secret_site",
-        "public_password_change_updates_only_the_successful_store_instance"
+        "public_password_change_updates_only_the_successful_store_instance",
+        "vault_rotation::rotation_moves_every_secret_and_retires_the_old_password"
       ],
       "evidence_bundle": "vault-migrate",
       "replacement_reason": "The native Migration owns Batch snapshots for secrets and externally written config; transaction::finish commits or performs typed rollback. Contextmanager/private class helpers are real owned transaction state, not silently deprecated capabilities.",
@@ -14261,7 +14895,8 @@
       ],
       "native_test_ids": [
         "public_enable_preserves_instance_state_and_every_secret_site",
-        "public_password_change_updates_only_the_successful_store_instance"
+        "public_password_change_updates_only_the_successful_store_instance",
+        "vault_rotation::rotation_moves_every_secret_and_retires_the_old_password"
       ],
       "evidence_bundle": "vault-migrate",
       "replacement_reason": "The native Migration owns Batch snapshots for secrets and externally written config; transaction::finish commits or performs typed rollback. Contextmanager/private class helpers are real owned transaction state, not silently deprecated capabilities.",
@@ -14318,7 +14953,8 @@
       ],
       "native_test_ids": [
         "public_enable_preserves_instance_state_and_every_secret_site",
-        "public_password_change_updates_only_the_successful_store_instance"
+        "public_password_change_updates_only_the_successful_store_instance",
+        "vault_rotation::rotation_moves_every_secret_and_retires_the_old_password"
       ],
       "evidence_bundle": "vault-migrate",
       "replacement_reason": "The native Migration owns Batch snapshots for secrets and externally written config; transaction::finish commits or performs typed rollback. Contextmanager/private class helpers are real owned transaction state, not silently deprecated capabilities.",
@@ -14357,15 +14993,44 @@
           "symbols": [
             "ProfileRepo::save_many"
           ]
+        },
+        {
+          "path": "engine-rust/src/vault/policy.rs",
+          "symbols": [
+            "SecretWriter",
+            "SecretWriter::new",
+            "SecretWriter::state",
+            "SecretWriter::seal"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/dashboard.rs",
+          "symbols": [
+            "DashboardStore::prepare"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/pool.rs",
+          "symbols": [
+            "ProxyPool::save"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/repo_write.rs",
+          "symbols": [
+            "ProfileRepo::records"
+          ]
         }
       ],
       "source_test_ids": [
         "tests/test_locked_cli_and_vault.py::test_a_withheld_value_preserves_the_secret_and_an_empty_one_clears",
         "tests/test_repo_secrets.py::test_a_locked_password_replacement_is_refused_and_changes_nothing",
-        "tests/test_proxy_removal_intent.py::test_an_unrelated_edit_over_a_divergence_is_still_refused"
+        "tests/test_proxy_removal_intent.py::test_an_unrelated_edit_over_a_divergence_is_still_refused",
+        "tests/test_vault.py::test_saving_a_secret_while_locked_is_refused"
       ],
       "native_test_ids": [
-        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift"
+        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift",
+        "vault_cases::saving_a_secret_while_locked_is_refused"
       ],
       "evidence_bundle": "vault-secret-policy",
       "replacement_reason": "Authenticated descriptor reads, withheld classification and four-way write intent are split between repository readable_secret/unlocked and vault::policy::write_secret; every consumer uses the real shared policy.",
@@ -14404,15 +15069,44 @@
           "symbols": [
             "ProfileRepo::save_many"
           ]
+        },
+        {
+          "path": "engine-rust/src/vault/policy.rs",
+          "symbols": [
+            "SecretWriter",
+            "SecretWriter::new",
+            "SecretWriter::state",
+            "SecretWriter::seal"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/dashboard.rs",
+          "symbols": [
+            "DashboardStore::prepare"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/pool.rs",
+          "symbols": [
+            "ProxyPool::save"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/repo_write.rs",
+          "symbols": [
+            "ProfileRepo::records"
+          ]
         }
       ],
       "source_test_ids": [
         "tests/test_locked_cli_and_vault.py::test_a_withheld_value_preserves_the_secret_and_an_empty_one_clears",
         "tests/test_repo_secrets.py::test_a_locked_password_replacement_is_refused_and_changes_nothing",
-        "tests/test_proxy_removal_intent.py::test_an_unrelated_edit_over_a_divergence_is_still_refused"
+        "tests/test_proxy_removal_intent.py::test_an_unrelated_edit_over_a_divergence_is_still_refused",
+        "tests/test_vault.py::test_saving_a_secret_while_locked_is_refused"
       ],
       "native_test_ids": [
-        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift"
+        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift",
+        "vault_cases::saving_a_secret_while_locked_is_refused"
       ],
       "evidence_bundle": "vault-secret-policy",
       "replacement_reason": "Authenticated descriptor reads, withheld classification and four-way write intent are split between repository readable_secret/unlocked and vault::policy::write_secret; every consumer uses the real shared policy.",
@@ -14451,15 +15145,44 @@
           "symbols": [
             "ProfileRepo::save_many"
           ]
+        },
+        {
+          "path": "engine-rust/src/vault/policy.rs",
+          "symbols": [
+            "SecretWriter",
+            "SecretWriter::new",
+            "SecretWriter::state",
+            "SecretWriter::seal"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/dashboard.rs",
+          "symbols": [
+            "DashboardStore::prepare"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/pool.rs",
+          "symbols": [
+            "ProxyPool::save"
+          ]
+        },
+        {
+          "path": "engine-rust/src/storage/repo_write.rs",
+          "symbols": [
+            "ProfileRepo::records"
+          ]
         }
       ],
       "source_test_ids": [
         "tests/test_locked_cli_and_vault.py::test_a_withheld_value_preserves_the_secret_and_an_empty_one_clears",
         "tests/test_repo_secrets.py::test_a_locked_password_replacement_is_refused_and_changes_nothing",
-        "tests/test_proxy_removal_intent.py::test_an_unrelated_edit_over_a_divergence_is_still_refused"
+        "tests/test_proxy_removal_intent.py::test_an_unrelated_edit_over_a_divergence_is_still_refused",
+        "tests/test_vault.py::test_saving_a_secret_while_locked_is_refused"
       ],
       "native_test_ids": [
-        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift"
+        "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift",
+        "vault_cases::saving_a_secret_while_locked_is_refused"
       ],
       "evidence_bundle": "vault-secret-policy",
       "replacement_reason": "Authenticated descriptor reads, withheld classification and four-way write intent are split between repository readable_secret/unlocked and vault::policy::write_secret; every consumer uses the real shared policy.",
@@ -16421,5 +17144,66 @@
       "architectural_adaptation": null,
       "remaining_review": []
     }
-  ]
+  ],
+  "log_freshness": {
+    "policy": "Earlier named logs are archived evidence at their recorded executions; current Rust-file hashes describe the reviewed worktree and do not assert that every archived log was regenerated after later edits.",
+    "current_salt_fix_scope": "SecretWriter and rotation field guards; actual writer/rotation negative controls plus complete292source-vault suite. Separate subsequent diagnostic-only assertion formatting retains the predicates/data and is not represented as a new full-suite execution.",
+    "new_salt_fix_logs": [
+      {
+        "path": "/tmp/vault-salt-descriptor-red.log",
+        "sha256": "eab5c10d0813e3b88a98dab8c972d7f305dd1f71a12294c48f49a4816b39eb2f"
+      },
+      {
+        "path": "/tmp/vault-salt-descriptor-vault292-green.log",
+        "sha256": "db41a7ead20055db881179aaf27d56874a79a6911e3276fc5511addb34607466"
+      },
+      {
+        "path": "/tmp/vault-salt-performance16-green.log",
+        "sha256": "fd5699965f9c9b6db6908d85631fb2084ad8d36112fe456361eb8ba98aab3734"
+      },
+      {
+        "path": "/tmp/vault-salt-descriptor-clippy.log",
+        "sha256": "a6467c500369b84ea5a1c397f2407b56dc3c39577f9201383fdce650947fc0e3"
+      }
+    ],
+    "source_scan_report": "docs/verification/codeql-review-20261114.json",
+    "scanned_commit": "30789530aa16652a2ad94800ce067171e99f1986",
+    "scanned_pr_head": "77d69f1c231450502be130ab3a025cd40166d76c",
+    "real_salt_findings": [
+      1,
+      3,
+      4,
+      17
+    ],
+    "new_cases_added": 0,
+    "fresh_fixed_source_security_scan": "pending",
+    "later_listing_and_comparison_proofs": [
+      {
+        "path": "/workspace/work/http-list-snapshot-review/snapshot-cipher-green.txt",
+        "sha256": "fbc1825cca5144d6968671a9c5fa164a1783b69a00d3946f65a2e76937f34a40"
+      },
+      {
+        "path": "/workspace/work/http-list-snapshot-review/numeric-borrowed-green.txt",
+        "sha256": "7443987b69ae4c9330bac1dd44171be990d2fb5f091af892dc977d61b8632c1e"
+      }
+    ],
+    "functional_ci_20261114": {
+      "review": "docs/verification/functional-ci-storage-review-20261114.json",
+      "review_sha256": "65e156226dfd530a3d05f47e49c6acd25a18f05f6c8fe026410c4ac18fc42cb5",
+      "verification_scope": "366 individually named successful Linux executions across affected existing cases; strict selected-target lint. No full3418/source411/source292 re-execution claimed.",
+      "macos_windows": "Hosted runtime verification pending for native errno/path spelling/APFS/Windows text/glob adaptations.",
+      "source_changes": {
+        "engine-rust/src/storage/first_run.rs": "fbfc1e58ce715833d1f096b2e790538310708af3c3fcebf81da0586a1b57bd12",
+        "engine-rust/src/storage/paths.rs": "85d572c196895517200e3150bc44486baa8b626ac62d170ba1f5089aa7dd8713",
+        "engine-rust/src/vault/durability.rs": "24c78df916a3285972ca1154495aa6393640bd67b096bd01563ef3d1526e32e7"
+      },
+      "archived_proof_note": "Earlier whole-suite logs retain their historical source checkpoints; updated Rust hashes do not refresh their execution claim. The same-source exact inventory diagnostic validates names, kinds and platform applicability only.",
+      "log_receipts": {
+        "/tmp/functional-storage-platform-focused.log": "ad381d91c994248afe796fcb2ee3af2048a9698dd717df372c5efe1a40227ffa",
+        "/tmp/functional-storage-native-targeted.log": "4182d53d1c632a6b64bbb0640ba75292fa4aad111c49b4703f8fb8bf3b86dcd5",
+        "/tmp/functional-storage-native-followup.log": "1e572a6e173e24515150dc292b400d649fd770ac3e81779159475101dd9155fc",
+        "/tmp/functional-storage-strict-clippy.log": "b2bb807ec93648ccea454391f0472be132106db3f8d34df82cc16564aff04c0f"
+      }
+    }
+  }
 }

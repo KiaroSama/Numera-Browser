@@ -1,29 +1,30 @@
 {
   "artifact": "browser-page-rust/generated/runtime.js",
-  "artifact_bytes": 828179,
-  "artifact_sha256": "3acc835a955ce8291263fdb3902a2802e91ac41cf66a1a71d12177d37e177cf3",
+  "artifact_bytes": 827882,
+  "artifact_sha256": "17f41961f6762e06978cd04fd8e2feccb05f145be18c7b81bbcf38d8978b639f",
   "authored_language": "Rust",
   "binaryen": "wasm2js version 133 (version_133)",
   "binaryen_archive": "https://github.com/WebAssembly/binaryen/releases/download/version_133/binaryen-version_133-x86_64-linux.tar.gz",
   "binaryen_archive_sha256": "2dc9c7813f5375db93d96ead4b78222fcc3e2677bbb832297af4797782a37489",
   "bindgen_glue_sha256": "0090b56b9c48971945bdc1abeb9a8b4be9be1bf808c80968524daca4bca0c07b",
-  "binding_wasm_sha256": "2329d5530e13d7a2b0a053eb8c87e80faeaf06d66e8d85bc9c35644671d5bc0a",
+  "binding_wasm_sha256": "14bf50bdfbf642c91d797c4409e041c1797e81f45866f79abbd724dcf52ce6f8",
   "bridge": [
     "generated module imports/exports become a synchronous classic factory",
     "generated Uint8Array and DataView caches observe non-detaching ArrayBuffer growth"
   ],
-  "compiler_javascript_bytes": 799180,
-  "compiler_javascript_sha256": "fc167030e7c3c160c5c6e0f599fc1446ffea150d880d96fe9b9b428f8116a9be",
+  "compiler_javascript_bytes": 798883,
+  "compiler_javascript_sha256": "e0ac9d6bce6225517fcb0fd97b42fb0e6a7133ff8f887257448dd464c863e58e",
   "factory": "numera_browser_page() returns wasm-bindgen exports synchronously",
   "generated_languages": [
     "JavaScript"
   ],
-  "input_wasm_sha256": "b41b83dd5f6a449f066ec542b76f757b9db3a40c5e79b7f22f2f73c050b5c8aa",
+  "input_wasm_sha256": "5ad97d9bdb0adcd601678ab314d45d9e812fb1180dcbadc8c105b126c96cddcd",
   "minified": false,
   "path_remapping": [
     "repository=numera",
     "cargo-home=cargo",
-    "rustup-home=rustup"
+    "rustup-home=rustup",
+    "dependency-crates=crates/name-version"
   ],
   "regeneration_host": "Linux x86_64; output uses portable relative source paths",
   "runtime_compilation": false,
@@ -32,11 +33,12 @@
   "source_sha256": {
     "browser-page-rust/Cargo.lock": "317576e2b9c4ff958dc35e79b1e53e2f05943b1208767bcfc9b87253ce623d92",
     "browser-page-rust/Cargo.toml": "ba9d580cd5e9242f7375365f9651785e36cc7620d442569fbc7fbf607b4fbf11",
-    "browser-page-rust/src/artifact.rs": "e4b093442182a541c993d73fd2588a9d472b8e4ec8cfa7f554ff1ad831f68ab8",
-    "browser-page-rust/src/bin/browser-page-build.rs": "fc494d758c807ee5bcaecdf7fb0d55bc6df62e53381a890c8883ff7a7303eb70",
+    "browser-page-rust/src/artifact.rs": "a9da1e5bd6ed7896a56b5a46178cae2d240243545e81f7727cbd21c3c15be2b8",
+    "browser-page-rust/src/bin/browser-page-build.rs": "5479f7f0828348ca396a26424c5c8a15f7a45384165e362b89856d489d62dfc5",
     "browser-page-rust/src/identity.rs": "13439ae3f2ccc78baf5eb782fe7151f91f0997b5866ab76fcc02230c8e4bc642",
-    "browser-page-rust/src/lib.rs": "a42627399aa3e828715990768383a5cff739af0c4c813471537cb8bccef82d8b",
+    "browser-page-rust/src/lib.rs": "e22c11e60c83f8fe258d5fea75f016f4afc222e8c078564db87fe34dca2cf1e1",
     "browser-page-rust/src/probes.rs": "05e28abdc49f7f3902369207003d192e248fc4da1d6d8ee4980123623c9d311e",
+    "browser-page-rust/src/source_paths.rs": "2f88fe1fbc432930970470bc8a1efe4ec5a7d64fef5e42cd0537364ff007c3cb",
     "browser-page-rust/src/webrtc_rules.rs": "170b820fd26e3fc5a9b0ef17777e64ac173bde92fb0f61cb18a231aa3bf4932a",
     "rust-toolchain.toml": "df1b1f239d5b1df10f115021f4cefb60076919c5646693c9e77bb70a00aff615"
   },

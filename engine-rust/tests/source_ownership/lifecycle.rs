@@ -203,12 +203,37 @@ source_test!(
         let t = temp("wedged-helper-tree")?;
         let mut child = command("tree")?;
         child.arg(t.path()).arg("hold");
+        // The source BUDGET_WEDGED includes helper and descendant startup;
+        // its CLEANUP_BUDGET is five seconds. Neither is a product deadline.
+        let wall = Duration::from_secs(3);
+        let cleanup = Duration::from_secs(5);
         let start = Instant::now();
-        let failure = capture::run(&mut child, limit(Duration::from_millis(350)))
-            .err()
-            .ok_or("wedged helper did not time out")?;
+        let mut tail = Vec::new();
+        let mut ready_at = None;
+        let failure = capture::run_observed_streamed(
+            &mut child,
+            capture::Limits {
+                cleanup,
+                ..limit(wall)
+            },
+            || false,
+            |_, _| {},
+            |stream, bytes| {
+                if stream == 0 {
+                    tail.extend_from_slice(bytes);
+                    if tail == b"TAIL" && t.path().join("descendant").is_file() {
+                        ready_at = Some(start.elapsed());
+                    }
+                }
+            },
+        )
+        .err()
+        .ok_or("wedged helper did not time out")?;
         assert_eq!(failure.kind(), io::ErrorKind::TimedOut);
-        assert!(start.elapsed() < Duration::from_secs(3));
+        assert!(start.elapsed() >= wall);
+        assert!(start.elapsed() < wall + cleanup + Duration::from_secs(1));
+        assert_eq!(tail, b"TAIL");
+        assert!(ready_at.is_some_and(|elapsed| elapsed < wall));
         assert!(
             t.path().join("descendant").exists(),
             "fixture never created descendant"

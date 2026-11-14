@@ -13,6 +13,34 @@ fn json_filename_selection_matches_original_storage_consumers()
     let observed: Value = serde_json::from_str(include_str!(
         "fixtures/characterization/json_filename_selection_matches_original_storage_consumers.json"
     ))?;
+    #[cfg(windows)]
+    let observed = {
+        // Path.glob uses the Windows case-insensitive Unicode matcher.
+        // Replay the same authenticated included-file observations for its
+        // three additional suffix spellings; immutable Linux data stays put.
+        let mut native = observed.clone();
+        for case in native["cases"]
+            .as_array_mut()
+            .ok_or("Filename cases missing")?
+        {
+            let filename = case["filename"].as_str().ok_or("Filename missing")?;
+            if ["b.JSON", "c.JsOn", "long.jſon"].contains(&filename) {
+                let reference = observed["cases"]
+                    .as_array()
+                    .ok_or("Filename cases missing")?
+                    .iter()
+                    .find(|reference| {
+                        reference["operation"] == case["operation"]
+                            && reference["filename"] == "a.json"
+                    })
+                    .ok_or("Included-file observation missing")?;
+                *case = serde_json::from_str(
+                    &serde_json::to_string(reference)?.replace("a.json", filename),
+                )?;
+            }
+        }
+        native
+    };
     let cases = observed["cases"]
         .as_array()
         .ok_or("Filename cases missing")?;

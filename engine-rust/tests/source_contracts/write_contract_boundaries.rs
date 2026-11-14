@@ -391,7 +391,7 @@ source_test!(
         let before = snapshot(tmp.path());
         http(tmp.path(), "GET", "/api/profiles", Value::Null);
         http(tmp.path(), "GET", "/api/profiles/health", Value::Null);
-        assert_eq!(snapshot(tmp.path()), before);
+        assert_listing_preserves_original_files(tmp.path(), &before, true);
     }
 );
 source_test!(

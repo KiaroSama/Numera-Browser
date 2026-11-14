@@ -197,7 +197,7 @@ source_test!(
         let (html, marker) = component("App.tsx");
         assert!(
             html.contains(marker),
-            "Native component App.tsx missing its content: {html}"
+            "Native component App.tsx missing its content"
         );
         assert!(html.starts_with("<"));
         Ok(())
@@ -210,7 +210,7 @@ source_test!(
         let (html, marker) = component("main.tsx");
         assert!(
             html.contains(marker),
-            "Native component main.tsx missing its content: {html}"
+            "Native component main.tsx missing its content"
         );
         assert!(html.starts_with("<"));
         Ok(())
@@ -223,7 +223,7 @@ source_test!(
         let (html, marker) = component("toast.tsx");
         assert!(
             html.contains(marker),
-            "Native component toast.tsx missing its content: {html}"
+            "Native component toast.tsx missing its content"
         );
         assert!(html.starts_with("<"));
         Ok(())
@@ -236,7 +236,7 @@ source_test!(
         let (html, marker) = component("ui.tsx");
         assert!(
             html.contains(marker),
-            "Native component ui.tsx missing its content: {html}"
+            "Native component ui.tsx missing its content"
         );
         assert!(html.starts_with("<"));
         Ok(())
@@ -249,7 +249,7 @@ source_test!(
         let (html, marker) = component("AutomationView.tsx");
         assert!(
             html.contains(marker),
-            "Native component AutomationView.tsx missing its content: {html}"
+            "Native component AutomationView.tsx missing its content"
         );
         assert!(html.starts_with("<"));
         Ok(())
@@ -262,7 +262,7 @@ source_test!(
         let (html, marker) = component("CloakAcquisition.tsx");
         assert!(
             html.contains(marker),
-            "Native component CloakAcquisition.tsx missing its content: {html}"
+            "Native component CloakAcquisition.tsx missing its content"
         );
         assert!(html.starts_with("<"));
         Ok(())
@@ -275,7 +275,7 @@ source_test!(
         let (html, marker) = component("CommandPalette.tsx");
         assert!(
             html.contains(marker),
-            "Native component CommandPalette.tsx missing its content: {html}"
+            "Native component CommandPalette.tsx missing its content"
         );
         assert!(html.starts_with("<"));
         Ok(())
@@ -288,7 +288,7 @@ source_test!(
         let (html, marker) = component("Editor.tsx");
         assert!(
             html.contains(marker),
-            "Native component Editor.tsx missing its content: {html}"
+            "Native component Editor.tsx missing its content"
         );
         assert!(html.starts_with("<"));
         Ok(())
@@ -301,7 +301,7 @@ source_test!(
         let (html, marker) = component("EnginesView.tsx");
         assert!(
             html.contains(marker),
-            "Native component EnginesView.tsx missing its content: {html}"
+            "Native component EnginesView.tsx missing its content"
         );
         assert!(html.starts_with("<"));
         Ok(())
@@ -314,7 +314,7 @@ source_test!(
         let (html, marker) = component("ExtensionsView.tsx");
         assert!(
             html.contains(marker),
-            "Native component ExtensionsView.tsx missing its content: {html}"
+            "Native component ExtensionsView.tsx missing its content"
         );
         assert!(html.starts_with("<"));
         Ok(())
@@ -327,7 +327,7 @@ source_test!(
         let (html, marker) = component("FoldersView.tsx");
         assert!(
             html.contains(marker),
-            "Native component FoldersView.tsx missing its content: {html}"
+            "Native component FoldersView.tsx missing its content"
         );
         assert!(html.starts_with("<"));
         Ok(())
@@ -340,7 +340,7 @@ source_test!(
         let (html, marker) = component("HealthView.tsx");
         assert!(
             html.contains(marker),
-            "Native component HealthView.tsx missing its content: {html}"
+            "Native component HealthView.tsx missing its content"
         );
         assert!(html.starts_with("<"));
         Ok(())
@@ -353,7 +353,7 @@ source_test!(
         let (html, marker) = component("IpSwitch.tsx");
         assert!(
             html.contains(marker),
-            "Native component IpSwitch.tsx missing its content: {html}"
+            "Native component IpSwitch.tsx missing its content"
         );
         assert!(html.starts_with("<"));
         Ok(())
@@ -366,7 +366,7 @@ source_test!(
         let (html, marker) = component("ProbePanel.tsx");
         assert!(
             html.contains(marker),
-            "Native component ProbePanel.tsx missing its content: {html}"
+            "Native component ProbePanel.tsx missing its content"
         );
         assert!(html.starts_with("<"));
         Ok(())
@@ -379,7 +379,7 @@ source_test!(
         let (html, marker) = component("ProfileSummary.tsx");
         assert!(
             html.contains(marker),
-            "Native component ProfileSummary.tsx missing its content: {html}"
+            "Native component ProfileSummary.tsx missing its content"
         );
         assert!(html.starts_with("<"));
         Ok(())
@@ -392,7 +392,7 @@ source_test!(
         let (html, marker) = component("ProfilesView.tsx");
         assert!(
             html.contains(marker),
-            "Native component ProfilesView.tsx missing its content: {html}"
+            "Native component ProfilesView.tsx missing its content"
         );
         assert!(html.starts_with("<"));
         Ok(())
@@ -405,7 +405,7 @@ source_test!(
         let (html, marker) = component("ProxiesView.tsx");
         assert!(
             html.contains(marker),
-            "Native component ProxiesView.tsx missing its content: {html}"
+            "Native component ProxiesView.tsx missing its content"
         );
         assert!(html.starts_with("<"));
         Ok(())
@@ -418,7 +418,7 @@ source_test!(
         let (html, marker) = component("SettingsView.tsx");
         assert!(
             html.contains(marker),
-            "Native component SettingsView.tsx missing its content: {html}"
+            "Native component SettingsView.tsx missing its content"
         );
         assert!(html.starts_with("<"));
         Ok(())
@@ -431,7 +431,7 @@ source_test!(
         let (html, marker) = component("TimezoneField.tsx");
         assert!(
             html.contains(marker),
-            "Native component TimezoneField.tsx missing its content: {html}"
+            "Native component TimezoneField.tsx missing its content"
         );
         assert!(html.starts_with("<"));
         Ok(())
@@ -444,7 +444,7 @@ source_test!(
         let (html, marker) = component("UpdatePanel.tsx");
         assert!(
             html.contains(marker),
-            "Native component UpdatePanel.tsx missing its content: {html}"
+            "Native component UpdatePanel.tsx missing its content"
         );
         assert!(html.starts_with("<"));
         Ok(())
@@ -457,7 +457,7 @@ source_test!(
         let (html, marker) = component("bulk.tsx");
         assert!(
             html.contains(marker),
-            "Native component bulk.tsx missing its content: {html}"
+            "Native component bulk.tsx missing its content"
         );
         assert!(html.starts_with("<"));
         Ok(())
@@ -470,7 +470,7 @@ source_test!(
         let (html, marker) = component("App.tsx");
         assert!(
             html.contains(marker),
-            "Native component App.tsx missing live content: {html}"
+            "Native component App.tsx missing live content"
         );
         assert!(!html.contains("undefined"));
         Ok(())
@@ -543,7 +543,7 @@ source_test!(
         let (html, marker) = component("main.tsx");
         assert!(
             html.contains(marker),
-            "Native component main.tsx missing live content: {html}"
+            "Native component main.tsx missing live content"
         );
         assert!(!html.contains("undefined"));
         Ok(())
@@ -587,7 +587,7 @@ source_test!(
         let (html, marker) = component("toast.tsx");
         assert!(
             html.contains(marker),
-            "Native component toast.tsx missing live content: {html}"
+            "Native component toast.tsx missing live content"
         );
         assert!(!html.contains("undefined"));
         Ok(())
@@ -611,7 +611,7 @@ source_test!(
         let (html, marker) = component("ui.tsx");
         assert!(
             html.contains(marker),
-            "Native component ui.tsx missing live content: {html}"
+            "Native component ui.tsx missing live content"
         );
         assert!(!html.contains("undefined"));
         Ok(())
@@ -657,7 +657,7 @@ source_test!(
         let (html, marker) = component("AutomationView.tsx");
         assert!(
             html.contains(marker),
-            "Native component AutomationView.tsx missing live content: {html}"
+            "Native component AutomationView.tsx missing live content"
         );
         assert!(!html.contains("undefined"));
         Ok(())
@@ -670,7 +670,7 @@ source_test!(
         let (html, marker) = component("CloakAcquisition.tsx");
         assert!(
             html.contains(marker),
-            "Native component CloakAcquisition.tsx missing live content: {html}"
+            "Native component CloakAcquisition.tsx missing live content"
         );
         assert!(!html.contains("undefined"));
         Ok(())
@@ -683,7 +683,7 @@ source_test!(
         let (html, marker) = component("CommandPalette.tsx");
         assert!(
             html.contains(marker),
-            "Native component CommandPalette.tsx missing live content: {html}"
+            "Native component CommandPalette.tsx missing live content"
         );
         assert!(!html.contains("undefined"));
         Ok(())
@@ -696,7 +696,7 @@ source_test!(
         let (html, marker) = component("Editor.tsx");
         assert!(
             html.contains(marker),
-            "Native component Editor.tsx missing live content: {html}"
+            "Native component Editor.tsx missing live content"
         );
         assert!(!html.contains("undefined"));
         Ok(())
@@ -709,7 +709,7 @@ source_test!(
         let (html, marker) = component("EnginesView.tsx");
         assert!(
             html.contains(marker),
-            "Native component EnginesView.tsx missing live content: {html}"
+            "Native component EnginesView.tsx missing live content"
         );
         assert!(!html.contains("undefined"));
         Ok(())
@@ -722,7 +722,7 @@ source_test!(
         let (html, marker) = component("ExtensionsView.tsx");
         assert!(
             html.contains(marker),
-            "Native component ExtensionsView.tsx missing live content: {html}"
+            "Native component ExtensionsView.tsx missing live content"
         );
         assert!(!html.contains("undefined"));
         Ok(())
@@ -735,7 +735,7 @@ source_test!(
         let (html, marker) = component("FoldersView.tsx");
         assert!(
             html.contains(marker),
-            "Native component FoldersView.tsx missing live content: {html}"
+            "Native component FoldersView.tsx missing live content"
         );
         assert!(!html.contains("undefined"));
         Ok(())
@@ -748,7 +748,7 @@ source_test!(
         let (html, marker) = component("HealthView.tsx");
         assert!(
             html.contains(marker),
-            "Native component HealthView.tsx missing live content: {html}"
+            "Native component HealthView.tsx missing live content"
         );
         assert!(!html.contains("undefined"));
         Ok(())
@@ -761,7 +761,7 @@ source_test!(
         let (html, marker) = component("IpSwitch.tsx");
         assert!(
             html.contains(marker),
-            "Native component IpSwitch.tsx missing live content: {html}"
+            "Native component IpSwitch.tsx missing live content"
         );
         assert!(!html.contains("undefined"));
         Ok(())
@@ -774,7 +774,7 @@ source_test!(
         let (html, marker) = component("ProbePanel.tsx");
         assert!(
             html.contains(marker),
-            "Native component ProbePanel.tsx missing live content: {html}"
+            "Native component ProbePanel.tsx missing live content"
         );
         assert!(!html.contains("undefined"));
         Ok(())
@@ -787,7 +787,7 @@ source_test!(
         let (html, marker) = component("ProfileSummary.tsx");
         assert!(
             html.contains(marker),
-            "Native component ProfileSummary.tsx missing live content: {html}"
+            "Native component ProfileSummary.tsx missing live content"
         );
         assert!(!html.contains("undefined"));
         Ok(())
@@ -800,7 +800,7 @@ source_test!(
         let (html, marker) = component("ProfilesView.tsx");
         assert!(
             html.contains(marker),
-            "Native component ProfilesView.tsx missing live content: {html}"
+            "Native component ProfilesView.tsx missing live content"
         );
         assert!(!html.contains("undefined"));
         Ok(())
@@ -813,7 +813,7 @@ source_test!(
         let (html, marker) = component("ProxiesView.tsx");
         assert!(
             html.contains(marker),
-            "Native component ProxiesView.tsx missing live content: {html}"
+            "Native component ProxiesView.tsx missing live content"
         );
         assert!(!html.contains("undefined"));
         Ok(())
@@ -826,7 +826,7 @@ source_test!(
         let (html, marker) = component("SettingsView.tsx");
         assert!(
             html.contains(marker),
-            "Native component SettingsView.tsx missing live content: {html}"
+            "Native component SettingsView.tsx missing live content"
         );
         assert!(!html.contains("undefined"));
         Ok(())
@@ -839,7 +839,7 @@ source_test!(
         let (html, marker) = component("TimezoneField.tsx");
         assert!(
             html.contains(marker),
-            "Native component TimezoneField.tsx missing live content: {html}"
+            "Native component TimezoneField.tsx missing live content"
         );
         assert!(!html.contains("undefined"));
         Ok(())
@@ -852,7 +852,7 @@ source_test!(
         let (html, marker) = component("UpdatePanel.tsx");
         assert!(
             html.contains(marker),
-            "Native component UpdatePanel.tsx missing live content: {html}"
+            "Native component UpdatePanel.tsx missing live content"
         );
         assert!(!html.contains("undefined"));
         Ok(())
@@ -865,7 +865,7 @@ source_test!(
         let (html, marker) = component("bulk.tsx");
         assert!(
             html.contains(marker),
-            "Native component bulk.tsx missing live content: {html}"
+            "Native component bulk.tsx missing live content"
         );
         assert!(!html.contains("undefined"));
         Ok(())

@@ -1,0 +1,54 @@
+{
+  "schema": 1,
+  "review_date": "2026-11-14",
+  "status": "Real bundler diagnostics enabled; actual AppImage failure cause awaits the next hosted run.",
+  "observed": {
+    "run": 43536453687,
+    "job": 132266996876,
+    "checkout": "0f7dd89a6f6ecb0bee1f4969af799148e62e7fee",
+    "platform": "Ubuntu24.04 x86_64",
+    "compiler_result": "Actual Tauri release application compiled successfully in 2m57s.",
+    "bundle_result": "AppImage failed with only 'failed to run linuxdeploy'; underlying tool stdout/stderr were absent."
+  },
+  "upstream_source": {
+    "installed_cli": "tauri-cli2.12.4",
+    "locked_bundler": "tauri-bundler2.10.4",
+    "bundler_crate_sha256": "ec436f80e3f9dc5f87e449652cc21fd546760b5ee6b4646cec30e95b68fd9104",
+    "binding": "The installed CLI's published Cargo.lock pins this exact bundler version/checksum; the downloaded source archive matched it.",
+    "cause_of_missing_output": "CLI bundle.rs maps verbosity0 to spawned log_level=Error. linux/appimage/linuxdeploy.rs then calls Command::output(), discards stdout/stderr and emits only the generic failure. One --verbose selects output_ok(), which preserves the actual tool failure and emits its output through the CLI logger.",
+    "fuse": "The pinned bundler already supplies APPIMAGE_EXTRACT_AND_RUN=1 and --appimage-extract-and-run. A missing FUSE package is not an evidenced cause.",
+    "sources": [
+      "https://static.crates.io/crates/tauri-cli/tauri-cli-2.12.4.crate",
+      "https://static.crates.io/crates/tauri-bundler/tauri-bundler-2.10.4.crate",
+      "https://v2.tauri.app/distribute/appimage/"
+    ]
+  },
+  "implementation": {
+    "paths": [
+      "tools/xtask/src/product.rs",
+      "tools/xtask/src/product_diagnostics.rs",
+      "tools/xtask/src/lib.rs",
+      "tools/xtask/src/main.rs",
+      "tools/xtask/tests/source_ci/candidate.rs"
+    ],
+    "behavior": "The actual Tauri command uses --verbose and the native owned capture boundary. It preserves wall1800s/idle300s/cleanup10s and a16MiB output budget. Complete bounded transcripts are redacted before retention and before console tails are clipped to16KiB per stream at UTF8 boundaries. Actual nonzero exits and failed capture remain errors.",
+    "retained_files": [
+      "build/native-product/.desktop-build/tauri-build.log",
+      "build/native-product/.desktop-build/tauri-build.stderr.log"
+    ],
+    "scope": "Pinned tools, Ubuntu packages, AppImage/Debian and other native bundle requirements, signature policy and installer verification remain unchanged."
+  },
+  "validation": {
+    "existing_case": "candidate_cases::candidate_layout_integrity",
+    "red": "A temporary no-op executor failed the existing case because a real failed bundle-tool process was accepted.",
+    "green": "The same case passed: actual compiled Rust child exit7 and a linuxdeploy missing-library diagnostic were retained; a synthetic password was removed; large Unicode output respected the console tail bound; a successful child remained successful.",
+    "reported": "1 passed; 0 failed; 0 ignored; 642 filtered out; 0.30 seconds. No test names/counts were added.",
+    "lint": "Tools all-targets strict Clippy passed.",
+    "logs": [
+      "/workspace/work/tauri-diagnostics-red.log",
+      "/workspace/work/tauri-diagnostics-green.log",
+      "/workspace/work/tauri-diagnostics-clippy.log"
+    ],
+    "limitation": "This validates diagnostic capture with real native subprocesses. It does not establish a local AppImage build or identify the hidden hosted prerequisite failure. The fresh hosted lane must provide that evidence before another behavior change."
+  }
+}

@@ -2,8 +2,16 @@
 //! never read ambient signing credentials or alter a Windows trust store.
 use serde_json::Value;
 use std::{io, path::Path};
+#[cfg(any(windows, feature = "test-support"))]
+mod pe;
 #[cfg(windows)]
 mod platform;
+
+/// The actual signed-PE tamper selector, exposed for portable parser controls.
+#[cfg(feature = "test-support")]
+pub fn digest_control_offset(path: &Path) -> io::Result<u64> {
+    pe::executable_byte(path)
+}
 
 fn fingerprint(value: &str) -> bool {
     value.len() == 64

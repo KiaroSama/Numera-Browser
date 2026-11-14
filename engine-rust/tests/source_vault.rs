@@ -270,7 +270,14 @@ fn error_at(
         {
             fired = true;
             // Frozen IDs carry Linux errno spellings. Inject the equivalent
-            // native FlushFileBuffers errors on Windows for unsupported sync.
+            // native fsync/FlushFileBuffers errors on each host.
+            #[cfg(unix)]
+            let native_errno = if operation == "fsync-file" && errno == 95 {
+                libc::ENOTSUP
+            } else {
+                errno
+            };
+            #[cfg(not(unix))]
             let native_errno = if cfg!(windows) && operation == "fsync-file" {
                 match errno {
                     22 => 87,

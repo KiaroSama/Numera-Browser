@@ -98,13 +98,22 @@ impl Server {
                         if stopped.load(Ordering::Acquire) {
                             break;
                         }
+                        // accept() may inherit the listener's nonblocking mode
+                        // on macOS/Windows; these protocol handlers use blocking IO.
+                        stream.set_nonblocking(false)?;
                         stream.set_read_timeout(Some(Duration::from_secs(3)))?;
                         stream.set_write_timeout(Some(Duration::from_secs(3)))?;
                         stream.set_nodelay(true)?;
-                        active
+                        let mut registered = active
                             .lock()
-                            .map_err(|_| io::Error::other("fixture socket lock"))?
-                            .push(stream.try_clone()?);
+                            .map_err(|_| io::Error::other("fixture socket lock"))?;
+                        // Serialize admission with finish()'s shutdown pass.
+                        // An accept completing after stop must never escape it.
+                        if stopped.load(Ordering::Acquire) {
+                            break;
+                        }
+                        registered.push(stream.try_clone()?);
+                        drop(registered);
                         let call = handler.clone();
                         workers.push(thread::spawn(move || call(stream)));
                     }

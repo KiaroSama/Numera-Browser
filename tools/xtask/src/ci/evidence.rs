@@ -52,6 +52,100 @@ pub fn codeql(pages: &Value, sha: &str) -> Result<u64> {
         .ok_or_else(|| std::io::Error::other("CodeQL check identity is invalid").into())
 }
 
+#[derive(Clone)]
+pub struct CodeqlPrContext {
+    pub repository: String,
+    pub event: String,
+    pub reference: String,
+    pub number: u64,
+    pub event_head: String,
+    pub event_base: String,
+    pub build_sha: String,
+}
+
+#[derive(Clone)]
+pub struct CodeqlLocalSource {
+    pub commit: String,
+    pub tree: String,
+    pub clean: bool,
+}
+
+#[derive(serde::Serialize)]
+pub struct CodeqlSourceSubject {
+    pub repository: String,
+    pub build_commit: String,
+    pub analysis_commit: String,
+    pub identical_tree: String,
+    pub base_parent: String,
+    pub head_parent: String,
+    pub pull_request: u64,
+}
+
+/// Validate independently fetched GitHub PR and Git-commit objects against the
+/// event snapshot and actual clean checkout. This bridges only identical source
+/// trees in the current PR's exact integration commit; it does not make a head
+/// verdict a verdict about arbitrary merge changes or ancestor revisions.
+pub fn codeql_pr_subject(
+    context: &CodeqlPrContext,
+    pull: &Value,
+    merge: &Value,
+    head: &Value,
+    local: &CodeqlLocalSource,
+) -> Result<CodeqlSourceSubject> {
+    const REPOSITORY: &str = "KiaroSama/Numera-Browser";
+    if context.repository != REPOSITORY
+        || context.event != "pull_request"
+        || context.number == 0
+        || context.reference != format!("refs/pull/{}/merge", context.number)
+        || !local.clean
+        || local.commit != context.build_sha
+        || [
+            context.event_head.as_str(),
+            context.event_base.as_str(),
+            context.build_sha.as_str(),
+            local.commit.as_str(),
+            local.tree.as_str(),
+        ]
+        .iter()
+        .any(|sha| !canonical_sha(sha))
+    {
+        return fail("CodeQL PR source context is invalid or checkout is not clean");
+    }
+    if pull["number"].as_u64() != Some(context.number)
+        || pull["state"] != "open"
+        || pull["base"]["repo"]["full_name"] != REPOSITORY
+        || pull["head"]["repo"]["full_name"] != REPOSITORY
+        || pull["head"]["sha"] != context.event_head
+        || pull["base"]["sha"] != context.event_base
+        || pull["merge_commit_sha"] != context.build_sha
+        || merge["sha"] != context.build_sha
+        || head["sha"] != context.event_head
+    {
+        return fail("CodeQL PR source metadata is missing, stale or from another repository");
+    }
+    let parents = merge["parents"]
+        .as_array()
+        .ok_or("CodeQL integration commit parents are missing")?;
+    if parents.len() != 2
+        || parents[0]["sha"] != context.event_base
+        || parents[1]["sha"] != context.event_head
+    {
+        return fail("CodeQL integration commit does not have the exact ordered PR parents");
+    }
+    if merge["tree"]["sha"] != local.tree || head["tree"]["sha"] != local.tree {
+        return fail("CodeQL build and trusted-analysis source trees differ");
+    }
+    Ok(CodeqlSourceSubject {
+        repository: REPOSITORY.into(),
+        build_commit: context.build_sha.clone(),
+        analysis_commit: context.event_head.clone(),
+        identical_tree: local.tree.clone(),
+        base_parent: context.event_base.clone(),
+        head_parent: context.event_head.clone(),
+        pull_request: context.number,
+    })
+}
+
 pub struct Current {
     expected: BTreeSet<String>,
     passed: BTreeSet<String>,

@@ -87,6 +87,7 @@ pub fn native_automatic(workflow: &Value) -> Result<()> {
         );
     }
     bounded_jobs(workflow)?;
+    native_failure_evidence(workflow)?;
     let build = &workflow["jobs"]["build"];
     if build.get("needs").is_some()
         || build.get("if").is_some()
@@ -115,6 +116,39 @@ pub fn native_automatic(workflow: &Value) -> Result<()> {
         .cloned()
         .collect::<BTreeSet<_>>();
     required_jobs(&workflow["jobs"], &expected)
+}
+pub fn native_failure_evidence(workflow: &Value) -> Result<()> {
+    let steps = workflow["jobs"]["build"]["steps"]
+        .as_array()
+        .ok_or("Native product steps missing")?;
+    let artifact = steps
+        .iter()
+        .find(|step| step["name"] == "Preserve complete failed native packaging evidence")
+        .ok_or("Native packaging failure evidence missing")?;
+    let paths = artifact["with"]["path"].as_str().unwrap_or("");
+    if artifact["if"] != "failure()"
+        || !artifact["uses"]
+            .as_str()
+            .is_some_and(|value| value.starts_with("actions/upload-artifact@"))
+        || artifact["with"]["include-hidden-files"] != true
+        || [
+            "build/native-product/.desktop-build/tauri-build*.log",
+            "build/native-product/**/PROVENANCE.json",
+            "build/native-product/distribution.json",
+            "build/native-phase-*.log",
+            "build/owned-command-failure-*.log",
+            "build/owned-members-*.json",
+            ".ci-work/logs/ci-owned_*.log",
+            "engine-rust/target/cargo-timings/",
+        ]
+        .iter()
+        .any(|required| !paths.lines().any(|path| path == *required))
+    {
+        return fail(
+            "Native packaging failures must retain Tauri, source, compiler and ownership evidence",
+        );
+    }
+    Ok(())
 }
 pub fn branch_concurrency(workflow: &Value) -> Result<()> {
     if workflow["concurrency"]
@@ -264,12 +298,61 @@ pub fn browser_page_compiler(native: &Value, advisory: &Value) -> Result<()> {
     }
     Ok(())
 }
+pub fn live_license_concurrency(workflow: &Value) -> Result<()> {
+    let job = &workflow["jobs"]["live"];
+    if job["concurrency"]["group"]
+        != "${{ matrix.engine == 'cloak' && 'numera-cloak-vendor-seat' || format('numera-sdk-{0}-{1}-{2}', github.run_id, matrix.os, matrix.engine) }}"
+        || job["concurrency"]["cancel-in-progress"] != false
+        || job["strategy"]["matrix"]["os"] != serde_json::json!(["ubuntu-24.04", "windows-latest"])
+        || job["strategy"]["matrix"]["engine"]
+            != serde_json::json!(["playwright", "patchright", "camoufox", "cloak"])
+    {
+        return fail(
+            "Both Cloak ownership hosts must share one serialized vendor seat without cancelling required tests",
+        );
+    }
+    Ok(())
+}
+
+pub fn native_functional_fixture(workflow: &Value) -> Result<()> {
+    let job = &workflow["jobs"]["functional"];
+    let engine = "${{ github.workspace }}/engine-rust/target/debug/numera-engine${{ matrix.os == 'windows-latest' && '.exe' || '' }}";
+    let worker = "${{ github.workspace }}/engine-rust/target/debug/numera-browser-runtime${{ matrix.os == 'windows-latest' && '.exe' || '' }}";
+    if job["env"]["NUMERA_NATIVE_CANDIDATE"] != engine
+        || job["env"]["NUMERA_NATIVE_ENGINE"] != engine
+        || job["env"]["NUMERA_BROWSER_RUNTIME"] != worker
+    {
+        return fail(
+            "Functional ownership tests require the actual compiled native engine and worker",
+        );
+    }
+    let steps = &job["steps"];
+    let fixture = step_once(
+        steps,
+        "--bin numera-engine --bin numera-browser-runtime",
+        true,
+    )?;
+    let build = step_once(steps, "ci native-phase build", true)?;
+    let test = step_once(steps, "ci native-phase test", true)?;
+    if !(build < fixture && fixture < test)
+        || !steps[fixture]["run"].as_str().is_some_and(|run| {
+            run.contains("--locked --features native-product,native-browser,test-support")
+        })
+    {
+        return fail("Functional native fixtures must compile before every required test");
+    }
+    Ok(())
+}
+
 pub fn coverage(root: &Path) -> Result<()> {
     super::coverage_inventory::validate(root)?;
     let native = parse(&fs::read_to_string(
         root.join(".github/workflows/native-ci.yml"),
     )?)?;
     native_automatic(&native)?;
+    native_functional_fixture(&native)?;
+    super::history::workflow_contract(&native)?;
+    live_license_concurrency(&native)?;
     browser_page_compiler(
         &native,
         &parse(&fs::read_to_string(

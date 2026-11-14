@@ -10,13 +10,11 @@ use super::{
 use crate::{
     conversion::{self, truth, value_text},
     validation,
-    vault::{
-        self,
-        policy::{VaultState, write_secret},
-    },
+    vault::{self, policy::write_secret},
 };
 use serde_json::{Map, Value};
 use std::{
+    borrow::Cow,
     fs, io,
     path::{Path, PathBuf},
 };
@@ -42,6 +40,46 @@ fn read_text(path: &Path) -> io::Result<String> {
 pub struct DashboardStore {
     pub(crate) root: PathBuf,
     pub(crate) repo: ProfileRepo,
+}
+/// One request-local disk observation. Only proxy.pass can change when the
+/// public view is decrypted; retain that original field without cloning every
+/// plaintext dashboard tree.
+pub(crate) struct DashboardRead {
+    path: PathBuf,
+    profile: Value,
+    original_pass: Option<Option<Value>>,
+}
+impl DashboardRead {
+    pub(crate) fn path(&self) -> &Path {
+        &self.path
+    }
+    pub(crate) fn profile(&self) -> &Value {
+        &self.profile
+    }
+    pub(crate) fn raw(&self) -> Result<Cow<'_, Value>, RepoError> {
+        let Some(original) = &self.original_pass else {
+            return Ok(Cow::Borrowed(&self.profile));
+        };
+        let mut raw = self.profile.clone();
+        let proxy = raw
+            .get_mut("proxy")
+            .and_then(Value::as_object_mut)
+            .ok_or_else(|| {
+                RepoError::InvalidRecord("Stored dashboard proxy shape changed".into())
+            })?;
+        match original {
+            Some(value) => {
+                proxy.insert("pass".into(), value.clone());
+            }
+            None => {
+                proxy.remove("pass");
+            }
+        }
+        Ok(Cow::Owned(raw))
+    }
+    pub(crate) fn into_profile(self) -> Value {
+        self.profile
+    }
 }
 impl DashboardStore {
     pub fn new(root: PathBuf, password: Option<String>) -> Self {
@@ -106,6 +144,10 @@ impl DashboardStore {
         Ok(ProfileRepo::raw(&self.repo.path(id, "dashboard")?)?)
     }
     pub fn list(&self) -> Result<Vec<Value>, RepoError> {
+        self.list_for_reconciliation()
+            .map(|rows| rows.into_iter().map(DashboardRead::into_profile).collect())
+    }
+    pub(crate) fn list_for_reconciliation(&self) -> Result<Vec<DashboardRead>, RepoError> {
         let lock = DataLock::transaction(&self.root)?;
         let _guard = lock.acquire_configured()?;
         self.repo.require_settled()?;
@@ -123,14 +165,25 @@ impl DashboardStore {
             if super::paths::json_filename(&path)
                 && let Ok(record) = crate::http::json_extended::parse(&read_text(&path)?)
             {
-                records.push(self.decrypted(record)?);
+                let original = record
+                    .get("proxy")
+                    .filter(|proxy| proxy.is_object())
+                    .map(|proxy| proxy.get("pass").cloned());
+                let profile = self.decrypted(record)?;
+                let original_pass =
+                    original.filter(|pass| profile["proxy"].get("pass") != pass.as_ref());
+                records.push(DashboardRead {
+                    path,
+                    profile,
+                    original_pass,
+                });
             }
         }
         records.sort_by(|left, right| {
-            left["_created"]
+            left.profile["_created"]
                 .as_f64()
                 .unwrap_or(0.0)
-                .total_cmp(&right["_created"].as_f64().unwrap_or(0.0))
+                .total_cmp(&right.profile["_created"].as_f64().unwrap_or(0.0))
         });
         Ok(records)
     }
@@ -176,22 +229,9 @@ impl DashboardStore {
         } else {
             Value::Null
         };
-        let password = self.repo.password.as_deref().unwrap_or("");
-        let salt = descriptor["salt"].as_str().unwrap_or("");
-        let state = if descriptor.is_null() {
-            VaultState::Disabled
-        } else if !password.is_empty()
-            && vault::check_password(
-                password,
-                salt,
-                descriptor["verifier"].as_str().unwrap_or(""),
-            )
-        {
-            VaultState::Unlocked
-        } else {
-            VaultState::Locked
-        };
-        let seal = |value: &str| vault::encrypt(password, salt, value);
+        let writer = vault::policy::SecretWriter::new(self.repo.password.as_deref(), &descriptor);
+        let state = writer.state();
+        let seal = |value: &str| writer.seal(value);
         if intent == "remove" {
             for secret in [engine_secret, dash_secret] {
                 write_secret(state, Some(""), secret, seal)

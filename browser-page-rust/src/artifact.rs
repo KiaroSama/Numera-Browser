@@ -8,6 +8,12 @@ use std::{
     path::Path,
 };
 pub const MAX_ARTIFACT: usize = 1024 * 1024;
+pub const PATH_REMAPPING: [&str; 4] = [
+    "repository=numera",
+    "cargo-home=cargo",
+    "rustup-home=rustup",
+    "dependency-crates=crates/name-version",
+];
 pub fn digest(bytes: &[u8]) -> String {
     Sha256::digest(bytes)
         .iter()
@@ -93,7 +99,7 @@ pub fn validate(repo: &Path, artifact: &[u8], receipt: &Value) -> io::Result<()>
         "binaryen_archive":"https://github.com/WebAssembly/binaryen/releases/download/version_133/binaryen-version_133-x86_64-linux.tar.gz",
         "binaryen_archive_sha256":"2dc9c7813f5375db93d96ead4b78222fcc3e2677bbb832297af4797782a37489",
         "wasm2js_binary_sha256":"52597efec0ad2416f8b5c245864960e775b8ffc94c751cc0b016c4b4986d3bcb",
-        "path_remapping":["repository=numera","cargo-home=cargo","rustup-home=rustup"],
+        "path_remapping":PATH_REMAPPING,
         "wasm2js_flags":["--enable-bulk-memory","--enable-bulk-memory-opt","--enable-nontrapping-float-to-int","--pedantic","-O"],
         "minified":false,"runtime_compilation":false,
         "bridge":["generated module imports/exports become a synchronous classic factory","generated Uint8Array and DataView caches observe non-detaching ArrayBuffer growth"],

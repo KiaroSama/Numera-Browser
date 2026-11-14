@@ -591,6 +591,24 @@ source_test!(
             fs::read(root.join("second.json")).expect("other owner"),
             b"preserve"
         );
+        // An actual same-file spelling alias is valid on a case-insensitive
+        // host. A hard link supplies that same identity control on Linux.
+        let stored = root.join("fixture.json");
+        let alias = root.join("Fixture.json");
+        fs::write(&stored, b"same owned file").expect("stored spelling");
+        if !alias.exists() {
+            fs::hard_link(&stored, &alias).expect("same-file alias");
+        }
+        let expected = alias.clone();
+        testing::with_path_resolver(
+            move |path| Ok((path == alias).then(|| stored.clone())),
+            || {
+                assert_eq!(
+                    paths::id_path(root, "Fixture", ".json").expect("same file"),
+                    expected
+                )
+            },
+        );
     }
 );
 source_test!(

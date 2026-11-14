@@ -9,6 +9,9 @@ use axum::{
 };
 use std::{future::Future, path::PathBuf, sync::Arc};
 
+#[path = "admission_handle.rs"]
+mod handle;
+
 tokio::task_local! {
     static REQUEST_OWNER: Arc<Reservation>;
 }
@@ -45,11 +48,22 @@ async fn admit(State(root): State<PathBuf>, request: Request, next: Next) -> Res
     }
 }
 
-pub(super) fn blocking<F, R>(operation: F) -> tokio::task::JoinHandle<R>
+pub(super) fn blocking<F, R>(operation: F) -> handle::Blocking<R>
 where
     F: FnOnce() -> R + Send + 'static,
     R: Send + 'static,
 {
+    handle::Blocking::new(blocking_boxed(Box::new(move || {
+        Box::new(operation()) as handle::Erased
+    })))
+}
+
+// All handlers share the same Tokio/task-local machinery. The typed front end
+// alone creates the erased result and the corresponding checked typed handle.
+#[inline(never)]
+fn blocking_boxed(
+    operation: Box<dyn FnOnce() -> handle::Erased + Send>,
+) -> tokio::task::JoinHandle<handle::Erased> {
     let owner = REQUEST_OWNER.try_with(Arc::clone).ok();
     #[cfg(feature = "test-support")]
     let observer = crate::vault::testing::capture();
@@ -183,6 +197,59 @@ mod tests {
         finish.send(())?;
         runtime.block_on(task)??;
         assert_eq!(retained, 1);
+        assert_eq!(std::fs::read_dir(root.join(".updates/work"))?.count(), 0);
+
+        let owner = Arc::new(Reservation::begin(root, "fixture-http-panic")?);
+        #[cfg(feature = "test-support")]
+        let observations = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        #[cfg(feature = "test-support")]
+        let observed = observations.clone();
+        #[cfg(feature = "test-support")]
+        let callback_root = root.to_path_buf();
+        let spawn = || {
+            let _runtime = runtime.enter();
+            REQUEST_OWNER.sync_scope(owner.clone(), || {
+                blocking(move || -> io::Result<()> {
+                    assert!(REQUEST_OWNER.try_with(|_| ()).is_ok());
+                    #[cfg(feature = "test-support")]
+                    crate::vault::testing::event("boxed-blocking-observer", &callback_root)?;
+                    panic!("Controlled blocking callback panic");
+                })
+            })
+        };
+        #[cfg(feature = "test-support")]
+        let panic_task = crate::vault::testing::with_observer(
+            move |event| {
+                if event.operation == "boxed-blocking-observer" {
+                    observed.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                }
+                Ok(crate::vault::testing::Action::Continue)
+            },
+            spawn,
+        );
+        #[cfg(not(feature = "test-support"))]
+        let panic_task = spawn();
+        drop(owner);
+        assert!(
+            runtime
+                .block_on(panic_task)
+                .is_err_and(|error| error.is_panic())
+        );
+        #[cfg(feature = "test-support")]
+        assert_eq!(observations.load(std::sync::atomic::Ordering::SeqCst), 1);
+        assert_eq!(std::fs::read_dir(root.join(".updates/work"))?.count(), 0);
+        let owner = Arc::new(Reservation::begin(root, "fixture-http-result-type")?);
+        let refused = {
+            let _runtime = runtime.enter();
+            REQUEST_OWNER.sync_scope(owner.clone(), || {
+                handle::Blocking::<u8>::new(blocking_boxed(Box::new(|| Box::new(()))))
+            })
+        };
+        drop(owner);
+        assert!(matches!(
+            runtime.block_on(refused),
+            Err(handle::Failure::ResultType)
+        ));
         assert_eq!(std::fs::read_dir(root.join(".updates/work"))?.count(), 0);
         temporary.cleanup()?;
         Ok(())

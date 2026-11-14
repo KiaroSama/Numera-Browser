@@ -140,14 +140,14 @@ source_test!(
             "/api/schedules",
             json!({"profileId":p["id"],"everyHours":12,"minutes":5,"preset":"general"}),
         );
-        assert_eq!(status, 200, "{row}");
+        assert_eq!(status, 200, "HTTP response status mismatch");
         let uri = format!(
             "/api/schedules/{}",
             row["id"].as_str().expect("schedule id")
         );
         let before = http(root, "GET", "/api/schedules", Value::Null).1;
-        let (status, body) = http(root, "PUT", &uri, json!({"everyHours": "soon"}));
-        assert_eq!(status, 400, "{body}");
+        let (status, _body) = http(root, "PUT", &uri, json!({"everyHours": "soon"}));
+        assert_eq!(status, 400, "HTTP response status mismatch");
         assert_eq!(http(root, "GET", "/api/schedules", Value::Null).1, before);
     }
 );
@@ -164,14 +164,14 @@ source_test!(
             "/api/schedules",
             json!({"profileId":p["id"],"everyHours":12,"minutes":5,"preset":"general"}),
         );
-        assert_eq!(status, 200, "{row}");
+        assert_eq!(status, 200, "HTTP response status mismatch");
         let uri = format!(
             "/api/schedules/{}",
             row["id"].as_str().expect("schedule id")
         );
         let before = http(root, "GET", "/api/schedules", Value::Null).1;
-        let (status, body) = http(root, "PUT", &uri, json!({"everyHours": -4}));
-        assert_eq!(status, 400, "{body}");
+        let (status, _body) = http(root, "PUT", &uri, json!({"everyHours": -4}));
+        assert_eq!(status, 400, "HTTP response status mismatch");
         assert_eq!(http(root, "GET", "/api/schedules", Value::Null).1, before);
     }
 );
@@ -188,14 +188,14 @@ source_test!(
             "/api/schedules",
             json!({"profileId":p["id"],"everyHours":12,"minutes":5,"preset":"general"}),
         );
-        assert_eq!(status, 200, "{row}");
+        assert_eq!(status, 200, "HTTP response status mismatch");
         let uri = format!(
             "/api/schedules/{}",
             row["id"].as_str().expect("schedule id")
         );
         let before = http(root, "GET", "/api/schedules", Value::Null).1;
-        let (status, body) = http(root, "PUT", &uri, json!({"everyHours": 0}));
-        assert_eq!(status, 400, "{body}");
+        let (status, _body) = http(root, "PUT", &uri, json!({"everyHours": 0}));
+        assert_eq!(status, 400, "HTTP response status mismatch");
         assert_eq!(http(root, "GET", "/api/schedules", Value::Null).1, before);
     }
 );
@@ -212,14 +212,14 @@ source_test!(
             "/api/schedules",
             json!({"profileId":p["id"],"everyHours":12,"minutes":5,"preset":"general"}),
         );
-        assert_eq!(status, 200, "{row}");
+        assert_eq!(status, 200, "HTTP response status mismatch");
         let uri = format!(
             "/api/schedules/{}",
             row["id"].as_str().expect("schedule id")
         );
         let before = http(root, "GET", "/api/schedules", Value::Null).1;
-        let (status, body) = http(root, "PUT", &uri, json!({"everyHours": 1000000000.0}));
-        assert_eq!(status, 400, "{body}");
+        let (status, _body) = http(root, "PUT", &uri, json!({"everyHours": 1000000000.0}));
+        assert_eq!(status, 400, "HTTP response status mismatch");
         assert_eq!(http(root, "GET", "/api/schedules", Value::Null).1, before);
     }
 );
@@ -236,14 +236,14 @@ source_test!(
             "/api/schedules",
             json!({"profileId":p["id"],"everyHours":12,"minutes":5,"preset":"general"}),
         );
-        assert_eq!(status, 200, "{row}");
+        assert_eq!(status, 200, "HTTP response status mismatch");
         let uri = format!(
             "/api/schedules/{}",
             row["id"].as_str().expect("schedule id")
         );
         let before = http(root, "GET", "/api/schedules", Value::Null).1;
-        let (status, body) = http(root, "PUT", &uri, json!({"minutes": -10}));
-        assert_eq!(status, 400, "{body}");
+        let (status, _body) = http(root, "PUT", &uri, json!({"minutes": -10}));
+        assert_eq!(status, 400, "HTTP response status mismatch");
         assert_eq!(http(root, "GET", "/api/schedules", Value::Null).1, before);
     }
 );
@@ -260,14 +260,14 @@ source_test!(
             "/api/schedules",
             json!({"profileId":p["id"],"everyHours":12,"minutes":5,"preset":"general"}),
         );
-        assert_eq!(status, 200, "{row}");
+        assert_eq!(status, 200, "HTTP response status mismatch");
         let uri = format!(
             "/api/schedules/{}",
             row["id"].as_str().expect("schedule id")
         );
         let before = http(root, "GET", "/api/schedules", Value::Null).1;
-        let (status, body) = http(root, "PUT", &uri, json!({"minutes": 0}));
-        assert_eq!(status, 400, "{body}");
+        let (status, _body) = http(root, "PUT", &uri, json!({"minutes": 0}));
+        assert_eq!(status, 400, "HTTP response status mismatch");
         assert_eq!(http(root, "GET", "/api/schedules", Value::Null).1, before);
     }
 );
@@ -284,14 +284,14 @@ source_test!(
             "/api/schedules",
             json!({"profileId":p["id"],"everyHours":12,"minutes":5,"preset":"general"}),
         );
-        assert_eq!(status, 200, "{row}");
+        assert_eq!(status, 200, "HTTP response status mismatch");
         let uri = format!(
             "/api/schedules/{}",
             row["id"].as_str().expect("schedule id")
         );
         let before = http(root, "GET", "/api/schedules", Value::Null).1;
-        let (status, body) = http(root, "PUT", &uri, json!({"minutes": "lots"}));
-        assert_eq!(status, 400, "{body}");
+        let (status, _body) = http(root, "PUT", &uri, json!({"minutes": "lots"}));
+        assert_eq!(status, 400, "HTTP response status mismatch");
         assert_eq!(http(root, "GET", "/api/schedules", Value::Null).1, before);
     }
 );
@@ -308,14 +308,14 @@ source_test!(
             "/api/schedules",
             json!({"profileId":p["id"],"everyHours":12,"minutes":5,"preset":"general"}),
         );
-        assert_eq!(status, 200, "{row}");
+        assert_eq!(status, 200, "HTTP response status mismatch");
         let uri = format!(
             "/api/schedules/{}",
             row["id"].as_str().expect("schedule id")
         );
         let before = http(root, "GET", "/api/schedules", Value::Null).1;
-        let (status, body) = http(root, "PUT", &uri, json!({"enabled": "yes"}));
-        assert_eq!(status, 400, "{body}");
+        let (status, _body) = http(root, "PUT", &uri, json!({"enabled": "yes"}));
+        assert_eq!(status, 400, "HTTP response status mismatch");
         assert_eq!(http(root, "GET", "/api/schedules", Value::Null).1, before);
     }
 );
@@ -332,14 +332,14 @@ source_test!(
             "/api/schedules",
             json!({"profileId":p["id"],"everyHours":12,"minutes":5,"preset":"general"}),
         );
-        assert_eq!(status, 200, "{row}");
+        assert_eq!(status, 200, "HTTP response status mismatch");
         let uri = format!(
             "/api/schedules/{}",
             row["id"].as_str().expect("schedule id")
         );
         let before = http(root, "GET", "/api/schedules", Value::Null).1;
-        let (status, body) = http(root, "PUT", &uri, json!({"preset": 5}));
-        assert_eq!(status, 400, "{body}");
+        let (status, _body) = http(root, "PUT", &uri, json!({"preset": 5}));
+        assert_eq!(status, 400, "HTTP response status mismatch");
         assert_eq!(http(root, "GET", "/api/schedules", Value::Null).1, before);
     }
 );
@@ -352,8 +352,8 @@ source_test!(
         let p = create(root, "s");
         let mut body = json!({"everyHours": "soon", "profileId": null});
         body["profileId"] = p["id"].clone();
-        let (status, value) = http(root, "POST", "/api/schedules", body);
-        assert_eq!(status, 400, "{value}");
+        let (status, _value) = http(root, "POST", "/api/schedules", body);
+        assert_eq!(status, 400, "HTTP response status mismatch");
         assert!(
             ScheduleStore::new(root.to_owned())
                 .list()
@@ -371,8 +371,8 @@ source_test!(
         let p = create(root, "s");
         let mut body = json!({"minutes": -1, "profileId": null});
         body["profileId"] = p["id"].clone();
-        let (status, value) = http(root, "POST", "/api/schedules", body);
-        assert_eq!(status, 400, "{value}");
+        let (status, _value) = http(root, "POST", "/api/schedules", body);
+        assert_eq!(status, 400, "HTTP response status mismatch");
         assert!(
             ScheduleStore::new(root.to_owned())
                 .list()
@@ -390,8 +390,8 @@ source_test!(
         let p = create(root, "s");
         let mut body = json!({"everyHours": 100000, "profileId": null});
         body["profileId"] = p["id"].clone();
-        let (status, value) = http(root, "POST", "/api/schedules", body);
-        assert_eq!(status, 400, "{value}");
+        let (status, _value) = http(root, "POST", "/api/schedules", body);
+        assert_eq!(status, 400, "HTTP response status mismatch");
         assert!(
             ScheduleStore::new(root.to_owned())
                 .list()
@@ -408,7 +408,7 @@ source_test!(
         let root = temp.path();
         let p = create(root, "s");
         let (status, row) = http(root, "POST", "/api/schedules", json!({"profileId":p["id"]}));
-        assert_eq!(status, 200, "{row}");
+        assert_eq!(status, 200, "HTTP response status mismatch");
         let uri = format!("/api/schedules/{}", row["id"].as_str().expect("id"));
         for key in ["lastRun", "lastOutcome", "profileId"] {
             let mut patch = json!({});
@@ -425,10 +425,10 @@ source_test!(
         let root = temp.path();
         let p = create(root, "s");
         let (status, row) = http(root, "POST", "/api/schedules", json!({"profileId":p["id"]}));
-        assert_eq!(status, 200, "{row}");
+        assert_eq!(status, 200, "HTTP response status mismatch");
         let uri = format!("/api/schedules/{}", row["id"].as_str().expect("id"));
         let (status, changed) = http(root, "PUT", &uri, json!({"everyHours":6,"enabled":false}));
-        assert_eq!(status, 200, "{changed}");
+        assert_eq!(status, 200, "HTTP response status mismatch");
         assert_eq!(changed["everyHours"], 6.0);
         assert_eq!(changed["enabled"], false);
     }
@@ -524,7 +524,27 @@ source_test!(
         scheduler.tick().expect("tick");
         let id = row["id"].as_str().expect("id");
         assert_eq!(lifecycle::row(root, id)["lastOutcome"], "started");
+        let adapter_pid = fs::read_to_string(root.join("adapter-pid"))
+            .expect("actual adapter pid")
+            .parse::<u32>()
+            .expect("native pid");
+        let adapter_token = process_identity::started_at(adapter_pid)
+            .expect("adapter birth")
+            .expect("live adapter");
+        let browser_pid = fs::read_to_string(root.join("browser-pid"))
+            .expect("actual browser leaf pid")
+            .parse::<u32>()
+            .expect("native pid");
+        let browser_token = process_identity::started_at(browser_pid)
+            .expect("browser birth")
+            .expect("live browser leaf");
+        assert!(
+            process_identity::alive(browser_pid, Some(browser_token)).expect("live leaf control")
+        );
+        let tree = raw(root, &format!("sessions/{}.json", p.id));
+        assert!(!numera_core::ownership::recorded_tree::empty(&tree).expect("live owned tree"));
         fs::write(root.join("adapter-exit"), b"3").expect("actual adapter exit");
+        process::wait(&root.join("adapter-exiting"));
         let end = Instant::now() + Duration::from_secs(15);
         loop {
             registry.reap().expect("reap");
@@ -535,6 +555,13 @@ source_test!(
             thread::sleep(Duration::from_millis(10));
         }
         let outcome = lifecycle::row(root, id);
+        assert!(
+            !process_identity::alive(adapter_pid, Some(adapter_token)).expect("exited adapter")
+        );
+        // A reparented Unix zombie has a PID but cannot execute. The same
+        // kernel tree observation used by the owner proves every live leaf
+        // ended; Windows observes the captured named Job instead of PID zero.
+        assert!(numera_core::ownership::recorded_tree::empty(&tree).expect("settled whole tree"));
         assert_eq!(outcome["lastOutcome"], "failed");
         assert!(
             outcome["lastError"]

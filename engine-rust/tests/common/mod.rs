@@ -6,6 +6,22 @@ use std::{
 
 static NONCE: AtomicU64 = AtomicU64::new(0);
 
+pub fn canonical_path(path: &Path) -> io::Result<PathBuf> {
+    let path = fs::canonicalize(path)?;
+    #[cfg(windows)]
+    let path = {
+        let text = path
+            .to_str()
+            .ok_or_else(|| io::Error::other("Test path is not Unicode"))?;
+        if let Some(tail) = text.strip_prefix(r"\\?\UNC\") {
+            PathBuf::from(format!(r"\\{tail}"))
+        } else {
+            PathBuf::from(text.strip_prefix(r"\\?\").unwrap_or(text))
+        }
+    };
+    Ok(path)
+}
+
 /// Own only a newly created test root. Unwinding must not leave failed cases
 /// behind, and a recycled process id must not inherit a prior run's state.
 pub struct TempDirectory {
@@ -24,6 +40,11 @@ impl TempDirectory {
             ));
             match fs::create_dir(&path) {
                 Ok(()) => {
+                    // Fault callbacks compare owned paths with the product's
+                    // resolved spelling. Canonicalize once, including any
+                    // case-insensitive workspace aliases, without retaining
+                    // Rust's Windows-only verbatim prefix.
+                    let path = canonical_path(&path)?;
                     return Ok(Self {
                         path,
                         removed: false,

@@ -229,6 +229,19 @@ source_test!(
         let after = pair(root, id);
         assert_eq!(after.0["proxy"]["password"], before.0["proxy"]["password"]);
         assert_eq!(after.1["proxy"]["pass"], before.1["proxy"]["pass"]);
+        let mut edited = after.1.clone();
+        edited["name"] = "HTTP locked repair".into();
+        write(root, &format!("dashboard/{id}.json"), edited);
+        let (status, rows) = http(root, "GET", "/api/profiles", Value::Null);
+        assert_eq!(status, 200, "HTTP response status mismatch");
+        assert_eq!(rows[0]["name"], "HTTP locked repair");
+        let http_after = pair(root, id);
+        assert_eq!(http_after.0["name"], "HTTP locked repair");
+        assert_eq!(
+            http_after.0["proxy"]["password"],
+            before.0["proxy"]["password"]
+        );
+        assert_eq!(http_after.1["proxy"]["pass"], before.1["proxy"]["pass"]);
         assert_eq!(
             ProfileRepo::new(root.to_owned(), Some("master".into()))
                 .get(id)
@@ -282,6 +295,27 @@ source_test!(
                 .to_record()["password"],
             "s3cret"
         );
+        let (engine_before, mut dashboard_before) = pair(root, id);
+        let dashboard_secret = dashboard_before["proxy"]["pass"].clone();
+        dashboard_before["name"] = "HTTP unlocked repair".into();
+        write(root, &format!("dashboard/{id}.json"), dashboard_before);
+        let (status, rows) = http_password(
+            root,
+            "GET",
+            "/api/profiles",
+            Value::Null,
+            Some("master".into()),
+        );
+        assert_eq!(status, 200, "HTTP response status mismatch");
+        assert_eq!(rows[0]["name"], "HTTP unlocked repair");
+        assert_eq!(rows[0]["proxy"]["pass"], "s3cret");
+        let http_after = pair(root, id);
+        assert_eq!(http_after.0["name"], "HTTP unlocked repair");
+        assert_eq!(
+            http_after.0["proxy"]["password"],
+            engine_before["proxy"]["password"]
+        );
+        assert_eq!(http_after.1["proxy"]["pass"], dashboard_secret);
     }
 );
 source_test!(
@@ -296,7 +330,7 @@ source_test!(
         d["name"] = "beta".into();
         write(root, &format!("dashboard/{id}.json"), d);
         let (status, rows) = http(root, "GET", "/api/profiles", Value::Null);
-        assert_eq!(status, 200, "{rows}");
+        assert_eq!(status, 200, "HTTP response status mismatch");
         assert_eq!(
             rows.as_array()
                 .expect("rows")
@@ -395,13 +429,13 @@ source_test!(
         let root = temp.path();
         let p = diverged(root, "alpha", 1);
         let id = &p.id;
-        let (status, body) = http(
+        let (status, _body) = http(
             root,
             "PUT",
             &format!("/api/profiles/{id}"),
             json!({"notes":"hello"}),
         );
-        assert_eq!(status, 409, "{body}");
+        assert_eq!(status, 409, "HTTP response status mismatch");
         assert_secrets(root, id, "engine", "dashboard");
         assert_eq!(
             store(root).get(id).expect("get").expect("profile").notes,
@@ -627,13 +661,13 @@ source_test!(
         let p = one_sided(root, Some("working-secret"), "");
         let id = &p.id;
         let before = pair(root, id);
-        let (status, body) = http(
+        let (status, _body) = http(
             root,
             "PUT",
             &format!("/api/profiles/{id}"),
             json!({"notes":"hello"}),
         );
-        assert_eq!(status, 409, "{body}");
+        assert_eq!(status, 409, "HTTP response status mismatch");
         assert_eq!(pair(root, id), before);
         assert_eq!(
             store(root).get(id).expect("get").expect("profile").notes,
@@ -808,7 +842,7 @@ source_test!(
             ),
         ] {
             let (status, answer) = http(root, method, &uri, body);
-            assert_eq!(status, 409, "{answer}");
+            assert_eq!(status, 409, "HTTP response status mismatch");
             assert!(
                 answer["detail"]
                     .as_str()
@@ -833,13 +867,13 @@ source_test!(
         let id = &p.id;
         store(root).enable_vault("master").expect("vault");
         let before = pair(root, id);
-        let (status, body) = http(
+        let (status, _body) = http(
             root,
             "PUT",
             &format!("/api/profiles/{id}"),
             json!({"proxy":{"type":"HTTP","host":"1.2.3.4","port":"8080","user":"u","pass":""}}),
         );
-        assert_eq!(status, 423, "{body}");
+        assert_eq!(status, 423, "HTTP response status mismatch");
         assert_eq!(pair(root, id), before);
     }
 );
@@ -851,13 +885,13 @@ source_test!(
         let root = temp.path();
         let healthy = saved(root, "healthy", 3);
         let p = diverged(root, "alpha", 1);
-        let (status, body) = http(
+        let (status, _body) = http(
             root,
             "POST",
             "/api/profiles/bulk",
             json!({"ids":[healthy.id,p.id],"patch":{"tags":["t"]}}),
         );
-        assert_eq!(status, 409, "{body}");
+        assert_eq!(status, 409, "HTTP response status mismatch");
         assert!(
             store(root)
                 .get(&healthy.id)
@@ -889,13 +923,13 @@ source_test!(
         .into();
         write(root, &format!("dashboard/{id}.json"), d);
         let before = pair(root, id);
-        let (status, body) = http(
+        let (status, _body) = http(
             root,
             "POST",
             "/api/profiles/bulk",
             json!({"ids":[id],"patch":{"notes":"bulk"}}),
         );
-        assert_eq!(status, 200, "{body}");
+        assert_eq!(status, 200, "HTTP response status mismatch");
         let after = pair(root, id);
         assert_eq!(after.0["proxy"]["password"], before.0["proxy"]["password"]);
         assert_eq!(after.1["proxy"]["pass"], before.1["proxy"]["pass"]);
@@ -914,13 +948,13 @@ source_test!(
         let p = one_sided(root, Some("working-secret"), "");
         let id = &p.id;
         let before = pair(root, id);
-        let (status, body) = http(
+        let (status, _body) = http(
             root,
             "POST",
             "/api/profiles/bulk",
             json!({"ids":[id],"patch":{"notes":"bulk"}}),
         );
-        assert_eq!(status, 409, "{body}");
+        assert_eq!(status, 409, "HTTP response status mismatch");
         assert_eq!(pair(root, id), before);
         assert_eq!(
             store(root).get(id).expect("get").expect("profile").notes,
@@ -936,13 +970,13 @@ source_test!(
         let root = temp.path();
         let a = saved(root, "a", 1);
         let b = saved(root, "b", 2);
-        let (status, body) = http(
+        let (status, _body) = http(
             root,
             "POST",
             "/api/profiles/bulk",
             json!({"ids":[a.id,b.id],"patch":{"tags":["ok"]}}),
         );
-        assert_eq!(status, 200, "{body}");
+        assert_eq!(status, 200, "HTTP response status mismatch");
         for id in [&a.id, &b.id] {
             assert_eq!(
                 store(root).get(id).expect("get").expect("profile").tags,
@@ -1004,8 +1038,8 @@ source_test!(
             .as_object_mut()
             .expect("proxy")
             .remove("pass");
-        let (status, body) = http(root, "PUT", &format!("/api/profiles/{id}"), edited);
-        assert_eq!(status, 409, "{body}");
+        let (status, _body) = http(root, "PUT", &format!("/api/profiles/{id}"), edited);
+        assert_eq!(status, 409, "HTTP response status mismatch");
         assert_secrets(root, id, "engine", "dashboard");
         assert_eq!(
             store(root).get(id).expect("get").expect("profile").notes,
@@ -1028,8 +1062,8 @@ source_test!(
             .as_object_mut()
             .expect("proxy")
             .remove("pass");
-        let (status, body) = http(root, "PUT", &format!("/api/profiles/{id}"), edited);
-        assert_eq!(status, 200, "{body}");
+        let (status, _body) = http(root, "PUT", &format!("/api/profiles/{id}"), edited);
+        assert_eq!(status, 200, "HTTP response status mismatch");
         let after = store(root)
             .get(id)
             .expect("get")
@@ -1054,13 +1088,13 @@ source_test!(
         let root = temp.path();
         let p = diverged(root, "alpha", 1);
         let id = &p.id;
-        let (status, body) = http(
+        let (status, _body) = http(
             root,
             "PUT",
             &format!("/api/profiles/{id}"),
             json!({"proxy":{"type":"HTTP","host":"1.2.3.4","port":"8080","user":"u","pass":"dashboard"}}),
         );
-        assert_eq!(status, 200, "{body}");
+        assert_eq!(status, 200, "HTTP response status mismatch");
         assert_secrets(root, id, "dashboard", "dashboard");
     }
 );

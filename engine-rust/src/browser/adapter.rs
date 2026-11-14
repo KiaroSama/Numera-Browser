@@ -4,10 +4,14 @@ use crate::{
 };
 use serde_json::{Map, Value, json};
 use std::{
-    io::{self, BufRead, BufReader, Write},
+    io::{self, BufRead, BufReader, Read, Write},
     path::Path,
     process::{Command, Stdio},
-    sync::mpsc::{self, Receiver},
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+        mpsc::{self, Receiver},
+    },
     thread::{self, JoinHandle},
     time::Duration,
 };
@@ -30,6 +34,7 @@ pub struct Adapter {
     metadata: Value,
     relay: Option<crate::network::relay::Relay>,
     log: Option<RuntimeLog>,
+    leader_exited: Arc<AtomicBool>,
 }
 fn join_worker(
     worker: &mut Option<JoinHandle<()>>,
@@ -52,6 +57,92 @@ fn join_worker(
             .map_err(|_| io::Error::other(format!("Browser adapter {label} failed")))?;
     }
     Ok(())
+}
+struct ReplyPipe {
+    pipe: crate::ownership::capture::Pipe,
+    leader_exited: Arc<AtomicBool>,
+}
+impl Read for ReplyPipe {
+    fn read(&mut self, bytes: &mut [u8]) -> io::Result<usize> {
+        if bytes.is_empty() {
+            return Ok(0);
+        }
+        loop {
+            // Interrupted is not evidence that the pipe has no accepted
+            // bytes. Preserve it separately from WouldBlock on POSIX.
+            #[cfg(unix)]
+            let available = match self.pipe.read(bytes) {
+                Ok(count) => Some(count),
+                Err(error) if error.kind() == io::ErrorKind::Interrupted => continue,
+                Err(error) if error.kind() == io::ErrorKind::WouldBlock => None,
+                Err(error) => return Err(error),
+            };
+            #[cfg(not(unix))]
+            let available = self.pipe.available(bytes)?;
+            match available {
+                Some(count) => return Ok(count),
+                // Drain all bytes accepted before producer death before
+                // reporting EOF. This preserves a final complete frame even
+                // when the reader thread was descheduled at leader exit.
+                None if self.leader_exited.load(Ordering::Acquire) => return Ok(0),
+                None => thread::sleep(Duration::from_millis(10)),
+            }
+        }
+    }
+}
+enum RpcWait {
+    Write,
+    Reply,
+}
+fn receive_before<T>(
+    receiver: &Receiver<io::Result<T>>,
+    session: &mut Session,
+    deadline: std::time::Instant,
+    observe_exit: bool,
+    leader_exited: &AtomicBool,
+    stage: RpcWait,
+) -> io::Result<T> {
+    let (message, disconnected) = match stage {
+        RpcWait::Write => (
+            "Browser adapter request write did not complete",
+            io::ErrorKind::TimedOut,
+        ),
+        RpcWait::Reply => (
+            "Browser adapter did not provide a complete response",
+            io::ErrorKind::UnexpectedEof,
+        ),
+    };
+    loop {
+        match receiver.recv_timeout(
+            deadline
+                .saturating_duration_since(std::time::Instant::now())
+                .min(Duration::from_millis(10)),
+        ) {
+            Ok(result) => return result,
+            Err(mpsc::RecvTimeoutError::Disconnected) => {
+                return Err(io::Error::new(disconnected, message));
+            }
+            Err(mpsc::RecvTimeoutError::Timeout) => {
+                if std::time::Instant::now() >= deadline {
+                    return Err(io::Error::new(io::ErrorKind::TimedOut, message));
+                }
+                if observe_exit && session.child_mut()?.try_wait()?.is_some() {
+                    leader_exited.store(true, Ordering::Release);
+                    if matches!(stage, RpcWait::Write) {
+                        return receiver.try_recv().unwrap_or_else(|_| {
+                            Err(io::Error::new(
+                                io::ErrorKind::UnexpectedEof,
+                                "Browser adapter exited before completing the request",
+                            ))
+                        });
+                    }
+                    // The one pipe reader drains accepted bytes then reports
+                    // EOF. Do not race a valid buffered final frame with an
+                    // immediate synthetic error from this observing thread.
+                }
+            }
+        }
+    }
 }
 struct RetainedWorkers {
     reader: Option<JoinHandle<()>>,
@@ -244,6 +335,8 @@ impl Adapter {
             .stdout
             .take()
             .ok_or_else(|| io::Error::other("Browser adapter output missing"))?;
+        let pipe = crate::ownership::capture::Pipe::Out(stdout);
+        pipe.prepare()?;
         let mut stdin = session
             .child_mut()?
             .stdin
@@ -267,11 +360,16 @@ impl Adapter {
                 crate::ownership::test_support::adapter_worker_end(0);
             });
         });
+        let leader_exited = Arc::new(AtomicBool::new(false));
+        let reader_exit = Arc::clone(&leader_exited);
         let (sender, output) = mpsc::sync_channel(8);
         #[cfg(feature = "test-support")]
         let reader_context = crate::ownership::test_support::capture();
         let reader = thread::spawn(move || {
-            let mut input = BufReader::new(stdout);
+            let mut input = BufReader::new(ReplyPipe {
+                pipe,
+                leader_exited: reader_exit,
+            });
             loop {
                 match frame(&mut input) {
                     Ok(Some(value)) => {
@@ -308,6 +406,7 @@ impl Adapter {
             metadata: Value::Null,
             relay: None,
             log,
+            leader_exited,
         };
         let hello = adapter.call("hello", Map::new(), budget);
         match hello {
@@ -552,37 +651,45 @@ impl Adapter {
             .checked_add(budget)
             .ok_or_else(|| io::Error::other("Browser adapter request budget is invalid"))?;
         let (done, written) = mpsc::sync_channel(1);
-        self.input
+        let input = self
+            .input
             .as_ref()
-            .ok_or_else(|| io::Error::other("Browser adapter input is closed"))?
+            .ok_or_else(|| io::Error::other("Browser adapter input is closed"))?;
+        if self.session.child_mut()?.try_wait()?.is_some() {
+            self.leader_exited.store(true, Ordering::Release);
+            return Err(io::Error::new(
+                io::ErrorKind::UnexpectedEof,
+                "Browser adapter exited before accepting the request",
+            ));
+        }
+        input
             .try_send(PendingWrite {
                 bytes,
                 answer: done,
             })
             .map_err(|_| io::Error::other("Browser adapter writer is unavailable"))?;
-        written
-            .recv_timeout(deadline.saturating_duration_since(std::time::Instant::now()))
-            .map_err(|_| {
-                io::Error::new(
-                    io::ErrorKind::TimedOut,
-                    "Browser adapter request write did not complete",
-                )
-            })??;
-        let value = self
-            .output
-            .as_ref()
-            .ok_or_else(|| io::Error::other("Browser adapter output is closed"))?
-            .recv_timeout(deadline.saturating_duration_since(std::time::Instant::now()))
-            .map_err(|error| {
-                io::Error::new(
-                    if error == mpsc::RecvTimeoutError::Timeout {
-                        io::ErrorKind::TimedOut
-                    } else {
-                        io::ErrorKind::UnexpectedEof
-                    },
-                    "Browser adapter did not provide a complete response",
-                )
-            })??;
+        // A cooperative close may publish its last reply immediately before
+        // exiting. Keep its original frame-drain deadline; known death before
+        // the close request above still fails promptly without spending it.
+        let observe_exit = operation != "close";
+        receive_before(
+            &written,
+            &mut self.session,
+            deadline,
+            observe_exit,
+            &self.leader_exited,
+            RpcWait::Write,
+        )?;
+        let value = receive_before(
+            self.output
+                .as_ref()
+                .ok_or_else(|| io::Error::other("Browser adapter output is closed"))?,
+            &mut self.session,
+            deadline,
+            observe_exit,
+            &self.leader_exited,
+            RpcWait::Reply,
+        )?;
         if value["protocol"].as_u64() != Some(PROTOCOL)
             || value["id"].as_u64() != Some(self.sequence)
             || !value["ok"].is_boolean()

@@ -61,6 +61,11 @@ path = "tests/source_network.rs"
 required-features = ["test-support"]
 
 [[test]]
+name = "first_run_failure"
+path = "tests/first_run_failure.rs"
+required-features = ["test-support"]
+
+[[test]]
 name = "source_storage"
 path = "tests/source_storage.rs"
 required-features = ["test-support", "native-product"]

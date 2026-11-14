@@ -4,6 +4,7 @@ mod product;
 mod resources;
 
 use numera_xtask::artifact_identity;
+use numera_xtask::product_diagnostics;
 use numera_xtask::progress;
 #[cfg(test)]
 use numera_xtask::provision;

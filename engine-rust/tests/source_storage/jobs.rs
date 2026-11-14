@@ -47,7 +47,25 @@ source_test!(
     a_dead_pid_is_dead_with_or_without_a_token,
     "tests/test_jobs.py::test_a_dead_pid_is_dead_with_or_without_a_token",
     {
-        assert!(!process_identity::alive(u32::MAX, Some(12345)).expect("dead pid"));
+        let temp = temp();
+        let root = temp.path();
+        let child = process::start(
+            "jobs::a_dead_pid_is_dead_with_or_without_a_token",
+            root,
+            "exited",
+            "dead-pid",
+            "",
+        );
+        process::reached(root, "exited", "ready");
+        let record = raw(root, "worker-exited-result.json");
+        let pid =
+            u32::try_from(record["pid"].as_u64().expect("real child pid")).expect("native pid");
+        let token = record["token"].as_u64().expect("real child birth");
+        assert!(process_identity::alive(pid, Some(token)).expect("live control"));
+        process::release(root, "exited");
+        process::finish(child);
+        assert!(!process_identity::alive(pid, Some(token)).expect("dead pid with identity"));
+        assert!(!process_identity::alive(pid, None).expect("dead pid without identity"));
         assert!(!process_identity::alive(0, None).expect("zero pid"));
     }
 );

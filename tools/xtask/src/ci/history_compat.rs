@@ -73,41 +73,208 @@ fn caller_replacement(
 /// adaptation removes propagation from the old Option/bool return values.
 pub fn additional_callers(root: &Path, case: &Case) -> Result<Vec<(String, Replacement)>> {
     let mut result = vault_callers(root, case)?;
+    result.extend(atomic_callers(root, case)?);
     let path = "engine-rust/src/http/profile_routes.rs";
-    let Some(source) =
-        super::history::case_sources(case)?.remove("engine-rust/src/storage/repo.rs")
-    else {
+    let sources = super::history::case_sources(case)?;
+    let raw = sources
+        .get("engine-rust/src/storage/repo.rs")
+        .is_some_and(|source| {
+            source.sha256 == "1169cbe37db745c440570f31ce14cb398448e74751383c09f07e50e50a2d229a"
+        });
+    let disagrees = sources
+        .get("engine-rust/src/storage/repo_reconcile.rs")
+        .is_some_and(|source| {
+            source.sha256 == "3abbe60377f64cb60a3805ee680705cd0636db8195ca2cefd65c30e123e5c0fa"
+        });
+    let old_dashboard = sources.contains_key("engine-rust/src/storage/dashboard.rs");
+    if !raw && !disagrees && !old_dashboard {
         return Ok(result);
+    }
+    // An already selected HTTP snapshot owns its original caller ABI. Leave
+    // that frozen production source intact rather than applying a bridge.
+    if sources.contains_key(path) {
+        return Ok(result);
+    }
+    let old_path = if raw {
+        "engine-rust/src/storage/repo.rs"
+    } else if disagrees {
+        "engine-rust/src/storage/repo_reconcile.rs"
+    } else {
+        "engine-rust/src/storage/dashboard.rs"
     };
-    if source.sha256 != "1169cbe37db745c440570f31ce14cb398448e74751383c09f07e50e50a2d229a" {
-        return Ok(result);
-    }
-    if case.files.contains_key(path) || case.companions.contains_key(path) {
-        return fail("Historical caller bridge overlaps a selected source");
-    }
+    let source = sources
+        .get(old_path)
+        .ok_or("Historical caller source absent")?;
     let bytes = std::fs::read(root.join(path))?;
-    if sha(&bytes) != "84c9dfa6892383e2d598fdfb43a246c9bd9e42688776daeb2ec648a561072552" {
-        return fail("Current HTTP caller changed; review historical ABI bridge");
+    let mut patches = Vec::new();
+    let snapshot_rollback = match sha(&bytes).as_str() {
+        "84c9dfa6892383e2d598fdfb43a246c9bd9e42688776daeb2ec648a561072552" => false,
+        "6e12619ba12661ebc352c1fdab9b2ce346e0cbe085ac81c4a68c61346ee7c6ea" => {
+            patches.extend(snapshot_caller_patches());
+            true
+        }
+        _ => return fail("Current HTTP caller changed; review historical ABI bridge"),
+    };
+    if raw {
+        patches.extend([
+            (
+                "let engine = ProfileRepo::raw(&state.engine.path(id, \"profiles\")?)?;",
+                "let engine = ProfileRepo::raw(&state.engine.path(id, \"profiles\")?);",
+            ),
+            (
+                "let dashboard = ProfileRepo::raw(&state.engine.path(id, \"dashboard\")?)?;",
+                "let dashboard = ProfileRepo::raw(&state.engine.path(id, \"dashboard\")?);",
+            ),
+        ]);
     }
-    let patches = [
-        (
-            "let engine = ProfileRepo::raw(&state.engine.path(id, \"profiles\")?)?;",
-            "let engine = ProfileRepo::raw(&state.engine.path(id, \"profiles\")?);",
-        ),
-        (
-            "let dashboard = ProfileRepo::raw(&state.engine.path(id, \"dashboard\")?)?;",
-            "let dashboard = ProfileRepo::raw(&state.engine.path(id, \"dashboard\")?);",
-        ),
-        (
+    if disagrees {
+        patches.push((
             "                    now,\n                )?)",
             "                    now,\n                ))",
-        ),
-    ];
-    let mut replacement = caller_replacement(case, path, &bytes, &source, &patches)?;
-    replacement.receipt["historical_source_path"] = "engine-rust/src/storage/repo.rs".into();
-    replacement.receipt["historical_source_sha256"] = source.sha256.into();
+        ));
+    }
+    if patches.is_empty() {
+        return Ok(result);
+    }
+    let mut replacement = caller_replacement(case, path, &bytes, source, &patches)?;
+    replacement.receipt["historical_source_path"] = old_path.into();
+    replacement.receipt["request_snapshot_caller_rollback"] = snapshot_rollback.into();
+    replacement.receipt["reviewed_caller_base_commit"] =
+        "001d8a11e120e45da932588dc10938c9182574a0".into();
+    replacement.receipt["historical_sources"] = serde_json::to_value(
+        sources
+            .iter()
+            .filter(|(path, _)| {
+                [
+                    "engine-rust/src/storage/repo.rs",
+                    "engine-rust/src/storage/repo_reconcile.rs",
+                ]
+                .contains(&path.as_str())
+            })
+            .collect::<std::collections::BTreeMap<_, _>>(),
+    )?;
     result.push((path.into(), replacement));
     Ok(result)
+}
+
+// Exact inverse of the reviewed request-local snapshot optimization. Selected
+// old stores lack this later API; only these caller hunks are restored to the
+// 001 native caller before adapting its Option/bool propagation operators.
+fn snapshot_caller_patches() -> Vec<(&'static str, &'static str)> {
+    vec![
+        ("    borrow::Cow,\n", ""),
+        (
+            concat!(
+                "    let snapshots = state.dashboard.list_for_reconciliation()?;\n",
+                "    let known = snapshots\n        .iter()\n",
+                "        .filter_map(|snapshot| snapshot.profile()[\"id\"].as_str())\n",
+                "        .map(str::to_owned)\n        .collect::<std::collections::BTreeSet<_>>();\n",
+                "    let by_path = snapshots\n        .iter()\n",
+                "        .map(|snapshot| (snapshot.path(), snapshot))\n",
+                "        .collect::<std::collections::BTreeMap<_, _>>();"
+            ),
+            concat!(
+                "    let mut profiles = state.dashboard.list()?;\n",
+                "    let known = profiles\n        .iter()\n",
+                "        .filter_map(|profile| profile[\"id\"].as_str())\n",
+                "        .map(str::to_owned)\n        .collect::<std::collections::BTreeSet<_>>();"
+            ),
+        ),
+        (
+            concat!(
+                "        let path = state.engine.path(id, \"dashboard\")?;\n",
+                "        let dashboard = match by_path.get(path.as_path()) {\n",
+                "            Some(snapshot) => Some(snapshot.raw()?),\n",
+                "            // Noncanonical spelling or a filename/body-ID mismatch must retain\n",
+                "            // the original guarded lookup rather than reusing a different row.\n",
+                "            None => ProfileRepo::raw(&path)?.map(Cow::Owned),\n        };"
+            ),
+            "        let dashboard = ProfileRepo::raw(&state.engine.path(id, \"dashboard\")?)?;",
+        ),
+        (
+            concat!(
+                "    let mut profiles = snapshots\n        .into_iter()\n",
+                "        .map(|snapshot| snapshot.into_profile())\n        .collect::<Vec<_>>();\n"
+            ),
+            "",
+        ),
+    ]
+}
+
+fn atomic_callers(root: &Path, case: &Case) -> Result<Vec<(String, Replacement)>> {
+    let sources = super::history::case_sources(case)?;
+    let Some(source) = sources.get("engine-rust/src/storage/atomic.rs") else {
+        return Ok(Vec::new());
+    };
+    if source.sha256 != "d02177de1a44ef62ebe74a4c2bd6bc17b588b5d2f0342d33a7eca20a4aa8c7dd" {
+        return Ok(Vec::new());
+    }
+    let current = std::fs::read(root.join("engine-rust/src/storage/atomic.rs"))?;
+    if sha(&current) != "bfadb898d01995943533722419e92613449b57a4322300c9a3ccec2b36e91cdc" {
+        return fail("Current atomic error ABI changed; review historical callers");
+    }
+    let text = std::str::from_utf8(&current)?;
+    let begin = "#[derive(Debug)]\npub struct RollbackFailed {";
+    let end =
+        "\n/// Snapshot bytes, never a decoded approximation, so failed changes are reversible.";
+    let definition = text
+        .split_once(begin)
+        .and_then(|(_, rest)| {
+            rest.split_once(end)
+                .map(|(definition, _)| format!("{begin}{definition}"))
+        })
+        .ok_or("Current atomic error definition missing")?;
+    let path = "engine-rust/src/vault/recovery.rs";
+    let bytes = checked_caller(
+        root,
+        case,
+        path,
+        "812c6ba4971a60b0dfad2a6cf1f4b79f688335828c710423d98cbe8344b377e1",
+    )?;
+    let imported = format!(
+        "use crate::storage::locks::DataLock;\nuse historical_atomic::RollbackFailed;\n// Preserve the later caller's exact error ABI outside the frozen atomic defect.\npub(crate) mod historical_atomic {{\nuse std::{{io, path::PathBuf}};\n{definition}\n}}"
+    );
+    let mut recovery = caller_replacement(
+        case,
+        path,
+        &bytes,
+        source,
+        &[(
+            "use crate::storage::{atomic::RollbackFailed, locks::DataLock};",
+            &imported,
+        )],
+    )?;
+    recovery.receipt["historical_source_path"] = "engine-rust/src/storage/atomic.rs".into();
+    recovery.receipt["included_source_path"] = "engine-rust/src/storage/atomic.rs".into();
+    recovery.receipt["included_source_sha256"] = sha(&current).into();
+    recovery.receipt["included_fragment_sha256"] = sha(definition.as_bytes()).into();
+    let path = "engine-rust/src/storage/folders.rs";
+    let bytes = checked_caller(
+        root,
+        case,
+        path,
+        "b5cdee5811415d94d257b0863b7f21f1512a5fcdce89f6903287a72c5ab47d35",
+    )?;
+    let adapted = concat!(
+        "Err(error) => {\n",
+        "    let failures = batch.rollback();\n",
+        "    Err(if failures.is_empty() { error } else {\n",
+        "        io::Error::other(crate::vault::recovery::historical_atomic::RollbackFailed { cause: error, failures })\n",
+        "    })\n",
+        "},"
+    );
+    let mut folders = caller_replacement(
+        case,
+        path,
+        &bytes,
+        source,
+        &[("Err(error) => Err(batch.fail(error)),", adapted)],
+    )?;
+    folders.receipt["historical_source_path"] = "engine-rust/src/storage/atomic.rs".into();
+    Ok(vec![
+        ("engine-rust/src/vault/recovery.rs".into(), recovery),
+        (path.into(), folders),
+    ])
 }
 
 fn checked_caller(root: &Path, case: &Case, path: &str, expected: &str) -> Result<Vec<u8>> {
@@ -130,14 +297,17 @@ fn vault_callers(root: &Path, case: &Case) -> Result<Vec<(String, Replacement)>>
         return Ok(Vec::new());
     }
     let path = "engine-rust/src/vault/policy.rs";
-    let bytes = checked_caller(
-        root,
-        case,
-        path,
-        "bf1d3cf2da498dd07ab845acfa52e92a61ca3c9242185d6158410f31b6f9ec16",
-    )?;
+    let policy_hash = super::digest(&root.join(path))?;
+    let constructors = match policy_hash.as_str() {
+        "bf1d3cf2da498dd07ab845acfa52e92a61ca3c9242185d6158410f31b6f9ec16" => 2,
+        // Reviewed SecretWriter presence/authentication guard: same tuple
+        // constructor ABI, with one additional unavailable-context refusal.
+        "2727287024b060c1b5d87fa15748f00d9bf33416923250daf2cfa8fe3c66d860" => 3,
+        _ => return fail("Current vault policy changed; review historical constructor bridge"),
+    };
+    let bytes = checked_caller(root, case, path, &policy_hash)?;
     let native = std::str::from_utf8(&bytes)?;
-    if native.matches("VaultError::message(").count() != 2 {
+    if native.matches("VaultError::message(").count() != constructors {
         return fail("Historical vault policy constructor call count changed");
     }
     let changed = native.replace("VaultError::message(", "VaultError(");
@@ -154,14 +324,20 @@ fn vault_callers(root: &Path, case: &Case) -> Result<Vec<(String, Replacement)>>
         "f144654df8ca9ae3d2339f11860672ae49f35e6c92740f9ab65b02304e1c9719",
     )?;
     let native = std::str::from_utf8(&bytes)?;
+    let durability_hash = super::digest(&root.join("engine-rust/src/vault/durability.rs"))?;
     if native.matches("crate::vault::durability::").count() != 6
-        || super::digest(&root.join("engine-rust/src/vault/durability.rs"))?
-            != "71c871c096971d5885139937db9718133705e6f6ed3d3bbec14c3084f5aec928"
+        || ![
+            "71c871c096971d5885139937db9718133705e6f6ed3d3bbec14c3084f5aec928",
+            // Same native primitive with ERROR_NOT_SUPPORTED's exact Windows
+            // raw-code spelling included in its unsupported-object policy.
+            "24c78df916a3285972ca1154495aa6393640bd67b096bd01563ef3d1526e32e7",
+        ]
+        .contains(&durability_hash.as_str())
     {
         return fail("Historical update-admission durability caller changed");
     }
     let included = concat!(
-        "\n// Reviewed history-only caller bridge: use the unchanged native durability implementation.\n",
+        "\n// Reviewed history-only caller bridge: use the pinned current native durability implementation.\n",
         "mod historical_vault_durability {\n",
         "    mod completion { pub use crate::vault::completion::*; }\n",
         "    mod implementation { include!(concat!(env!(\"CARGO_MANIFEST_DIR\"), \"/src/vault/durability.rs\")); }\n",
@@ -176,8 +352,7 @@ fn vault_callers(root: &Path, case: &Case) -> Result<Vec<(String, Replacement)>>
         )
     );
     let mut bridge = caller_replacement(case, path, &bytes, source, &[(native, &changed)])?;
-    bridge.receipt["included_source_sha256"] =
-        "71c871c096971d5885139937db9718133705e6f6ed3d3bbec14c3084f5aec928".into();
+    bridge.receipt["included_source_sha256"] = durability_hash.into();
     bridge.receipt["historical_source_path"] = "engine-rust/src/vault/mod.rs".into();
     bridge.receipt["included_source_path"] = "engine-rust/src/vault/durability.rs".into();
     result.push((path.into(), bridge));
@@ -273,8 +448,33 @@ pub fn fixture_replacement(
     else {
         return Ok(None);
     };
-    if sha(current) != *reviewed {
+    let actual = sha(current);
+    let reviewed = match (path, actual.as_str()) {
+        // The original Linux observations and assertions remain unchanged.
+        // The Windows fixture applies the source DWORD timeout bound.
+        (
+            "engine-rust/tests/lock_interop_parity.rs",
+            "5f7fa2d2111c6d6a8a7d427b1375ccc0e6647893a46b67620376dd8ff89c3d82",
+        ) => actual.as_str(),
+        // Only successfully rewritten text uses native newlines; refused and
+        // unchanged bytes remain exact. The helper is independently pinned.
+        (
+            "engine-rust/tests/schedule_store_parity.rs",
+            "fa377460febc8972b275025edd0e3ec483d8ad70ebebf0bb955e5185ddfc2dea",
+        ) => actual.as_str(),
+        _ => *reviewed,
+    };
+    if actual != reviewed {
         return fail("Native historical fixture changed; review its port and assertion inventory");
+    }
+    let mut included_sources = Vec::new();
+    if actual == "fa377460febc8972b275025edd0e3ec483d8ad70ebebf0bb955e5185ddfc2dea" {
+        let helper = "engine-rust/tests/support/platform_text.rs";
+        let hash = super::digest(&root.join(helper))?;
+        if hash != "93ac23f8e55804d2f47979de70b499fc714f3917ccc1ca1a29eac2a193d03e06" {
+            return fail("Historical native-newline fixture helper changed");
+        }
+        included_sources.push(json!({"path":helper,"sha256":hash}));
     }
     let old = syn::parse_file(std::str::from_utf8(historical)?)?;
     let mut native = std::str::from_utf8(current)?.to_owned();
@@ -411,7 +611,7 @@ pub fn fixture_replacement(
         "target":case.target,"test":case.test,"source_path":path,"historical_source_commit":source.commit,"historical_source_sha256":source.sha256,
         "current_before_sha256":sha(current),"ported_counterpart_sha256":reviewed,"mutated_after_sha256":sha(&bytes),
         "bridge_patch_sha256":sha(&[historical,b"\0native-fixture-port\0",&bytes].concat()),
-        "caller_abi_patches":caller_patches,
+        "caller_abi_patches":caller_patches,"included_sources":included_sources,
         "original_tests":expected,"omitted_later_tests":omitted,"oracle_transport_assertion":"Legacy interpreter process-success checks become fallible immutable JSON decoding and real Rust fixture setup; behavioral/storage assertions remain.",
         "required_negative":"exact named assertion after successful compilation","required_restored":"exact named passing test after byte-for-byte restoration"
     });

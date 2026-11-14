@@ -97,7 +97,23 @@ pub fn id_path(base: &Path, value: &str, suffix: &str) -> Result<PathBuf, Invali
         return Err(refusal());
     }
     let physical = physical(&target).map_err(|error| InvalidId(error.to_string()))?;
-    if physical.parent() != Some(base.as_path()) || physical != absolute {
+    // Case-insensitive filesystems can return the stored spelling of this
+    // same regular file (Fixture.json -> fixture.json). Keep the cross-ID
+    // guard: only an actual matching filesystem identity permits that alias.
+    #[cfg(unix)]
+    let same_file = || {
+        use std::os::unix::fs::MetadataExt;
+        match (std::fs::metadata(&target), std::fs::metadata(&physical)) {
+            (Ok(left), Ok(right)) => left.dev() == right.dev() && left.ino() == right.ino(),
+            _ => false,
+        }
+    };
+    #[cfg(not(unix))]
+    let same_file = || match (target.canonicalize(), physical.canonicalize()) {
+        (Ok(left), Ok(right)) => left == right,
+        _ => false,
+    };
+    if physical.parent() != Some(base.as_path()) || physical != absolute && !same_file() {
         return Err(refusal());
     }
     Ok(target)

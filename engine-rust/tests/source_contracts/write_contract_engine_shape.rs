@@ -638,6 +638,6 @@ source_test!(
             http(tmp.path(), "GET", "/api/profiles/health", Value::Null).0,
             200
         );
-        assert_eq!(snapshot(tmp.path()), before);
+        assert_listing_preserves_original_files(tmp.path(), &before, true);
     }
 );

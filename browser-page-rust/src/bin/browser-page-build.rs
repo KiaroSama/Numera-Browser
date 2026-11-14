@@ -259,6 +259,28 @@ fn main() -> Result<()> {
             ));
         }
     }
+    let cargo = env::var_os("CARGO").unwrap_or_else(|| "cargo".into());
+    let metadata = Command::new(&cargo)
+        .current_dir(&crate_root)
+        .args([
+            "metadata",
+            "--locked",
+            "--format-version",
+            "1",
+            "--filter-platform",
+            "wasm32-unknown-unknown",
+        ])
+        .env_remove("RUSTFLAGS")
+        .env_remove("CARGO_ENCODED_RUSTFLAGS")
+        .output()?;
+    if !metadata.status.success() || metadata.stdout.len() > 4 * MAX_SOURCE {
+        return Err("Locked browser dependency metadata failed or exceeded its bound".into());
+    }
+    // These more specific mappings must follow Cargo-home/repository mappings.
+    // Otherwise a registry cache hash survives inside compiled panic locations.
+    flags.extend(numera_browser_page::source_paths::dependency_remaps(
+        &serde_json::from_slice(&metadata.stdout)?,
+    )?);
     let target = if options.target.is_absolute() {
         options.target.clone()
     } else {
@@ -267,22 +289,20 @@ fn main() -> Result<()> {
     let build = target.join("browser-page-generated");
     fs::create_dir_all(&build)?;
     let source_before = source_snapshot(repo, &crate_root)?;
-    run(
-        Command::new(env::var_os("CARGO").unwrap_or_else(|| "cargo".into()))
-            .current_dir(&crate_root)
-            .args([
-                "build",
-                "--locked",
-                "--release",
-                "--lib",
-                "--target",
-                "wasm32-unknown-unknown",
-                "--target-dir",
-            ])
-            .arg(&target)
-            .env_remove("RUSTFLAGS")
-            .env("CARGO_ENCODED_RUSTFLAGS", flags.join("\u{1f}")),
-    )?;
+    run(Command::new(&cargo)
+        .current_dir(&crate_root)
+        .args([
+            "build",
+            "--locked",
+            "--release",
+            "--lib",
+            "--target",
+            "wasm32-unknown-unknown",
+            "--target-dir",
+        ])
+        .arg(&target)
+        .env_remove("RUSTFLAGS")
+        .env("CARGO_ENCODED_RUSTFLAGS", flags.join("\u{1f}")))?;
     let input = target.join("wasm32-unknown-unknown/release/numera_browser_page.wasm");
     run(Command::new(&bindgen)
         .arg(&input)
@@ -315,7 +335,7 @@ fn main() -> Result<()> {
         "authored_language":"Rust","generated_languages":["JavaScript"],
         "factory":"numera_browser_page() returns wasm-bindgen exports synchronously",
         "source_sha256":sources,"rustc":rustc_version,"target":"wasm32-unknown-unknown",
-        "path_remapping":["repository=numera","cargo-home=cargo","rustup-home=rustup"],
+        "path_remapping":numera_browser_page::artifact::PATH_REMAPPING,
         "wasm_bindgen":BINDGEN,"binaryen":BINARYEN,
         "binaryen_archive":BINARYEN_ARCHIVE,"binaryen_archive_sha256":BINARYEN_ARCHIVE_SHA,
         "wasm2js_binary_sha256":BINARYEN_LINUX_SHA,"wasm2js_flags":wasm2js_flags,
@@ -331,9 +351,29 @@ fn main() -> Result<()> {
     numera_browser_page::artifact::validate(repo, output.as_bytes(), &receipt)?;
     let generated = options.output;
     if options.check {
-        if fs::read(generated.join("runtime.js"))? != output.as_bytes()
-            || fs::read(generated.join("receipt.json"))? != receipt_bytes
-        {
+        let artifact_matches = fs::read(generated.join("runtime.js"))? == output.as_bytes();
+        let committed_receipt = fs::read(generated.join("receipt.json"))?;
+        let receipt_matches = committed_receipt == receipt_bytes;
+        if !artifact_matches || !receipt_matches {
+            eprintln!(
+                "Browser compiler comparison artifact_matches={artifact_matches} receipt_matches={receipt_matches}"
+            );
+            if let Ok(committed) = serde_json::from_slice::<Value>(&committed_receipt) {
+                for field in [
+                    "artifact_sha256",
+                    "input_wasm_sha256",
+                    "binding_wasm_sha256",
+                    "bindgen_glue_sha256",
+                    "compiler_javascript_sha256",
+                    "source_sha256",
+                    "rustc",
+                    "path_remapping",
+                ] {
+                    if committed[field] != receipt[field] {
+                        eprintln!("Browser compiler receipt differs field={field}");
+                    }
+                }
+            }
             return Err("Generated browser artifact or source/tool receipt is stale; regenerate with browser-page-build".into());
         }
         println!(

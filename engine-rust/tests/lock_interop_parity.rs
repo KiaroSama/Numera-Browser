@@ -243,6 +243,14 @@ fn configured_lock_timeout_values_match_original_policy() -> Result<(), Box<dyn 
         let expected = Duration::try_from_secs_f64(
             case["seconds"].as_f64().ok_or("Timeout seconds missing")?,
         )?;
+        // Python's Windows lock wait is bounded by the DWORD millisecond
+        // range, while this immutable observation was captured on Linux.
+        #[cfg(windows)]
+        let expected = if expected > Duration::from_secs(4_294_967) {
+            Duration::from_secs(30)
+        } else {
+            expected
+        };
         assert_eq!(
             numera_core::storage::locks::configured_timeout(case["input"].as_str()),
             expected,

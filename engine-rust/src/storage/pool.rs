@@ -96,21 +96,8 @@ impl ProxyPool {
         } else {
             Value::Null
         };
-        let password = self.repo.password.as_deref().unwrap_or("");
-        let salt = descriptor["salt"].as_str().unwrap_or("");
-        let state = if descriptor.is_null() {
-            VaultState::Disabled
-        } else if !password.is_empty()
-            && vault::check_password(
-                password,
-                salt,
-                descriptor["verifier"].as_str().unwrap_or(""),
-            )
-        {
-            VaultState::Unlocked
-        } else {
-            VaultState::Locked
-        };
+        let writer = vault::policy::SecretWriter::new(self.repo.password.as_deref(), &descriptor);
+        let state = writer.state();
         // Seal every participating entry before replacing the file. A single
         // locked replacement refuses the whole mutation without partial writes.
         let sealed = rows
@@ -124,7 +111,7 @@ impl ProxyPool {
                     state,
                     row["pass"].as_str(),
                     previous.and_then(|old| old["pass"].as_str()),
-                    |value| vault::encrypt(password, salt, value),
+                    |value| writer.seal(value),
                 )
                 .map_err(|error| {
                     if state == VaultState::Locked {

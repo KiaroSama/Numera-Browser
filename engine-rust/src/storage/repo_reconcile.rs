@@ -1,7 +1,7 @@
 //! Source-compatible read repair; explicit launch coherence remains a separate gate.
 use super::repo::{ProfileRepo, RepoError};
 use crate::conversion::{to_engine, truth};
-use serde_json::{Map, Value};
+use serde_json::Value;
 use std::collections::BTreeSet;
 
 fn numeric(value: &Value) -> Option<(String, bool)> {
@@ -9,7 +9,8 @@ fn numeric(value: &Value) -> Option<(String, bool)> {
         Value::Bool(value) => Some((u8::from(*value).to_string(), true)),
         Value::Number(value) => {
             let text = value.to_string();
-            let integer = !text.contains(['.', 'e', 'E']);
+            let integer = !text.contains(['.', 'e', 'E'])
+                && !matches!(text.as_str(), "NaN" | "Infinity" | "-Infinity");
             Some((text, integer))
         }
         _ => None,
@@ -46,6 +47,14 @@ fn number_equal(left: (String, bool), right: (String, bool)) -> bool {
 }
 
 pub(super) fn equal(left: &Value, right: &Value) -> bool {
+    // The usual stored numeric values already have identical representations.
+    // Keep nonfinite and mixed representations on the compatibility path.
+    if let (Value::Number(left), Value::Number(right)) = (left, right)
+        && left == right
+        && left.as_f64().is_some_and(f64::is_finite)
+    {
+        return true;
+    }
     if let (Some(left), Some(right)) = (numeric(left), numeric(right)) {
         return number_equal(left, right);
     }
@@ -55,28 +64,49 @@ pub(super) fn equal(left: &Value, right: &Value) -> bool {
                 && left
                     .iter()
                     .zip(right)
-                    .all(|(left, right)| equal(left, right))
+                    .all(|(left, right)| container_equal(left, right))
         }
         (Value::Object(left), Value::Object(right)) => {
             left.len() == right.len()
-                && left
-                    .iter()
-                    .all(|(key, value)| right.get(key).is_some_and(|other| equal(value, other)))
+                && left.iter().all(|(key, value)| {
+                    right
+                        .get(key)
+                        .is_some_and(|other| container_equal(value, other))
+                })
         }
         _ => left == right,
     }
 }
 
-fn without(value: &Value, fields: &[&str]) -> Value {
-    Value::Object(
-        value
+fn container_equal(left: &Value, right: &Value) -> bool {
+    // CPython's ordinary JSON decoder shares its NaN constant across loads.
+    // Container equality checks identity before equality for each member, so
+    // that shared NaN compares equal inside containers while scalar NaN does not.
+    matches!((left, right), (Value::Number(left), Value::Number(right))
+        if left.as_str() == "NaN" && right.as_str() == "NaN")
+        || equal(left, right)
+}
+
+fn equal_without(left: &Value, right: &Value, fields: &[&str]) -> bool {
+    let members = |value: &Value| {
+        value.as_object().map_or(0, |object| {
+            object
+                .keys()
+                .filter(|key| !fields.contains(&key.as_str()))
+                .count()
+        })
+    };
+    members(left) == members(right)
+        && left
             .as_object()
             .into_iter()
             .flatten()
             .filter(|(key, _)| !fields.contains(&key.as_str()))
-            .map(|(key, value)| (key.clone(), value.clone()))
-            .collect::<Map<_, _>>(),
-    )
+            .all(|(key, value)| {
+                right
+                    .get(key)
+                    .is_some_and(|other| container_equal(value, other))
+            })
 }
 
 impl ProfileRepo {
@@ -123,7 +153,14 @@ impl ProfileRepo {
         let Ok(profile) = to_engine(dashboard, now) else {
             return Ok(out);
         };
-        let Ok(Value::Object(fresh)) = serde_json::to_value(profile) else {
+        let fresh = serde_json::to_value(&profile).or_else(|_| {
+            // Value's serializer rejects nonfinite numbers even though the
+            // source accepts them in stored JSON. Preserve those rare records
+            // through the same bounded-syntax decoder as repository reads.
+            serde_json::to_string(&profile)
+                .and_then(|text| crate::http::json_extended::parse(&text))
+        });
+        let Ok(Value::Object(fresh)) = fresh else {
             return Ok(out);
         };
         let keys: BTreeSet<_> = engine.keys().chain(fresh.keys()).collect();
@@ -134,10 +171,9 @@ impl ProfileRepo {
             let left = engine.get(key).unwrap_or(&Value::Null);
             let right = fresh.get(key).unwrap_or(&Value::Null);
             let changed = match key.as_str() {
-                "fingerprint" => !equal(
-                    &without(left, &["viewport_width", "viewport_height"]),
-                    &without(right, &["viewport_width", "viewport_height"]),
-                ),
+                "fingerprint" => {
+                    !equal_without(left, right, &["viewport_width", "viewport_height"])
+                }
                 "proxy" => {
                     if self
                         .secret_disagrees(left["password"].as_str(), right["password"].as_str())?
@@ -147,12 +183,9 @@ impl ProfileRepo {
                             return Ok(out);
                         }
                     }
-                    let left = without(left, &["password"]);
-                    let right = without(right, &["password"]);
-                    !equal(
-                        if truth(&left) { &left } else { &Value::Null },
-                        if truth(&right) { &right } else { &Value::Null },
-                    )
+                    // Both missing/non-object and password-only proxies were
+                    // normalized to null after filtering by the old comparison.
+                    !equal_without(left, right, &["password"])
                 }
                 _ => !equal(left, right),
             };

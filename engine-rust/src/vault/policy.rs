@@ -14,6 +14,46 @@ pub enum VaultState {
     Unlocked,
 }
 
+/// Authentication and encryption share the same present descriptor fields.
+/// A missing field can never be substituted with a usable cryptographic value.
+pub(crate) struct SecretWriter<'a> {
+    state: VaultState,
+    credentials: Option<(&'a str, &'a str)>,
+}
+impl<'a> SecretWriter<'a> {
+    pub(crate) fn new(password: Option<&'a str>, descriptor: &'a serde_json::Value) -> Self {
+        let credentials = match (
+            password.filter(|password| !password.is_empty()),
+            descriptor["salt"].as_str(),
+            descriptor["verifier"].as_str(),
+        ) {
+            (Some(password), Some(salt), Some(verifier))
+                if super::check_password(password, salt, verifier) =>
+            {
+                Some((password, salt))
+            }
+            _ => None,
+        };
+        let state = if descriptor.is_null() {
+            VaultState::Disabled
+        } else if credentials.is_some() {
+            VaultState::Unlocked
+        } else {
+            VaultState::Locked
+        };
+        Self { state, credentials }
+    }
+    pub(crate) fn state(&self) -> VaultState {
+        self.state
+    }
+    pub(crate) fn seal(&self, value: &str) -> Result<String, VaultError> {
+        let Some((password, salt)) = self.credentials else {
+            return Err(VaultError::message(LOCKED_MESSAGE.into()));
+        };
+        super::encrypt(password, salt, value)
+    }
+}
+
 /// None is withheld, not clear. Callers supply only authenticated vault state.
 pub fn write_secret(
     state: VaultState,

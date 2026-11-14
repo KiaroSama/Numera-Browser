@@ -161,8 +161,8 @@ fn respond(
         }
         "/rotate-next" => {
             assert_eq!(
-                stream.local_addr()?.ip().to_string(),
-                "127.0.0.2",
+                stream.local_addr()?.ip(),
+                std::net::IpAddr::V6(std::net::Ipv6Addr::LOCALHOST),
                 "Redirect reused first-hop pin"
             );
             assert!(request.to_ascii_lowercase().contains("host: second.test:"));
@@ -275,10 +275,14 @@ fn proxy_echo_boundaries_match_original_through_transport() -> Result<(), Box<dy
 #[test]
 fn rotation_control_revalidates_redirect_pin_host_and_missing_header() -> io::Result<()> {
     let mut site = Site::new()?;
+    // Both loopbacks exist on the supported native platforms. A second IPv4
+    // alias requires host configuration on macOS; IPv6 still proves that the
+    // redirect changed the actual destination address, not just its Host field.
     let mut next_site = Site::at(SocketAddr::new(
-        "127.0.0.2".parse().map_err(io::Error::other)?,
+        std::net::Ipv6Addr::LOCALHOST.into(),
         site.address.port(),
     ))?;
+    assert_ne!(site.address.ip(), next_site.address.ip());
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?;

@@ -11,6 +11,8 @@ pub mod extension_install;
 pub mod extension_package;
 pub mod extensions;
 pub mod first_run;
+#[cfg(feature = "test-support")]
+pub mod first_run_test_support;
 #[cfg(target_os = "linux")]
 mod first_run_xattrs;
 pub mod folders;

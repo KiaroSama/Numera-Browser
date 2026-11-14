@@ -86,7 +86,7 @@ source_test!(
             "/api/profiles",
             json!({"name":"kept","folder":"Ads","tags":["x"]}),
         );
-        assert_eq!(status, 200, "{p}");
+        assert_eq!(status, 200, "HTTP response status mismatch");
         let id = p["id"].as_str().expect("id");
         let out = cli(root, |commands| {
             commands.edit(id, json!({"notes":"n"}).as_object().expect("args"), 1001.0)
