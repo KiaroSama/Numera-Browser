@@ -7,8 +7,10 @@ dashboard, generated browser assets and reviewed vendor SDKs.
 
 Use `--server-only` to omit the desktop SDK requirement, or `--bundles none` to
 produce portable server and desktop archives without installers. The native
-default installer formats are `appimage,deb` on x86-64 Linux and `msi,nsis`
-on x86-64 Windows. `--bundles` can select a subset. Build each supported
+default installer formats are `appimage,deb` on x86-64 Linux and `msi` on
+x86-64 Windows. The complete Windows browser payload exceeds the NSIS size
+limit. `--bundles` still accepts explicit requests for supported formats,
+including `nsis` for payloads within its size limit. Build each supported
 platform on its own native CI runner.
 
 ## Provision the build host
@@ -17,8 +19,8 @@ platform on its own native CI runner.
   `wasm-bindgen-cli` **0.2.129** before building.
 - For desktop builds, install `tauri-cli` **2.12.5** with Cargo. Linux requires
   WebKitGTK 4.1/GTK3 development packages and AppImage/deb prerequisites.
-  Windows requires MSVC and the Tauri WiX/NSIS prerequisites. Tauri may acquire
-  verified installer build tools while building a requested bundle.
+  Windows MSI builds require MSVC and the Tauri WiX prerequisites. Tauri may
+  acquire verified installer build tools while building a requested bundle.
 - Provision vendor browser/SDK artifacts and their licenses/corresponding source
   explicitly. No browser, SDK, Cloak binary, license or source archive is acquired
   by this command. The separate build-host preparation step owns acquisition and

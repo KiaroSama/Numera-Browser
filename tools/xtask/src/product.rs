@@ -73,7 +73,12 @@ pub fn native_bundles(
         "macos" => &["app", "dmg"],
         _ => return Err("unsupported native desktop platform".into()),
     };
-    let requested = requested.unwrap_or("all");
+    let requested = match requested {
+        Some(requested) => requested,
+        // The full Windows browser bundle exceeds the NSIS installer limit.
+        None if platform == "windows" => "msi",
+        None => "all",
+    };
     if requested == "none" {
         return Ok(Vec::new());
     }
