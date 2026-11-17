@@ -55,13 +55,25 @@ pub fn settle_windows_with(deadline: Instant, kernel: &mut impl WindowsCleanup) 
     windows_before(deadline)?;
     let empty = kernel.complete_empty()?;
     windows_before(deadline)?;
-    if !empty {
-        // One request only. A failed signal/query never becomes success merely
-        // because a later accounting observation happens to be empty.
-        kernel.terminate()?;
-        windows_before(deadline)?;
-    }
+    let missing = if empty {
+        None
+    } else {
+        // A vanished signal target may have exited since the initial snapshot.
+        // Only the original handles and a complete Job proof can settle it.
+        match kernel.terminate() {
+            Ok(()) => None,
+            Err(error) if error.kind() == io::ErrorKind::NotFound => Some(error),
+            Err(error) => return Err(error),
+        }
+    };
+    let result = observe_windows_exit(deadline, kernel);
+    result.map_err(|error| missing.unwrap_or(error))
+}
+
+#[cfg(any(windows, feature = "test-support"))]
+fn observe_windows_exit(deadline: Instant, kernel: &mut impl WindowsCleanup) -> io::Result<()> {
     loop {
+        windows_before(deadline)?;
         // Reconcile members born between the first snapshot and termination.
         // All handle waits are passive; no repeated termination is introduced.
         kernel.capture_members(deadline)?;
@@ -329,6 +341,10 @@ impl OwnedTree {
     #[cfg(windows)]
     pub fn job_member_diagnostics(&self) -> io::Result<serde_json::Value> {
         self.windows().job.member_diagnostics(self.child())
+    }
+    #[cfg(all(windows, feature = "test-support"))]
+    pub(super) fn cleanup_witness_count(&self) -> usize {
+        self.windows().witnesses.len()
     }
     #[cfg(windows)]
     pub(crate) fn job_handle(&self) -> std::os::windows::io::BorrowedHandle<'_> {

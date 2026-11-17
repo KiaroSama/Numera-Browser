@@ -137,7 +137,7 @@ impl JobStore {
         Ok(Some(record))
     }
     pub fn get(&self, id: &str, now: f64) -> io::Result<Option<Value>> {
-        let Some(record) = self.record(id)? else {
+        let Some(mut record) = self.record(id)? else {
             return Ok(None);
         };
         let pid = record
@@ -156,18 +156,18 @@ impl JobStore {
             Ok(None) => false,
             Err(_) => true,
         };
-        let supervisor_active = record.get("state").is_none()
-            && record
+        let supervisor = if record.get("state").is_none() {
+            record
                 .get("supervisorPid")
                 .and_then(Value::as_u64)
                 .and_then(|pid| u32::try_from(pid).ok())
-                .is_some_and(|pid| {
-                    crate::ownership::identity::alive(
-                        pid,
-                        record.get("supervisorToken").and_then(Value::as_u64),
-                    )
-                    .unwrap_or(true)
-                });
+        } else {
+            None
+        };
+        let supervisor_birth = record.get("supervisorToken").and_then(Value::as_u64);
+        let supervisor_active = supervisor.is_some_and(|pid| {
+            crate::ownership::identity::alive(pid, supervisor_birth).unwrap_or(true)
+        });
         let survivors = if report_survivors || supervisor_active || observation.is_err() {
             true
         } else if !leader && crate::ownership::recorded_tree::verified(&value) {
@@ -176,6 +176,17 @@ impl JobStore {
         } else {
             false
         };
+        if !leader && !survivors && supervisor.zip(supervisor_birth).is_some() {
+            // The last read may predate the atomic outcome publication even
+            // though the recorded supervisor has now exited. Reread only the
+            // outcome, retaining the identity used for all liveness checks.
+            let latest = read(&self.path(id)?.with_extension("exit"))?;
+            for field in ["state", "exit", "finished"] {
+                if let Some(value) = latest.get(field) {
+                    record.insert(field.into(), value.clone());
+                }
+            }
+        }
         observed(record, observation, Ok(survivors), now).map(Some)
     }
     pub fn listing(&self, now: f64) -> io::Result<Vec<Value>> {

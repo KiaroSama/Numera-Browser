@@ -60,6 +60,11 @@ fn process_signaled(process: HANDLE) -> io::Result<bool> {
     }
 }
 impl CleanupWitnesses {
+    #[cfg(feature = "test-support")]
+    pub(super) fn len(&self) -> usize {
+        self.0.len()
+    }
+
     pub(super) fn retain_members(
         &mut self,
         job: &Job,

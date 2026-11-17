@@ -54,10 +54,10 @@ impl WindowsCleanup for Kernel {
     }
     fn terminate(&mut self) -> io::Result<()> {
         self.signals += 1;
-        if self.mode == "signal-error" {
-            Err(io::Error::from_raw_os_error(5))
-        } else {
-            Ok(())
+        match self.mode {
+            "signal-error" => Err(io::Error::from_raw_os_error(5)),
+            "signal-missing" | "signal-missing-live" => Err(io::ErrorKind::NotFound.into()),
+            _ => Ok(()),
         }
     }
     fn all_signaled(&mut self, _: Instant) -> io::Result<bool> {
@@ -65,7 +65,8 @@ impl WindowsCleanup for Kernel {
         if self.mode == "wait-error" {
             return Err(io::Error::from_raw_os_error(6));
         }
-        Ok(self.mode != "live" && (self.mode != "transient" || self.waits >= 2))
+        Ok(!matches!(self.mode, "live" | "signal-missing-live")
+            && (self.mode != "transient" || self.waits >= 2))
     }
     fn leader_exited(&mut self) -> io::Result<bool> {
         self.leader_queries += 1;
@@ -78,7 +79,7 @@ impl WindowsCleanup for Kernel {
     }
 }
 pub(super) fn policy_controls() -> TestResult {
-    for mode in ["complete", "transient"] {
+    for mode in ["complete", "transient", "signal-missing"] {
         let mut kernel = Kernel::new(mode);
         settle_windows_with(Instant::now() + Duration::from_secs(1), &mut kernel)?;
         assert_eq!(kernel.signals, 1);
@@ -90,6 +91,11 @@ pub(super) fn policy_controls() -> TestResult {
         );
         assert!(kernel.waits > 0 && kernel.leader_queries > 0);
     }
+    let mut missing = Kernel::new("signal-missing-live");
+    let error = settle_windows_with(Instant::now() + Duration::from_millis(25), &mut missing)
+        .expect_err("A missing signal cannot release a live retained witness");
+    assert_eq!(error.kind(), io::ErrorKind::NotFound);
+    assert_eq!(missing.signals, 1);
     for mode in ["live", "leader-live", "late-capture", "late-leader"] {
         let mut kernel = Kernel::new(mode);
         let start = Instant::now();
@@ -161,7 +167,8 @@ pub(super) fn policy_controls() -> TestResult {
         let output = capture::run(&mut command, limit(Duration::from_secs(5)))?;
         assert!(
             output.exit == 0,
-            "Raw Windows Drop/retry failed its original-owner proof"
+            "Raw Windows Drop/retry failed its original-owner proof: {}",
+            String::from_utf8_lossy(&output.stderr)
         );
         let value: Value = serde_json::from_slice(&output.stdout)?;
         assert_eq!(value["retained"], true);

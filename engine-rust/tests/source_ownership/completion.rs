@@ -68,6 +68,9 @@ fn live_writer_control() -> TestResult {
         Some(
             observation["before"].as_u64().expect("before")
                 + observation["owner_extra"].as_u64().expect("owner handles")
+                + observation["witnesses"]
+                    .as_u64()
+                    .expect("owned Job witnesses")
         ),
         "pipe readers survived local cancellation"
     );

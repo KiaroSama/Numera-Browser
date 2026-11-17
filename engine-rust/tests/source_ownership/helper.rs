@@ -44,13 +44,27 @@ fn forced_cleanup_drop(root: &Path) -> Result<i32, Box<dyn std::error::Error>> {
     let leaf: u32 = fs::read_to_string(root.join("descendant"))?.parse()?;
     let token = identity::started_at(leaf)?;
     assert!(identity::alive(leaf, token)?);
+    let diagnostic = tree.job_member_diagnostics()?;
+    let members = diagnostic["members"]
+        .as_array()
+        .ok_or("Job members absent")?;
+    let witnesses: Vec<_> = members
+        .iter()
+        .filter(|row| row["leader"] == false)
+        .collect();
+    assert!(witnesses.iter().all(|row| row["membership"] == "verified"));
+    assert!(
+        witnesses
+            .iter()
+            .any(|row| row["pid"] == leaf && row["wait"] == "live")
+    );
     let before = descriptors()?;
     with_backend(std::sync::Arc::new(Denied), || drop(tree));
     let retained = descriptors()?;
     assert_eq!(
         retained,
-        before + 1,
-        "Failed Drop must retain original Child/Job and the verified leaf witness"
+        before + witnesses.len(),
+        "Failed Drop must retain original Child/Job and every verified member witness"
     );
     assert!(identity::alive(leaf, token)?);
     assert!(!recorded_tree::empty(&record)?);
@@ -62,9 +76,8 @@ fn forced_cleanup_drop(root: &Path) -> Result<i32, Box<dyn std::error::Error>> {
     assert!(recorded_tree::empty(&record)?);
     assert!(!identity::alive(leaf, token)?);
     let after = descriptors()?;
-    // Pinned Rust1.99.1 (58cf8f9c), std/sys/process/windows.rs705:
-    // Child retains both pi.hProcess and pi.hThread even after wait; together
-    // with the original Job this exact completed owner cost is three handles.
+    // Rust's Child retains both pi.hProcess and pi.hThread even after wait;
+    // together with the original Job this owner costs exactly three handles.
     assert_eq!(
         after + 3,
         before,
@@ -418,9 +431,9 @@ fn uncertain_spawn(root: &Path) -> Result<i32, Box<dyn std::error::Error>> {
 fn capture_initialization_diagnostic() -> io::Result<serde_json::Value> {
     #[cfg(windows)]
     {
-        // Diagnostics deliberately follow the existing baseline. Equality
-        // assertions stay unchanged until the owning Windows run classifies
-        // every persistent initialization handle; no tolerance is introduced.
+        // Prepare the Windows standard-library paths outside the measurement.
+        // The independent stdio control is repeated to prove the baseline is
+        // stable before any product capture or fault injection runs.
         let cold = descriptors()?;
         let mut entropy = [0u8; 16];
         getrandom::fill(&mut entropy).map_err(io::Error::other)?;
@@ -429,8 +442,7 @@ fn capture_initialization_diagnostic() -> io::Result<serde_json::Value> {
         let rng_second = descriptors()?;
         let mut pipe_closed = Vec::new();
         for _ in 0..2 {
-            // Independent std primitives, not production capture. Rust1.99.1
-            // child_pipe.rs caches exactly one NamedPipe filesystem handle.
+            // Rust's child_pipe.rs caches a NamedPipe filesystem handle.
             let mut child = Command::new(std::env::current_exe()?)
                 .args(["emit", "warm", "0"])
                 .stdin(Stdio::null())
@@ -453,6 +465,11 @@ fn capture_initialization_diagnostic() -> io::Result<serde_json::Value> {
             }
             pipe_closed.push(descriptors()?);
         }
+        if pipe_closed[0] != pipe_closed[1] {
+            return Err(io::Error::other(
+                "Independent stdio control did not stabilize",
+            ));
+        }
         Ok(
             serde_json::json!({"cold":cold,"rng_first":rng_first,"rng_second":rng_second,"stdio_closed":pipe_closed}),
         )
@@ -463,10 +480,10 @@ fn capture_initialization_diagnostic() -> io::Result<serde_json::Value> {
     }
 }
 fn fd_capture(timeout: bool) -> Result<i32, Box<dyn std::error::Error>> {
+    let initialization = capture_initialization_diagnostic()?;
     let handles =
         windows_handle_diagnostics::Attribution::before(Instant::now() + Duration::from_secs(5));
     let before = descriptors()?;
-    let initialization = capture_initialization_diagnostic()?;
     #[cfg(target_os = "linux")]
     let threads_before = fs::read_dir("/proc/self/task")?.count();
     let mut child = Command::new(std::env::current_exe()?);
@@ -516,6 +533,7 @@ fn fd_failure(marker: &Path) -> Result<i32, Box<dyn std::error::Error>> {
         test_support::{Backend, with_backend},
     };
     use std::sync::{Arc, Mutex};
+    let initialization = capture_initialization_diagnostic()?;
     let diagnostic_deadline = Instant::now() + Duration::from_secs(5);
     // Establish the OS handle cost of an owned, uncaptured child separately.
     let mut control = Command::new(std::env::current_exe()?);
@@ -536,7 +554,6 @@ fn fd_failure(marker: &Path) -> Result<i32, Box<dyn std::error::Error>> {
         extra
     };
     let before = descriptors()?;
-    let initialization = capture_initialization_diagnostic()?;
     struct Refused {
         marker: std::path::PathBuf,
         record: Mutex<Option<serde_json::Value>>,
@@ -590,17 +607,21 @@ fn fd_failure(marker: &Path) -> Result<i32, Box<dyn std::error::Error>> {
     let pid = record["pid"].as_u64().ok_or("pid absent")? as u32;
     let writer_live = identity::alive(pid, record["token"].as_u64())?;
     let retained = failure.retained_record().is_some();
+    #[cfg(windows)]
+    let witnesses = failure.retained_cleanup_witness_count();
+    #[cfg(not(windows))]
+    let witnesses = 0;
     let before_cleanup = descriptors()?;
     let elapsed = begin.elapsed();
     let handle_attribution_before_cleanup =
-        handles.on_failure(before_cleanup != before + owner_extra);
+        handles.on_failure(before_cleanup != before + owner_extra + witnesses);
     failure.settle(Duration::from_secs(2))?;
     drop(failure);
     let after_cleanup = descriptors()?;
     let handle_attribution = handles.on_failure(after_cleanup != before);
     println!(
         "{}",
-        serde_json::json!({"before":before,"owner_extra":owner_extra,"before_cleanup":before_cleanup,"after_cleanup":after_cleanup,"writer_live":writer_live,"retained":retained,"elapsed_ms":elapsed.as_millis(),"initialization":initialization,"handle_attribution":handle_attribution,"handle_attribution_before_cleanup":handle_attribution_before_cleanup})
+        serde_json::json!({"before":before,"owner_extra":owner_extra,"witnesses":witnesses,"before_cleanup":before_cleanup,"after_cleanup":after_cleanup,"writer_live":writer_live,"retained":retained,"elapsed_ms":elapsed.as_millis(),"initialization":initialization,"handle_attribution":handle_attribution,"handle_attribution_before_cleanup":handle_attribution_before_cleanup})
     );
     Ok(0)
 }
@@ -639,10 +660,10 @@ fn fd_pipe_failure(stage: &str) -> Result<i32, Box<dyn std::error::Error>> {
                 .then(|| Err(io::Error::other("controlled stderr read failure")))
         }
     }
+    let initialization = capture_initialization_diagnostic()?;
     let handles =
         windows_handle_diagnostics::Attribution::before(Instant::now() + Duration::from_secs(5));
     let before = descriptors()?;
-    let initialization = capture_initialization_diagnostic()?;
     let fault = Arc::new(Fault {
         stage: stage.into(),
         born: Mutex::new(None),
@@ -729,6 +750,17 @@ fn receipt_run(root: &Path, damage: &str) -> Result<i32, Box<dyn std::error::Err
                 .flatten()
         })
         .ok_or("receipt env absent")?;
+    let _ = capture_initialization_diagnostic()?;
+    #[cfg(windows)]
+    if damage == "missing" {
+        // FormatMessageW can initialize Windows message resources at the first
+        // OS error formatting. Isolate this from the exact receipt/pipe count.
+        let missing = io::Error::from_raw_os_error(2);
+        let first = missing.to_string();
+        let count = descriptors()?;
+        assert_eq!(missing.to_string(), first);
+        assert_eq!(descriptors()?, count);
+    }
     let handles =
         windows_handle_diagnostics::Attribution::before(Instant::now() + Duration::from_secs(5));
     let before = descriptors()?;
@@ -1006,6 +1038,7 @@ fn run() -> Result<i32, Box<dyn std::error::Error>> {
         }
         "panic-capture" => {
             use numera_core::ownership::{capture, identity, recorded_tree};
+            let _ = capture_initialization_diagnostic()?;
             let handles = windows_handle_diagnostics::Attribution::before(
                 Instant::now() + Duration::from_secs(4),
             );
