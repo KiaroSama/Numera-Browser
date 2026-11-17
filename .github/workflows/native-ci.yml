@@ -88,7 +88,8 @@ jobs:
       - name: Explicitly acquire the reviewed vendor resources and source offers
         run: cargo xtask ci owned --wall 1800 --idle 300 -- cargo xtask provision-resources "${{ runner.temp }}/numera-resources"
       - name: Build unsigned native desktop installers and portable server
-        run: cargo xtask ci owned --wall 1800 --idle 300 -- cargo xtask build-product build/native-product --resources "${{ runner.temp }}/numera-resources"
+        # Give the nested Windows bundler time to retain its diagnostics first.
+        run: cargo xtask ci owned --wall ${{ runner.os == 'Windows' && 2400 || 1800 }} --idle ${{ runner.os == 'Windows' && 960 || 300 }} -- cargo xtask build-product build/native-product --resources "${{ runner.temp }}/numera-resources"
       - name: Preserve complete failed native packaging evidence
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9

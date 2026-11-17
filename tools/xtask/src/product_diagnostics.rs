@@ -172,7 +172,9 @@ pub fn execute(root: &Path, command: &mut Command, log: &Path) -> ci::Result<()>
         command,
         ci::owned::limits(
             Duration::from_secs(1800),
-            Duration::from_secs(300),
+            // Windows installer tooling can remain silent while compressing
+            // the bundled vendor browsers. The wall deadline still applies.
+            Duration::from_secs(if cfg!(windows) { 900 } else { 300 }),
             16 * 1024 * 1024,
         ),
         |stream, bytes| {
