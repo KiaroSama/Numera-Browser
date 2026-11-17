@@ -1,5 +1,5 @@
 //! Compile authored Rust page behavior into a CSP-compatible generated factory.
-use numera_browser_page::artifact::RUSTC_VERSION;
+use numera_browser_page::artifact::{RUSTC_SOURCE_ROOT, RUSTC_VERSION};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 use std::{
@@ -280,6 +280,22 @@ fn main() -> Result<()> {
             ));
         }
     }
+    let sysroot = Command::new(&rustc).args(["--print", "sysroot"]).output()?;
+    if !sysroot.status.success() || sysroot.stdout.len() > 4096 {
+        return Err("Could not identify the Rust compiler sysroot".into());
+    }
+    let sysroot_text = std::str::from_utf8(&sysroot.stdout)?.trim();
+    let sysroot = Path::new(sysroot_text);
+    if !sysroot.is_absolute() || sysroot_text.contains(['=', '\n', '\r', '\u{1f}']) {
+        return Err("Rust compiler sysroot has an invalid path".into());
+    }
+    // Rust resolves standard-library locations to local rust-src files when
+    // they are installed. Preserve the compiler's virtual paths on every host.
+    let rust_source = sysroot.join("lib/rustlib/src/rust");
+    flags.push(format!(
+        "--remap-path-prefix={rust_source}={RUSTC_SOURCE_ROOT}",
+        rust_source = rust_source.display()
+    ));
     let cargo = env::var_os("CARGO").unwrap_or_else(|| "cargo".into());
     let metadata = Command::new(&cargo)
         .current_dir(&crate_root)

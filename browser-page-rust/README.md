@@ -69,6 +69,9 @@ WASM `producers` section. That changes the full intermediate hash even when the
 final program is identical. The compiler retains every custom section and
 checks the full receipt; `target/browser-page-generated/receipt.actual.json`
 records the actual candidate receipt separately from the committed expectation.
+The build maps locally installed Rust standard-library sources to the pinned
+compiler's virtual source paths so hosts with and without `rust-src` produce the
+same asset.
 
 The checked-in `generated/runtime.js` is generated output, with its Rust inputs,
 tool hashes and target recorded in `generated/receipt.json`. CI requires a fresh
