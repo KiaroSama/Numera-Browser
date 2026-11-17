@@ -1040,7 +1040,7 @@ pub fn release_manifest(
     super::release::verify_distribution(directory, &distribution, source, true)?;
     let mut assets = Vec::new();
     let mut components = BTreeMap::new();
-    for platform in ["windows-x64", "linux-x64", "macos-arm64"] {
+    for platform in super::release::RELEASE_PLATFORMS {
         let metadata: Value =
             serde_json::from_slice(&fs::read(directory.join(format!("{platform}.json")))?)?;
         if metadata["source_sha"] != source

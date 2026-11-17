@@ -33,15 +33,13 @@ jobs:
             os: ubuntu-24.04
           - platform: windows
             os: windows-latest
-          - platform: macos
-            os: macos-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
       - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249
         with:
-          toolchain: 1.99.1
+          toolchain: 1.100.0
           targets: wasm32-unknown-unknown
       - name: Disable optional Visual Studio DevCmd telemetry on Windows
         if: runner.os == 'Windows'
@@ -56,6 +54,9 @@ jobs:
             tools/xtask
           save-if: ${{ runner.os != 'Windows' }}
           cache-workspace-crates: false
+      - name: Require an x86-64 native runner
+        shell: bash
+        run: test "$RUNNER_ARCH" = X64
       - name: Always compile both real native application binaries first
         run: cargo build --manifest-path engine-rust/Cargo.toml --locked --release --no-default-features --features native-product,native-browser --bin numera-engine --bin numera-browser-runtime
       - name: Compile native build and ownership tooling
@@ -82,9 +83,9 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libxdo-dev libssl-dev build-essential file patchelf
-      - name: Provision native Rust packaging tools
+      - name: Install reviewed native desktop packaging tools
         run: |
-          cargo xtask ci owned --wall 900 --idle 300 -- cargo install tauri-cli --version 2.12.4 --locked
+          cargo xtask ci owned --wall 900 --idle 300 -- cargo install tauri-cli --version 2.12.5 --locked
           cargo xtask ci owned --wall 900 --idle 300 -- cargo install wasm-bindgen-cli --version 0.2.129 --locked
       - name: Explicitly acquire the reviewed vendor resources and source offers
         run: cargo xtask ci owned --wall 1800 --idle 300 -- cargo xtask provision-resources "${{ runner.temp }}/numera-resources"
@@ -131,7 +132,7 @@ jobs:
           persist-credentials: false
       - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249
         with:
-          toolchain: 1.99.1
+          toolchain: 1.100.0
       - uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c
         with:
           workspaces: tools/xtask
@@ -150,7 +151,7 @@ jobs:
           persist-credentials: false
       - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249
         with:
-          toolchain: 1.99.1
+          toolchain: 1.100.0
           components: rustfmt, clippy
           targets: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c
@@ -221,14 +222,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, windows-latest, macos-latest]
+        os: [ubuntu-24.04, windows-latest]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
       - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249
         with:
-          toolchain: 1.99.1
+          toolchain: 1.100.0
       - uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c
         with:
           workspaces: |
@@ -281,7 +282,7 @@ jobs:
           persist-credentials: false
       - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249
         with:
-          toolchain: 1.99.1
+          toolchain: 1.100.0
       - uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c
         with:
           workspaces: |
@@ -343,7 +344,7 @@ jobs:
           persist-credentials: false
       - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249
         with:
-          toolchain: 1.99.1
+          toolchain: 1.100.0
       - uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c
         with:
           workspaces: |
@@ -379,7 +380,7 @@ jobs:
           persist-credentials: false
       - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249
         with:
-          toolchain: 1.99.1
+          toolchain: 1.100.0
       - uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c
         with:
           workspaces: tools/xtask
@@ -431,7 +432,7 @@ jobs:
           persist-credentials: false
       - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249
         with:
-          toolchain: 1.99.1
+          toolchain: 1.100.0
       - uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c
         with:
           workspaces: tools/xtask

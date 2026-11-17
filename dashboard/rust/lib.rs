@@ -7,4 +7,6 @@ pub mod contracts;
 pub mod development;
 pub mod model;
 pub mod render;
+#[cfg(target_arch = "wasm32")]
+mod theme_sweep;
 pub mod updates;

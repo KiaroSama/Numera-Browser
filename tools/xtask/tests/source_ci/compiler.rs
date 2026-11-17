@@ -802,6 +802,12 @@ fn cache(damage: &str) -> TestResult {
         result?;
         assert_eq!(fs::read(&path)?, diagnostic);
         assert!(rows.iter().any(|r| r.contains("cache_records_removed=1")));
+        let current = tmp.write(
+            "engine-rust/target/debug/build/numera-core/0123456789abcdef/fingerprint/output-lib-numera_core",
+            &payload,
+        )?;
+        assert_eq!(phase::sanitize(&tmp.0, &mut phase::Seen::new())?, 1);
+        assert_eq!(fs::read(current)?, diagnostic);
     } else {
         assert_eq!(
             result.expect_err("uncertain compiler cache").to_string(),
@@ -1000,25 +1006,40 @@ fn unchanged() -> TestResult {
 fn unicode() -> TestResult {
     let tmp = Temp::new("compiler-unicode")?;
     let root = tmp.0.join("unicode\u{200d}path");
-    let path = root.join("engine-rust/target/debug/deps/libnumera_core-0123456789abcdef.rlib");
-    let mut trace = trace(&root, &path);
-    let quoted = serde_json::to_string(&path.to_string_lossy())?.replace('\u{200d}', r"\u{200d}");
-    trace["message"]["fields"]["message"] = format!("preparing rlib to {quoted}").into();
-    let scope = phase::Scope::new(&root, 0, true);
-    for value in [
-        trace,
-        artifact(&root, &path, false),
-        json!({"reason":"build-finished","success":true}),
+    for (directory, status) in [
+        ("deps", "complete"),
+        ("build/numera-core/0123456789abcdef/out", "complete"),
+        ("build/numera-core/0123456789abcde0/out", "unavailable"),
     ] {
-        event(&scope, &value)?;
+        let path = root
+            .join("engine-rust/target/debug")
+            .join(directory)
+            .join("libnumera_core-0123456789abcdef.rlib");
+        let mut trace = trace(&root, &path);
+        let quoted =
+            serde_json::to_string(&path.to_string_lossy())?.replace('\u{200d}', r"\u{200d}");
+        trace["message"]["fields"]["message"] = format!("preparing rlib to {quoted}").into();
+        let scope = phase::Scope::new(&root, 0, true);
+        for value in [
+            trace,
+            artifact(&root, &path, false),
+            json!({"reason":"build-finished","success":true}),
+        ] {
+            event(&scope, &value)?;
+        }
+        let (result, rows) = scope.finish(Ok(()), Ok(0));
+        result?;
+        assert!(
+            rows.last()
+                .expect("summary")
+                .contains(&format!("status={status}"))
+        );
+        assert!(
+            rows.iter()
+                .all(|row| !row.contains("unicode")
+                    && !row.contains(path.to_string_lossy().as_ref()))
+        );
     }
-    let (result, rows) = scope.finish(Ok(()), Ok(0));
-    result?;
-    assert!(rows.last().expect("summary").contains("status=complete"));
-    assert!(
-        rows.iter()
-            .all(|r| !r.contains("unicode") && !r.contains(path.to_string_lossy().as_ref()))
-    );
     Ok(())
 }
 fn stat_contract(platform: &str, damage: &str) -> TestResult {

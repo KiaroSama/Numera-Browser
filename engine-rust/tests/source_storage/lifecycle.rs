@@ -1,32 +1,15 @@
 use super::*;
-fn library(directory: &Path, name: &str) -> PathBuf {
-    let mut entries = fs::read_dir(directory)
-        .expect("dependencies")
-        .map(|e| e.expect("dependency").path())
-        .filter(|p| {
-            p.file_name()
-                .and_then(|n| n.to_str())
-                .is_some_and(|n| n.starts_with(&format!("lib{name}-")) && n.ends_with(".rlib"))
-        })
-        .collect::<Vec<_>>();
-    entries.sort_by_key(|p| {
-        fs::metadata(p)
-            .expect("library metadata")
-            .modified()
-            .expect("library time")
-    });
-    entries.pop().expect("linked native dependency")
-}
+#[path = "../../../tools/test-support/cargo_artifacts.rs"]
+mod cargo_artifacts;
+use cargo_artifacts::Artifacts;
 pub(super) fn fixture() -> PathBuf {
     static BINARY: OnceLock<PathBuf> = OnceLock::new();
     BINARY
         .get_or_init(|| {
-            let deps = std::env::current_exe()
-                .expect("test")
-                .parent()
-                .expect("dependency directory")
-                .to_owned();
-            let folder = deps.join(format!("source-storage-fixture-{}", std::process::id()));
+            let artifacts = Artifacts::current().expect("Cargo test artifacts");
+            let folder = artifacts
+                .output_directory()
+                .join(format!("source-storage-fixture-{}", std::process::id()));
             fs::create_dir(&folder).expect("owned fixture folder");
             let binary = folder.join(if cfg!(windows) {
                 "helper.exe"
@@ -43,17 +26,24 @@ pub(super) fn fixture() -> PathBuf {
                 .arg("--extern")
                 .arg(format!(
                     "numera_core={}",
-                    library(&deps, "numera_core").display()
+                    artifacts
+                        .library("numera_core")
+                        .expect("core library")
+                        .display()
                 ))
                 .arg("--extern")
                 .arg(format!(
                     "serde_json={}",
-                    library(&deps, "serde_json").display()
+                    artifacts
+                        .library("serde_json")
+                        .expect("JSON library")
+                        .display()
                 ))
-                .arg("-L")
-                .arg(format!("dependency={}", deps.display()))
                 .arg("-o")
                 .arg(&binary);
+            artifacts
+                .add_dependency_search_paths(&mut command, &folder.join("rustc-search.args"))
+                .expect("Rustc dependency search paths");
             let result = capture::run(
                 &mut command,
                 capture::Limits {

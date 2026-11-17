@@ -14,6 +14,10 @@ const TREE: &str = "engine-rust/src/ownership/tree.rs";
 const SESSION: &str = "engine-rust/src/ownership/session.rs";
 const SESSION_CLASSIFIED: &str = "c35c543c0a84f47c8567ea32a921840ab1bd69a8592c0e8227fa74f44d71737d";
 const MACOS_TREE: &str = "201260e01da09fea13951ba61ab0265faa68499554d4cfefaf712a179dc8b36b";
+const SETTINGS: &str = "engine-rust/src/cli/settings_commands.rs";
+const CONFIG: &str = "engine-rust/src/storage/config.rs";
+const STRICT_SETTINGS_CASE: &str =
+    "strict_settings::settings_commands_preserve_original_decoding_refusals_and_early_errors";
 
 /// The separate owning-host Mac proof may adapt only this later Session
 /// caller. Its exact selected tree/test/commit never become a canonical99 row.
@@ -97,6 +101,20 @@ pub fn clock_caller(case: &Case, current: &[u8]) -> Result<Option<Replacement>> 
 pub fn additional(root: &Path, case: &Case) -> Result<Vec<(String, Replacement)>> {
     let sources = super::history::case_sources(case)?;
     let mut result = Vec::new();
+    if case.target == "cli_settings_parity"
+        && case.test == STRICT_SETTINGS_CASE
+        && let Some(source) = sources.get(SETTINGS).filter(|source| {
+            source.commit == "6c8a5bbc56c32ebf611d286422df3a94837abc7a"
+                && source.sha256
+                    == "b061d6a64dd454340956b51273f09b75a123b4889f35e34cef1d99b073a34b1b"
+        })
+    {
+        result.extend(settings_home(root, case, source)?);
+        let config = sources
+            .get(CONFIG)
+            .ok_or("Selected historical settings config is missing")?;
+        result.push(settings_fixture(root, case, config)?);
+    }
     if let Some(source) = sources
         .get("engine-rust/src/vault/recovery.rs")
         .filter(|source| {
@@ -248,6 +266,93 @@ pub fn additional(root: &Path, case: &Case) -> Result<Vec<(String, Replacement)>
         result.push((path.into(), replacement));
     }
     Ok(result)
+}
+
+fn settings_home(root: &Path, case: &Case, source: &Source) -> Result<Vec<(String, Replacement)>> {
+    const DATA_ROOT: &str = "engine-rust/src/storage/data_root.rs";
+    const EXTENSIONS: &str = "engine-rust/src/browser/extensions.rs";
+    const OLD_DATA_ROOT: &str = "df4c60971bd5dc58e37bed5095ea5d5281f5468a103680c4183897bb20514dbb";
+    let historical = super::git(root, &["show", &format!("{}:{DATA_ROOT}", source.commit)])?;
+    if super::sha(&historical) != OLD_DATA_ROOT {
+        return fail("Historical settings home resolver differs from its reviewed source");
+    }
+    let historical = std::str::from_utf8(&historical)?;
+    let start = historical
+        .find("pub(crate) fn expand_home(")
+        .ok_or("Historical settings home resolver is missing")?;
+    let (function, _) = historical[start..]
+        .split_once("\n\nfn writable(")
+        .ok_or("Historical settings home resolver boundary differs")?;
+    let data_root = checked_caller(
+        root,
+        case,
+        DATA_ROOT,
+        "8511ae2d912996eb3b68e6d45dceaeb22fa375fbc210e736d7dbf925bd031f06",
+    )?;
+    let extensions = checked_caller(
+        root,
+        case,
+        EXTENSIONS,
+        "f62e2096699adff20b82ddea0be8cc06b2cab903ef9c82e307c75873a5b44bf7",
+    )?;
+    let mut data_root = caller_replacement(
+        case,
+        DATA_ROOT,
+        &data_root,
+        source,
+        &[
+            (
+                "pub(crate) fn expand_home(path: &Path, home: &Path) -> io::Result<PathBuf> {\n    super::home_path::expand(path, home)\n}",
+                function,
+            ),
+            (
+                "return expand_home(path, home);",
+                "return super::home_path::expand(path, home);",
+            ),
+        ],
+    )?;
+    let mut extensions = caller_replacement(
+        case,
+        EXTENSIONS,
+        &extensions,
+        source,
+        &[("data_root::expand_home", "home_path::expand as expand_home")],
+    )?;
+    for bridge in [&mut data_root, &mut extensions] {
+        bridge.receipt["historical_source_path"] = SETTINGS.into();
+        bridge.receipt["included_source_path"] = DATA_ROOT.into();
+        bridge.receipt["included_source_sha256"] = OLD_DATA_ROOT.into();
+        bridge.receipt["included_fragment_sha256"] = super::sha(function.as_bytes()).into();
+        bridge.receipt["reason"] = "Give the selected historical settings caller its snapshot's exact infallible home resolver. Later data-root and browser callers keep the current fallible resolver; all selected source and assertion bytes remain exact.".into();
+    }
+    Ok(vec![
+        (DATA_ROOT.into(), data_root),
+        (EXTENSIONS.into(), extensions),
+    ])
+}
+
+fn settings_fixture(root: &Path, case: &Case, source: &Source) -> Result<(String, Replacement)> {
+    let path = "engine-rust/tests/cli_settings_parity/named_home.rs";
+    let bytes = checked_caller(
+        root,
+        case,
+        path,
+        "09b60d9be3dbc3daa35b348e3b687a06eb1b80231933aa3cf60d8dbdd8338858",
+    )?;
+    let mut replacement = caller_replacement(
+        case,
+        path,
+        &bytes,
+        source,
+        &[(
+            "assert!(!config.headless_launch()?);",
+            "assert!(!config.headless_launch());",
+        )],
+    )?;
+    replacement.receipt["historical_source_path"] = CONFIG.into();
+    replacement.receipt["fixture_executed"] = false.into();
+    replacement.receipt["reason"] = "The later named-home sibling fixture compiles against the selected config snapshot's bool return type. The exact strict-settings assertion is in a separate module and runs as registered.".into();
+    Ok((path.into(), replacement))
 }
 
 fn recovery_transaction(

@@ -3,7 +3,7 @@
 use crate::{
     contracts::{self, ApiError},
     model::*,
-    render, updates,
+    render, theme_sweep, updates,
 };
 use js_sys::{Array, Function, Reflect, Uint8Array};
 use serde_json::{Value, json};
@@ -572,6 +572,7 @@ fn listen(target: web_sys::EventTarget, event: &str, callback: impl FnMut(Event)
 }
 #[wasm_bindgen]
 pub fn shutdown() {
+    theme_sweep::stop(false);
     RUNTIME.with(|r| {
         if let Some(runtime) = r.borrow_mut().take() {
             runtime.borrow_mut().disposed = true;
@@ -1248,16 +1249,16 @@ async fn handle_action(act: &str, id: &str) -> Result<(), ApiError> {
             a.modal.clear();
         }),
         "theme" => {
-            change(|a| {
-                a.theme = if a.theme == "light" {
-                    "dark".into()
-                } else {
-                    "light".into()
+            theme_sweep::stop(true);
+            let from_dark = snapshot().theme != "light";
+            let next = if from_dark { "light" } else { "dark" };
+            theme_sweep::play(&window(), &document(), from_dark, move || {
+                change(|app| app.theme = next.into());
+                if let Ok(Some(storage)) = window().local_storage() {
+                    let _ = storage.set_item("ps-theme", next);
                 }
+                draw();
             });
-            if let Ok(Some(storage)) = window().local_storage() {
-                let _ = storage.set_item("ps-theme", &snapshot().theme);
-            }
         }
         "new" => {
             let mut p = new_profile(&a.folder, a.default_engine());

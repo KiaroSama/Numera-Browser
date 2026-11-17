@@ -708,7 +708,7 @@ fn capture_caller_controls() -> TestResult {
     );
     assert_eq!(
         ci::sha(&bridges[1].1.bytes),
-        "029549a0e5badba41fd2f1b48ce836c18aa09b9417f49526f15b91934a5c5699"
+        "47198bed13ee1cb1e61670157dc36d2964b36a99b6c2d8df47a3666f3c0bd164"
     );
     assert_eq!(fs::read(root.join(PRIMARY))?, primary_before);
     assert_eq!(ci::sha(&selected), case.files[PRIMARY]);

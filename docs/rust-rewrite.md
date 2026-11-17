@@ -2,36 +2,40 @@
 
 [PR #76](https://github.com/KiaroSama/Numera-Browser/pull/76) continues the complete
 history of native checkpoint `3bf1d839fd33e42a10b982bd8607a7052ea7c4cd`
-from `migration/native-runtime-checkpoint-20261012`. It remains open and unmerged;
-`main` has not been advanced by this work.
+from `migration/native-runtime-checkpoint-20261012`. The open, unmerged PR
+uses Rust 1.100.0.
 
 ## Implementation
 
 Rust implements the native CLI, MCP, Axum API, compatible storage/vault behavior,
-owned process lifecycle, browser preparation, Rust/WASM dashboard, Tauri desktop
-integration and build/verification tools. The native product binaries are
+owned process lifecycle, browser preparation, the WASM web dashboard, Tauri
+desktop integration and build/verification tools. The native product binaries are
 `numera-engine` and `numera-browser-runtime`. The older acceptance candidate remains
 a separate supplemental build rather than evidence of a complete distribution.
 
 The dashboard retains **195 cases in 26 suites**: 71 native cases and 124
 WebAssembly cases executed in Chromium. Application browser preparation supports
-Playwright, Patchright, Camoufox and Cloak. Native workers use explicitly acquired
-vendor Node transports and vendor browser engines. Those external dependencies
-are not rewritten Chromium/Firefox/Node implementations; generated browser
-scripts and WASM bindings remain runtime assets.
+Playwright, Patchright, Camoufox and Cloak. The native browser worker uses
+explicitly acquired vendor Node transports and browser executables.
 
 Browser-realm identity and probes also have Rust sources in
 [`browser-page-rust`](../browser-page-rust/README.md). The embedded JavaScript
 factory is compiler output, with source/tool hashes and deterministic regeneration
-checks. Actual browser comparisons preserve identity, probe failures and strict
-CSP behavior. The pinned host parser/printer reduces the generated factory to
-480,089 bytes while retaining the same WASM and intermediate hashes. All twelve
-exports, strict CSP, Unicode memory growth and 480 actual native SDK frames
-passed the [compiler review](verification/browser-page-printer-20261114.json).
-No page CSP policy is relaxed to initialize this runtime.
+checks. Its receipt records the Rust version and exact generated output.
+The earlier [compiler review](verification/browser-page-printer-20261114.json)
+records strict CSP, Unicode memory growth and 480 native SDK frames against
+the compiler used in that review.
 
-[Current upstream review](upstream-review-20261114.json) distinguishes stable
-artifacts from source-only changes. Driver/browser generations remain separate.
+The [November 14 upstream review](upstream-review-20261114.json) records the
+previously accepted vendor resource pins. The current build uses [ZIP 9.6.1](https://crates.io/crates/zip/9.6.1),
+[Tauri 2.12.6](https://github.com/tauri-apps/tauri/releases/tag/tauri-v2.12.6)
+and [Tauri CLI 2.12.5](https://github.com/tauri-apps/tauri/releases/tag/tauri-cli-v2.12.5).
+Provisioning uses the independently pinned [Patchright 1.64.3 transport](https://registry.npmjs.org/patchright-core/1.64.3)
+with the existing Node carriers and matching Chromium generation. Playwright
+and Cloak remain on Playwright 1.65.1. Camoufox's newer beta is a prerelease,
+so the production pin remains on the GitHub-selected 158.0.1-beta.41 release.
+The [Scrapfly model-2/2026 release](https://github.com/scrapfly/fingerprint-generator/releases/tag/model-2/2026)
+still matches the model shipped in this tree.
 Camoufox includes native fingerprint-model, identity, geometry, locale, GeoIP,
 font and WebGL preparation. CPU features require declared support in the selected
 browser's properties; an older executable is not credited with unreleased engine
@@ -50,8 +54,8 @@ fresh hosted Windows execution remains part of acceptance.
 `rust-test-baseline.json` freezes the original collection, its identities and test
 kinds. The counts are **3,418 backend/tooling source cases**, **195 dashboard
 cases**, and **294 preexisting native cases on Linux**, including a separately
-executed live-browser case. The original platform-specific native inventories are
-295 on macOS and 286 on Windows; their applicability is preserved.
+executed live-browser case. The current Windows inventory is 286. The
+295-case macOS inventory remains available as historical baseline data.
 
 Each `source-*-test-map.json` maps an individual source case to an individually
 reported Rust case, its original kind and platform. Mapping is not an execution
@@ -80,10 +84,10 @@ during the rewrite; it does not substitute mapping counts for test execution.
 
 ## Build and resource provenance
 
-[Native CI](../.github/workflows/native-ci.yml) starts independent Linux, Windows
-and macOS product builds on pushes and pull requests. The real application and
+[Native CI](../.github/workflows/native-ci.yml) starts independent x86-64 Linux and
+Windows product builds on pushes and pull requests. The real application and
 worker compile before test gates; a failed test job does not cancel compilation
-on another platform. Full-product builds include WASM, Tauri installers and
+on another platform. Full-product builds include the bundled web dashboard, Tauri installers and
 portable server archives.
 
 `cargo xtask provision-resources` explicitly acquires pinned vendor transports,

@@ -51,6 +51,7 @@ pub fn execute(command: &mut Command, seconds: u64) -> Result<capture::Output> {
     restrict_environment(command);
     command.env_remove("GH_TOKEN").env_remove("GITHUB_TOKEN");
     let mut natural = None;
+    let mut natural_reason = "not-observed";
     let mut partial = [Vec::new(), Vec::new()];
     let result = capture::run_observed_streamed(
         command,
@@ -63,10 +64,13 @@ pub fn execute(command: &mut Command, seconds: u64) -> Result<capture::Output> {
         || false,
         |event, _| {
             if let capture::Observation::BeforeCleanup {
-                natural_settlement, ..
+                natural_settlement,
+                natural_reason: reason,
+                ..
             } = event
             {
                 natural = natural_settlement;
+                natural_reason = reason;
             }
         },
         |index, bytes| {
@@ -85,7 +89,7 @@ pub fn execute(command: &mut Command, seconds: u64) -> Result<capture::Output> {
         Ok(output) => output,
         Err(error) => {
             eprintln!(
-                "Vendor provisioning capture failed: {error}\nCaptured stdout:\n{}\nCaptured stderr:\n{}",
+                "Vendor provisioning capture failed: {error}\nNatural settlement: {natural:?} ({natural_reason})\nCaptured stdout:\n{}\nCaptured stderr:\n{}",
                 diagnostic(&partial[0]),
                 diagnostic(&partial[1])
             );
@@ -94,7 +98,7 @@ pub fn execute(command: &mut Command, seconds: u64) -> Result<capture::Output> {
     };
     if result.exit != 0 || natural != Some(true) {
         return ci::fail(format!(
-            "Vendor provisioning command failed (exit={}, natural_settlement={natural:?})\nCaptured stdout:\n{}\nCaptured stderr:\n{}",
+            "Vendor provisioning command failed (exit={}, natural_settlement={natural:?}, reason={natural_reason})\nCaptured stdout:\n{}\nCaptured stderr:\n{}",
             result.exit,
             diagnostic(&result.stdout),
             diagnostic(&result.stderr)
@@ -107,6 +111,7 @@ fn download(url: &str, target: &Path, expected: &str, limit: u64) -> Result<()> 
     if ![
         "https://files.pythonhosted.org/packages/",
         "https://registry.npmjs.org/playwright-core/-/",
+        "https://registry.npmjs.org/patchright-core/-/",
         "https://github.com/daijro/",
         "https://codeload.github.com/daijro/camoufox/",
         "https://codeload.github.com/gorhill/uBlock/",

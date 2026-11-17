@@ -99,7 +99,7 @@ fn history(damage: &str) -> TestResult {
         "duplicate" => {
             steps.push(steps[index].clone());
         }
-        "platform" => steps[index]["if"] = json!("runner.os == 'Linux'"),
+        "platform" => steps[index]["if"] = json!("runner.os == 'Windows'"),
         "bound" => {
             steps[index]["run"] = json!(
                 steps[index]["run"]

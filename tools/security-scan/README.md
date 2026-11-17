@@ -2,7 +2,7 @@
 
 The Gitleaks workflow verifies the manifest, lockfile and two source-file SHA-256
 pins before copying those four files outside the checkout and compiling them with
-Rust 1.99.1. It does not execute application crates, repository Cargo configuration
+Rust 1.100.0. It does not execute application crates, repository Cargo configuration
 or repository build scripts. Updates to this bootstrap require reviewing and
 updating all four workflow pins.
 

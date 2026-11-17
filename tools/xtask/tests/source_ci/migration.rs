@@ -730,22 +730,19 @@ pub(super) fn compile(temp: &Temp, source: &str) -> ci::Result<PathBuf> {
         .arg(file)
         .arg("-o")
         .arg(&output);
-    let deps = std::env::current_exe()?
-        .parent()
-        .ok_or("Test dependency directory missing")?
-        .to_owned();
-    for dependency in ["numera_core", "numera_xtask", "serde_json"] {
-        if !source.contains(&format!("{dependency}::")) {
-            continue;
-        }
-        command
-            .arg("--extern")
-            .arg(format!(
+    let mut dependencies = ["numera_core", "numera_xtask", "serde_json"]
+        .into_iter()
+        .filter(|name| source.contains(&format!("{name}::")))
+        .peekable();
+    if dependencies.peek().is_some() {
+        let artifacts = cargo_artifacts::Artifacts::current()?;
+        for dependency in dependencies {
+            command.arg("--extern").arg(format!(
                 "{dependency}={}",
-                super::camoufox_runtime::linked_rlib(&deps, dependency)?.display()
-            ))
-            .arg("-L")
-            .arg(format!("dependency={}", deps.display()));
+                artifacts.library(dependency)?.display()
+            ));
+        }
+        artifacts.add_dependency_search_paths(&mut command, &temp.0.join("rustc-search.args"))?;
     }
     let result = ci::capture(
         &mut command,

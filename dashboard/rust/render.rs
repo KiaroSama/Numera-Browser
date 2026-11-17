@@ -13,6 +13,9 @@ fn e(v: &Value) -> String {
     escape(&text(v))
 }
 pub fn icon(name: &str) -> String {
+    icon_at(name, 16)
+}
+fn icon_at(name: &str, size: u8) -> String {
     let path = match name {
         "profiles" => "M12 3 2 8l10 5 10-5-10-5ZM2 12l10 5 10-5M2 16l10 5 10-5",
         "health" => "M2 12h4l3-9 6 18 3-9h4",
@@ -21,6 +24,13 @@ pub fn icon(name: &str) -> String {
             "M19 13h-2a2 2 0 1 1 0-4h2V5h-6V3a2 2 0 1 0-4 0v2H5v4H3a2 2 0 1 0 0 4h2v6h4v2a2 2 0 1 0 4 0v-2h6z"
         }
         "folders" => "M3 7V3h6l2 2h10v14H3V7Z",
+        "folder-tree" => "M3 3v14a2 2 0 0 0 2 2h4M3 7h6m0-3h4l2 2h6v6H9zm0 11h4l2 2h6v5H9z",
+        "boxes" => {
+            "m12 3 4 2.3v4.5L12 12l-4-2.2V5.3zm0 9 4.1-2.3 4 2.3v4.5l-4 2.3-4.1-2.3zm0 0-4.1-2.3-4 2.3v4.5l4 2.3 4.1-2.3zM8 5.3l4 2.2 4-2.2M12 7.5V12m-8 0 4 2.2 4-2.2m-4 2.2v4.5m4-6.7 4 2.2 4-2.2m-4 2.2v4.5"
+        }
+        "server" => {
+            "M4 3h16a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zm0 11h16a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-5a1 1 0 0 1 1-1zM7 6.5h.01M7 17.5h.01"
+        }
         "automation" => "m13 2-9 12h7l-1 8 10-12h-7l1-8Z",
         "settings" => {
             "M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8ZM9 3h6l1 3 3 1 2 5-2 5-3 1-1 3H9l-1-3-3-1-2-5 2-5 3-1 1-3Z"
@@ -35,10 +45,18 @@ pub fn icon(name: &str) -> String {
         "check" => "m5 12 4 4L19 6",
         "shield" => "M12 3 3 6v6c0 5 9 9 9 9s9-4 9-9V6l-9-3Zm-5 9 3 3 7-7",
         "search" => "M10 3a7 7 0 1 0 0 14 7 7 0 0 0 0-14Zm5 12 6 6",
+        "command" => "M8 5a3 3 0 1 0-3 3h14a3 3 0 1 0-3-3v14a3 3 0 1 0 3-3H5a3 3 0 1 0 3 3z",
         "download" => "M12 3v12m-5-5 5 5 5-5M3 15v6h18v-6",
         "filter" => "M3 4h18l-7 8v8l-4-2v-6L3 4Z",
         "theme" => {
             "M12 3v2m0 14v2M3 12h2m14 0h2M5 5l2 2m10 10 2 2M5 19l2-2M17 7l2-2M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z"
+        }
+        "moon" => "M20.9 13.3A9 9 0 0 1 10.7 3.1 9 9 0 1 0 20.9 13.3Z",
+        "wifi" => {
+            "M2 8.8a16 16 0 0 1 20 0M5 12.8a11 11 0 0 1 14 0m-11 4a6.5 6.5 0 0 1 8 0M12 20h.01"
+        }
+        "wifi-off" => {
+            "m3 3 18 18M2 9a16 16 0 0 1 2-1.4m4-1.7A16 16 0 0 1 22 9M5 13a11 11 0 0 1 3.1-1.6m8-.4A11 11 0 0 1 19 13M8 17a6 6 0 0 1 6.5-1M12 20h.01"
         }
         "refresh" => "M20 7a8 8 0 1 0 0 10M20 3v5h-5",
         "key" => "M8 3a5 5 0 1 0 0 10 5 5 0 0 0 0-10Zm4 9 9 9m-4-4 3-3",
@@ -48,7 +66,7 @@ pub fn icon(name: &str) -> String {
         _ => "M3 5h18v14H3zM7 9h10M7 13h6",
     };
     format!(
-        r#"<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{path}"/></svg>"#
+        r#"<svg width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{path}"/></svg>"#
     )
 }
 pub fn button(action: &str, id: &str, label: &str, class: &str, disabled: bool) -> String {
@@ -98,7 +116,7 @@ fn action(action: &str, id: &str, title: &str, ic: &str, disabled: bool) -> Stri
         escape(title),
         escape(title),
         if disabled { "disabled" } else { "" },
-        icon(ic)
+        icon_at(ic, 13)
     )
 }
 pub fn input(
@@ -261,11 +279,17 @@ pub fn app(a: &App) -> String {
             o,
             r#"<button class="ps-navitem{}" data-action="nav" data-id="{key}">{}<span>{label}</span></button>"#,
             if a.view == key { " active" } else { "" },
-            icon(key)
+            icon(if key == "folders" { "folder-tree" } else { key })
         );
     }
     o.push_str(r#"</nav><div class="ps-folders"><div class="ps-folders-h"><span style="flex:1">Folders</span>"#);
-    o.push_str(&btn("nav", "folders", "Manage"));
+    o.push_str(&button(
+        "nav",
+        "folders",
+        "Manage",
+        "ps-folders-manage",
+        false,
+    ));
     o.push_str("</div>");
     for f in std::iter::once("All profiles".into()).chain(a.folders()) {
         let count = if f == "All profiles" {
@@ -282,7 +306,7 @@ pub fn app(a: &App) -> String {
                 ""
             },
             escape(&f),
-            icon("folders"),
+            icon_at("folder-tree", 13),
             escape(&f)
         );
     }
@@ -319,34 +343,56 @@ pub fn app(a: &App) -> String {
         .iter()
         .filter(|p| coherence(p).is_empty())
         .count();
-    for (label, value, ic) in [
-        ("Profiles", a.profiles.len().to_string(), "profiles"),
-        ("Running", running.to_string(), "health"),
-        ("Proxies", proxies.to_string(), "proxies"),
+    for (label, value, ic, accent) in [
+        ("Profiles", a.profiles.len().to_string(), "boxes", "muted"),
+        ("Running", running.to_string(), "health", "mint"),
+        ("Proxies", proxies.to_string(), "server", "lilac"),
         (
             "Coherent",
             format!("{coherent}/{}", a.profiles.len()),
             "shield",
+            "violet",
         ),
     ] {
         let _ = write!(
             o,
-            r#"<div class="ps-stat"><span class="ps-stat-ic">{}</span><div><div class="ps-stat-val">{value}</div><div class="ps-stat-label">{label}</div></div></div>"#,
+            r#"<div class="ps-stat"><span class="ps-stat-ic{}" style="color:var(--{accent})">{}</span><div><div class="ps-stat-val">{value}</div><div class="ps-stat-label">{label}</div></div></div>"#,
+            if ic == "health" && running > 0 {
+                " pulse"
+            } else {
+                ""
+            },
             icon(ic)
         );
     }
     o.push_str(r#"<div style="flex:1"></div>"#);
-    o.push_str(&btn("import-profiles", "", "Import"));
-    o.push_str(&btn("bulk", "", "Bulk create"));
-    o.push_str(&primary("new", "New profile", false));
+    for (action, label, symbol, size, class) in [
+        ("import-profiles", "Import", "download", 14, "ps-btn ghost"),
+        ("bulk", "Bulk create", "boxes", 14, "ps-btn ghost"),
+        ("new", "New profile", "plus", 15, "ps-btn primary"),
+    ] {
+        o.push_str(&button(
+            action,
+            "",
+            &format!("{} {label}", icon_at(symbol, size)),
+            class,
+            false,
+        ));
+    }
     o.push_str(&button(
         "commands",
         "",
-        &icon("search"),
+        &icon_at("command", 15),
         "ps-iconbtn",
         false,
     ));
-    o.push_str(&button("theme", "", &icon("theme"), "ps-iconbtn", false));
+    o.push_str(&button(
+        "theme",
+        "",
+        &icon_at(if a.theme == "light" { "moon" } else { "theme" }, 15),
+        "ps-iconbtn",
+        false,
+    ));
     o.push_str("</div>");
     if a.update["offer"].is_object()
         && s(&a.update["offer"], "id") != a.dismissed
@@ -453,17 +499,43 @@ pub fn profiles(a: &App) -> String {
         }
         o.push_str("</div>");
     }
+    let active_filters = a.filters.values().filter(|value| !value.is_empty()).count();
+    let filter_label = if active_filters == 0 {
+        "Filter".into()
+    } else {
+        format!("Filter · {active_filters}")
+    };
     let _ = write!(
         o,
-        r#"<div class="ps-toolbar"><div class="ps-search">{}<input id="profile-search" placeholder="Search profiles or tags…" data-scope="app" data-field="query" value="{}"></div><span class="ps-mono dim">{} profiles</span><div style="flex:1"></div>{}</div>"#,
-        icon("search"),
+        r#"<div class="ps-toolbar"><div class="ps-search">{}<input id="profile-search" placeholder="Search profiles, tags…" data-scope="app" data-field="query" value="{}"></div><div class="ps-crumb">{} {}</div><div style="flex:1"></div><div class="ps-filter-wrap">{}"#,
+        icon_at("search", 15),
         escape(&a.query),
-        filtered.len(),
-        btn("filters", "", "Filters")
+        icon_at("folder-tree", 13),
+        escape(&a.folder),
+        button(
+            "filters",
+            "",
+            &format!("{} {filter_label}", icon_at("filter", 13)),
+            if active_filters > 0 {
+                "ps-btn ghost sm active"
+            } else {
+                "ps-btn ghost sm"
+            },
+            false
+        )
     );
     if a.filter_open {
-        o.push_str(r#"<div class="ps-filter-pop">"#);
-        o.push_str(&btn("clear-filters", "", "Clear all"));
+        o.push_str(r#"<div class="ps-filter-pop"><div class="ps-filter-head"><span>Filter profiles</span>"#);
+        if active_filters > 0 {
+            o.push_str(&button(
+                "clear-filters",
+                "",
+                "Clear all",
+                "ps-filter-clear",
+                false,
+            ));
+        }
+        o.push_str("</div>");
         for (key, label, options) in [
             ("status", "Status", opts(&["running", "stopped"])),
             (
@@ -513,7 +585,7 @@ pub fn profiles(a: &App) -> String {
         }
         o.push_str("</div>");
     }
-    o.push_str(r#"<div class="ps-scroll">"#);
+    o.push_str(r#"</div></div><div class="ps-scroll">"#);
     if filtered.is_empty() {
         o.push_str(r#"<div class="ps-empty">No profiles here yet."#);
         o.push_str(&primary("new", "Create one", false));
@@ -570,8 +642,13 @@ pub fn profiles(a: &App) -> String {
             }
             let _ = write!(
                 o,
-                r#"</div></div></div></td><td><div class="ps-env"><span class="ps-os">{}</span><span class="ps-mono">{}</span>{}</div></td><td><span class="ps-engine-chip">{}</span></td><td><div class="ps-proxy">{}</div></td><td><span class="ps-pill {}" title="{}">{}</span></td><td class="ps-mono dim">{}</td><td><div class="ps-actions">"#,
+                r#"</div></div></div></td><td><div class="ps-env"><span class="ps-os">{}</span><span class="ps-mono{}">{}</span>{}</div></td><td><span class="ps-engine-chip">{}</span></td><td><div class="ps-proxy{}">{}</div></td><td><span class="ps-pill {}" title="{}">{}{}</span></td><td class="ps-mono dim">{}</td><td><div class="ps-actions">"#,
                 e(&p["os"]),
+                if owns_identity(s(p, "engine")) {
+                    " dim"
+                } else {
+                    ""
+                },
                 if owns_identity(s(p, "engine")) {
                     "Firefox · generated".into()
                 } else {
@@ -587,17 +664,28 @@ pub fn profiles(a: &App) -> String {
                     format!(r#"<span class="ps-mono dim">{}</span>"#, e(&p["screen"]))
                 },
                 escape(engine_label(s(p, "engine"))),
+                if p["proxy"].is_object() { "" } else { " off" },
                 if p["proxy"].is_object() {
-                    format!("{} {}", e(&p["proxy"]["country"]), e(&p["proxy"]["type"]))
+                    format!(
+                        r#"<span style="color:var(--mint)">{}</span><span class="ps-mono">{}</span><span class="ps-mono dim">{}</span>"#,
+                        icon_at("wifi", 13),
+                        e(&p["proxy"]["country"]),
+                        e(&p["proxy"]["type"])
+                    )
                 } else {
-                    "Direct".into()
+                    format!("{} Direct", icon_at("wifi-off", 13))
                 },
                 if issues.is_empty() { "ok" } else { "warn" },
                 escape(&issues.join("\n")),
+                icon_at("shield", 12),
                 if issues.is_empty() {
                     "Coherent".into()
                 } else {
-                    format!("{} issue(s)", issues.len())
+                    format!(
+                        "{} issue{}",
+                        issues.len(),
+                        if issues.len() == 1 { "" } else { "s" }
+                    )
                 },
                 e(&p["lastActive"])
             );

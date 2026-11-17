@@ -1,14 +1,14 @@
 # Architecture
 
-Numera's application, browser preparation, dashboard, desktop shell and build tools
-are implemented in Rust. The dashboard compiles to WebAssembly; Tauri supplies the
-native window and operating-system WebView. The HTTP server also serves the same
-built dashboard for a server installation.
+Numera's application engine, browser preparation, web dashboard, desktop shell
+and build tools are implemented in Rust. The dashboard compiles to WebAssembly.
+Tauri supplies the native window and operating-system WebView. The HTTP server
+serves the same built dashboard in a server installation.
 
 The rewrite continues checkpoint `3bf1d839fd33e42a10b982bd8607a7052ea7c4cd`
 in [PR #76](https://github.com/KiaroSama/Numera-Browser/pull/76). The PR remains
 unmerged while the remaining test ports, interpreter retirement and complete
-three-platform CI are verified. See [verification status](rust-rewrite.md).
+CI verification on x86-64 Linux and Windows are complete. See [verification status](rust-rewrite.md).
 
 ## Components
 
@@ -134,7 +134,7 @@ rollback boundaries.
 ## Builds and verification
 
 [Native CI](../.github/workflows/native-ci.yml) compiles the real engine and worker
-independently on Linux, Windows and macOS before test gates. Full-product jobs
+independently on x86-64 Linux and Windows before test gates. Full-product jobs
 also build the Rust/WASM dashboard, Tauri installers and portable server archives.
 Each package records its exact Git source, generation, component identities,
 resource inventory, notices and checksums. Unsigned CI artifacts are not releases.

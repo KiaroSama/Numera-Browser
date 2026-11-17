@@ -47,6 +47,10 @@ fn restore(value: &mut Value, markers: &HashMap<String, &str>) {
 /// Accept exactly NaN, Infinity and -Infinity as the reference JSON decoder does.
 /// Marker selection includes decoded keys and strings, including Unicode escapes.
 pub fn parse(text: &str) -> Result<Value, serde_json::Error> {
+    let strict_error = match serde_json::from_str(text) {
+        Ok(value) => return Ok(value),
+        Err(error) => error,
+    };
     let bytes = text.as_bytes();
     let mut spans = Vec::new();
     let mut index = 0;
@@ -81,7 +85,7 @@ pub fn parse(text: &str) -> Result<Value, serde_json::Error> {
         }
     }
     if spans.is_empty() {
-        return serde_json::from_str(text);
+        return Err(strict_error);
     }
     let replace = |values: &[String]| {
         let mut rewritten = String::with_capacity(text.len());
@@ -97,7 +101,7 @@ pub fn parse(text: &str) -> Result<Value, serde_json::Error> {
     let masked = replace(&vec!["null".to_owned(); spans.len()]);
     let first = match serde_json::from_str::<Value>(&masked) {
         Ok(value) => value,
-        Err(_) => return serde_json::from_str(text),
+        Err(_) => return Err(strict_error),
     };
     let mut seen = HashSet::new();
     strings(&first, &mut seen);

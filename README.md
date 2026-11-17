@@ -14,9 +14,9 @@ workflows you are authorized to run.
 [![Rust candidate builds](https://github.com/KiaroSama/Numera-Browser/actions/workflows/rust-candidate.yml/badge.svg?branch=rewrite%2Frust-complete-20261110)](https://github.com/KiaroSama/Numera-Browser/actions/workflows/rust-candidate.yml)
 [![License: noncommercial](https://img.shields.io/badge/License-noncommercial-d04a9a)](LICENSE)
 [![Version: 0.36.0](https://img.shields.io/badge/Version-0.36.0-blue)](CHANGELOG.md)
-[![Rust: 1.99.1](https://img.shields.io/badge/Rust-1.99.1-dea584)](rust-toolchain.toml)
+[![Rust: 1.100.0](https://img.shields.io/badge/Rust-1.100.0-dea584)](rust-toolchain.toml)
 
-[![Desktop build targets](https://img.shields.io/badge/Targets-Windows%20x64%20%7C%20Linux%20x64%20%7C%20macOS%20ARM64-555)](.github/workflows/native-ci.yml)
+[![Desktop build targets](https://img.shields.io/badge/Targets-Windows%20x64%20%7C%20Linux%20x64-555)](.github/workflows/native-ci.yml)
 [![Documentation](https://img.shields.io/badge/Docs-setup%20%26%20usage-4c9a2a)](docs/setup.md)
 [![Dashboard: Rust + WebAssembly](https://img.shields.io/badge/Dashboard-Rust%20%2B%20WebAssembly-654ff0)](dashboard/Cargo.toml)
 [![Tauri: 2](https://img.shields.io/badge/Tauri-2-24c8d8)](desktop/src-tauri/Cargo.toml)
@@ -32,9 +32,9 @@ workflows you are authorized to run.
 
 </div>
 
-The application, HTTP API, CLI, MCP, dashboard, desktop integration and build tools
-are implemented in Rust. The dashboard runs as WebAssembly. Browser automation
-uses explicitly provisioned vendor Node drivers and Chromium/Firefox binaries;
+The application engine, HTTP API, CLI, MCP, web dashboard, desktop integration
+and build tools are implemented in Rust. The dashboard runs as WebAssembly.
+Browser automation uses provisioned vendor Node drivers and Chromium/Firefox binaries;
 these third-party dependencies retain their own languages and licenses.
 
 Browser identity and diagnostic logic is also authored in
@@ -43,8 +43,8 @@ artifact preserves strict page CSP and needs no compiler at runtime.
 
 The [rewrite PR](https://github.com/KiaroSama/Numera-Browser/pull/76) continues the
 native checkpoint and remains unmerged. The previous application interpreters
-and authored JavaScript assets have been retired. Final test-port verification
-and full three-platform CI are still in progress; see the
+and the application's authored browser page scripts have been retired. Final test-port verification
+and full Linux and Windows CI are still in progress; see the
 [acceptance record](docs/rust-rewrite.md). A build badge does not establish that a
 complete release has shipped.
 
@@ -76,18 +76,17 @@ settings; Camoufox generates parts of its own Firefox identity.
 Download a completed matching archive from
 [GitHub Releases](https://github.com/KiaroSama/Numera-Browser/releases), verify its
 published signature/checksums, and extract the **entire** `Numera Browser` folder.
-Run `numera.exe` on Windows or `numera` on Linux/macOS. Keep its engine and browser
+Run `numera.exe` on Windows or `numera` on Linux. Keep its engine and browser
 resources beside it.
 
 | Build target | Host prerequisites |
 |---|---|
 | Windows x64 | Compatible Windows and WebView2 runtime. |
 | Linux x64 | Compatible glibc distribution, GTK 3/WebKitGTK 4.1 and the browser's system libraries. |
-| macOS ARM64 | Apple Silicon and compatible macOS/WKWebView. Not an Intel Mac build. |
 
 A complete portable bundle needs no separate Python or Node installation. OS
 warnings can still apply: native signing is **self-signed/private-trust**, not a
-publicly trusted publisher certificate or Apple notarization. Do not disable OS
+publicly trusted publisher certificate. Do not disable OS
 security or install an unknown root certificate to bypass a warning.
 
 Only assets actually present in a completed release are available downloads. The
@@ -96,7 +95,7 @@ badge is not evidence that the latest tree has passed or an asset has shipped.
 
 ### Source installation
 
-Install Rust **1.99.1**, the WASM target and the pinned binding tool, then build
+Install Rust **1.100.0**, the WASM target and the pinned binding tool to build
 and serve the dashboard with the native engine:
 
 ```bash
@@ -217,17 +216,17 @@ permission to publish raw cookies, tokens or profile data.
 | Directory | Responsibility |
 |---|---|
 | `engine-rust/` | Native application, storage, browser preparation, CLI, Axum API and MCP. |
-| `dashboard/` | Rust/WebAssembly dashboard, native unit and real browser interaction tests. |
+| `dashboard/` | Rust/WebAssembly dashboard, native unit tests and browser interaction tests. |
 | `desktop/` | Tauri window, owned engine lifecycle and portable updater. |
 | `tools/xtask/` | Rust CI, vendor provisioning, provenance, signing and distribution tools. |
 
 [Native CI](.github/workflows/native-ci.yml) runs on pushes and pull requests.
-Independent jobs compile the real engine and worker on Linux, Windows and macOS
-before test gates. Full-product jobs build the dashboard, desktop installers and
+Independent jobs compile the real engine and worker on x86-64 Linux and Windows before test gates. Full-product jobs build the dashboard, desktop installers and
 portable server archives. Other required jobs cover the maintained suite counts,
 functional and real-browser behavior, ownership, dependencies and security.
 Current exact-source results are in
-[Actions](https://github.com/KiaroSama/Numera-Browser/actions).
+[PR checks](https://github.com/KiaroSama/Numera-Browser/pull/76/checks) and
+[branch commits](https://github.com/KiaroSama/Numera-Browser/commits/rewrite/rust-complete-20261110/).
 
 The original inventory retains **3,418 source cases**, **195 dashboard cases in
 26 suites**, and **294 preexisting native cases**. Port maps record individual

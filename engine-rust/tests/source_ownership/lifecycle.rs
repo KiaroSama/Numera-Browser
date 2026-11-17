@@ -164,6 +164,7 @@ source_test!(
             "fixture never created descendant"
         );
         let leader: i64 = fs::read_to_string(t.path().join("leader"))?.parse()?;
+        assert!(leader > 0);
         #[cfg(unix)]
         assert!(numera_core::ownership::tree::record_empty(
             &json!({"tree":{"kind":"pgid","group":leader}})
@@ -189,6 +190,7 @@ source_test!(
             "fixture never created descendant"
         );
         let leader: i64 = fs::read_to_string(t.path().join("leader"))?.parse()?;
+        assert!(leader > 0);
         #[cfg(unix)]
         assert!(numera_core::ownership::tree::record_empty(
             &json!({"tree":{"kind":"pgid","group":leader}})
@@ -239,6 +241,7 @@ source_test!(
             "fixture never created descendant"
         );
         let leader: i64 = fs::read_to_string(t.path().join("leader"))?.parse()?;
+        assert!(leader > 0);
         #[cfg(unix)]
         assert!(numera_core::ownership::tree::record_empty(
             &json!({"tree":{"kind":"pgid","group":leader}})

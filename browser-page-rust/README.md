@@ -53,7 +53,7 @@ Development parity compares the Rust exports with the original probes in a real
 browser. It does not add source test identities or substitute static expected
 objects for browser observations.
 
-Regenerate from the repository root with Rust 1.99.1, the
+Regenerate from the repository root with Rust 1.100.0, the
 `wasm32-unknown-unknown` target, wasm-bindgen CLI 0.2.129 and the checksum-pinned
 Linux x64 Binaryen 133 `wasm2js` executable:
 

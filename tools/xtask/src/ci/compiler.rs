@@ -216,6 +216,85 @@ pub fn sanitize(root: &Path, seen: &mut Seen) -> CacheResult<u64> {
         },
     )
 }
+
+fn unit_hash(name: &str) -> bool {
+    name.len() == 16
+        && name
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+}
+
+fn cache_directory<A: Access>(access: &mut A, path: &Path) -> CacheResult<bool> {
+    match regular(access, path, true) {
+        Ok(_) => Ok(true),
+        Err(error) if error.kind == Some(io::ErrorKind::NotFound) => Ok(false),
+        Err(error) => Err(error),
+    }
+}
+
+fn fingerprint_directories<A: Access>(root: &Path, access: &mut A) -> CacheResult<Vec<PathBuf>> {
+    const MAX_DIRECTORIES: usize = 4096;
+    let mut debug = root.to_owned();
+    for part in ["engine-rust", "target", "debug"] {
+        debug.push(part);
+        if !cache_directory(access, &debug)? {
+            return Ok(Vec::new());
+        }
+    }
+
+    let legacy = debug.join(".fingerprint");
+    let build = debug.join("build");
+    let directory = regex::Regex::new(r"^[A-Za-z0-9_-]+-[0-9a-f]{16}$")
+        .map_err(|_| CacheError::new("validation"))?;
+    let package =
+        regex::Regex::new(r"^[A-Za-z0-9_-]+$").map_err(|_| CacheError::new("validation"))?;
+    let mut scanned = 0;
+    let mut fingerprints = Vec::new();
+    let mut count = || {
+        scanned += 1;
+        if scanned > MAX_DIRECTORIES {
+            return Err(CacheError::new("directories"));
+        }
+        Ok(())
+    };
+    if cache_directory(access, &legacy)? {
+        for entry in fs::read_dir(legacy)? {
+            count()?;
+            let entry = entry?;
+            if directory.is_match(&entry.file_name().to_string_lossy()) {
+                let path = entry.path();
+                regular(access, &path, true)?;
+                fingerprints.push(path);
+            }
+        }
+    }
+    if cache_directory(access, &build)? {
+        for entry in fs::read_dir(build)? {
+            count()?;
+            let entry = entry?;
+            if !package.is_match(&entry.file_name().to_string_lossy()) {
+                continue;
+            }
+            let path = entry.path();
+            regular(access, &path, true)?;
+            for unit in fs::read_dir(path)? {
+                count()?;
+                let unit = unit?;
+                if !unit_hash(&unit.file_name().to_string_lossy()) {
+                    continue;
+                }
+                let path = unit.path();
+                regular(access, &path, true)?;
+                let fingerprint = path.join("fingerprint");
+                if cache_directory(access, &fingerprint)? {
+                    fingerprints.push(fingerprint);
+                }
+            }
+        }
+    }
+    Ok(fingerprints)
+}
+
 pub fn sanitize_with<A: Access>(
     root: &Path,
     seen: &mut Seen,
@@ -223,32 +302,12 @@ pub fn sanitize_with<A: Access>(
     limits: Limits,
     platform: &str,
 ) -> CacheResult<u64> {
-    let mut parent = root.to_owned();
-    for part in ["engine-rust", "target", "debug", ".fingerprint"] {
-        parent.push(part);
-        match regular(access, &parent, true) {
-            Ok(_) => (),
-            Err(error) if error.kind == Some(io::ErrorKind::NotFound) => return Ok(0),
-            Err(error) => return Err(error),
-        }
-    }
-    let directory = regex::Regex::new(r"^[A-Za-z0-9_-]+-[0-9a-f]{16}$")
-        .map_err(|_| CacheError::new("validation"))?;
     let member = regex::Regex::new(r"^output-[A-Za-z0-9_-]{1,160}$")
         .map_err(|_| CacheError::new("validation"))?;
     let mut removed = 0;
     let mut files = 0;
     let mut total = 0;
-    for (number, entry) in fs::read_dir(&parent)?.enumerate() {
-        if number >= 4096 {
-            return Err(CacheError::new("directories"));
-        }
-        let entry = entry?;
-        if !directory.is_match(&entry.file_name().to_string_lossy()) {
-            continue;
-        }
-        let path = entry.path();
-        regular(access, &path, true)?;
+    for path in fingerprint_directories(root, access)? {
         for (index, entry) in fs::read_dir(path)?.enumerate() {
             if index >= 512 {
                 return Err(CacheError::new("members"));
@@ -364,7 +423,7 @@ fn rust_path(text: &str) -> Result<String> {
 }
 pub struct Projection {
     manifest: String,
-    archives: PathBuf,
+    debug_directory: PathBuf,
     index: usize,
     archive: Option<String>,
     start: Option<u64>,
@@ -394,7 +453,7 @@ impl Projection {
                 .join("engine-rust/Cargo.toml")
                 .to_string_lossy()
                 .into_owned(),
-            archives: root.join("engine-rust/target/debug/deps"),
+            debug_directory: root.join("engine-rust/target/debug"),
             index,
             archive: None,
             start: None,
@@ -472,9 +531,19 @@ impl Projection {
                 .file_name()
                 .and_then(|s| s.to_str())
                 .ok_or("Unexpected archive path")?;
-            if path.parent() != Some(self.archives.as_path())
-                || !regex::Regex::new(r"^libnumera_core-[0-9a-f]{16}\.rlib$")?.is_match(name)
-            {
+            let hash = name
+                .strip_prefix("libnumera_core-")
+                .and_then(|value| value.strip_suffix(".rlib"))
+                .filter(|hash| unit_hash(hash))
+                .ok_or("Unexpected archive name")?;
+            let legacy = self.debug_directory.join("deps").join(name);
+            let current = self
+                .debug_directory
+                .join("build/numera-core")
+                .join(hash)
+                .join("out")
+                .join(name);
+            if path != legacy && path != current {
                 return fail("Unexpected archive path");
             }
             self.markers += 1;

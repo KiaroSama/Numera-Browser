@@ -51,6 +51,14 @@ pub struct BuildIdentity {
 
 impl BuildIdentity {
     pub fn from_environment() -> Result<Self, Box<dyn Error>> {
+        if !matches!(
+            (env::consts::OS, env::consts::ARCH),
+            ("linux" | "windows", "x86_64")
+        ) {
+            return Err(
+                "native distributions require an x86-64 Linux or Windows build host".into(),
+            );
+        }
         Self::parse(
             &env::var("GITHUB_SHA")?,
             &env::var("GITHUB_RUN_ID")?,

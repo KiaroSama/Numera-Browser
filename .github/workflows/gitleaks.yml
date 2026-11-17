@@ -36,7 +36,7 @@ jobs:
           persist-credentials: false
       - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249
         with:
-          toolchain: 1.99.1
+          toolchain: 1.100.0
       - name: Verify and compile the isolated Rust security bootstrap
         shell: bash
         run: |
@@ -54,7 +54,7 @@ jobs:
           cp tools/security-scan/src/main.rs tools/security-scan/src/contract.rs "$bootstrap_dir/src/"
           # No repository Cargo configuration, build script or application crate runs here.
           cd "$bootstrap_dir"
-          CARGO_HOME="$RUNNER_TEMP/numera-security-cargo" cargo +1.99.1 build --locked --release --quiet
+          CARGO_HOME="$RUNNER_TEMP/numera-security-cargo" cargo +1.100.0 build --locked --release --quiet
           install -m 700 target/release/numera-security-scan "$RUNNER_TEMP/numera-security-scan"
       - name: Scan history using verified scanner, rules and actual Git completion
         shell: bash

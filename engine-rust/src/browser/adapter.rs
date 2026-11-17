@@ -85,6 +85,11 @@ impl Read for ReplyPipe {
                 // reporting EOF. This preserves a final complete frame even
                 // when the reader thread was descheduled at leader exit.
                 None if self.leader_exited.load(Ordering::Acquire) => return Ok(0),
+                // Wake as soon as reply bytes arrive, and still recheck
+                // producer state when an inherited pipe remains open.
+                #[cfg(unix)]
+                None => self.pipe.wait_readable(Duration::from_millis(10))?,
+                #[cfg(not(unix))]
                 None => thread::sleep(Duration::from_millis(10)),
             }
         }

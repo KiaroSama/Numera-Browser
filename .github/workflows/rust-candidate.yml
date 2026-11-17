@@ -15,10 +15,12 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  CANDIDATE_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
   CARGO_BUILD_JOBS: "2"
   CARGO_TERM_COLOR: always
   CARGO_PROFILE_DEV_DEBUG: "0"
   CARGO_PROFILE_TEST_DEBUG: "0"
+  VSCMD_SKIP_SENDTELEMETRY: "1"
 
 jobs:
   tooling:
@@ -28,11 +30,12 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ env.CANDIDATE_SOURCE_SHA }}
           persist-credentials: false
           fetch-depth: 0
       - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249
         with:
-          toolchain: 1.99.1
+          toolchain: 1.100.0
           components: rustfmt, clippy
       - uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c
         with:
@@ -46,7 +49,7 @@ jobs:
       - name: Strict lint
         run: cargo clippy --manifest-path tools/xtask/Cargo.toml --locked --all-targets -- -D warnings
       - name: Artifact identity and refusal contracts
-        run: cargo test --manifest-path tools/xtask/Cargo.toml --locked
+        run: cargo test --manifest-path tools/xtask/Cargo.toml --locked --no-fail-fast
       - name: Compile and lint every native Rust test target
         run: cargo clippy --manifest-path engine-rust/Cargo.toml --locked --features native-browser,test-support --all-targets -- -D warnings
       - name: Rust SDK protocol inertness and failure cleanup
@@ -67,18 +70,17 @@ jobs:
             runner: ubuntu-24.04
           - platform: windows
             runner: windows-2025
-          - platform: macos
-            runner: macos-15
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ env.CANDIDATE_SOURCE_SHA }}
           persist-credentials: false
           fetch-depth: 0
       - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249
         with:
-          toolchain: 1.99.1
+          toolchain: 1.100.0
       - uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c
         with:
           workspaces: |
@@ -86,15 +88,22 @@ jobs:
             tools/xtask
       - name: Build, inspect and package the native application and SDK runtime
         id: candidate
-        run: cargo xtask build-candidate build/rust-candidate
+        shell: bash
+        # Bind the binaries and archive to the checked-out source commit.
+        run: GITHUB_SHA="$CANDIDATE_SOURCE_SHA" cargo xtask build-candidate build/rust-candidate
+      - name: Build native product fixtures for Windows signing tests
+        if: ${{ !cancelled() && runner.os == 'Windows' }}
+        shell: bash
+        run: GITHUB_SHA="$CANDIDATE_SOURCE_SHA" cargo build --manifest-path engine-rust/Cargo.toml --locked --release --no-default-features --features native-product,native-browser --bin numera-engine --bin numera-browser-runtime
       - name: Verify build tooling on the native host
         if: always()
-        run: cargo test --manifest-path tools/xtask/Cargo.toml --locked
+        shell: bash
+        run: GITHUB_SHA="$CANDIDATE_SOURCE_SHA" cargo test --manifest-path tools/xtask/Cargo.toml --locked --no-fail-fast
       - name: Preserve candidate, matching tracked source and checksums
-        if: steps.candidate.outcome == 'success'
+        if: ${{ !cancelled() && steps.candidate.outcome == 'success' }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: rust-candidate-${{ matrix.platform }}-${{ github.sha }}
+          name: rust-candidate-${{ matrix.platform }}-${{ env.CANDIDATE_SOURCE_SHA }}
           path: build/rust-candidate/*
           if-no-files-found: error
           retention-days: 7

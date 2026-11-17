@@ -5,11 +5,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 ## [Unreleased]
 
 - Select the Rust CLI, MCP, Axum API and native browser worker as the application
-  runtime, and replace the dashboard with Rust/WASM while retaining its 195
-  cases. Port all 3,418 backend/tooling source test identities and preserve the
-  original platform-specific native inventories. Compile the real application
-  on Linux, Windows and macOS in CI; complete acceptance remains tied to the
-  exact current PR revision.
+  runtime with Rust 1.100.0. Build the web dashboard from Rust/WASM and keep
+  its 195 cases. Port all 3,418 backend/tooling source test identities and preserve the
+  native inventories applicable to x86-64 Linux and Windows. Compile the real
+  application and worker in CI for both platforms on every push and pull request.
 - Port the current Camoufox font, media-device and speech-voice catalogs and
   seeded selection algorithms to Rust. Check their original data digests and
   360 frozen upstream draws in the existing browser-policy test. Preserve both

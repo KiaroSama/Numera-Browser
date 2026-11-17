@@ -31,7 +31,7 @@ jobs:
           persist-credentials: false
       - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249
         with:
-          toolchain: 1.99.1
+          toolchain: 1.100.0
       - run: cargo build --manifest-path tools/xtask/Cargo.toml --locked
       - run: cargo xtask ci coverage
       - run: cargo xtask ci release plan
@@ -78,7 +78,7 @@ jobs:
           persist-credentials: false
       - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249
         with:
-          toolchain: 1.99.1
+          toolchain: 1.100.0
       - run: cargo build --manifest-path tools/xtask/Cargo.toml --locked
       - name: Require every independent prerequisite and signed build
         env:

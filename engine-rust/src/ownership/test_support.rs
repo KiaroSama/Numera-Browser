@@ -175,9 +175,11 @@ pub(crate) fn group_empty(group: i32) -> Option<io::Result<bool>> {
 pub(crate) fn signal(target: i32, force: bool) -> Option<io::Result<()>> {
     current()?.signal(target, force)
 }
+#[cfg(target_os = "linux")]
 pub(crate) fn procfs_root() -> Option<std::path::PathBuf> {
     current()?.procfs_root()
 }
+#[cfg(target_os = "linux")]
 pub(crate) fn stat(path: &std::path::Path) -> Option<io::Result<String>> {
     current()?.stat(path)
 }

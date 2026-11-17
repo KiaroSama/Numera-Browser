@@ -1,6 +1,9 @@
 use numera_core::vault::{decrypt, encrypt, is_envelope};
 use serde_json::Value;
+#[path = "../../tools/test-support/cargo_artifacts.rs"]
+mod cargo_artifacts;
 mod common;
+use cargo_artifacts::Artifacts;
 
 #[test]
 fn envelope_classification_matches_original_unicode_and_prefix_contracts()
@@ -93,10 +96,7 @@ fn crypto_text_admission_matches_original_and_new_tokens_reopen_there()
     // Compile an isolated standard Fernet reader; it has no product crate
     // dependency and authenticates the actual fresh ciphertext in another
     // owned native process, preserving the original interoperability check.
-    let dependencies = std::env::current_exe()?
-        .parent()
-        .ok_or("Test dependency directory missing")?
-        .to_owned();
+    let artifacts = Artifacts::current()?;
     let mut compiler = Command::new(std::env::var_os("RUSTC").unwrap_or_else(|| "rustc".into()));
     let reader = temporary.path().join(if cfg!(windows) {
         "native-token-reader.exe"
@@ -109,33 +109,14 @@ fn crypto_text_admission_matches_original_and_new_tokens_reopen_there()
         .arg("-Cdebuginfo=0")
         .arg("-Copt-level=2")
         .arg(Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/vault_parity/token_reader.rs"))
-        .arg("-L")
-        .arg(format!("dependency={}", dependencies.display()))
         .arg("-o")
         .arg(&reader);
+    artifacts
+        .add_dependency_search_paths(&mut compiler, &temporary.path().join("rustc-search.args"))?;
     for name in ["serde_json", "base64", "pbkdf2", "aes"] {
-        let mut libraries = fs::read_dir(&dependencies)?
-            .map(|entry| entry.map(|entry| entry.path()))
-            .collect::<Result<Vec<_>, _>>()?;
-        libraries.retain(|path| {
-            path.file_name()
-                .and_then(|name| name.to_str())
-                .is_some_and(|file| {
-                    file.starts_with(&format!("lib{name}-")) && file.ends_with(".rlib")
-                })
-        });
-        libraries.sort_by_key(|path| {
-            fs::metadata(path)
-                .and_then(|metadata| metadata.modified())
-                .ok()
-        });
-        compiler.arg("--extern").arg(format!(
-            "{name}={}",
-            libraries
-                .last()
-                .ok_or("Native reader dependency missing")?
-                .display()
-        ));
+        compiler
+            .arg("--extern")
+            .arg(format!("{name}={}", artifacts.library(name)?.display()));
     }
     let compiled = capture::run(
         &mut compiler,

@@ -3,8 +3,29 @@ use std::{
     fs,
     io::{self, Read, Write},
     path::Path,
+    sync::mpsc::{SyncSender, sync_channel},
+    thread::{self, JoinHandle},
     time::Duration,
 };
+
+fn start_resource_reader() -> (SyncSender<()>, JoinHandle<()>) {
+    let (send, receive) = sync_channel::<()>(1);
+    let worker = thread::spawn(move || {
+        let _ = receive.recv();
+    });
+    (send, worker)
+}
+
+fn join_resource_reader(
+    send: SyncSender<()>,
+    worker: JoinHandle<()>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    send.send(())?;
+    drop(send);
+    worker.join().map_err(|_| "resource fixture panicked")?;
+    Ok(())
+}
+
 fn run() -> Result<i32, Box<dyn std::error::Error>> {
     let args = std::env::args().skip(1).collect::<Vec<_>>();
     match args.first().map(String::as_str) {
@@ -56,28 +77,36 @@ fn run() -> Result<i32, Box<dyn std::error::Error>> {
             use numera_core::ownership::resources::{ResourceFailure, ResourceGuard};
             let root = Path::new(args.get(1).ok_or("root missing")?);
             let leaked = args.get(2).is_some_and(|s| s == "unsettled");
+            #[cfg(windows)]
+            {
+                // Establish the isolated process's thread and channel runtime
+                // before measuring the fixture's own reader and file lifecycle.
+                let (send, worker) = start_resource_reader();
+                join_resource_reader(send, worker)?;
+            }
             let baseline = numera_core::ownership::resources::snapshot()?;
             let guard = ResourceGuard::new()?;
-            let mut file = Some(fs::File::open(root.join("payload"))?);
-            let (send, receive) = std::sync::mpsc::sync_channel::<()>(1);
-            let worker = std::thread::spawn(move || {
-                let _ = receive.recv();
-            });
+            let file = fs::File::open(root.join("payload"))?;
+            let (send, worker) = start_resource_reader();
             if !leaked {
-                drop(file.take());
-                send.send(())?;
-                worker.join().map_err(|_| "resource fixture panicked")?;
-                // Join synchronizes user code, while the OS's process-wide
-                // thread enumeration can still contain its terminating task.
-                // This isolated worker has exactly that one controlled child
-                // thread. Require its actual disappearance within a bounded
-                // cleanup interval before making the unchanged resource check.
+                drop(file);
+                join_resource_reader(send, worker)?;
+                // Process-wide enumeration can lag the reader's termination.
+                // Require the thread count to return to its baseline or lower.
                 let deadline = std::time::Instant::now() + Duration::from_secs(2);
-                while numera_core::ownership::resources::snapshot()?.threads > baseline.threads {
-                    if std::time::Instant::now() >= deadline {
-                        return Err("joined resource fixture thread remained observable".into());
+                loop {
+                    let after = numera_core::ownership::resources::snapshot()?;
+                    if after.threads <= baseline.threads {
+                        break;
                     }
-                    std::thread::sleep(Duration::from_millis(1));
+                    if std::time::Instant::now() >= deadline {
+                        return Err(format!(
+                            "resource fixture thread count remained above baseline (before={}, after={})",
+                            baseline.threads, after.threads
+                        )
+                        .into());
+                    }
+                    thread::sleep(Duration::from_millis(1));
                 }
                 let e = guard.finish()?;
                 println!(
@@ -94,8 +123,7 @@ fn run() -> Result<i32, Box<dyn std::error::Error>> {
                     e.before.handles, e.before.threads, e.after.handles, e.after.threads, e.panics
                 );
                 drop(file);
-                send.send(())?;
-                worker.join().map_err(|_| "resource fixture panicked")?;
+                join_resource_reader(send, worker)?;
             }
             Ok(0)
         }

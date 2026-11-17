@@ -1,4 +1,5 @@
 //! Compile authored Rust page behavior into a CSP-compatible generated factory.
+use numera_browser_page::artifact::RUSTC_VERSION;
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 use std::{
@@ -264,8 +265,8 @@ fn main() -> Result<()> {
     }
     let rustc = env::var_os("RUSTC").unwrap_or_else(|| "rustc".into());
     let rustc_version = version(Path::new(&rustc))?;
-    if !rustc_version.starts_with("rustc 1.99.1 ") {
-        return Err("Browser artifact regeneration requires Rust1.99.1".into());
+    if rustc_version != RUSTC_VERSION {
+        return Err(format!("Browser artifact regeneration requires {RUSTC_VERSION}").into());
     }
     let mut flags = vec![format!("--remap-path-prefix={}=numera", repo.display())];
     for (variable, fallback, mapped) in [

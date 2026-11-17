@@ -3,6 +3,8 @@
 use super::{Result, canonical_sha, digest, fail, regular};
 use serde_json::Value;
 use std::{collections::BTreeSet, fs, path::Path};
+pub const RELEASE_PLATFORMS: [&str; 2] = ["linux-x64", "windows-x64"];
+
 pub fn public_path(name: &str, vendor: bool) -> Result<()> {
     let parts = name.split('/').collect::<Vec<_>>();
     let forbidden = [
