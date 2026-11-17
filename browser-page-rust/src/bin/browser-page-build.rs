@@ -1,5 +1,5 @@
 //! Compile authored Rust page behavior into a CSP-compatible generated factory.
-use numera_browser_page::artifact::{RUSTC_SOURCE_ROOT, RUSTC_VERSION};
+use numera_browser_page::artifact::RUSTC_VERSION;
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 use std::{
@@ -9,6 +9,7 @@ use std::{
     process::{Command, Stdio},
 };
 
+const RUSTC_SOURCE_ROOT: &str = "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a";
 const BINDGEN: &str = "wasm-bindgen 0.2.129";
 const BINARYEN: &str = "wasm2js version 133 (version_133)";
 const BINARYEN_ARCHIVE: &str = "https://github.com/WebAssembly/binaryen/releases/download/version_133/binaryen-version_133-x86_64-linux.tar.gz";

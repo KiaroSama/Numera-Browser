@@ -8,7 +8,6 @@ use std::{
     path::Path,
 };
 pub const RUSTC_VERSION: &str = "rustc 1.100.0 (0ef1bc386 2026-11-09)";
-pub const RUSTC_SOURCE_ROOT: &str = "/rustc/0ef1bc386059596dada8fb65b50425aab2ea637a";
 pub const MAX_ARTIFACT: usize = 1024 * 1024;
 pub const GENERATED_BANNER: &str = "// GENERATED from browser-page-rust by locked wasm-bindgen and Binaryen133.\n// Regenerate with browser-page-build; authored browser behavior lives in Rust.\n";
 pub const FACTORY_PREFIX: &str = "(function numera_browser_page()";
