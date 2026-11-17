@@ -174,9 +174,9 @@ The native engine writes UTF-8 run logs under the actual data root's `logs/`. Ch
 [Native CI](../.github/workflows/native-ci.yml) runs automatic independent
 Linux and Windows x86-64 compilation and full-product builds. Portable server
 archives and desktop installer formats are produced with Rust tooling. Default
-installers are AppImage/deb on Linux and MSI/NSIS on Windows. Each native
-platform builds its own artifacts; an operating-system target badge is not a
-claim that every older OS is supported.
+installers are AppImage/deb on Linux and MSI on Windows. The complete Windows
+browser payload exceeds the NSIS size limit. Use MSI to install the complete
+bundle. Each native platform builds its own artifacts.
 
 Unsigned CI artifacts are review outputs. A completed signed release requires its
 separate trusted release gates. No release or merge is part of

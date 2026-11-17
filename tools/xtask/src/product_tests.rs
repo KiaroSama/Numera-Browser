@@ -188,12 +188,14 @@ pub(crate) fn command_requires_explicit_resources_and_native_bundle_targets()
     assert!(parsed.server_only);
     for (platform, expected) in [
         ("linux", vec!["appimage", "deb"]),
-        ("windows", vec!["msi", "nsis"]),
+        ("windows", vec!["msi"]),
         ("macos", vec!["app", "dmg"]),
     ] {
         assert_eq!(native_bundles(platform, None)?, expected);
         assert!(native_bundles(platform, Some("none"))?.is_empty());
     }
+    assert_eq!(native_bundles("windows", Some("all"))?, ["msi", "nsis"]);
+    assert_eq!(native_bundles("windows", Some("nsis"))?, ["nsis"]);
     for value in ["msi", "appimage,appimage", "deb,", "../deb"] {
         assert!(native_bundles("linux", Some(value)).is_err());
     }
