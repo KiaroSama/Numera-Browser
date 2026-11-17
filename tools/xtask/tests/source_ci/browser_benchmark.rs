@@ -1059,7 +1059,7 @@ fn measurement(damage: &str) -> TestResult {
     browser::workflow_measurement(&action)?;
     let build = workflow::step_once(&action["runs"]["steps"], "build-candidate", true)?;
     let functional = workflow::step_once(&action["runs"]["steps"], "ci acceptance ", true)?;
-    let measurement = workflow::step_once(&action["runs"]["steps"], "ci browser-benchmark", true)?;
+    let measurement = workflow::step_once(&action["runs"]["steps"], "ci browser-benchmark", false)?;
     let upload = action["runs"]["steps"]
         .as_array()
         .expect("steps")

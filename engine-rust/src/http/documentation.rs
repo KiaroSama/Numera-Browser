@@ -1,18 +1,15 @@
 //! Source-generated documentation contracts, served without a Python application.
-use axum::{Json, Router, response::Html, routing::get};
-use serde_json::Value;
-use std::io;
+use axum::{Router, http::header, response::Html, routing::get};
 
-pub fn routes() -> io::Result<Router> {
-    let mut schema: Value = serde_json::from_str(include_str!("documentation-assets/openapi.json"))
-        .map_err(|_| io::Error::other("Embedded HTTP documentation schema is invalid"))?;
-    schema["info"]["version"] = env!("CARGO_PKG_VERSION").into();
-    Ok(Router::new()
+pub fn routes() -> Router {
+    Router::new()
         .route(
             "/openapi.json",
-            get(move || {
-                let schema = schema.clone();
-                async move { Json(schema) }
+            get(|| async {
+                (
+                    [(header::CONTENT_TYPE, "application/json")],
+                    include_str!(concat!(env!("OUT_DIR"), "/openapi.json")),
+                )
             }),
         )
         .route(
@@ -26,5 +23,5 @@ pub fn routes() -> io::Result<Router> {
         .route(
             "/redoc",
             get(|| async { Html(include_str!("documentation-assets/redoc.html")) }),
-        ))
+        )
 }

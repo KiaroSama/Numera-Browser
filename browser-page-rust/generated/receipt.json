@@ -50,7 +50,7 @@
   },
   "source_sha256": {
     "browser-page-rust/Cargo.lock": "8fcc41ba4bc8d851489223142aea47f2bda6a37724bbe132110dff835cf363dd",
-    "browser-page-rust/Cargo.toml": "4f7762b092e78e6b24a66c6f4df62af625b54d2a17969ebed65d130cad9a652d",
+    "browser-page-rust/Cargo.toml": "8702c5e3ee42343abefb05c9ee6a7c5e5b1d3abc1f5acaaf84f29a6c15c79203",
     "browser-page-rust/src/artifact.rs": "185ead0ea621267716dd289315424376b585826ba9bb490acc2e26ad253a07f7",
     "browser-page-rust/src/bin/browser-page-build.rs": "cb631f39928e6568aa14e40f26de5b6e56baa90934fa76980777696e87e78982",
     "browser-page-rust/src/identity.rs": "13439ae3f2ccc78baf5eb782fe7151f91f0997b5866ab76fcc02230c8e4bc642",

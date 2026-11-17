@@ -181,7 +181,7 @@ pub async fn router_with_recovery(
     .await
     .map_err(|_| io::Error::other("Authentication startup task failed"))??;
     let routes = diagnostics::routes(auth.clone())
-        .merge(super::documentation::routes()?)
+        .merge(super::documentation::routes())
         .merge(token_routes::routes(root.clone(), environment))
         .merge(folder_routes::routes(root.clone()))
         .merge(fingerprint_routes::routes())

@@ -18,6 +18,11 @@ const SETTINGS: &str = "engine-rust/src/cli/settings_commands.rs";
 const CONFIG: &str = "engine-rust/src/storage/config.rs";
 const STRICT_SETTINGS_CASE: &str =
     "strict_settings::settings_commands_preserve_original_decoding_refusals_and_early_errors";
+const PROXY_CHECK: &str = "engine-rust/src/network/proxy_check.rs";
+const PROXY_CHECK_COMMIT: &str = "4e570f130ba807448453c12777457bcf55911a67";
+const PROXY_CHECK_SOURCE: &str = "39d4c4f728c91ef9ad342ba4663ae73c3499651b985f07d558faf34ba04424d5";
+const PROXY_ECHO_CASE: &str =
+    "network::tests::proxy_echo_boundaries_match_original_through_transport";
 
 /// The separate owning-host Mac proof may adapt only this later Session
 /// caller. Its exact selected tree/test/commit never become a canonical99 row.
@@ -101,6 +106,18 @@ pub fn clock_caller(case: &Case, current: &[u8]) -> Result<Option<Replacement>> 
 pub fn additional(root: &Path, case: &Case) -> Result<Vec<(String, Replacement)>> {
     let sources = super::history::case_sources(case)?;
     let mut result = Vec::new();
+    if case.target == "lib"
+        && case.test == PROXY_ECHO_CASE
+        && case
+            .files
+            .get(PROXY_CHECK)
+            .is_some_and(|hash| hash == PROXY_CHECK_SOURCE)
+        && let Some(source) = sources
+            .get(PROXY_CHECK)
+            .filter(|source| source.commit == PROXY_CHECK_COMMIT)
+    {
+        result.push(proxy_echo_relay(root, case, source)?);
+    }
     if case.target == "cli_settings_parity"
         && case.test == STRICT_SETTINGS_CASE
         && let Some(source) = sources.get(SETTINGS).filter(|source| {
@@ -418,14 +435,65 @@ fn recovery_transaction(
     Ok((path.into(), replacement))
 }
 
+fn proxy_echo_relay(root: &Path, case: &Case, source: &Source) -> Result<(String, Replacement)> {
+    let path = "engine-rust/src/network.rs";
+    let bytes = checked_caller(
+        root,
+        case,
+        path,
+        "ef36a2955f4e306612f8abae4ff92fde4539827867de6177fbace475accb7499",
+    )?;
+    let wrapper = r#"mod historical_proxy_echo {
+    use super::{builder, failure, get};
+
+    mod relay {
+        pub(super) struct Relay(super::super::relay::Relay);
+
+        impl Relay {
+            pub(super) fn start(proxy: &crate::proxy::Proxy) -> std::io::Result<Self> {
+                super::super::relay::Relay::start(proxy).map(Self)
+            }
+
+            pub(super) fn url(&self) -> String {
+                self.0.url().unwrap_or_default()
+            }
+
+            pub(super) fn last_error(&self) -> Option<String> {
+                self.0.last_error()
+            }
+
+            pub(super) fn close(&mut self, budget: std::time::Duration) -> std::io::Result<()> {
+                self.0.close(budget)
+            }
+        }
+    }
+
+    pub mod proxy_check {
+        include!("network/proxy_check.rs");
+    }
+}
+pub use historical_proxy_echo::proxy_check;"#;
+    let mut replacement = caller_replacement(
+        case,
+        path,
+        &bytes,
+        source,
+        &[("pub mod proxy_check;", wrapper)],
+    )?;
+    replacement.receipt["historical_source_path"] = PROXY_CHECK.into();
+    replacement.receipt["selected_primary_bytes_unchanged"] = true.into();
+    replacement.receipt["reason"] = "Only the selected older caller sees the String-returning relay URL ABI. Relay startup, ownership, errors and cleanup delegate to the current implementation. An unavailable URL follows the original invalid-URL branch. The selected proxy check and original test remain exact.".into();
+    Ok((path.into(), replacement))
+}
+
 pub fn companion(
     case: &Case,
     path: &str,
     source: &Source,
     historical: &[u8],
 ) -> Result<Option<Replacement>> {
-    if path != "engine-rust/src/network/proxy_check.rs"
-        || source.sha256 != "39d4c4f728c91ef9ad342ba4663ae73c3499651b985f07d558faf34ba04424d5"
+    if path != PROXY_CHECK
+        || source.sha256 != PROXY_CHECK_SOURCE
         || case.companions.get(path) != Some(source)
     {
         return Ok(None);
