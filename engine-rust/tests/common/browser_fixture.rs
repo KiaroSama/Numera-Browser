@@ -56,7 +56,10 @@ fn build(sdk: bool) -> io::Result<PathBuf> {
             artifacts.library("serde_json")?.display()
         ));
     if sdk {
-        for name in ["numera_core", "tokio"] {
+        for name in ["numera_core", "tokio"]
+            .into_iter()
+            .chain(cfg!(windows).then_some("hickory_resolver"))
+        {
             command
                 .arg("--extern")
                 .arg(format!("{name}={}", artifacts.library(name)?.display()));
