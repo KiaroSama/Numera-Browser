@@ -26,6 +26,9 @@ const PROXY_ECHO_CASE: &str =
 const BULK: &str = "engine-rust/src/bulk.rs";
 const BULK_SELECTION_CASE: &str =
     "selection::selection_matches_original_complete_profile_membership";
+const CLAIMS: &str = "engine-rust/src/ownership/claims.rs";
+const CLAIM_DIAGNOSTICS_CASE: &str =
+    "diagnostics::claim_diagnostics_match_original_truth_and_display_without_changing_records";
 
 /// The separate owning-host Mac proof may adapt only this later Session
 /// caller. Its exact selected tree/test/commit never become a canonical99 row.
@@ -119,6 +122,32 @@ pub fn additional(root: &Path, case: &Case) -> Result<Vec<(String, Replacement)>
         })
     {
         result.extend(bulk_selection_callers(root, case, source)?);
+    }
+    if case.target == "claim_parity"
+        && case.test == CLAIM_DIAGNOSTICS_CASE
+        && let Some(source) = sources.get(CLAIMS).filter(|source| {
+            source.commit == "d25e088d8adb4c70e2dd401ffbe100331cfb35f4"
+                && source.sha256
+                    == "6af8a9ffd4a29f9ce29da25da9ecf8e4b4fc2031b9228424be8c578650eccbb8"
+                && case.files.get(CLAIMS) == Some(&source.sha256)
+        })
+    {
+        let bytes = checked_caller(root, case, SESSION, SESSION_CLASSIFIED)?;
+        let mut replacement = caller_replacement(
+            case,
+            SESSION,
+            &bytes,
+            source,
+            &[(
+                "claims::release_before(&self.root, &self.id, claim, tree, deadline)?",
+                "claims::release(&self.root, &self.id, claim, tree)?",
+            )],
+        )?;
+        replacement.receipt["historical_source_path"] = CLAIMS.into();
+        replacement.receipt["selected_primary_bytes_unchanged"] = true.into();
+        replacement.receipt["session_cleanup_executed"] = false.into();
+        replacement.receipt["reason"] = "The frozen claims API exposes release, so the unexecuted later Session caller uses that signature. The original diagnostic assertions call describe directly and retain the exact selected source.".into();
+        result.push((SESSION.into(), replacement));
     }
     if case.target == "lib"
         && case.test == PROXY_ECHO_CASE
