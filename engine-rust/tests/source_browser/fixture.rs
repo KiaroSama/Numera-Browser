@@ -18,6 +18,49 @@ fn resource_stage(stage: &'static str) -> Value {
         }
     }
 }
+#[cfg(windows)]
+fn initialize_windows_relay_runtime(stages: &mut Vec<Value>) -> io::Result<()> {
+    use std::net::{Ipv4Addr, TcpListener};
+
+    // Rust initializes Winsock once per process. The relay separately reads
+    // DNS settings through IP Helper and the registry, with no DNS lookups.
+    drop(TcpListener::bind((Ipv4Addr::LOCALHOST, 0))?);
+    stages.push(resource_stage("after-win32-winsock-bind"));
+    let resolver = hickory_resolver::TokioResolver::builder_tokio()
+        .map_err(|_| io::Error::other("Relay fixture system DNS configuration unavailable"))?
+        .build()
+        .map_err(|_| io::Error::other("Relay fixture system DNS initialization failed"))?;
+    drop(resolver);
+    stages.push(resource_stage("after-win32-system-dns-init"));
+
+    // Exercise the OS-backed socket registration and accept path on a joined
+    // Tokio worker. Both probe sockets close before measuring the actual relay.
+    std::thread::Builder::new()
+        .spawn(|| {
+            let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, 0))?;
+            let address = listener.local_addr()?;
+            listener.set_nonblocking(true)?;
+            let runtime = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()?;
+            runtime.block_on(async move {
+                let listener = tokio::net::TcpListener::from_std(listener)?;
+                let (accepted, client) = tokio::time::timeout(Duration::from_secs(2), async {
+                    tokio::try_join!(listener.accept(), tokio::net::TcpStream::connect(address))
+                })
+                .await
+                .map_err(|_| {
+                    io::Error::new(io::ErrorKind::TimedOut, "Relay loopback setup timed out")
+                })??;
+                drop((accepted, client, listener));
+                Ok::<(), io::Error>(())
+            })
+        })?
+        .join()
+        .map_err(|_| io::Error::other("Relay loopback setup worker panicked"))??;
+    stages.push(resource_stage("after-win32-async-loopback"));
+    Ok(())
+}
 fn send(v: Value) -> io::Result<()> {
     let bytes = serde_json::to_vec(&v)?;
     let mut out = io::stdout().lock();
@@ -523,6 +566,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     None
                 }
             }
+            #[cfg(windows)]
+            initialize_windows_relay_runtime(&mut resource_stages)?;
             let handles = windows_handle_diagnostics::Attribution::before(diagnostic_deadline);
             let guard = ResourceGuard::new()?;
             let session = Session::admit(root, &p.id, "resource-fixture")?;
@@ -558,7 +603,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let lease_free = lease.is_ok();
             drop(lease);
             let cleanup = guard.finish();
-            if cleanup.is_err() {
+            let claim_absent = matches!(claims::read(root, &p.id), claims::Claim::Absent);
+            let admission_released = fs::read_dir(root.join(".updates/work"))?.next().is_none();
+            if cleanup.is_err() || !claim_absent || !admission_released || !lease_free {
                 if let Some(attribution) = handles.on_failure(true) {
                     eprintln!(
                         "Windows own-handle attribution {} report={attribution}",
@@ -568,10 +615,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 eprintln!(
                     "Relay acquired-before-birth cleanup samples={}",
                     json!({"before":before,"at_before_spawn":observed,"hook_calls":calls,"spawned":spawned,
+                        "initialization":resource_stages,"claim_absent":claim_absent,"admission_released":admission_released,"lease_free":lease_free,
                         "after_refusal":resource_stage("after-acquired-relay-refusal")})
                 );
             }
-            cleanup?;
             let error = result.err().ok_or("Known pre-birth refusal was accepted")?;
             assert_eq!(error.kind, "failed");
             assert!(
@@ -587,15 +634,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 observed.is_some_and(|during| during.threads > before.threads),
                 "A real automatic relay worker did not exist before SDK birth"
             );
-            assert!(matches!(claims::read(root, &p.id), claims::Claim::Absent));
             assert!(
-                fs::read_dir(root.join(".updates/work"))?.next().is_none(),
+                claim_absent,
+                "Known no-child failure retained a session claim"
+            );
+            assert!(
+                admission_released,
                 "Proved no-child failure retained update admission"
             );
             assert!(
                 lease_free,
                 "Known no-child failure retained the session lease"
             );
+            cleanup?;
             let _: Value = serde_json::from_str(&windows_handle_diagnostics::portable_controls())?;
             Ok(())
         }

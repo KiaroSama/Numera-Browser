@@ -624,6 +624,50 @@ source_test!(
     {
         let temp = temp();
         let root = temp.path();
+        #[cfg(windows)]
+        {
+            const CHILD: &str = "NUMERA_STORAGE_MISSING_EXECUTABLE_CHILD";
+            if std::env::var(CHILD).as_deref() != Ok("1") {
+                let mut child = Command::new(std::env::current_exe().expect("test binary"));
+                child
+                    .args([
+                        "--exact",
+                        "scheduler::a_spawn_that_cannot_start_releases_the_claim",
+                        "--nocapture",
+                        "--color=never",
+                    ])
+                    .env(CHILD, "1");
+                let mut units = numera_core::ownership::capture_units::Units::new(root, &mut child)
+                    .expect("owned scheduler receipt");
+                let output = units
+                    .run(
+                        &mut child,
+                        capture::Limits {
+                            wall: Duration::from_secs(75),
+                            idle: Duration::from_secs(65),
+                            bytes: 65536,
+                            cleanup: Duration::from_secs(5),
+                        },
+                        || false,
+                    )
+                    .unwrap_or_else(|error| {
+                        panic!("failed launch left an unsettled receipt: {error}")
+                    });
+                let stdout = String::from_utf8_lossy(&output.stdout);
+                assert_eq!(
+                    output.exit,
+                    0,
+                    "{stdout}\n{}",
+                    String::from_utf8_lossy(&output.stderr)
+                );
+                assert!(
+                    stdout.contains("test result: ok. 1 passed;"),
+                    "expected one scheduler case: {stdout}"
+                );
+                assert!(!units.pending(), "failed launch retained a child receipt");
+                return;
+            }
+        }
         let (_, row) = lifecycle::schedule(root, "unspawnable", 1);
         let registry = Arc::new(
             Registry::new(root.to_owned(), "source-storage-host".into(), None).expect("registry"),

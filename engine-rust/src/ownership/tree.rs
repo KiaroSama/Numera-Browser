@@ -214,7 +214,15 @@ impl OwnedTree {
             use std::os::windows::process::CommandExt;
             let job = Job::new().map_err(SpawnFailure::BeforeBirth)?;
             command.creation_flags(0x0000_0004 | 0x0800_0000); // suspended, no console
-            let child = command.spawn().map_err(SpawnFailure::Uncertain)?;
+            let child = command.spawn().map_err(|error| {
+                // Windows std returns the owned process directly after a successful
+                // CreateProcessW. A missing executable leaves no child to transfer.
+                if error.kind() == io::ErrorKind::NotFound {
+                    SpawnFailure::BeforeBirth(error)
+                } else {
+                    SpawnFailure::Uncertain(error)
+                }
+            })?;
             let token = match super::identity::started_at(child.id()) {
                 Ok(Some(token)) => token,
                 _ => {
