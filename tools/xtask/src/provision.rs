@@ -133,6 +133,14 @@ impl std::fmt::Display for VendorRefusal {
 
 impl std::error::Error for VendorRefusal {}
 
+/// A fresh transfer may be attempted after this particular refusal because
+/// capture has already settled the original owned process tree.
+pub fn retryable_transfer_refusal(error: &(dyn std::error::Error + 'static)) -> bool {
+    error
+        .downcast_ref::<VendorRefusal>()
+        .is_some_and(|failure| failure.completed_nonempty_job)
+}
+
 fn transfer(
     target: &Path,
     mut can_retry: bool,
@@ -147,11 +155,7 @@ fn transfer(
             return Ok(());
         };
         fs::remove_file(target)?;
-        if !can_retry
-            || !error
-                .downcast_ref::<VendorRefusal>()
-                .is_some_and(|failure| failure.completed_nonempty_job)
-        {
+        if !can_retry || !retryable_transfer_refusal(error.as_ref()) {
             return Err(error);
         }
         // A clean retry still needs its own natural proof. Never hash or use
