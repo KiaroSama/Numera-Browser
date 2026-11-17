@@ -44,10 +44,10 @@ jobs:
           cache-workspace-crates: false
       - name: Tauri system dependencies (Linux)
         if: runner.os == 'Linux'
-        timeout-minutes: 5
+        timeout-minutes: 10
         run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev \
+          sudo apt-get -o Acquire::Retries=2 update
+          sudo apt-get -o Acquire::Retries=2 install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev \
             librsvg2-dev libxdo-dev libssl-dev build-essential file
       - name: Compile the native CI owner
         run: cargo build --locked --manifest-path tools/xtask/Cargo.toml
