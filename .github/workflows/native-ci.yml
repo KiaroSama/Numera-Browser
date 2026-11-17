@@ -420,7 +420,7 @@ jobs:
 
   required:
     name: Required native verification
-    if: always()
+    if: ${{ !cancelled() }}
     needs: [build, coverage, static, functional, live, history, secrets, dashboard, docker, desktop-contracts, codeql, dependencies]
     runs-on: ubuntu-24.04
     timeout-minutes: 15

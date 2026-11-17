@@ -110,7 +110,7 @@ jobs:
 
   required:
     name: Required Rust builds
-    if: always()
+    if: ${{ !cancelled() }}
     needs: [tooling, build]
     runs-on: ubuntu-24.04
     timeout-minutes: 2

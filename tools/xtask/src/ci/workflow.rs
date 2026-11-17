@@ -8,8 +8,8 @@ pub fn parse(text: &str) -> Result<Value> {
 }
 pub fn required_jobs(jobs: &Value, expected: &BTreeSet<String>) -> Result<()> {
     let required = &jobs["required"];
-    if required["if"] != "always()" {
-        return fail("Required verification must reject failed and skipped dependencies");
+    if required["if"] != "${{ !cancelled() }}" {
+        return fail("Required verification must reject incomplete dependencies on active runs");
     }
     let needs = required["needs"]
         .as_array()
