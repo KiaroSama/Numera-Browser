@@ -1,0 +1,52 @@
+name: Install native packaging tools
+description: Install the checksum-pinned upstream Rust tools for Linux and Windows x86-64.
+runs:
+  using: composite
+  steps:
+    - name: Verify and install release tooling
+      shell: bash
+      run: |
+        set -euo pipefail
+        test "$RUNNER_ARCH" = X64
+        directory="$RUNNER_TEMP/numera-packaging-tools"
+        mkdir -p "$directory/bin"
+
+        case "$RUNNER_OS" in
+          Linux)
+            tauri_archive=cargo-tauri-x86_64-unknown-linux-gnu.tgz
+            tauri_sha=79f9596308f74e41753d1d30688a3f41914187b1bc7eea5dbd20cc0cd6acd640
+            bindgen_target=x86_64-unknown-linux-musl
+            bindgen_sha=82d12bb940e2d4e72e0d5605387fc1b8ca179044e012b620f0ce4e7440e8320e
+            suffix=
+            ;;
+          Windows)
+            tauri_archive=cargo-tauri-x86_64-pc-windows-msvc.zip
+            tauri_sha=ff7bb69eb0e102eb84825fd7e3e73a6ee9ca23826c405c781ee727081472246d
+            bindgen_target=x86_64-pc-windows-msvc
+            bindgen_sha=79e348c169d0c10c0b287647f1e753d0985353ca96800bc29be8f4261baf13e6
+            suffix=.exe
+            ;;
+          *) exit 1 ;;
+        esac
+        bindgen_directory="wasm-bindgen-0.2.129-$bindgen_target"
+        bindgen_archive="$bindgen_directory.tar.gz"
+
+        cd "$directory"
+        download() {
+          curl --fail --location --proto '=https' --proto-redir '=https' \
+            --connect-timeout 10 --max-time 90 --retry 2 --retry-max-time 120 \
+            "$1/$2" --output "$2"
+          printf '%s  %s\n' "$3" "$2" | sha256sum --check --strict
+        }
+        download 'https://github.com/tauri-apps/tauri/releases/download/tauri-cli-v2.12.5' "$tauri_archive" "$tauri_sha"
+        download 'https://github.com/wasm-bindgen/wasm-bindgen/releases/download/0.2.129' "$bindgen_archive" "$bindgen_sha"
+
+        if [[ "$RUNNER_OS" == Windows ]]; then
+          7z x -so "$tauri_archive" cargo-tauri.exe > bin/cargo-tauri.exe
+        else
+          tar -xzf "$tauri_archive" -C bin cargo-tauri
+        fi
+        tar -xzf "$bindgen_archive" -C bin --strip-components=1 "$bindgen_directory/wasm-bindgen$suffix"
+        test "$(bin/cargo-tauri"$suffix" tauri --version)" = 'tauri-cli 2.12.5'
+        test "$(bin/wasm-bindgen"$suffix" --version)" = 'wasm-bindgen 0.2.129'
+        printf '%s\n' "$directory/bin" >> "$GITHUB_PATH"

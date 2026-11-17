@@ -52,8 +52,7 @@ jobs:
         shell: bash
         run: test "$RUNNER_ARCH" = X64
       - run: cargo build --manifest-path tools/xtask/Cargo.toml --locked
-      - run: cargo xtask ci owned --wall 900 --idle 300 -- cargo install tauri-cli --version 2.12.5 --locked
-      - run: cargo xtask ci owned --wall 900 --idle 300 -- cargo install wasm-bindgen-cli --version 0.2.129 --locked
+      - uses: ./.github/actions/native-packaging-tools
       - name: Require the independent successful CodeQL verdict for this SHA
         env:
           GH_TOKEN: ${{ github.token }}
