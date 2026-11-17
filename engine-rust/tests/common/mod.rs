@@ -1,3 +1,7 @@
+#[allow(dead_code)]
+#[path = "../../../tools/test-support/cargo_artifacts.rs"]
+pub mod cargo_artifacts;
+
 use std::{
     fs, io,
     path::{Path, PathBuf},

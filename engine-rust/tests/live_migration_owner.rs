@@ -18,6 +18,8 @@ use std::{
 
 use numera_core as core;
 #[allow(dead_code)]
+mod common;
+#[allow(dead_code)]
 #[path = "common/ownership_process.rs"]
 mod fixture;
 

@@ -1,9 +1,7 @@
 use numera_core::vault::{decrypt, encrypt, is_envelope};
 use serde_json::Value;
-#[path = "../../tools/test-support/cargo_artifacts.rs"]
-mod cargo_artifacts;
 mod common;
-use cargo_artifacts::Artifacts;
+use crate::common::cargo_artifacts::Artifacts;
 
 #[test]
 fn envelope_classification_matches_original_unicode_and_prefix_contracts()

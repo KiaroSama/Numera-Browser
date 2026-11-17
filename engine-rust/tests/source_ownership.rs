@@ -21,10 +21,8 @@ use std::{
     thread,
     time::{Duration, Instant},
 };
-#[path = "../../tools/test-support/cargo_artifacts.rs"]
-mod cargo_artifacts;
 mod common;
-use cargo_artifacts::Artifacts;
+use crate::common::cargo_artifacts::Artifacts;
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 macro_rules! source_test {
     ($name:ident,$source:literal,$body:block) => {
