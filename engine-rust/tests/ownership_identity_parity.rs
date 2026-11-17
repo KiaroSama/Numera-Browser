@@ -46,5 +46,7 @@ fn native_birth_token_matches_original_runtime_for_the_same_live_process()
     Ok(())
 }
 use numera_core as core;
+#[allow(dead_code)]
+mod common;
 #[path = "common/ownership_process.rs"]
 mod ownership_process;

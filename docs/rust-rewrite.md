@@ -30,6 +30,11 @@ The [November 14 upstream review](upstream-review-20261114.json) records the
 previously accepted vendor resource pins. The current build uses [ZIP 9.6.1](https://crates.io/crates/zip/9.6.1),
 [Tauri 2.12.6](https://github.com/tauri-apps/tauri/releases/tag/tauri-v2.12.6)
 and [Tauri CLI 2.12.5](https://github.com/tauri-apps/tauri/releases/tag/tauri-cli-v2.12.5).
+
+The native worker uses `playwright-rs` 0.21.0 with separately provisioned
+vendor transports. Cargo sets `PLAYWRIGHT_SKIP_DRIVER_DOWNLOAD` during builds.
+[Rust SDK release](https://github.com/padamson/playwright-rust/releases/tag/v0.21.0)
+
 Provisioning uses the independently pinned [Patchright 1.64.3 transport](https://registry.npmjs.org/patchright-core/1.64.3)
 with the existing Node carriers and matching Chromium generation. Playwright
 and Cloak remain on Playwright 1.65.1. Camoufox's newer beta is a prerelease,

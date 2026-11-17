@@ -1,7 +1,5 @@
 use super::*;
-#[path = "../../../tools/test-support/cargo_artifacts.rs"]
-mod cargo_artifacts;
-use cargo_artifacts::Artifacts;
+use crate::common::cargo_artifacts::Artifacts;
 pub(super) fn fixture() -> PathBuf {
     static BINARY: OnceLock<PathBuf> = OnceLock::new();
     BINARY

@@ -1,8 +1,6 @@
 // Shared, compiled Rust subprocess fixtures. These helpers add no test cases.
 use super::core;
-#[path = "../../../tools/test-support/cargo_artifacts.rs"]
-mod cargo_artifacts;
-use cargo_artifacts::Artifacts;
+use crate::common::cargo_artifacts::Artifacts;
 use serde_json::{Value, json};
 use std::{
     fs, io,

@@ -1,8 +1,6 @@
 //! Compiled native process fixture shared by retained ownership tests.
 use super::core;
-#[path = "../../../tools/test-support/cargo_artifacts.rs"]
-mod cargo_artifacts;
-use cargo_artifacts::Artifacts;
+use crate::common::cargo_artifacts::Artifacts;
 use std::{
     fs, io,
     path::{Path, PathBuf},
