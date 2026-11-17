@@ -6,6 +6,7 @@ mod camoufox_cpu;
 #[cfg(feature = "native-browser")]
 #[path = "common/camoufox_geo_cases.rs"]
 mod camoufox_geo_cases;
+#[cfg(feature = "native-browser")]
 #[path = "common/camoufox_webgl.rs"]
 mod camoufox_webgl;
 #[cfg(feature = "native-browser")]
