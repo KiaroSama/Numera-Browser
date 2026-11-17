@@ -852,9 +852,56 @@ source_test!(
             );
             thread::sleep(Duration::from_millis(10));
         };
-        assert_eq!(after["state"], "failed");
+        let exit_path = t.path().join("jobs").join(format!("{id}.exit"));
+        assert_eq!(
+            after["state"],
+            "failed",
+            "detached supervisor outcome present: {}",
+            exit_path.is_file()
+        );
         assert_eq!(after["exit"], 3);
-        assert!(t.path().join("jobs").join(format!("{id}.exit")).is_file());
+        assert!(exit_path.is_file());
+
+        use numera_core::ownership::test_support::{Backend, with_backend};
+        struct PublishOnSupervisorExit {
+            root: PathBuf,
+            supervisor: u32,
+            birth: u64,
+        }
+        impl Backend for PublishOnSupervisorExit {
+            fn alive(&self, pid: u32, token: Option<u64>) -> Option<io::Result<bool>> {
+                (pid == self.supervisor).then(|| {
+                    assert_eq!(token, Some(self.birth));
+                    numera_core::jobs::JobStore::new(self.root.clone()).record_exit(
+                        "outcome-race",
+                        3,
+                        now(),
+                    )?;
+                    Ok(false)
+                })
+            }
+        }
+        let race = temp("detached-outcome-publication")?;
+        fs::create_dir(race.path().join("jobs"))?;
+        let supervisor = std::process::id();
+        let birth = identity::started_at(supervisor)?.ok_or("Supervisor birth missing")?;
+        write_json(
+            &race.path().join("jobs/outcome-race.json"),
+            &json!({"id":"outcome-race", "pid":record["pid"], "pidToken":record["pidToken"],
+                    "started":now(), "supervisorPid":supervisor, "supervisorToken":birth}),
+        )?;
+        let observer = Arc::new(PublishOnSupervisorExit {
+            root: race.path().into(),
+            supervisor,
+            birth,
+        });
+        let outcome = with_backend(observer, || {
+            numera_core::jobs::JobStore::new(race.path().into()).get("outcome-race", now())
+        })?
+        .ok_or("Job disappeared during outcome publication")?;
+        assert_eq!(outcome["state"], "failed");
+        assert_eq!(outcome["exit"], 3);
+        assert_eq!(outcome["running"], false);
         Ok(())
     }
 );

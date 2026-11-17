@@ -253,6 +253,14 @@ impl Failure {
     pub fn retained_record(&self) -> Option<serde_json::Value> {
         self.pending.as_ref().map(|tree| tree.record())
     }
+    /// The exact number of original Job members held by the cleanup owner.
+    #[cfg(all(windows, feature = "test-support"))]
+    #[doc(hidden)]
+    pub fn retained_cleanup_witness_count(&self) -> usize {
+        self.pending
+            .as_deref()
+            .map_or(0, OwnedTree::cleanup_witness_count)
+    }
     pub fn settle(&mut self, budget: Duration) -> io::Result<()> {
         if let Some(tree) = self.pending.as_mut() {
             tree.settle(budget)?;
