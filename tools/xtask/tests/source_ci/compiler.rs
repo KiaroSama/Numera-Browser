@@ -373,11 +373,22 @@ fn proof(platform: &str, failure: bool, invalid: bool) -> TestResult {
             } else {
                 failed_transcript(&case.test, &case.symptom).into_bytes()
             };
+            let mut stderr = Vec::new();
+            if !compile && !invalid && platform == "win32" {
+                let cargo = b"error: test failed, to rerun pass `--test model_parity`\n";
+                for line in stdout.split_inclusive(|byte| *byte == b'\n') {
+                    if line.starts_with(b"test result:") {
+                        phase::observe_current(1, cargo);
+                        stderr.extend_from_slice(cargo);
+                    }
+                    phase::observe_current(0, line);
+                }
+            }
             Ok(ci::owned::Output {
                 command: capture::Output {
                     exit: if compile { 0 } else { 101 },
                     stdout,
-                    stderr: Vec::new(),
+                    stderr,
                 },
                 memory: Value::Null,
             })

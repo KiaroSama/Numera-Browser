@@ -747,12 +747,6 @@ impl Scope {
             }
         }
     }
-    pub fn for_each_line(&self, mut accept: impl FnMut(&str)) {
-        self.projection.borrow_mut().drain();
-        for line in &self.projection.borrow().events {
-            accept(line);
-        }
-    }
     pub fn finish<T>(
         self,
         result: Result<T>,

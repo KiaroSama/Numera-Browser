@@ -277,16 +277,10 @@ pub fn prove_cases_with_cleanup(
                 negative_exit = Some(output.command.exit);
                 scope.captured(&output.command.stdout, &output.command.stderr);
                 let mut evidence = super::history_callers::negative_evidence(case);
-                for raw in [&output.command.stdout, &output.command.stderr] {
-                    let text = std::str::from_utf8(raw)?;
-                    if !enabled {
-                        for line in text.lines() {
-                            evidence.accept(line);
-                        }
-                    }
-                }
-                if enabled {
-                    scope.for_each_line(|line| evidence.accept(line));
+                // Libtest writes the ordered verdict to stdout. Cargo may
+                // concurrently emit stderr diagnostics between its lines.
+                for line in std::str::from_utf8(&output.command.stdout)?.lines() {
+                    evidence.accept(line);
                 }
                 let result = evidence.verify(output.command.exit);
                 if result.is_err() {
