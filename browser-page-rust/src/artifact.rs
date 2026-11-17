@@ -7,6 +7,7 @@ use std::{
     io::{self, Read},
     path::Path,
 };
+pub const RUSTC_VERSION: &str = "rustc 1.100.0 (0ef1bc386 2026-11-09)";
 pub const MAX_ARTIFACT: usize = 1024 * 1024;
 pub const GENERATED_BANNER: &str = "// GENERATED from browser-page-rust by locked wasm-bindgen and Binaryen133.\n// Regenerate with browser-page-build; authored browser behavior lives in Rust.\n";
 pub const FACTORY_PREFIX: &str = "(function numera_browser_page()";
@@ -112,7 +113,7 @@ pub fn validate(repo: &Path, artifact: &[u8], receipt: &Value) -> io::Result<()>
         "schema":1,"artifact":"browser-page-rust/generated/runtime.js",
         "authored_language":"Rust","generated_languages":["JavaScript"],
         "factory":"numera_browser_page() returns wasm-bindgen exports synchronously",
-        "target":"wasm32-unknown-unknown","rustc":"rustc 1.99.1 (58cf8f9c3 2026-10-13)",
+        "target":"wasm32-unknown-unknown","rustc":RUSTC_VERSION,
         "wasm_bindgen":"wasm-bindgen 0.2.129","binaryen":"wasm2js version 133 (version_133)",
         "binaryen_archive":"https://github.com/WebAssembly/binaryen/releases/download/version_133/binaryen-version_133-x86_64-linux.tar.gz",
         "binaryen_archive_sha256":"2dc9c7813f5375db93d96ead4b78222fcc3e2677bbb832297af4797782a37489",

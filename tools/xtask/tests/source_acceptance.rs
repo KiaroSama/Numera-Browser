@@ -15,6 +15,9 @@ use std::{
     sync::{Arc, Mutex, OnceLock, Weak},
     time::Duration,
 };
+#[path = "../../test-support/cargo_artifacts.rs"]
+mod cargo_artifacts;
+
 macro_rules! source_test {($name:ident,$id:literal,$body:block)=>{#[test]#[doc=$id]fn $name()->Result<()> $body};}
 struct Temp {
     path: PathBuf,
@@ -71,27 +74,14 @@ fn helper() -> Result<Arc<Helper>> {
     } else {
         "acceptance helper"
     });
-    let dependencies = std::env::current_exe()?
-        .parent()
-        .ok_or("test dependencies directory missing")?
-        .to_owned();
-    let mut libraries = fs::read_dir(&dependencies)?.collect::<std::result::Result<Vec<_>, _>>()?;
-    libraries.retain(|e| {
-        e.file_name()
-            .to_string_lossy()
-            .starts_with("libnumera_core-")
-            && e.path().extension().is_some_and(|x| x == "rlib")
-    });
-    libraries.sort_by_key(|e| e.metadata().and_then(|m| m.modified()).ok());
-    let library = libraries
-        .last()
-        .ok_or("native core library missing")?
-        .path();
-    let output = Command::new(std::env::var_os("RUSTC").unwrap_or_else(|| "rustc".into()))
+    let artifacts = cargo_artifacts::Artifacts::current()?;
+    let library = artifacts.library("numera_core")?;
+    let mut command = Command::new(std::env::var_os("RUSTC").unwrap_or_else(|| "rustc".into()));
+    artifacts
+        .add_dependency_search_paths(&mut command, &directory.path().join("rustc-search.args"))?;
+    let output = command
         .args(["--edition=2024", "-Cdebuginfo=0", "--extern"])
         .arg(format!("numera_core={}", library.display()))
-        .arg("-L")
-        .arg(format!("dependency={}", dependencies.display()))
         .arg(Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/source_acceptance/helper.rs"))
         .arg("-o")
         .arg(&executable)

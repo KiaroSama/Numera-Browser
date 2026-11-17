@@ -1,5 +1,9 @@
 # Numera Browser dashboard
 
+The theme toggle uses a silver Glimm sweep in both directions while retaining the
+original light and dark palettes. Reduced-motion preferences and browsers
+without the required graphics APIs switch themes immediately.
+
 The browser console is implemented in Rust and compiled to WebAssembly. It uses
 the original theme tokens, scoped CSS and public image assets. Application state,
 rendering, DOM events, authenticated requests and desktop bridges live in `rust/`.

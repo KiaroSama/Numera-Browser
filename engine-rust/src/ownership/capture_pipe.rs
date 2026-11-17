@@ -19,19 +19,48 @@ impl Read for Pipe {
         }
     }
 }
+#[cfg(unix)]
+impl AsRawFd for Pipe {
+    fn as_raw_fd(&self) -> std::os::fd::RawFd {
+        match self {
+            Self::Out(pipe) => pipe.as_raw_fd(),
+            Self::Err(pipe) => pipe.as_raw_fd(),
+        }
+    }
+}
 impl Pipe {
     #[cfg(unix)]
     #[allow(unsafe_code)]
     pub fn prepare(&self) -> io::Result<()> {
-        let fd = match self {
-            Self::Out(pipe) => pipe.as_raw_fd(),
-            Self::Err(pipe) => pipe.as_raw_fd(),
-        };
+        let fd = self.as_raw_fd();
         // SAFETY: uniquely owned open child-output descriptor, query flags then
         // add nonblocking without discarding its existing file status flags.
         let flags = unsafe { libc::fcntl(fd, libc::F_GETFL) };
         if flags < 0 || unsafe { libc::fcntl(fd, libc::F_SETFL, flags | libc::O_NONBLOCK) } < 0 {
             return Err(io::Error::last_os_error());
+        }
+        Ok(())
+    }
+
+    #[cfg(unix)]
+    pub(crate) fn wait_readable(&self, timeout: std::time::Duration) -> io::Result<()> {
+        let mut descriptor = libc::pollfd {
+            fd: self.as_raw_fd(),
+            events: libc::POLLIN,
+            revents: 0,
+        };
+        let millis = timeout.as_nanos().div_ceil(1_000_000);
+        let millis = i32::try_from(millis).unwrap_or(i32::MAX);
+        // SAFETY: the pipe retains the descriptor and poll borrows one initialized entry.
+        #[allow(unsafe_code)]
+        let ready = unsafe { libc::poll(&mut descriptor, 1, millis) };
+        if ready < 0 {
+            let error = io::Error::last_os_error();
+            if error.kind() != io::ErrorKind::Interrupted {
+                return Err(error);
+            }
+        } else if descriptor.revents & libc::POLLNVAL != 0 {
+            return Err(io::Error::other("Child output descriptor is invalid"));
         }
         Ok(())
     }

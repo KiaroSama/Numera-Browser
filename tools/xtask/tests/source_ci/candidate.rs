@@ -584,17 +584,16 @@ source_test!(
 fn program(temp: &Temp) -> ci::Result<PathBuf> {
     let source = r#"use numera_core::ownership::tree::OwnedTree;use std::{process::{Command,Stdio},io::Write,time::Duration};fn main(){let args=std::env::args_os().collect::<Vec<_>>();if args[1]=="wait"{std::thread::sleep(Duration::from_secs(30));return;}let tree=OwnedTree::spawn(Command::new(std::env::current_exe().expect("exe")).arg("wait").stdin(Stdio::null())).expect("owned child");let mut record=tree.record();record["pidToken"]=record["token"].take();std::fs::write(&args[2],serde_json::to_vec(&record).expect("record")).expect("marker");println!("separate owned child published");std::io::stdout().flush().expect("flush");std::mem::forget(tree);std::thread::sleep(Duration::from_secs(30));}"#;
     let path = temp.write("nested-fixture.rs", source.as_bytes())?;
-    let dependencies = std::env::current_exe()?
-        .parent()
-        .ok_or("Dependency directory missing")?
-        .to_owned();
-    let core = super::camoufox_runtime::linked_rlib(&dependencies, "numera_core")?;
-    let json = super::camoufox_runtime::linked_rlib(&dependencies, "serde_json")?;
+    let artifacts = cargo_artifacts::Artifacts::current()?;
+    let core = artifacts.library("numera_core")?;
+    let json = artifacts.library("serde_json")?;
     let output = temp
         .0
         .join(format!("nested-fixture{}", std::env::consts::EXE_SUFFIX));
+    let mut command = std::process::Command::new("rustc");
+    artifacts.add_dependency_search_paths(&mut command, &temp.0.join("rustc-search.args"))?;
     let compiled = ci::capture(
-        std::process::Command::new("rustc")
+        command
             .args([
                 "--edition=2024",
                 "--crate-name",
@@ -604,8 +603,6 @@ fn program(temp: &Temp) -> ci::Result<PathBuf> {
             .arg(format!("numera_core={}", core.display()))
             .arg("--extern")
             .arg(format!("serde_json={}", json.display()))
-            .arg("-L")
-            .arg(format!("dependency={}", dependencies.display()))
             .arg(path)
             .arg("-o")
             .arg(&output),

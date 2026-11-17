@@ -4,12 +4,12 @@ Choose one route: a portable desktop release, a source checkout, or a server/con
 
 ## Portable desktop
 
-1. Open [GitHub Releases](https://github.com/KiaroSama/Numera-Browser/releases). Select a completed build and its matching platform asset: Windows x64, Linux x64, or macOS ARM64. Do not use an ARM64 archive on an Intel Mac.
+1. Open [GitHub Releases](https://github.com/KiaroSama/Numera-Browser/releases). Select a completed build and its matching platform asset: Windows x64 or Linux x64.
 2. Download the archive and its published checksums/signature metadata. Verify before extraction; see [updates and verification](updates.md). If the release has no matching asset, it is not a supported ready-build route for that machine.
 3. Extract the **whole** `Numera Browser` folder into a writable location. Keep the engine, browser resources, notices and manifests beside the shell; copying only the executable does not install the application.
-4. Start `numera.exe` on Windows or `numera` on Linux/macOS. The shell starts its own engine on a free loopback port and opens the dashboard. Close the window to shut down its owned engine.
+4. Start `numera.exe` on Windows or `numera` on Linux. The shell starts its own engine on a free loopback port and opens the dashboard. Close the window to shut down its owned engine.
 
-Python and Node are not prerequisites for a completed portable bundle. The operating system still supplies the WebView and native libraries: WebView2 on Windows, WebKitGTK 4.1/GTK 3 on Linux, and WKWebView on macOS. Browser binaries also need their platform's system libraries. The CI build platform does not guarantee every Linux distribution or older OS release is compatible.
+Python and Node are not prerequisites for a completed portable bundle. The operating system still supplies the WebView and native libraries: WebView2 on Windows and WebKitGTK 4.1/GTK 3 on Linux. Browser binaries also need their platform's system libraries. The CI build platform does not guarantee every Linux distribution or older OS release is compatible.
 
 Native publisher signing uses the project's private-trust certificate. It is **self-signed**, not a publicly trusted Windows publisher certificate or Apple Developer ID/notarization. SmartScreen and Gatekeeper can still warn or block the app. Do not install an unknown root certificate or disable system security to make it run. Obtain an appropriately trusted build if local policy requires it.
 
@@ -32,11 +32,11 @@ Stop owned sessions before copying live browser storage. Protect backups like cr
 
 ## From source
 
-Requirements: Rust **1.99.1** (pinned by `rust-toolchain.toml`), the
-`wasm32-unknown-unknown` target, and `wasm-bindgen-cli` **0.2.129**. Desktop builds
-also require Tauri **2.12.4** and the platform's WebView development libraries.
-The application and its build tools use Cargo. Browser SDKs include their own
-vendor Node executable; a separate Python or Node installation is unnecessary.
+Requirements: Rust **1.100.0** (pinned by `rust-toolchain.toml`), the
+`wasm32-unknown-unknown` target and `wasm-bindgen-cli` **0.2.129**. Desktop
+builds also require Tauri CLI **2.12.5** and the platform's WebView development
+libraries. Complete portable bundles include their vendor driver executables
+and serve the prebuilt dashboard.
 
 From the repository root:
 
@@ -73,7 +73,7 @@ above. Keep resources under this checkout so dashboard discovery can locate
 `dashboard/dist`, or place the built dashboard in the selected application
 location's `web/` directory. Complete product bundles configure this layout.
 
-Driver pins are Playwright **1.65.1**, Patchright **1.64.1**, Camoufox's Playwright
+Driver pins are Playwright **1.65.1**, Patchright **1.64.3**, Camoufox's Playwright
 transport **1.62.0**, and Cloak's Playwright transport **1.65.1**. Camoufox uses
 browser **158.0.1-beta.41**, uBlock Origin **1.75.4** and the reviewed GeoIP data.
 See [current upstream review](upstream-review-20261114.json) for release/source
@@ -82,6 +82,8 @@ in an older packaged engine.
 
 Playwright and Cloak use the separately pinned official `playwright-core` npm
 archive for their 1.65.1 transport, with Node from the reviewed platform wheel.
+Patchright installs its official `patchright-core` 1.64.3 package alongside the
+already reviewed platform-specific Node executable.
 The published Python 1.65.1 wheels still contain the older 1.65.0 transport;
 provisioning checks the extracted package's actual name and version. No Python
 or npm installation is needed to unpack or run these resources.
@@ -169,9 +171,9 @@ The native engine writes UTF-8 run logs under the actual data root's `logs/`. Ch
 ## Building distributions
 
 [Native CI](../.github/workflows/native-ci.yml) runs automatic independent
-Linux, Windows and macOS compilation and full-product builds. Portable server
+Linux and Windows x86-64 compilation and full-product builds. Portable server
 archives and desktop installer formats are produced with Rust tooling. Default
-installers are Linux AppImage/deb, Windows MSI/NSIS and macOS app/DMG. Each native
+installers are AppImage/deb on Linux and MSI/NSIS on Windows. Each native
 platform builds its own artifacts; an operating-system target badge is not a
 claim that every older OS is supported.
 

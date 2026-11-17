@@ -179,6 +179,7 @@ pub(super) fn policy_controls() -> TestResult {
 #[cfg(windows)]
 pub(super) struct LeafWitness(std::os::windows::io::OwnedHandle);
 #[cfg(windows)]
+#[allow(unsafe_code)]
 impl LeafWitness {
     pub(super) fn retain(pid: u32, token: Option<u64>, record: &Value) -> io::Result<Self> {
         use std::os::windows::io::{AsRawHandle, FromRawHandle, OwnedHandle};
@@ -213,6 +214,7 @@ impl LeafWitness {
         let mut exit = creation;
         let mut kernel = creation;
         let mut user = creation;
+        // SAFETY: the process is owned and all output pointers are initialized.
         if unsafe {
             GetProcessTimes(
                 process.as_raw_handle(),
@@ -233,12 +235,15 @@ impl LeafWitness {
             .as_str()
             .ok_or_else(|| io::Error::other("Job name missing"))?;
         let wide: Vec<u16> = name.encode_utf16().chain(Some(0)).collect();
+        // SAFETY: the Job name is NUL-terminated and the handle is query-only.
         let job = unsafe { OpenJobObjectW(JOB_OBJECT_QUERY, 0, wide.as_ptr()) };
         if job.is_null() {
             return Err(io::Error::last_os_error());
         }
+        // SAFETY: successful open transfers a CloseHandle owner.
         let job = unsafe { OwnedHandle::from_raw_handle(job) };
         let mut member = 0;
+        // SAFETY: both handles remain owned and the membership output is valid.
         if unsafe { IsProcessInJob(process.as_raw_handle(), job.as_raw_handle(), &mut member) } == 0
         {
             return Err(io::Error::last_os_error());

@@ -167,7 +167,7 @@ pub(super) fn additional(root: &Path, case: &Case) -> Result<Vec<(String, Replac
         root,
         case,
         ADAPTER,
-        "3c16bc7c64362cd8a97443d143175d7fa8afa31fdd77395f847af4d004cb5c6f",
+        "49ddb95a5d79b60af81c43f0f81fb493b6fb12e8c999f59061987060ce334fc6",
     )?;
     let mut adapter = caller_replacement(
         case,
@@ -186,7 +186,7 @@ pub(super) fn additional(root: &Path, case: &Case) -> Result<Vec<(String, Replac
         ],
     )?;
     if super::sha(&adapter.bytes)
-        != "029549a0e5badba41fd2f1b48ce836c18aa09b9417f49526f15b91934a5c5699"
+        != "47198bed13ee1cb1e61670157dc36d2964b36a99b6c2d8df47a3666f3c0bd164"
     {
         return fail("Historical capture pipe alias differs from its actual proof");
     }

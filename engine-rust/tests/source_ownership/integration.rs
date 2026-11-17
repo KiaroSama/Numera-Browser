@@ -348,10 +348,7 @@ source_test!(
             &source,
             r#"use numera_core::ownership::registry::Registry;fn invalid(r:&Registry,command:&mut std::process::Command,path:&std::path::Path){let _=r.spawn("p",command,path,"warmup",None,std::time::Duration::ZERO);}"#,
         )?;
-        let deps = std::env::current_exe()?
-            .parent()
-            .ok_or("test deps")?
-            .to_owned();
+        let artifacts = Artifacts::current()?;
         let mut compiler =
             Command::new(std::env::var_os("RUSTC").unwrap_or_else(|| "rustc".into()));
         compiler
@@ -360,12 +357,12 @@ source_test!(
             .arg("--extern")
             .arg(format!(
                 "numera_core={}",
-                library(&deps, "numera_core")?.display()
+                artifacts.library("numera_core")?.display()
             ))
-            .arg("-L")
-            .arg(format!("dependency={}", deps.display()))
             .arg("-o")
             .arg(t.path().join("invalid.rmeta"));
+        artifacts
+            .add_dependency_search_paths(&mut compiler, &t.path().join("rustc-search.args"))?;
         let answer = capture::run(&mut compiler, limit(Duration::from_secs(30)))?;
         assert_ne!(answer.exit, 0, "unknown string kind reached runtime");
         let diagnostic = String::from_utf8_lossy(&answer.stderr);

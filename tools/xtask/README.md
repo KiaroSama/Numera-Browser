@@ -1,26 +1,24 @@
 # Native application builds
 
 `cargo xtask build-product <new-output> --resources <provisioned-directory>`
-builds the native server, Rust/WASM dashboard, native browser adapter and Tauri
-desktop on the current host. It invokes Rust tooling, without Python, npm or
-application JavaScript sources. Generated `wasm-bindgen` bindings and unmodified
-vendor SDK JavaScript are runtime dependencies.
+builds the native server, Rust/WASM dashboard, native browser adapter and
+Tauri desktop on the current host. Complete distributions include the compiled
+dashboard, generated browser assets and reviewed vendor SDKs.
 
 Use `--server-only` to omit the desktop SDK requirement, or `--bundles none` to
 produce portable server and desktop archives without installers. The native
-default installer formats are Linux `appimage,deb`, Windows `msi,nsis`, and macOS
-`app,dmg`. `--bundles` can select a subset; cross-host installer targets are
-rejected. Build each supported platform on its own native CI runner.
+default installer formats are `appimage,deb` on x86-64 Linux and `msi,nsis`
+on x86-64 Windows. `--bundles` can select a subset. Build each supported
+platform on its own native CI runner.
 
 ## Provision the build host
 
-- Install the repository's Rust toolchain, `wasm32-unknown-unknown` target and
+- Install Rust **1.100.0**, the `wasm32-unknown-unknown` target and
   `wasm-bindgen-cli` **0.2.129** before building.
-- For desktop builds, install a compatible **2.x** `tauri-cli` with Cargo. Linux
-  requires WebKitGTK 4.1/GTK3 development packages and AppImage/deb prerequisites;
-  Windows requires MSVC and the Tauri WiX/NSIS prerequisites; macOS requires Xcode
-  command line tools and the native DMG tools. Tauri may acquire its normal
-  verified installer build tools as part of an explicitly requested bundle build.
+- For desktop builds, install `tauri-cli` **2.12.5** with Cargo. Linux requires
+  WebKitGTK 4.1/GTK3 development packages and AppImage/deb prerequisites.
+  Windows requires MSVC and the Tauri WiX/NSIS prerequisites. Tauri may acquire
+  verified installer build tools while building a requested bundle.
 - Provision vendor browser/SDK artifacts and their licenses/corresponding source
   explicitly. No browser, SDK, Cloak binary, license or source archive is acquired
   by this command. The separate build-host preparation step owns acquisition and

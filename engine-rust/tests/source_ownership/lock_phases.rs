@@ -96,10 +96,7 @@ source_test!(
             &source,
             r#"use numera_core::storage::locks::DataLock;fn misuse(lock:&DataLock){let guard=lock.acquire(std::time::Duration::ZERO).unwrap();std::thread::scope(|scope|{scope.spawn(move||drop(guard));});}"#,
         )?;
-        let deps = std::env::current_exe()?
-            .parent()
-            .ok_or("test deps missing")?
-            .to_owned();
+        let artifacts = Artifacts::current()?;
         let mut compiler =
             Command::new(std::env::var_os("RUSTC").unwrap_or_else(|| "rustc".into()));
         compiler
@@ -108,12 +105,12 @@ source_test!(
             .arg("--extern")
             .arg(format!(
                 "numera_core={}",
-                library(&deps, "numera_core")?.display()
+                artifacts.library("numera_core")?.display()
             ))
-            .arg("-L")
-            .arg(format!("dependency={}", deps.display()))
             .arg("-o")
             .arg(t.path().join("misuse.rmeta"));
+        artifacts
+            .add_dependency_search_paths(&mut compiler, &t.path().join("rustc-search.args"))?;
         let answer = capture::run(&mut compiler, limit(Duration::from_secs(30)))?;
         assert_ne!(
             answer.exit, 0,

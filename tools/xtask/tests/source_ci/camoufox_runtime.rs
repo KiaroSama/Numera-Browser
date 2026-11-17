@@ -387,25 +387,6 @@ fn fonts((damage, layout): (&str, &str)) -> TestResult {
     assert_eq!(bytes(binary.parent().expect("bundle"))?, before);
     Ok(())
 }
-pub(super) fn linked_rlib(dependencies: &Path, name: &str) -> ci::Result<PathBuf> {
-    let prefix = format!("lib{name}-");
-    let mut paths = fs::read_dir(dependencies)?
-        .filter_map(|entry| entry.ok().map(|entry| entry.path()))
-        .filter(|path| {
-            path.file_name()
-                .and_then(|name| name.to_str())
-                .is_some_and(|name| name.starts_with(&prefix) && name.ends_with(".rlib"))
-        })
-        .collect::<Vec<_>>();
-    paths.sort_by_key(|path| {
-        fs::metadata(path)
-            .and_then(|metadata| metadata.modified())
-            .ok()
-    });
-    paths.pop().ok_or_else(|| {
-        io::Error::other("Production Rust parser library missing from native test target").into()
-    })
-}
 fn mutant(damage: &str) -> TestResult {
     let temp = Temp::new("camo-font-mutant")?;
     let binary = bundle(&temp, "grouped", damage)?;
@@ -415,12 +396,9 @@ fn mutant(damage: &str) -> TestResult {
         1,
         "Production guard changed; update its removal control"
     );
-    let dependencies = std::env::current_exe()?
-        .parent()
-        .ok_or("Test dependency directory missing")?
-        .to_owned();
-    let parser = linked_rlib(&dependencies, "quick_xml")?;
-    let json = linked_rlib(&dependencies, "serde_json")?;
+    let artifacts = cargo_artifacts::Artifacts::current()?;
+    let parser = artifacts.library_dependency("numera_core", "quick_xml")?;
+    let json = artifacts.library("serde_json")?;
     for removed in [false, true] {
         let module = if removed {
             source.replace("    require(root)?;", "")
@@ -439,8 +417,10 @@ fn mutant(damage: &str) -> TestResult {
             if removed { "mutant" } else { "guarded" },
             std::env::consts::EXE_SUFFIX
         ));
+        let mut command = std::process::Command::new("rustc");
+        artifacts.add_dependency_search_paths(&mut command, &output.with_extension("args"))?;
         let compiled = ci::capture(
-            std::process::Command::new("rustc")
+            command
                 .args([
                     "--edition=2024",
                     "--crate-name",
@@ -450,8 +430,6 @@ fn mutant(damage: &str) -> TestResult {
                 .arg(format!("quick_xml={}", parser.display()))
                 .arg("--extern")
                 .arg(format!("serde_json={}", json.display()))
-                .arg("-L")
-                .arg(format!("dependency={}", dependencies.display()))
                 .arg(&path)
                 .arg("-o")
                 .arg(&output),

@@ -88,7 +88,7 @@ pub fn sign(root: &Path, output: &Path, platform: &str) -> Result<PathBuf> {
 }
 pub fn verify(root: &Path, directory: &Path, source: &str) -> Result<()> {
     let key = super::release_signing::public_key(&root.join("docs/release-signing-key.pem"))?;
-    for platform in ["linux-x64", "windows-x64", "macos-arm64"] {
+    for platform in super::release::RELEASE_PLATFORMS {
         let receipt_path = directory.join(format!("owner-signed-{platform}.json"));
         super::release_signing::verify_manifest(
             &receipt_path,

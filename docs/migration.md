@@ -15,8 +15,8 @@ Use [setup](setup.md) for current build and launch commands,
 [rewrite verification](rust-rewrite.md) for source provenance, retained test
 identities, platform conditions, upstream review and outstanding acceptance.
 
-CI independently compiles the actual application and browser worker on Linux,
-Windows and macOS. Full installers, source archives, real browser acceptance,
+CI independently compiles the actual application and browser worker on x86-64 Linux
+and Windows. Full installers, source archives, real browser acceptance,
 security checks and exact test inventories remain required. A compiled candidate,
 a historical green run or a test map alone does not establish current completion.
 

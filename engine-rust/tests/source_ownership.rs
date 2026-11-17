@@ -21,7 +21,10 @@ use std::{
     thread,
     time::{Duration, Instant},
 };
+#[path = "../../tools/test-support/cargo_artifacts.rs"]
+mod cargo_artifacts;
 mod common;
+use cargo_artifacts::Artifacts;
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 macro_rules! source_test {
     ($name:ident,$source:literal,$body:block) => {
@@ -75,74 +78,14 @@ fn wait_file(path: &Path) -> io::Result<()> {
     }
     Ok(())
 }
-fn library(deps: &Path, name: &str) -> io::Result<PathBuf> {
-    let executable = std::env::current_exe()?;
-    let stem = executable
-        .file_stem()
-        .ok_or_else(|| io::Error::other("Test artifact stem missing"))?
-        .to_string_lossy();
-    let (_, suffix) = stem
-        .rsplit_once('-')
-        .ok_or_else(|| io::Error::other("Hashed test artifact required"))?;
-    let fingerprints = deps
-        .parent()
-        .ok_or_else(|| io::Error::other("Target profile directory missing"))?
-        .join(".fingerprint");
-    let own_dir = fingerprints.join(format!("{}-{suffix}", env!("CARGO_PKG_NAME")));
-    let own_file = fs::read_dir(own_dir)?
-        .filter_map(Result::ok)
-        .map(|e| e.path())
-        .find(|p| {
-            p.file_name()
-                .is_some_and(|n| n.to_string_lossy().starts_with("test-"))
-                && p.extension().is_some_and(|e| e == "json")
-        })
-        .ok_or_else(|| io::Error::other("Test dependency metadata missing"))?;
-    let own: Value = serde_json::from_slice(&fs::read(own_file)?).map_err(io::Error::other)?;
-    let wanted = own["deps"]
-        .as_array()
-        .and_then(|rows| rows.iter().find(|r| r[1] == name))
-        .and_then(|r| r[3].as_u64())
-        .ok_or_else(|| io::Error::other(format!("Test dependency {name} missing")))?;
-    let package = if name == "numera_core" {
-        "numera-core"
-    } else {
-        name
-    };
-    fs::read_dir(deps)?
-        .filter_map(Result::ok)
-        .map(|e| e.path())
-        .filter(|p| {
-            p.file_name()
-                .is_some_and(|n| n.to_string_lossy().starts_with(&format!("lib{name}-")))
-                && p.extension().is_some_and(|e| e == "rlib")
-        })
-        .find(|p| {
-            let Some(stem) = p.file_stem() else {
-                return false;
-            };
-            let stem = stem.to_string_lossy();
-            let Some(suffix) = stem.strip_prefix(&format!("lib{name}-")) else {
-                return false;
-            };
-            let encoded =
-                fs::read_to_string(fingerprints.join(format!("{package}-{suffix}/lib-{name}")))
-                    .unwrap_or_default();
-            u64::from_str_radix(encoded.trim(), 16)
-                .is_ok_and(|n| u64::from_le_bytes(n.to_be_bytes()) == wanted)
-        })
-        .ok_or_else(|| io::Error::other(format!("Exact compiled {name} dependency missing")))
-}
 fn fixture() -> io::Result<PathBuf> {
     static BINARY: OnceLock<Result<PathBuf, String>> = OnceLock::new();
     BINARY
         .get_or_init(|| {
-            let deps = std::env::current_exe()
-                .map_err(|error| error.to_string())?
-                .parent()
-                .ok_or("Test dependency directory missing")?
-                .to_owned();
-            let directory = deps.join(format!("source-ownership-fixture-{}", std::process::id()));
+            let artifacts = Artifacts::current().map_err(|error| error.to_string())?;
+            let directory = artifacts
+                .output_directory()
+                .join(format!("source-ownership-fixture-{}", std::process::id()));
             fs::create_dir(&directory).map_err(|error| error.to_string())?;
             let binary = directory.join(if cfg!(windows) {
                 "helper.exe"
@@ -159,32 +102,37 @@ fn fixture() -> io::Result<PathBuf> {
                 .arg("--extern")
                 .arg(format!(
                     "numera_core={}",
-                    library(&deps, "numera_core")
+                    artifacts
+                        .library("numera_core")
                         .map_err(|error| error.to_string())?
                         .display()
                 ))
                 .arg("--extern")
                 .arg(format!(
                     "serde_json={}",
-                    library(&deps, "serde_json")
+                    artifacts
+                        .library("serde_json")
                         .map_err(|error| error.to_string())?
                         .display()
                 ))
-                .arg("-L")
-                .arg(format!("dependency={}", deps.display()))
                 .arg("-o")
                 .arg(&binary);
+            artifacts
+                .add_dependency_search_paths(&mut command, &directory.join("rustc-search.args"))
+                .map_err(|error| error.to_string())?;
             #[cfg(windows)]
             command.arg("--extern").arg(format!(
                 "getrandom={}",
-                library(&deps, "getrandom")
+                artifacts
+                    .library("getrandom")
                     .map_err(|error| error.to_string())?
                     .display()
             ));
             #[cfg(unix)]
             command.arg("--extern").arg(format!(
                 "libc={}",
-                library(&deps, "libc")
+                artifacts
+                    .library("libc")
                     .map_err(|error| error.to_string())?
                     .display()
             ));

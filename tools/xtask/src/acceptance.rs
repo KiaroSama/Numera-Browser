@@ -548,10 +548,24 @@ pub fn with_server<T>(
     result
 }
 pub fn run(candidate: &Path, path: &Path) -> Result<Value> {
+    use numera_core::ownership::resources::{ResourceFailure, ResourceGuard};
+
     ci::regular(candidate, false)?;
     let fixture = Fixture::create(path)?;
     let result = (|| {
-        let guard = numera_core::ownership::resources::ResourceGuard::new()?;
+        // Windows initializes its process-wide WinSock provider on first
+        // socket use. Exercise the loopback provider and close the probe
+        // sockets before measuring resources owned by the actual workload.
+        #[cfg(windows)]
+        {
+            let listener = TcpListener::bind(SocketAddr::from(([127, 0, 0, 1], 0)))?;
+            listener.set_nonblocking(true)?;
+            let client =
+                TcpStream::connect_timeout(&listener.local_addr()?, Duration::from_secs(2))?;
+            let (accepted, _) = listener.accept()?;
+            drop((client, accepted, listener));
+        }
+        let guard = ResourceGuard::new()?;
         let root = fixture.path().join("data");
         fs::create_dir(&root)?;
         let created = execute(
@@ -615,7 +629,17 @@ pub fn run(candidate: &Path, path: &Path) -> Result<Value> {
         {
             return fail("Native CLI did not observe HTTP replay");
         }
-        let resources = guard.finish()?;
+        let resources = guard.finish().inspect_err(|error| {
+            if let ResourceFailure::Residual(evidence) = error {
+                eprintln!(
+                    "Native acceptance resource counts handles_before={} handles_after={} threads_before={} threads_after={}",
+                    evidence.before.handles,
+                    evidence.after.handles,
+                    evidence.before.threads,
+                    evidence.after.threads,
+                );
+            }
+        })?;
         Ok(
             json!({"schema":1,"native":true,"cli":true,"http":true,"shared_store":true,"resources":resources}),
         )

@@ -8,6 +8,10 @@ use std::{
     sync::atomic::{AtomicU64, Ordering},
 };
 type TestResult = ci::Result<()>;
+
+#[path = "../../test-support/cargo_artifacts.rs"]
+mod cargo_artifacts;
+
 fn failed_transcript(name: &str, symptom: &str) -> String {
     format!(
         "running 1 test\ntest {name} ... FAILED\n\nfailures:\n\n---- {name} stdout ----\n\nthread '{name}' panicked at fixture.rs:1:1:\nassertion left == right failed: {symptom}\n\nfailures:\n    {name}\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.01s\n"

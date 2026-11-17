@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "reviewed_on": "2026-11-14",
+  "reviewed_on": "2026-11-17",
   "drivers": {
     "playwright": {
       "version": "1.65.1",
@@ -40,7 +40,7 @@
       }
     },
     "patchright": {
-      "version": "1.64.1",
+      "version": "1.64.3",
       "wheel_package": "patchright",
       "platforms": {
         "linux-x86_64": {
@@ -68,6 +68,12 @@
           "sha256": "3cd3e7e1e94034e3f3a732ef7d6f87376dc7d27a9b598de51565051acabf3428",
           "size": 38665415
         }
+      },
+      "wheel_version": "1.64.1",
+      "package_archive": {
+        "url": "https://registry.npmjs.org/patchright-core/-/patchright-core-1.64.3.tgz",
+        "sha256": "38ddd222a75764f8f876487ec8e4a41b7d390a55b2d5fa7518e5caad5274ee0b",
+        "size": 3184672
       }
     },
     "camoufox": {

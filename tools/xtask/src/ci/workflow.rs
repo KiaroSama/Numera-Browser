@@ -99,10 +99,20 @@ pub fn native_automatic(workflow: &Value) -> Result<()> {
         .ok_or("Native build matrix missing")?;
     let platforms = matrix
         .iter()
-        .filter_map(|row| row["platform"].as_str())
+        .filter_map(|row| {
+            Some((
+                row["platform"].as_str()?,
+                row.get("os").or_else(|| row.get("runner"))?.as_str()?,
+            ))
+        })
         .collect::<BTreeSet<_>>();
-    if platforms != BTreeSet::from(["linux", "windows", "macos"]) || matrix.len() != 3 {
-        return fail("Automatic native build must retain Linux,Windows,macOS");
+    if matrix.len() != 2
+        || !platforms.contains(&("linux", "ubuntu-24.04"))
+        || ![("windows", "windows-latest"), ("windows", "windows-2025")]
+            .iter()
+            .any(|platform| platforms.contains(platform))
+    {
+        return fail("Automatic native build requires Linux and Windows x86-64 runners");
     }
     if build.to_string().contains("secrets.") {
         return fail("Independent compilation cannot receive signing credentials");
@@ -244,7 +254,7 @@ pub fn browser_page_compiler(native: &Value, advisory: &Value) -> Result<()> {
         true,
     )?;
     let configuration = &steps[toolchain]["with"];
-    if configuration["toolchain"] != "1.99.1"
+    if configuration["toolchain"] != "1.100.0"
         || configuration["targets"] != "wasm32-unknown-unknown"
         || configuration["components"] != "rustfmt, clippy"
     {
@@ -376,7 +386,6 @@ pub fn coverage(root: &Path) -> Result<()> {
     }
     let documents = Value::Object(documents);
     desktop_contracts(&documents)?;
-    macos_contract(&documents["desktop-contracts"])?;
     super::release::release_workflows(&documents)?;
     let rust = parse(&fs::read_to_string(
         root.join(".github/workflows/rust-candidate.yml"),
@@ -422,9 +431,9 @@ pub fn desktop_contracts(workflows: &Value) -> Result<()> {
         || contract.get("if").is_some()
         || contract["timeout-minutes"] != 45
         || contract["strategy"]
-            != serde_json::json!({"fail-fast":false,"max-parallel":2,"matrix":{"os":["ubuntu-latest","windows-latest","macos-latest"]}})
+            != serde_json::json!({"fail-fast":false,"max-parallel":2,"matrix":{"os":["ubuntu-latest","windows-latest"]}})
     {
-        return fail("Desktop contract verification requires all three bounded hosted platforms");
+        return fail("Desktop contract verification requires the two supported hosted platforms");
     }
     let steps = &contract["steps"];
     for command in [
@@ -442,7 +451,7 @@ pub fn desktop_contracts(workflows: &Value) -> Result<()> {
     let history = step_once(steps, "ci desktop-history", false)
         .map_err(|_| std::io::Error::other("Desktop contract history must remain unique"))?;
     let history_step = &steps[history];
-    if history_step["if"] != "runner.os != 'Windows'"
+    if history_step["if"] != "runner.os == 'Linux'"
         || history_step["run"]
             != "cargo xtask ci owned --wall 900 --idle 300 -- cargo xtask ci desktop-history"
         || history >= step_once(steps, "--no-default-features --no-run", true)?
