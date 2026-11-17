@@ -447,6 +447,22 @@ source_test!(
             .collect();
         workflow::required_jobs(jobs, &expected)?;
         workflow::native_automatic(&ci)?;
+        let installer = jobs["build"]["steps"]
+            .as_array()
+            .ok_or("Native product build steps missing")?
+            .iter()
+            .find(|step| step["name"] == "Preserve unsigned native installers")
+            .ok_or("Native product installer upload missing")?;
+        let paths = installer["with"]["path"]
+            .as_str()
+            .ok_or("Native product installer paths missing")?;
+        for path in [
+            "build/native-product/*.msi",
+            "build/native-product/*.deb",
+            "build/native-product/*.AppImage",
+        ] {
+            assert!(paths.lines().any(|line| line == path));
+        }
         let automatic = workflow::parse(&fs::read_to_string(
             root.join(".github/workflows/rust-candidate.yml"),
         )?)?;
