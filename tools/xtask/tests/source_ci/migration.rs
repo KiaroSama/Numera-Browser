@@ -1157,11 +1157,17 @@ source_test!(
             long.join(".ci-work")
         );
         assert!(migration::temporary_parent(&long, &BTreeMap::new(), "linux").is_err());
-        let invalid = BTreeMap::from([
-            ("GITHUB_ACTIONS".into(), "true".into()),
-            ("RUNNER_TEMP".into(), format!("/{}", "x".repeat(100))),
-        ]);
-        assert!(migration::temporary_parent(&long, &invalid, "linux").is_err());
+        for temp in [
+            format!("/{}", "x".repeat(100)),
+            "relative".into(),
+            r"D:\a\_temp".into(),
+        ] {
+            let invalid = BTreeMap::from([
+                ("GITHUB_ACTIONS".into(), "true".into()),
+                ("RUNNER_TEMP".into(), temp),
+            ]);
+            assert!(migration::temporary_parent(&long, &invalid, "linux").is_err());
+        }
         let unicode = PathBuf::from(format!("/{}", "Ω".repeat(40)));
         assert_eq!(
             migration::temporary_parent(&unicode, &env, "linux")?,

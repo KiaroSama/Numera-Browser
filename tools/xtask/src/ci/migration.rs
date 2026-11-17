@@ -158,19 +158,15 @@ pub fn temporary_parent(
                 .is_some_and(|v| v == "true")
         })
         .ok_or("Chromium socket requires hosted RUNNER_TEMP")?;
-    let temporary = PathBuf::from(temporary);
-    if !temporary.is_absolute()
-        || temporary
-            .join("t000000")
-            .as_os_str()
-            .as_encoded_bytes()
-            .len()
-            + SUFFIX.len()
-            > 107
+    // This fallback is a Linux path. Its absolute form starts with a slash
+    // even when the platform policy is exercised by the Windows test runner.
+    let path = PathBuf::from(temporary);
+    if !temporary.starts_with('/')
+        || path.join("t000000").as_os_str().as_encoded_bytes().len() + SUFFIX.len() > 107
     {
         return fail("Hosted RUNNER_TEMP also exceeds the Chromium socket bound");
     }
-    Ok(temporary)
+    Ok(path)
 }
 pub struct Temporary {
     path: PathBuf,

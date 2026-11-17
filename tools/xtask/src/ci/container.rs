@@ -413,6 +413,7 @@ pub fn prepare_live(
             .as_str()
             .ok_or("Exact Cloak acquisition offer missing")?;
         let mut command = Command::new(engine);
+        command.env(numera_core::cloak_acquisition::CI_CURRENT_RELEASE_ENV, "1");
         command.arg("--data-dir").arg(data).args([
             "engines",
             "--acquire-cloak",
