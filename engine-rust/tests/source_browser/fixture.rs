@@ -383,6 +383,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             std::process::exit(status.code().unwrap_or(1));
         }
         Some("relay-failure") => {
+            use numera_core::{
+                ownership::{claims, session::Session},
+                storage::locks::SessionLease,
+            };
+
             let diagnostic_deadline = Instant::now() + Duration::from_secs(10);
             let root = Path::new(&args[1]);
             let mut p = numera_core::conversion::to_engine(
@@ -413,10 +418,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             resource_stages.push(resource_stage("after-warmup-runtime-create"));
             drop(runtime);
             resource_stages.push(resource_stage("after-warmup-runtime-drop"));
+            #[cfg(windows)]
+            let expected_refusal = {
+                const ERROR_FILE_NOT_FOUND: i32 = 2;
+                // Rust uses FormatMessageW for raw Windows errors. Initialize
+                // the message formatter with the exact missing-file error,
+                // before admitting any session or starting any relay.
+                let message = io::Error::from_raw_os_error(ERROR_FILE_NOT_FOUND).to_string();
+                resource_stages.push(resource_stage("after-win32-error-format-warmup"));
+                message
+            };
             let handles = windows_handle_diagnostics::Attribution::before(diagnostic_deadline);
             let guard = numera_core::ownership::resources::ResourceGuard::new()?;
-            let session =
-                numera_core::ownership::session::Session::admit(root, &p.id, "resource-fixture")?;
+            let session = Session::admit(root, &p.id, "resource-fixture")?;
             resource_stages.push(resource_stage("after-session-admit"));
             // Builtin SDK preparation now refuses a definitely absent worker
             // before any spawn intent or automatic relay is created.
@@ -437,9 +451,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             };
             let result = runtime.open(session, p.clone(), true, 1000.0);
             resource_stages.push(resource_stage("after-open-refusal"));
-            assert!(result.is_err());
+            let refusal = result.err().ok_or("Missing SDK worker was accepted")?;
+            assert_eq!(refusal.kind, "failed");
+            #[cfg(windows)]
+            assert_eq!(refusal.message, expected_refusal);
             let cleanup = guard.finish();
-            if cleanup.is_err() {
+            let claim_absent = matches!(claims::read(root, &p.id), claims::Claim::Absent);
+            let admission_released = fs::read_dir(root.join(".updates/work"))?.next().is_none();
+            let lease = SessionLease::acquire(&SessionLease::path_for(root, &p.id)?);
+            let lease_free = lease.is_ok();
+            drop(lease);
+            let failed = cleanup.is_err() || !claim_absent || !admission_released || !lease_free;
+            if failed {
                 if let Some(attribution) = handles.on_failure(true) {
                     eprintln!(
                         "Windows own-handle attribution {} report={attribution}",
@@ -447,15 +470,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     );
                 }
                 eprintln!(
-                    "Relay-failure passive resource stages thread_ids_collected=false additional_queries=count-only samples={}",
-                    json!(resource_stages)
+                    "Relay-failure passive resource stages thread_ids_collected=false additional_queries=count-only samples={} claim_absent={claim_absent} admission_released={admission_released} lease_free={lease_free}",
+                    json!(resource_stages),
                 );
             }
+            assert!(
+                claim_absent,
+                "Early builtin refusal retained a session claim"
+            );
+            assert!(
+                admission_released,
+                "Early builtin refusal retained update admission"
+            );
+            assert!(
+                lease_free,
+                "Early builtin refusal retained the session lease"
+            );
             cleanup?;
-            assert!(matches!(
-                numera_core::ownership::claims::read(root, &p.id),
-                numera_core::ownership::claims::Claim::Absent
-            ));
 
             // Preserve the source's later failure window as well: a real
             // authenticated-proxy relay already exists when SDK birth fails.
@@ -492,14 +523,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     None
                 }
             }
-            assert!(
-                fs::read_dir(root.join(".updates/work"))?.next().is_none(),
-                "Early builtin refusal retained update admission"
-            );
             let handles = windows_handle_diagnostics::Attribution::before(diagnostic_deadline);
             let guard = ResourceGuard::new()?;
-            let session =
-                numera_core::ownership::session::Session::admit(root, &p.id, "resource-fixture")?;
+            let session = Session::admit(root, &p.id, "resource-fixture")?;
             let before = snapshot()?;
             let code = if cfg!(windows) { 5 } else { 13 };
             let probe = Arc::new(RefuseBirth {
@@ -528,9 +554,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .map_err(|_| io::Error::other("Relay observation poisoned"))?;
             let calls = probe.calls.load(Ordering::SeqCst);
             let spawned = probe.spawned.load(Ordering::SeqCst);
-            let lease = numera_core::storage::locks::SessionLease::acquire(
-                &numera_core::storage::locks::SessionLease::path_for(root, &p.id)?,
-            );
+            let lease = SessionLease::acquire(&SessionLease::path_for(root, &p.id)?);
             let lease_free = lease.is_ok();
             drop(lease);
             let cleanup = guard.finish();
@@ -563,10 +587,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 observed.is_some_and(|during| during.threads > before.threads),
                 "A real automatic relay worker did not exist before SDK birth"
             );
-            assert!(matches!(
-                numera_core::ownership::claims::read(root, &p.id),
-                numera_core::ownership::claims::Claim::Absent
-            ));
+            assert!(matches!(claims::read(root, &p.id), claims::Claim::Absent));
             assert!(
                 fs::read_dir(root.join(".updates/work"))?.next().is_none(),
                 "Proved no-child failure retained update admission"

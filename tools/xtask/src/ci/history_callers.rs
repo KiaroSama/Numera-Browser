@@ -361,14 +361,21 @@ fn settings_fixture(root: &Path, case: &Case, source: &Source) -> Result<(String
         path,
         &bytes,
         source,
-        &[(
-            "assert!(!config.headless_launch()?);",
-            "assert!(!config.headless_launch());",
-        )],
+        &[
+            (
+                "assert!(!config.headless_launch()?);",
+                "assert!(!config.headless_launch());",
+            ),
+            (
+                "cli::settings_commands::windows_named_home(",
+                "numera_core::storage::home_path::windows_named_home(",
+            ),
+        ],
     )?;
     replacement.receipt["historical_source_path"] = CONFIG.into();
+    replacement.receipt["historical_settings_source_path"] = SETTINGS.into();
     replacement.receipt["fixture_executed"] = false.into();
-    replacement.receipt["reason"] = "The later named-home sibling fixture compiles against the selected config snapshot's bool return type. The exact strict-settings assertion is in a separate module and runs as registered.".into();
+    replacement.receipt["reason"] = "The later named-home sibling fixture uses the selected config snapshot's bool return type and calls the same Windows home policy directly, since the selected settings snapshot predates its forwarding helper. The original strict-settings assertion runs as registered.".into();
     Ok((path.into(), replacement))
 }
 
