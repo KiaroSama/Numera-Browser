@@ -3,8 +3,23 @@
 fn main() {
     println!("cargo:rerun-if-env-changed=GITHUB_SHA");
     println!("cargo:rerun-if-env-changed=GITHUB_RUN_ID");
+    openapi_schema();
     #[cfg(windows)]
     windows_resources();
+}
+
+fn openapi_schema() {
+    use std::{env, fs, path::PathBuf};
+
+    println!("cargo:rerun-if-changed=src/http/documentation-assets/openapi.json");
+    let mut schema: serde_json::Value =
+        serde_json::from_str(include_str!("src/http/documentation-assets/openapi.json"))
+            .expect("Embedded HTTP documentation schema is invalid");
+    schema["info"]["version"] = env!("CARGO_PKG_VERSION").into();
+    let path = PathBuf::from(env::var_os("OUT_DIR").expect("Cargo output directory missing"));
+    let schema =
+        serde_json::to_vec(&schema).expect("HTTP documentation schema serialization failed");
+    fs::write(path.join("openapi.json"), schema).expect("HTTP documentation schema write failed");
 }
 
 #[cfg(windows)]

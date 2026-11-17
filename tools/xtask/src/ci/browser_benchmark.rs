@@ -1000,8 +1000,13 @@ pub fn workflow_measurement(action: &Value) -> Result<()> {
     {
         return fail("Browser acceptance requires optimized candidate compilation");
     }
-    super::workflow::ordered(steps, &["ci acceptance "], "ci browser-benchmark")?;
-    let measure = super::workflow::step_once(steps, "ci browser-benchmark", true)?;
+    let acceptance = super::workflow::step_once(steps, "ci acceptance ", true)?;
+    let measure = super::workflow::step_once(steps, "ci browser-benchmark", false)?;
+    if steps[acceptance]["id"] != "acceptance"
+        || steps[measure]["if"] != "${{ !cancelled() && steps.acceptance.outcome == 'success' }}"
+    {
+        return fail("Each benchmark requires actual application acceptance");
+    }
     if !steps[measure]["run"]
         .as_str()
         .is_some_and(|run| run.contains("\"$NUMERA_NATIVE_ENGINE\""))
@@ -1010,7 +1015,7 @@ pub fn workflow_measurement(action: &Value) -> Result<()> {
     }
     let entry = super::workflow::step_once(steps, "ci entry-benchmark", false)?;
     if steps[entry]["if"] != "inputs.engine == 'playwright'"
-        || entry <= super::workflow::step_once(steps, "ci acceptance ", true)?
+        || entry <= acceptance
         || entry >= measure
         || !steps[entry]["run"]
             .as_str()

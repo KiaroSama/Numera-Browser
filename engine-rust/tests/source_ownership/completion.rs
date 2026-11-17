@@ -86,11 +86,9 @@ fn held_writers(separate: bool, timed_out: bool) -> TestResult {
         .arg(if separate { "separate" } else { "same" })
         .arg(if timed_out { "hold" } else { "exit" });
     let mut units = Units::new(t.path(), &mut child)?;
-    let wall = if timed_out {
-        Duration::from_millis(500)
-    } else {
-        Duration::from_secs(4)
-    };
+    // The source timeout case allows four seconds for the helper to start and
+    // durably report its descendant before the 30-second hold is interrupted.
+    let wall = Duration::from_secs(4);
     let begin = Instant::now();
     let answer = units.run(&mut child, limit(wall), || false);
     let elapsed = begin.elapsed();
@@ -99,7 +97,8 @@ fn held_writers(separate: bool, timed_out: bool) -> TestResult {
     let artifact = t.path().join("descendant.json");
     assert!(
         artifact.is_file(),
-        "fixture never spawned the relevant descendant"
+        "fixture never spawned the relevant descendant (capture error: {:?})",
+        answer.as_ref().err()
     );
     let descendant: Value = serde_json::from_slice(&fs::read(&artifact)?)?;
     let pid = u32::try_from(descendant["pid"].as_u64().expect("descendant pid"))?;
@@ -113,6 +112,10 @@ fn held_writers(separate: bool, timed_out: bool) -> TestResult {
     }
     units.settle(Duration::from_secs(1))?;
     if timed_out {
+        assert!(
+            elapsed >= wall,
+            "capture timed out before its wall deadline"
+        );
         assert_eq!(
             answer.err().ok_or("wedged leader returned success")?.kind(),
             io::ErrorKind::TimedOut
