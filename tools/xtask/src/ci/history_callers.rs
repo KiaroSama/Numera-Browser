@@ -23,6 +23,9 @@ const PROXY_CHECK_COMMIT: &str = "4e570f130ba807448453c12777457bcf55911a67";
 const PROXY_CHECK_SOURCE: &str = "39d4c4f728c91ef9ad342ba4663ae73c3499651b985f07d558faf34ba04424d5";
 const PROXY_ECHO_CASE: &str =
     "network::tests::proxy_echo_boundaries_match_original_through_transport";
+const BULK: &str = "engine-rust/src/bulk.rs";
+const BULK_SELECTION_CASE: &str =
+    "selection::selection_matches_original_complete_profile_membership";
 
 /// The separate owning-host Mac proof may adapt only this later Session
 /// caller. Its exact selected tree/test/commit never become a canonical99 row.
@@ -106,6 +109,17 @@ pub fn clock_caller(case: &Case, current: &[u8]) -> Result<Option<Replacement>> 
 pub fn additional(root: &Path, case: &Case) -> Result<Vec<(String, Replacement)>> {
     let sources = super::history::case_sources(case)?;
     let mut result = Vec::new();
+    if case.target == "bulk_parity"
+        && case.test == BULK_SELECTION_CASE
+        && let Some(source) = sources.get(BULK).filter(|source| {
+            source.commit == "d7227856f1fc7bec01b66d3737d3cbb729115623"
+                && source.sha256
+                    == "e425d6fd6a60615996504fb5c58758a895bc574126609650f9fafeee62938d09"
+                && case.files.get(BULK) == Some(&source.sha256)
+        })
+    {
+        result.extend(bulk_selection_callers(root, case, source)?);
+    }
     if case.target == "lib"
         && case.test == PROXY_ECHO_CASE
         && case
@@ -283,6 +297,40 @@ pub fn additional(root: &Path, case: &Case) -> Result<Vec<(String, Replacement)>
         result.push((path.into(), replacement));
     }
     Ok(result)
+}
+
+fn bulk_selection_callers(
+    root: &Path,
+    case: &Case,
+    source: &Source,
+) -> Result<Vec<(String, Replacement)>> {
+    [
+        (
+            "engine-rust/src/cli/bulk_commands.rs",
+            "637dec32286110ff8602b831da46ac9765276bbf989f21b9e1c4e4a01e550026",
+            r#"start: whole(args, "start", 1)?,"#,
+            r#"start: i64::try_from(whole(args, "start", 1)?).map_err(|_| {
+                    RepoError::Message("start is outside the native supported range".into())
+                })?,"#,
+        ),
+        (
+            "engine-rust/tests/bulk_parity/integers.rs",
+            "01c7baa36287ff3f13a0ea8c968a71173b4cfd1327a3c8eb3a84cbca67f00e05",
+            ".parse::<num_bigint::BigInt>()?,",
+            ".parse::<num_bigint::BigInt>()?.try_into()?,",
+        ),
+    ]
+    .into_iter()
+    .map(|(path, digest, before, after)| {
+        let bytes = checked_caller(root, case, path, digest)?;
+        let mut replacement = caller_replacement(case, path, &bytes, source, &[(before, after)])?;
+        replacement.receipt["historical_source_path"] = BULK.into();
+        replacement.receipt["selected_primary_bytes_unchanged"] = true.into();
+        replacement.receipt["generation_executed"] = false.into();
+        replacement.receipt["reason"] = "The unselected generation callers use checked i64 conversion for the old GenerateBatch ABI. The frozen bulk module and original selection assertions stay exact.".into();
+        Ok((path.into(), replacement))
+    })
+    .collect()
 }
 
 fn settings_home(root: &Path, case: &Case, source: &Source) -> Result<Vec<(String, Replacement)>> {
