@@ -59,7 +59,8 @@ jobs:
         run: cargo xtask ci codeql-verdict
       - run: cargo xtask ci owned --wall 1800 --idle 300 -- cargo xtask provision-resources "${{ runner.temp }}/manual-native-resources"
       - name: Build the actual native product and unsigned installers
-        run: cargo xtask ci owned --wall 1800 --idle 300 -- cargo xtask build-product build/manual-product --resources "${{ runner.temp }}/manual-native-resources"
+        # Keep the outer Windows deadline after the nested bundler's deadline.
+        run: cargo xtask ci owned --wall ${{ runner.os == 'Windows' && 2400 || 1800 }} --idle ${{ runner.os == 'Windows' && 960 || 300 }} -- cargo xtask build-product build/manual-product --resources "${{ runner.temp }}/manual-native-resources"
       - name: Sign the portable native product with pinned owner identities
         env:
           NUMERA_RELEASE_SIGNING_KEY: ${{ secrets.NUMERA_RELEASE_SIGNING_KEY }}
