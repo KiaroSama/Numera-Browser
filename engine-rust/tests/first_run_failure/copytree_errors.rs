@@ -287,9 +287,10 @@ fn new_subtree_errors_match_original_continuation_summaries_and_retry()
             && output.contains(&format!("test {TEST} ... FAILED"))
             && output.contains("test result: FAILED. 0 passed; 1 failed; 0 ignored")
         {
+            // Quote the child transcript so its panic stays inside this diagnostic.
             assert!(
                 !evidence.contains("First-run copytree failure aggregation differs"),
-                "First-run copytree failure aggregation differs: {evidence}"
+                "First-run copytree failure aggregation differs: {evidence:?}"
             );
         }
         return Err(format!("Native copytree failure observer failed: {}", evidence).into());

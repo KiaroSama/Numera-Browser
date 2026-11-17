@@ -41,6 +41,16 @@ fn direct_copy_access_times_match_original_without_changing_copytree_snapshots()
 -> Result<(), Box<dyn std::error::Error>> {
     use std::os::unix::fs::PermissionsExt;
     let temporary = common::TempDirectory::new("first-run-access-times")?;
+    let initial_access = UNIX_EPOCH + Duration::from_secs(1_600_000_000);
+    let witness = temporary.path().join("access-time-witness");
+    fs::write(&witness, b"access-time witness")?;
+    fs::set_times(&witness, fs::FileTimes::new().set_accessed(initial_access))?;
+    let _ = fs::read(&witness)?;
+    assert_ne!(
+        fs::metadata(&witness)?.accessed()?,
+        initial_access,
+        "Hosted filesystem did not exercise source access-time updates"
+    );
     let source = temporary.path().join("source");
     let destination = temporary.path().join("destination");
     fs::create_dir_all(source.join("profiles/existing"))?;
@@ -53,7 +63,7 @@ fn direct_copy_access_times_match_original_without_changing_copytree_snapshots()
         fs::set_times(
             &path,
             fs::FileTimes::new()
-                .set_accessed(UNIX_EPOCH + Duration::from_secs(1_600_000_000))
+                .set_accessed(initial_access)
                 .set_modified(
                     UNIX_EPOCH
                         + Duration::from_secs(1_500_000_000)
@@ -101,12 +111,6 @@ fn direct_copy_access_times_match_original_without_changing_copytree_snapshots()
         let copied_initial = (2..4).contains(&index);
         expected.insert((*name).into(),json!({"source_access_changed":!retained,"copied_initial_access":copied_initial,"copied_post_read_access":copied_post,"modified":if retained{1_499_999_999_000_000_000u64}else{1_500_000_000_000_000_000u64+index as u64},"mode":if retained{0o600}else{0o640},"bytes":if retained{b"destination wins".to_vec()}else{vec![0,255,10,index as u8]},"source_bytes":[0,255,10,index as u8]}));
     }
-    assert!(
-        NAMES[..4]
-            .iter()
-            .all(|name| actual[name]["source_access_changed"] == true),
-        "Hosted filesystem did not exercise source access-time updates"
-    );
     assert_eq!(
         actual,
         Value::Object(expected),
