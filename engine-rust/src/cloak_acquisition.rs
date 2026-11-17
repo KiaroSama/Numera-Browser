@@ -23,6 +23,9 @@ use std::{
 };
 
 pub const SDK_VERSION: &str = "0.7.2";
+pub const CI_CURRENT_RELEASE_ENV: &str = "NUMERA_CI_CLOAK_CURRENT_RELEASE";
+const PINNED_LICENSE: &str =
+    "this vendor license cannot honor an exact pinned acquisition; use the manual vendor route";
 const PROVIDER: &str = "CloakHQ/CloakBrowser";
 const BASE: &str = "https://cloakbrowser.dev";
 const PUBLIC_KEY: &str = "MKFKwIhUcKWq5xTuNA0Ovg99njcDEcEJvmWYYhApvaU=";
@@ -81,6 +84,11 @@ pub trait Vendor: Send + Sync {
         key: &str,
         cancelled: &AtomicBool,
     ) -> io::Result<Option<LicenseInfo>>;
+    /// A live CI job can accept the vendor's Stable channel only while it
+    /// carries the same reviewed release as the current acquisition offer.
+    fn ci_current_release(&self, _: &Metadata, _: &AtomicBool) -> io::Result<Option<String>> {
+        Ok(None)
+    }
     fn ensure_binary(&self, metadata: &Metadata, cancelled: &AtomicBool) -> io::Result<PathBuf>;
 }
 
@@ -240,11 +248,19 @@ impl Acquisition {
         }
         check_cancelled(cancelled)?;
         if let Some(key) = &metadata.license_key {
-            let license = self.vendor.license(&metadata, key, cancelled)?;
-            if license.is_none_or(|license| !license.valid || license.plan == "free") {
-                return Err(refusal(
-                    "this vendor license cannot honor an exact pinned acquisition; use the manual vendor route",
-                ));
+            let license = self
+                .vendor
+                .license(&metadata, key, cancelled)?
+                .filter(|license| license.valid)
+                .ok_or_else(|| refusal(PINNED_LICENSE))?;
+            if license.plan == "free" {
+                let current = self
+                    .vendor
+                    .ci_current_release(&metadata, cancelled)?
+                    .ok_or_else(|| refusal(PINNED_LICENSE))?;
+                if current != metadata.version {
+                    return Err(refusal("Cloak Stable differs from the approved CI version"));
+                }
             }
         }
         let binary = self.vendor.ensure_binary(&metadata, cancelled)?;
@@ -513,11 +529,35 @@ impl Vendor for NativeVendor {
             Err(_) => Ok(read_license(metadata, key, true)),
         }
     }
+    fn ci_current_release(
+        &self,
+        metadata: &Metadata,
+        cancelled: &AtomicBool,
+    ) -> io::Result<Option<String>> {
+        if self.nonempty(CI_CURRENT_RELEASE_ENV) != Some("1") {
+            return Ok(None);
+        }
+        runtime()?.block_on(async {
+            let client = client(Duration::from_secs(10))?;
+            let request = client
+                .get(format!("{BASE}/api/download/version"))
+                .header("X-Platform", &metadata.platform);
+            let bytes = response_bytes(request, 65536, cancelled).await?;
+            let document: Value = serde_json::from_slice(&bytes).map_err(io::Error::other)?;
+            let current = document["version"]
+                .as_str()
+                .ok_or_else(|| refusal("Cloak Stable version metadata is missing"))?;
+            Ok(Some(version(current)?.into()))
+        })
+    }
     fn ensure_binary(&self, metadata: &Metadata, cancelled: &AtomicBool) -> io::Result<PathBuf> {
         if ready(&metadata.binary) {
             return Ok(metadata.binary.clone());
         }
-        let key = metadata.license_key.as_deref().ok_or_else(|| refusal("this vendor license cannot honor an exact pinned acquisition; use the manual vendor route"))?;
+        let key = metadata
+            .license_key
+            .as_deref()
+            .ok_or_else(|| refusal(PINNED_LICENSE))?;
         no_links(&metadata.cache)?;
         fs::create_dir_all(&metadata.cache)?;
         let mut staging = Staging::new(&metadata.cache, ".cloak-acquisition-")?;

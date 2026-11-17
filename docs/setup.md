@@ -88,12 +88,13 @@ The published Python 1.65.1 wheels still contain the older 1.65.0 transport;
 provisioning checks the extracted package's actual name and version. No Python
 or npm installation is needed to unpack or run these resources.
 
-CloakBrowser **156.0.8078.47.1** requires a valid vendor license key, including
-for headless CI. The vendor's free tier supports the current binary with one
-concurrent session; a paid plan is not required for the basic acceptance test.
-Store the key as the repository Actions secret `CLOAKBROWSER_LICENSE_KEY`.
-Do not commit it or include it in test reports. The earlier key-free 146 browser
-is not a substitute for verification of the current pinned release.
+CloakBrowser **156.0.8078.47.1** requires a vendor license key for headless CI.
+The [vendor's free key](https://cloakbrowser.dev/free) supports one concurrent
+session. Live CI accepts that key when the vendor's Stable release matches the
+approved version for the runner. Acquisition verifies the exact release signature
+and platform checksum before launching the browser. Store the key as the
+repository Actions secret `CLOAKBROWSER_LICENSE_KEY` and keep it out of source and
+test reports.
 
 ### Dashboard development
 

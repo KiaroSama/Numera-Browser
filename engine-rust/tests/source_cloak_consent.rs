@@ -27,6 +27,7 @@ struct LocalVendor {
     metadata: Mutex<Metadata>,
     calls: Mutex<Vec<Value>>,
     license: Mutex<Option<LicenseInfo>>,
+    current_release: Mutex<Option<String>>,
     fail: AtomicBool,
     reentrant: Mutex<Option<Weak<Acquisition>>>,
     overlaps: AtomicUsize,
@@ -52,6 +53,7 @@ impl LocalVendor {
                 valid: true,
                 plan: "solo".into(),
             })),
+            current_release: Mutex::new(None),
             fail: AtomicBool::new(false),
             reentrant: Mutex::new(None),
             overlaps: AtomicUsize::new(0),
@@ -70,6 +72,13 @@ impl Vendor for LocalVendor {
     }
     fn license(&self, _: &Metadata, _: &str, _: &AtomicBool) -> io::Result<Option<LicenseInfo>> {
         Ok(self.license.lock().expect("license fixture").clone())
+    }
+    fn ci_current_release(&self, _: &Metadata, _: &AtomicBool) -> io::Result<Option<String>> {
+        Ok(self
+            .current_release
+            .lock()
+            .expect("current release fixture")
+            .clone())
     }
     fn ensure_binary(&self, metadata: &Metadata, _: &AtomicBool) -> io::Result<PathBuf> {
         if self.fail.load(Ordering::Acquire) {
@@ -307,6 +316,32 @@ source_test!(
             fixture.vendor.calls(),
             vec![json!({"browser_version":VERSION,"license_key":"fixture-not-a-real-license"})]
         );
+        let ci = Fixture::new("cloak-consent-ci-current")?;
+        ci.vendor.patch(|metadata| {
+            metadata.license_key = Some("fixture-not-a-real-license".into());
+            metadata.requested = true;
+        });
+        *ci.vendor.license.lock().expect("CI license fixture") = Some(LicenseInfo {
+            valid: true,
+            plan: "free".into(),
+        });
+        *ci.vendor
+            .current_release
+            .lock()
+            .expect("current release fixture") = Some("156.0.8078.47.1".into());
+        let error = ci
+            .acquire(&ci.id(), true)
+            .expect_err("different Stable release was accepted");
+        assert!(error.to_string().contains("differs"));
+        assert!(ci.vendor.calls().is_empty() && !ci.binary().exists());
+        *ci.vendor
+            .current_release
+            .lock()
+            .expect("current release fixture") = Some(VERSION.into());
+        assert!(ci.acquire(&ci.id(), false).is_err());
+        assert!(ci.vendor.calls().is_empty() && !ci.binary().exists());
+        assert_eq!(ci.acquire(&ci.id(), true)?["version"], VERSION);
+        assert_eq!(ci.vendor.calls()[0]["browser_version"], VERSION);
         // Production0.7.2 has no unkeyed fixed default browser. Local metadata must
         // disclose that without resolving latest or claiming a license key.
         let native = cloak_acquisition::NativeVendor::with_environment(
