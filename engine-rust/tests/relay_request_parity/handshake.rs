@@ -183,7 +183,12 @@ fn socks_handshake_failures_preserve_original_diagnostics_and_wire()
                     "HTTP/1.1 502 Bad Gateway\r\nContent-Type: text/plain; charset=utf-8\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
                     body.len()
                 );
-                assert_eq!(response, expected.as_bytes());
+                assert_eq!(
+                    response,
+                    expected.as_bytes(),
+                    "SOCKS handshake diagnostic differs on the wire: {}",
+                    case["name"]
+                );
             }
             assert_eq!(
                 relay.last_error().as_deref(),

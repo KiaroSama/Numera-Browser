@@ -29,6 +29,12 @@ const BULK_SELECTION_CASE: &str =
 const CLAIMS: &str = "engine-rust/src/ownership/claims.rs";
 const CLAIM_DIAGNOSTICS_CASE: &str =
     "diagnostics::claim_diagnostics_match_original_truth_and_display_without_changing_records";
+const UNIT_REPORT: &str = "engine-rust/src/ownership/unit_report.rs";
+const RECEIPT_TOKENS_CASE: &str =
+    "receipt_tokens_match_original_without_resolving_invalid_transfers";
+const RUNTIME_LOG: &str = "engine-rust/src/runtime_log.rs";
+const LOG_RETENTION_CASE: &str =
+    "retention::run_retention_matches_original_mtime_order_and_namespace";
 
 /// The separate owning-host Mac proof may adapt only this later Session
 /// caller. Its exact selected tree/test/commit never become a canonical99 row.
@@ -148,6 +154,28 @@ pub fn additional(root: &Path, case: &Case) -> Result<Vec<(String, Replacement)>
         replacement.receipt["session_cleanup_executed"] = false.into();
         replacement.receipt["reason"] = "The frozen claims API exposes release, so the unexecuted later Session caller uses that signature. The original diagnostic assertions call describe directly and retain the exact selected source.".into();
         result.push((SESSION.into(), replacement));
+    }
+    if case.target == "ownership_receipt_parity"
+        && case.test == RECEIPT_TOKENS_CASE
+        && let Some(source) = sources.get(UNIT_REPORT).filter(|source| {
+            source.commit == "b1ad79f18f75d9a328b731bb092130cc3b61541a"
+                && source.sha256
+                    == "0db789c9ab6f184f811bfadd0f1d3cea7ab0b0bd058663eecbffd816a7bbadcb"
+                && case.files.get(UNIT_REPORT) == Some(&source.sha256)
+        })
+    {
+        result.push(receipt_tokens_callers(root, case, source)?);
+    }
+    if case.target == "logging_parity"
+        && case.test == LOG_RETENTION_CASE
+        && let Some(source) = sources.get(RUNTIME_LOG).filter(|source| {
+            source.commit == "3be53623c6dbd55e22ab23dcbe28dc7c4852053d"
+                && source.sha256
+                    == "78db62948c0519ffadbcf154574caac10078bee0577c6269a0161e4191743590"
+                && case.files.get(RUNTIME_LOG) == Some(&source.sha256)
+        })
+    {
+        result.push(log_retention_callers(root, case, source)?);
     }
     if case.target == "lib"
         && case.test == PROXY_ECHO_CASE
@@ -326,6 +354,96 @@ pub fn additional(root: &Path, case: &Case) -> Result<Vec<(String, Replacement)>
         result.push((path.into(), replacement));
     }
     Ok(result)
+}
+
+fn receipt_tokens_callers(
+    root: &Path,
+    case: &Case,
+    source: &Source,
+) -> Result<(String, Replacement)> {
+    let path = "engine-rust/src/ownership/mod.rs";
+    let bytes = checked_caller(
+        root,
+        case,
+        path,
+        "74ab71be3892332d2ed10d1432dd0db9fb4b9e29cf27fe1abdf45b414cecd757",
+    )?;
+    let current = fs::read(root.join(UNIT_REPORT))?;
+    let current_sha = super::sha(&current);
+    if current_sha != "ec8ad2618dd65545d84af424f83de3e1deaa14586e7478bb3d8964d92898fbfb" {
+        return fail("Current receipt transfer and diagnostic support changed");
+    }
+    let (support, _) = std::str::from_utf8(&current)?
+        .split_once("\npub fn for_job(")
+        .ok_or("Current receipt support boundary changed")?;
+    let wrapper = format!(
+        r#"#[path = "unit_report.rs"]
+mod frozen_unit_report;
+#[allow(dead_code)]
+mod later_receipt_support {{
+{support}
+}}
+pub mod unit_report {{
+    pub use super::frozen_unit_report::*;
+    pub use super::later_receipt_support::diagnostic;
+    pub(crate) use super::later_receipt_support::{{SpawnIntent, begin_transfer}};
+}}"#
+    );
+    let mut replacement = caller_replacement(
+        case,
+        path,
+        &bytes,
+        source,
+        &[("pub mod unit_report;", &wrapper)],
+    )?;
+    replacement.receipt["historical_source_path"] = UNIT_REPORT.into();
+    replacement.receipt["selected_primary_bytes_unchanged"] = true.into();
+    replacement.receipt["included_source_sha256"] = current_sha.into();
+    replacement.receipt["included_fragment_sha256"] = super::sha(support.as_bytes()).into();
+    replacement.receipt["reason"] = "Only the later transfer capability and diagnostic symbols come from current source. The original fixture's read, read_scoped and record_at use the exact frozen module.".into();
+    Ok((path.into(), replacement))
+}
+
+fn log_retention_callers(
+    root: &Path,
+    case: &Case,
+    source: &Source,
+) -> Result<(String, Replacement)> {
+    let path = "engine-rust/src/lib.rs";
+    let bytes = checked_caller(
+        root,
+        case,
+        path,
+        "228a729a8112906bd0a8c6d14b06d7d175b53539a679256b9972de7d677eda57",
+    )?;
+    let current = fs::read(root.join(RUNTIME_LOG))?;
+    let current_sha = super::sha(&current);
+    if current_sha != "c45bbf5f6794ea73d0f31095354762dcb5e3f06806462cef2d71732090b8ad1f" {
+        return fail("Current fileless runtime log constructor changed");
+    }
+    let (_, start) = std::str::from_utf8(&current)?
+        .split_once("\n    pub(crate) fn without_file() -> Self {")
+        .ok_or("Current fileless runtime log constructor is absent")?;
+    let (body, _) = start
+        .split_once("\n    pub(crate) fn directory(")
+        .ok_or("Current fileless runtime log constructor boundary changed")?;
+    let constructor = format!("    pub(crate) fn without_file() -> Self {{{body}");
+    let wrapper = format!(
+        "pub mod runtime_log {{\n    include!(\"runtime_log.rs\");\n    impl RuntimeLog {{\n{constructor}\n    }}\n}}"
+    );
+    let mut replacement = caller_replacement(
+        case,
+        path,
+        &bytes,
+        source,
+        &[("pub mod runtime_log;", &wrapper)],
+    )?;
+    replacement.receipt["historical_source_path"] = RUNTIME_LOG.into();
+    replacement.receipt["selected_primary_bytes_unchanged"] = true.into();
+    replacement.receipt["included_source_sha256"] = current_sha.into();
+    replacement.receipt["included_fragment_sha256"] = super::sha(constructor.as_bytes()).into();
+    replacement.receipt["reason"] = "The original retention fixture opens files through the exact frozen module. Only later recovery callers use the current fileless constructor.".into();
+    Ok((path.into(), replacement))
 }
 
 fn bulk_selection_callers(
