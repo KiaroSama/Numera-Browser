@@ -43,7 +43,7 @@ jobs:
           set -euo pipefail
           cd "$GITHUB_WORKSPACE"
           sha256sum --check --strict <<'SHA256'
-          61539c78ae23ce82280cd17436f8132ad1fbab710c41edd860d4072b6c0974be  tools/security-scan/Cargo.toml
+          19a1c27650c5b96f4490c8484de11a5884f857f81ece5462245be67313aabef0  tools/security-scan/Cargo.toml
           d5ee34a7017457ca39dc76873e76b471b2b7dc550f9e73c1f8375a05b9ae5667  tools/security-scan/Cargo.lock
           240bb7d693a05215f2f19bce6693d55d06ac4aaf9526d96d7494959cdb60aa84  tools/security-scan/src/main.rs
           edce532712685b304b88fbf6ea5172765dda2ff042826702b24a4a14340a57cd  tools/security-scan/src/contract.rs
