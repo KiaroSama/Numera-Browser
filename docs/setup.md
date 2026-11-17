@@ -176,7 +176,8 @@ Linux and Windows x86-64 compilation and full-product builds. Portable server
 archives and desktop installer formats are produced with Rust tooling. Default
 installers are AppImage/deb on Linux and MSI on Windows. The complete Windows
 browser payload exceeds the NSIS size limit. Use MSI to install the complete
-bundle. Each native platform builds its own artifacts.
+bundle. Each native platform uploads an installer artifact and a separate
+portable archive artifact. Both include the distribution checksums.
 
 Unsigned CI artifacts are review outputs. A completed signed release requires its
 separate trusted release gates. No release or merge is part of
