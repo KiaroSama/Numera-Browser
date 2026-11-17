@@ -51,6 +51,7 @@ pub fn execute(command: &mut Command, seconds: u64) -> Result<capture::Output> {
     restrict_environment(command);
     command.env_remove("GH_TOKEN").env_remove("GITHUB_TOKEN");
     let mut natural = None;
+    let mut initial_reason = "not-observed";
     let mut natural_reason = "not-observed";
     let mut partial = [Vec::new(), Vec::new()];
     let result = capture::run_observed_streamed(
@@ -62,16 +63,19 @@ pub fn execute(command: &mut Command, seconds: u64) -> Result<capture::Output> {
             cleanup: Duration::from_secs(15),
         },
         || false,
-        |event, _| {
-            if let capture::Observation::BeforeCleanup {
+        |event, _| match event {
+            capture::Observation::BeforeCleanupSample { natural_reason, .. } => {
+                initial_reason = natural_reason;
+            }
+            capture::Observation::BeforeCleanup {
                 natural_settlement,
                 natural_reason: reason,
                 ..
-            } = event
-            {
+            } => {
                 natural = natural_settlement;
                 natural_reason = reason;
             }
+            _ => {}
         },
         |index, bytes| {
             partial[index].extend_from_slice(bytes);
@@ -89,7 +93,7 @@ pub fn execute(command: &mut Command, seconds: u64) -> Result<capture::Output> {
         Ok(output) => output,
         Err(error) => {
             eprintln!(
-                "Vendor provisioning capture failed: {error}\nNatural settlement: {natural:?} ({natural_reason})\nCaptured stdout:\n{}\nCaptured stderr:\n{}",
+                "Vendor provisioning capture failed: {error}\nNatural settlement: {natural:?} ({initial_reason}, {natural_reason})\nCaptured stdout:\n{}\nCaptured stderr:\n{}",
                 diagnostic(&partial[0]),
                 diagnostic(&partial[1])
             );
@@ -97,14 +101,64 @@ pub fn execute(command: &mut Command, seconds: u64) -> Result<capture::Output> {
         }
     };
     if result.exit != 0 || natural != Some(true) {
-        return ci::fail(format!(
-            "Vendor provisioning command failed (exit={}, natural_settlement={natural:?}, reason={natural_reason})\nCaptured stdout:\n{}\nCaptured stderr:\n{}",
-            result.exit,
-            diagnostic(&result.stdout),
-            diagnostic(&result.stderr)
-        ));
+        return Err(Box::new(VendorRefusal {
+            diagnostic: format!(
+                "Vendor provisioning command failed (exit={}, natural_settlement={natural:?}, reason={natural_reason}, initial_reason={initial_reason})\nCaptured stdout:\n{}\nCaptured stderr:\n{}",
+                result.exit,
+                diagnostic(&result.stdout),
+                diagnostic(&result.stderr)
+            ),
+            // A capture error returns above, including any unproved final
+            // cleanup. Only a completed capture of a zero-exit command could
+            // reach this retryable refusal.
+            completed_nonempty_job: result.exit == 0
+                && natural == Some(false)
+                && natural_reason == "final-nonempty-tree",
+        }));
     }
     Ok(result)
+}
+
+#[derive(Debug)]
+struct VendorRefusal {
+    diagnostic: String,
+    completed_nonempty_job: bool,
+}
+
+impl std::fmt::Display for VendorRefusal {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter.write_str(&self.diagnostic)
+    }
+}
+
+impl std::error::Error for VendorRefusal {}
+
+fn transfer(
+    target: &Path,
+    mut can_retry: bool,
+    mut acquire: impl FnMut() -> Result<()>,
+) -> Result<()> {
+    loop {
+        fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(target)?;
+        let Err(error) = acquire() else {
+            return Ok(());
+        };
+        fs::remove_file(target)?;
+        if !can_retry
+            || !error
+                .downcast_ref::<VendorRefusal>()
+                .is_some_and(|failure| failure.completed_nonempty_job)
+        {
+            return Err(error);
+        }
+        // A clean retry still needs its own natural proof. Never hash or use
+        // the bytes from the first transfer after its independent refusal.
+        can_retry = false;
+        eprintln!("Retrying vendor download after a refused natural Job observation: {error}");
+    }
 }
 
 fn download(url: &str, target: &Path, expected: &str, limit: u64) -> Result<()> {
@@ -130,37 +184,32 @@ fn download(url: &str, target: &Path, expected: &str, limit: u64) -> Result<()> 
         return ci::fail("Invalid, unpinned or existing vendor download");
     }
     fs::create_dir_all(target.parent().ok_or("Download parent missing")?)?;
-    fs::OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(target)?;
-    let result = execute(
-        Command::new("curl")
-            .args([
-                "--fail",
-                "--silent",
-                "--show-error",
-                "--location",
-                "--proto",
-                "=https",
-                "--proto-redir",
-                "=https",
-                "--connect-timeout",
-                "20",
-                "--max-time",
-                "600",
-                "--max-filesize",
-                &limit.to_string(),
-                "--output",
-            ])
-            .arg(target)
-            .arg(url),
-        630,
-    );
-    if let Err(error) = result {
-        fs::remove_file(target)?;
-        return Err(error);
-    }
+    transfer(target, cfg!(windows), || {
+        execute(
+            Command::new("curl")
+                .args([
+                    "--fail",
+                    "--silent",
+                    "--show-error",
+                    "--location",
+                    "--proto",
+                    "=https",
+                    "--proto-redir",
+                    "=https",
+                    "--connect-timeout",
+                    "20",
+                    "--max-time",
+                    "600",
+                    "--max-filesize",
+                    &limit.to_string(),
+                    "--output",
+                ])
+                .arg(target)
+                .arg(url),
+            630,
+        )
+        .map(|_| ())
+    })?;
     if fs::metadata(target)?.len() > limit || ci::digest(target)? != expected {
         fs::remove_file(target)?;
         return ci::fail("Vendor download failed its pinned digest or size check");
