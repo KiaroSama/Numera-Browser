@@ -33,6 +33,52 @@ fn event(scope: &phase::Scope, value: &Value) -> TestResult {
     scope.line(&serde_json::to_string(value)?);
     Ok(())
 }
+
+pub(super) fn console_free_fixture(temp: &Temp) -> ci::Result<Option<PathBuf>> {
+    #[cfg(windows)]
+    {
+        // A hidden Win32 console can leave conhost in the Job after a short
+        // fixture exits. A GUI launcher starts the real fixture without one.
+        let source = temp.write(
+            "console-free-fixture.rs",
+            include_bytes!("console_free_fixture.rs"),
+        )?;
+        let binary = temp.0.join("console-free-fixture.exe");
+        let compiled = ci::capture(
+            Command::new("rustc")
+                .arg("--edition=2024")
+                .arg(&source)
+                .arg("-o")
+                .arg(&binary),
+            Duration::from_secs(30),
+            Duration::from_secs(30),
+            65536,
+        )?;
+        assert_eq!(
+            compiled.exit,
+            0,
+            "{}",
+            String::from_utf8_lossy(&compiled.stderr)
+        );
+        Ok(Some(binary))
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = temp;
+        Ok(None)
+    }
+}
+
+pub(super) fn fixture_command(executable: &Path, launcher: Option<&Path>) -> Command {
+    if let Some(launcher) = launcher {
+        let mut command = Command::new(launcher);
+        command.arg(executable);
+        command
+    } else {
+        Command::new(executable)
+    }
+}
+
 fn projection(damage: &str) -> TestResult {
     if damage == "None" && super::progress_support::child()? {
         return Ok(());
@@ -117,8 +163,9 @@ fn projection(damage: &str) -> TestResult {
         assert!(rows.iter().any(|s| {
             s.contains("event=archive-complete elapsed_ns=200 archive_to_artifact_ns=100")
         }));
-        live_stream()?;
-        super::progress_support::controls()?;
+        let launcher = console_free_fixture(&tmp)?;
+        live_stream(launcher.as_deref())?;
+        super::progress_support::controls(launcher.as_deref())?;
     }
     Ok(())
 }
@@ -149,7 +196,7 @@ fn streamed_child() -> ci::Result<bool> {
     )?;
     Ok(true)
 }
-fn live_stream() -> TestResult {
+fn live_stream(launcher: Option<&Path>) -> TestResult {
     let tmp = Temp::new("compiler-stream")?;
     let name = std::thread::current()
         .name()
@@ -157,7 +204,7 @@ fn live_stream() -> TestResult {
         .to_owned();
     let listener = std::net::TcpListener::bind("127.0.0.1:0")?;
     listener.set_nonblocking(true)?;
-    let mut command = Command::new(std::env::current_exe()?);
+    let mut command = fixture_command(&std::env::current_exe()?, launcher);
     command
         .args(["--exact", &name, "--nocapture", "--test-threads=1"])
         .env("NUMERA_COMPILER_STREAM_TEST", &name)

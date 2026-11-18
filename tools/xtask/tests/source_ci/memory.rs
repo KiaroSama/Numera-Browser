@@ -125,11 +125,12 @@ fn recorder(damage: &str) -> TestResult {
     if damage == "None" {
         let temp = Temp::new("ended fast command")?;
         let binary = Path::new(env!("CARGO_BIN_EXE_numera-xtask"));
+        let launcher = super::compiler::console_free_fixture(&temp)?;
         for _ in 0..4 {
-            let mut command = std::process::Command::new(binary);
+            let mut command = super::compiler::fixture_command(binary, launcher.as_deref());
             command.args(["ci", "owned", "--wall", "5", "--idle", "2", "--"]);
-            if cfg!(windows) {
-                command.args(["cmd.exe", "/d", "/c", "exit", "/b", "0"]);
+            if let Some(launcher) = &launcher {
+                command.arg(launcher);
             } else {
                 command.arg("true");
             }

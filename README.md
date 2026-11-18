@@ -10,8 +10,8 @@ Manage separate browser profiles, proxy settings and sessions from a desktop win
 web dashboard or CLI. Choose Playwright, Patchright, Camoufox or CloakBrowser for
 workflows you are authorized to run.
 
-[![Native CI](https://github.com/KiaroSama/Numera-Browser/actions/workflows/native-ci.yml/badge.svg?branch=rewrite%2Frust-complete-20261110)](https://github.com/KiaroSama/Numera-Browser/actions/workflows/native-ci.yml)
-[![Rust candidate builds](https://github.com/KiaroSama/Numera-Browser/actions/workflows/rust-candidate.yml/badge.svg?branch=rewrite%2Frust-complete-20261110)](https://github.com/KiaroSama/Numera-Browser/actions/workflows/rust-candidate.yml)
+[![Native CI](https://github.com/KiaroSama/Numera-Browser/actions/workflows/native-ci.yml/badge.svg)](https://github.com/KiaroSama/Numera-Browser/actions/workflows/native-ci.yml)
+[![Rust candidate builds](https://github.com/KiaroSama/Numera-Browser/actions/workflows/rust-candidate.yml/badge.svg)](https://github.com/KiaroSama/Numera-Browser/actions/workflows/rust-candidate.yml)
 [![License: noncommercial](https://img.shields.io/badge/License-noncommercial-d04a9a)](LICENSE)
 [![Version: 0.36.0](https://img.shields.io/badge/Version-0.36.0-blue)](CHANGELOG.md)
 [![Rust: 1.100.0](https://img.shields.io/badge/Rust-1.100.0-dea584)](rust-toolchain.toml)
@@ -42,11 +42,10 @@ Browser identity and diagnostic logic is also authored in
 artifact preserves strict page CSP and needs no compiler at runtime.
 
 The [rewrite PR](https://github.com/KiaroSama/Numera-Browser/pull/76) continues the
-native checkpoint and remains unmerged. The previous application interpreters
-and the application's authored browser page scripts have been retired. Final test-port verification
-and full Linux and Windows CI are still in progress; see the
-[acceptance record](docs/rust-rewrite.md). A build badge does not establish that a
-complete release has shipped.
+native checkpoint. The previous application interpreters and the application's
+authored browser page scripts have been retired. Follow the
+[checks on the latest PR commit](https://github.com/KiaroSama/Numera-Browser/pull/76/checks)
+and the [acceptance record](docs/rust-rewrite.md) for verified builds and tests.
 
 ## What it does
 
