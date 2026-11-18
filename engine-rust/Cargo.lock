@@ -681,6 +681,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "ferrav"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7bf452c13afb1effed9a582af6e14eb137c6a7fc76541670663d4dffdf9dc291"
+
+[[package]]
 name = "fiat-crypto"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1542,6 +1548,7 @@ dependencies = [
 name = "numera-dashboard"
 version = "0.36.0"
 dependencies = [
+ "ferrav",
  "js-sys",
  "serde_json",
  "url",
