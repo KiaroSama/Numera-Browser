@@ -11,7 +11,7 @@ const APT_PREFIX: [&str; 22] = [
     "LANGUAGE=C",
     "/usr/bin/timeout",
     "--kill-after=10s",
-    "230s",
+    "75s",
     "/usr/bin/apt-get",
     "-o",
     "Acquire::Retries=1",
@@ -67,23 +67,49 @@ impl Runner for Commands {
                 .get(APT_PREFIX.len())
                 .expect("APT invocation must include its scoped prefix and phase")
                 .as_str();
-            let mut expected_prefix = APT_PREFIX;
-            match action {
-                "update" => assert_eq!(invocation.seconds, 270),
-                "install" => {
-                    assert_eq!(invocation.seconds, 355);
-                    expected_prefix[8] = "315s";
-                }
+            let phase = match (
+                action,
+                invocation
+                    .argv
+                    .get(APT_PREFIX.len() + 1)
+                    .map(String::as_str),
+            ) {
+                ("update", _) => "update",
+                ("install", Some("--download-only")) => "download",
+                ("install", Some("--no-download")) => "install",
                 _ => panic!("Unexpected APT operation"),
+            };
+            let mut expected_prefix = APT_PREFIX;
+            if phase == "download" {
+                assert_eq!(invocation.seconds, 250);
+                expected_prefix[8] = "210s";
+            } else {
+                assert_eq!(invocation.seconds, 115);
             }
             assert_eq!(
                 invocation.argv.get(..APT_PREFIX.len()),
                 Some(expected_prefix.map(str::to_owned).as_slice()),
                 "The root-owned watchdog and APT connection bounds must precede either APT command"
             );
-            let exit = match (self.damage, action) {
+            let download_attempt = self
+                .calls
+                .iter()
+                .filter(|call| {
+                    call.argv
+                        .get(APT_PREFIX.len() + 1)
+                        .is_some_and(|mode| mode == "--download-only")
+                })
+                .count();
+            let exit = match (self.damage, phase) {
                 ("update-failed", "update") => 124,
+                ("download-timeout-once", "download") if download_attempt == 1 => 124,
+                ("download-timeout", "download") => 124,
+                ("download-error", "download") => 100,
+                ("download-capture", "download") => {
+                    return Err(io::Error::other("private diagnostic").into());
+                }
                 ("install-failed", "install") => 100,
+                ("install-timeout", "install") => 124,
                 _ => 0,
             };
             return Ok(Captured {
@@ -135,9 +161,14 @@ fn installed(missing: Vec<&'static str>) -> TestResult {
         Path::new("explicit logs")
     );
     let temp = Temp::new("camo-runtime")?;
+    let replay = missing.len() > 1;
     let mut commands = Commands {
         missing: missing.clone(),
-        damage: "None",
+        damage: if replay {
+            "download-timeout-once"
+        } else {
+            "None"
+        },
         calls: Vec::new(),
         queries: 0,
     };
@@ -149,7 +180,8 @@ fn installed(missing: Vec<&'static str>) -> TestResult {
         assert_eq!(commands.calls.len(), 1);
         assert_eq!(commands.queries, 1);
     } else {
-        assert_eq!(commands.calls.len(), 4);
+        let install = 3 + usize::from(replay);
+        assert_eq!(commands.calls.len(), install + 2);
         assert_eq!(commands.queries, 2);
         assert_eq!(
             &commands.calls[1].argv[APT_PREFIX.len()..],
@@ -157,6 +189,7 @@ fn installed(missing: Vec<&'static str>) -> TestResult {
         );
         let mut tail = [
             "install",
+            "--download-only",
             "-y",
             "--no-install-recommends",
             "--no-remove",
@@ -165,7 +198,11 @@ fn installed(missing: Vec<&'static str>) -> TestResult {
         .map(str::to_owned)
         .to_vec();
         tail.extend(missing.into_iter().map(str::to_owned));
-        assert_eq!(commands.calls[2].argv[APT_PREFIX.len()..], tail);
+        for attempt in &commands.calls[2..install] {
+            assert_eq!(attempt.argv[APT_PREFIX.len()..], tail);
+        }
+        tail[1] = "--no-download".into();
+        assert_eq!(commands.calls[install].argv[APT_PREFIX.len()..], tail);
     }
     commands.missing.clear();
     assert_eq!(
@@ -181,6 +218,19 @@ fn installed(missing: Vec<&'static str>) -> TestResult {
 }
 source_cases!("tests/test_camoufox_runtime.py::test_entrypoint_installs_only_missing_runtime_and_rechecks_all",installed,[camo_runtime_installed=>("installed",vec![]),camo_runtime_one=>("one-missing",vec!["libpci3"]),camo_runtime_two=>("two-missing",vec!["libpci3","zstd"])]);
 fn refusal(damage: &'static str) -> TestResult {
+    if damage == "install-failed" {
+        for another_failure in [
+            "download-timeout",
+            "download-error",
+            "download-capture",
+            "install-timeout",
+        ] {
+            check_refusal(another_failure)?;
+        }
+    }
+    check_refusal(damage)
+}
+fn check_refusal(damage: &'static str) -> TestResult {
     let temp = Temp::new("camo-runtime-refusal")?;
     let mut host = host();
     match damage {
@@ -194,7 +244,17 @@ fn refusal(damage: &'static str) -> TestResult {
         "sdk" => host.sdk = "unsupported".into(),
         _ => (),
     };
-    let missing = if ["update-failed", "install-failed", "postcondition"].contains(&damage) {
+    let missing = if [
+        "update-failed",
+        "install-failed",
+        "install-timeout",
+        "postcondition",
+        "download-timeout",
+        "download-error",
+        "download-capture",
+    ]
+    .contains(&damage)
+    {
         vec!["libpci3"]
     } else {
         Vec::new()
@@ -224,8 +284,9 @@ fn refusal(damage: &'static str) -> TestResult {
         0
     } else {
         match damage {
-            "postcondition" => 4,
-            "install-failed" => 3,
+            "postcondition" => 5,
+            "install-failed" | "install-timeout" | "download-timeout" => 4,
+            "download-error" | "download-capture" => 3,
             "update-failed" => 2,
             _ => 1,
         }
@@ -239,9 +300,20 @@ fn refusal(damage: &'static str) -> TestResult {
     if damage == "update-failed" {
         assert!(text.contains("Runtime APT phase=update exit=124"));
         assert!(!text.contains("Runtime APT phase=install"));
-    } else if damage == "install-failed" {
+        assert!(!text.contains("Runtime APT phase=download"));
+    } else if matches!(damage, "install-failed" | "install-timeout") {
         assert!(text.contains("Runtime APT phase=update exit=0"));
-        assert!(text.contains("Runtime APT phase=install exit=100"));
+        assert!(text.contains("Runtime APT phase=download exit=0"));
+        let exit = if damage == "install-failed" { 100 } else { 124 };
+        assert!(text.contains(&format!("Runtime APT phase=install exit={exit}")));
+        assert!(!text.contains("Runtime APT phase=download-retry"));
+    } else if damage == "download-timeout" {
+        assert!(text.contains("Runtime APT phase=download exit=124"));
+        assert!(text.contains("Runtime APT phase=download-retry exit=124"));
+        assert!(!text.contains("Runtime APT phase=install"));
+    } else if matches!(damage, "download-error" | "download-capture") {
+        assert!(!text.contains("Runtime APT phase=download-retry"));
+        assert!(!text.contains("Runtime APT phase=install"));
     }
     Ok(())
 }
