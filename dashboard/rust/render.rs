@@ -1,4 +1,5 @@
 use crate::{model::*, updates};
+use ferrav::{Avatar, ColorOptions};
 use serde_json::{Value, json};
 use std::fmt::Write;
 
@@ -748,25 +749,23 @@ pub fn profiles(a: &App) -> String {
     o
 }
 fn identicon(id: &str) -> String {
-    let hash = id.bytes().fold(2166136261u32, |v, c| {
-        (v ^ u32::from(c)).wrapping_mul(16777619)
-    });
-    let mut out = format!(
-        r#"<span class="ps-identicon"><svg width="30" height="30" viewBox="0 0 5 5" fill="hsl({} 46% 60%)" aria-hidden="true">"#,
-        hash % 360
-    );
-    for y in 0..5 {
-        for x in 0..3 {
-            if hash.rotate_left(y * 3 + x) & 1 != 0 {
-                let _ = write!(out, r#"<rect x="{x}" y="{y}" width="1" height="1"/>"#);
-                if x < 2 {
-                    let _ = write!(out, r#"<rect x="{}" y="{y}" width="1" height="1"/>"#, 4 - x);
-                }
-            }
-        }
-    }
-    out.push_str("</svg></span>");
-    out
+    let icon = Avatar::builder()
+        .text(if id.is_empty() { "?" } else { id })
+        .size(30)
+        .padding(0.06)
+        .colors(ColorOptions {
+            hues: Vec::new(),
+            saturation: 0.46,
+            grayscale_saturation: 0.12,
+            lightness: (0.44, 0.74),
+            grayscale_lightness: (0.32, 0.62),
+        })
+        .build()
+        .map(|avatar| avatar.to_svg())
+        .unwrap_or_default();
+    format!(
+        r#"<span class="ps-identicon" style="width:30px;height:30px" aria-hidden="true">{icon}</span>"#
+    )
 }
 pub fn summary(p: &Value) -> String {
     let issues = coherence(p);

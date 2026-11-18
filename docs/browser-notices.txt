@@ -284,3 +284,10 @@ CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
 IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
+
+Dashboard profile avatars
+
+Ferrav 0.1.3 generates profile avatar SVGs in the Rust dashboard.
+Copyright (c) 2026 SAGAR CHILIVERY
+Upstream project https://github.com/sagarchilivery/ferrav
+Ferrav is distributed here under the MIT license, whose text appears above.
