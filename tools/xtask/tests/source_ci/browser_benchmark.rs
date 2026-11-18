@@ -47,7 +47,11 @@ fn baseline(mode: &str) -> TestResult {
                 &args[3],
                 serde_json::to_vec(&json!({"cookies":rows,"origins":[]}))?,
             )?;
-            json!({"ok":true,"count":if mode=="metadata"{1}else{2},"file":args[3],"format":"json"})
+            if mode == "metadata" {
+                json!({"ok":true,"count":1,"file":"private-path","format":"json","private-key":"private-value"})
+            } else {
+                json!({"ok":true,"count":2,"file":args[3],"format":"json"})
+            }
         };
         Ok(numera_xtask::acceptance::Captured {
             exit: 0,
@@ -166,6 +170,12 @@ fn baseline(mode: &str) -> TestResult {
             for secret in ["private-path", "private-value", "do-not-expose"] {
                 assert!(!error.contains(secret));
             }
+        }
+        if mode == "metadata" {
+            assert_eq!(
+                error,
+                "Cross-runtime fixture differs: Native checkpoint export metadata expected_count=2 actual_count=1 ok_matches=true file_matches=false format_matches=true field_count_matches=false"
+            );
         }
     }
     Ok(())
