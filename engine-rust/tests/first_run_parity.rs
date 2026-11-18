@@ -132,6 +132,33 @@ fn legacy_discovery_preserves_original_order_and_never_marks_denied_sources_comp
 
     let temporary = common::TempDirectory::new("legacy discovery α")?;
     let inputs: PathBuf = temporary.path().components().collect();
+    #[cfg(windows)]
+    {
+        // Exercise the same discovery predicate with an error that does not
+        // depend on the runner's ACLs or on a reduced thread token.
+        let invalid = inputs.join("invalid\0candidate");
+        let error = invalid
+            .canonicalize()
+            .expect_err("Windows must refuse a candidate path containing NUL");
+        assert_eq!(error.kind(), io::ErrorKind::InvalidInput);
+        let fallback = inputs.join("readable fallback");
+        fs::create_dir_all(fallback.join("profiles"))?;
+        fs::write(
+            fallback.join("profiles/valid.json"),
+            br#"{"name":"fallback"}"#,
+        )?;
+        let destination = inputs.join("invalid candidate destination");
+        fs::create_dir(&destination)?;
+
+        let actual = run_if_needed(&destination, &[invalid, fallback]);
+        assert_eq!(
+            actual.err().map(|error| error.kind()),
+            Some(error.kind()),
+            "Legacy discovery refusal differs: invalid first candidate preceded a readable source"
+        );
+        assert!(!destination.join("profiles").try_exists()?);
+        assert!(!destination.join(".imported").try_exists()?);
+    }
     // Frozen immutable source observation; all native assertions below remain live.
     let cases: Vec<Value> = support::load(
         include_str!(
