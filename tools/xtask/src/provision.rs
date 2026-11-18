@@ -133,9 +133,9 @@ impl std::fmt::Display for VendorRefusal {
 
 impl std::error::Error for VendorRefusal {}
 
-/// A fresh transfer may be attempted after this particular refusal because
-/// capture has already settled the original owned process tree.
-pub fn retryable_transfer_refusal(error: &(dyn std::error::Error + 'static)) -> bool {
+// Capture has already settled the original owned process tree after this
+// particular refusal. A replay-safe caller may start a fresh command.
+fn retryable_natural_refusal(error: &(dyn std::error::Error + 'static)) -> bool {
     error
         .downcast_ref::<VendorRefusal>()
         .is_some_and(|failure| failure.completed_nonempty_job)
@@ -155,7 +155,7 @@ fn transfer(
             return Ok(());
         };
         fs::remove_file(target)?;
-        if !can_retry || !retryable_transfer_refusal(error.as_ref()) {
+        if !can_retry || !retryable_natural_refusal(error.as_ref()) {
             return Err(error);
         }
         // A clean retry still needs its own natural proof. Never hash or use
@@ -695,7 +695,18 @@ fn provision(root: &Path, scratch: &Path) -> Result<()> {
             use std::os::unix::fs::PermissionsExt;
             fs::set_permissions(driver.join(node), fs::Permissions::from_mode(0o755))?;
         }
-        let output = execute(Command::new(driver.join(node)).arg("--version"), 10)?;
+        let probe = || execute(Command::new(driver.join(node)).arg("--version"), 10);
+        let output = match probe() {
+            Err(error) if cfg!(windows) && retryable_natural_refusal(error.as_ref()) => {
+                // This read-only probe can start a fresh owned process after
+                // cleanup. Only the fresh probe's validated output is used.
+                eprintln!(
+                    "Retrying vendor Node version after a refused natural Job observation: {error}"
+                );
+                probe()?
+            }
+            result => result?,
+        };
         let version = String::from_utf8(output.stdout)?.trim().to_owned();
         if !version.starts_with('v')
             || version[1..].split('.').count() != 3
