@@ -1,9 +1,11 @@
-# Native Numera engine
+# Numera profile manager service
 
 Rust implements profile management, persistent sessions, storage, proxy tools,
-vault recovery, CLI, MCP and the Axum API. `numera-engine` is the server/CLI binary;
-`numera-browser-runtime` is its owned browser worker. The source tree's
-`rust-toolchain.toml` pins the compiler and WASM target.
+vault recovery, CLI, MCP and the Axum API. `numera-engine` is the manager's
+server and CLI. Its owned `numera-browser-runtime` worker launches the selected
+third-party browser through a compatible driver. Numera Core Browser is planned
+as a separate browser executable. The source tree's `rust-toolchain.toml` pins
+the compiler and WASM target. See [product architecture](../docs/architecture.md#product-and-runtime-boundary).
 
 ```sh
 cargo build --manifest-path engine-rust/Cargo.toml --locked --features native-product,native-browser --bins

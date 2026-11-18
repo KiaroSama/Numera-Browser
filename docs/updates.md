@@ -2,9 +2,9 @@
 
 ## Status and scope
 
-The updater implements consent-gated **complete portable release generations**: the desktop shell, retained Python engine, dashboard, matching browser SDK/binary resources and required notices. Source checkouts, wheels and containers use their own package/deployment workflow; the updater does not modify them.
+The updater handles complete portable release generations after approval. Each generation contains the desktop shell, Rust manager service, browser worker, dashboard, matching browser SDK and binary resources, and required notices. Source checkouts and containers use their own deployment workflows.
 
-The implementation and publication pipeline are under hosted acceptance. Until the matching exact-source CI run and release assets have been verified, this document describes the protocol and intended shipped interface, **not a claim that the current tree has passed or a release exists**. Python remains the selected application runtime. This feature does not close the separate [Rust migration gates](migration.md).
+The [Rust verification record](rust-rewrite.md) tracks CI acceptance. Published portable releases carry the signed manifests and artifacts described below.
 
 ## End-user flow
 
@@ -18,7 +18,7 @@ Keep enough writable space for the archive, expanded files and rollback. Managed
 
 ### Browser updates
 
-Playwright, Patchright and Camoufox SDKs and their binary revisions are bound to a tested release generation. A whole application update may therefore deliver a browser update too. The updater does **not** place arbitrary latest Chromium/Firefox under an older SDK. Explicit external browser paths are outside managed replacement.
+The manager tracks the driver and browser versions bundled with each portable release. A manager update can also update these matched binaries. Explicit external browser paths remain user-managed. Numera Core Browser is planned as a separate runtime, as described in the [architecture](architecture.md#product-and-runtime-boundary).
 
 CloakBrowser's proprietary browser binary is not redistributed. First acquisition is a separate approved vendor operation. The wrapper's background mutation is suppressed; missing resources do not grant implicit download consent. Free-key/latest-only or otherwise unsupported vendor version contracts cannot be advertised as an exact tested pin. Existing permitted local overrides remain user-managed.
 
