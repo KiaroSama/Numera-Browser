@@ -35,6 +35,9 @@ const RECEIPT_TOKENS_CASE: &str =
 const RUNTIME_LOG: &str = "engine-rust/src/runtime_log.rs";
 const LOG_RETENTION_CASE: &str =
     "retention::run_retention_matches_original_mtime_order_and_namespace";
+const LOCKS: &str = "engine-rust/src/storage/locks.rs";
+const EXTENSION_ICON_CASE: &str =
+    "icons::extension_icon_http_matches_original_known_folder_and_file_contracts";
 
 /// The separate owning-host Mac proof may adapt only this later Session
 /// caller. Its exact selected tree/test/commit never become a canonical99 row.
@@ -176,6 +179,38 @@ pub fn additional(root: &Path, case: &Case) -> Result<Vec<(String, Replacement)>
         })
     {
         result.push(log_retention_callers(root, case, source)?);
+    }
+    if case.target == "extension_routes_parity"
+        && case.test == EXTENSION_ICON_CASE
+        && case.platform.as_deref() == Some("win32")
+        && let Some(source) = sources.get(LOCKS).filter(|source| {
+            source.commit == "8354eeb286d93f9418ee372ed057c129521404ad"
+                && source.sha256
+                    == "8cc9b17a4c77c5db9b178d8ea2b16318132f5d11439359c3e47abca269d6a373"
+                && case.files.get(LOCKS) == Some(&source.sha256)
+        })
+    {
+        let path = "engine-rust/src/http/extension_routes.rs";
+        let bytes = checked_caller(
+            root,
+            case,
+            path,
+            "62a6a1b4cd98564871af73c443a726fc834b00226061a7985d962d89764746fb",
+        )?;
+        let mut replacement = caller_replacement(
+            case,
+            path,
+            &bytes,
+            source,
+            &[(
+                "let expanded = expand_home(std::path::Path::new(text), &home).map_err(|_| failure())?;",
+                "let path = std::path::Path::new(text);\n    let expanded = if path.is_absolute() {\n        path.to_owned()\n    } else {\n        expand_home(path, &home).map_err(|_| failure())?\n    };",
+            )],
+        )?;
+        replacement.receipt["historical_source_path"] = LOCKS.into();
+        replacement.receipt["selected_primary_bytes_unchanged"] = true.into();
+        replacement.receipt["reason"] = "The archival home expansion returned absolute request paths byte-for-byte. Preserve that caller behavior so the exact frozen lock resolver receives the Windows verbatim parent component.".into();
+        result.push((path.into(), replacement));
     }
     if case.target == "lib"
         && case.test == PROXY_ECHO_CASE
