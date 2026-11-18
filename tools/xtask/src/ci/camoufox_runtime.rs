@@ -115,6 +115,7 @@ pub struct Captured {
     pub stdout: Vec<u8>,
 }
 pub trait Runner {
+    /// Returns a captured exit only after natural process-tree settlement.
     fn command(&mut self, invocation: &Invocation) -> Result<Captured>;
 }
 fn environment() -> BTreeMap<String, String> {
@@ -174,24 +175,10 @@ fn prepare(host: &Host, runner: &mut impl Runner, log: &RuntimeLog) -> Result<()
     host.require()?;
     let absent = missing(&runner.command(&query())?)?;
     if !absent.is_empty() {
-        let update = ["--no-list-cleanup", "--error-on=any"]
-            .map(str::to_owned)
-            .to_vec();
-        let mut install = [
-            "-y",
-            "--no-install-recommends",
-            "--no-remove",
-            "--no-upgrade",
-        ]
-        .map(str::to_owned)
-        .to_vec();
-        install.extend(absent);
-        for (phase, watchdog, seconds, options) in [
-            ("update", "230s", 270, update),
-            ("install", "315s", 355, install),
-        ] {
+        let mut apt = |phase: &str, seconds: u64, options: &[&str]| -> Result<i32> {
             // The privileged watchdog can signal APT's process group before
             // the unprivileged capture deadline. Keep the runner's signed Ubuntu sources.
+            let watchdog = format!("{seconds}s");
             let argv = [
                 "sudo",
                 "-n",
@@ -201,7 +188,7 @@ fn prepare(host: &Host, runner: &mut impl Runner, log: &RuntimeLog) -> Result<()
                 "LANGUAGE=C",
                 "/usr/bin/timeout",
                 "--kill-after=10s",
-                watchdog,
+                &watchdog,
                 "/usr/bin/apt-get",
                 "-o",
                 "Acquire::Retries=1",
@@ -215,11 +202,10 @@ fn prepare(host: &Host, runner: &mut impl Runner, log: &RuntimeLog) -> Result<()
                 "Dir::Etc::sourceparts=-",
                 "-o",
                 "Acquire::Languages=none",
-                phase,
             ]
             .into_iter()
+            .chain(options.iter().copied())
             .map(str::to_owned)
-            .chain(options)
             .collect();
             log.message(
                 "INFO",
@@ -228,7 +214,7 @@ fn prepare(host: &Host, runner: &mut impl Runner, log: &RuntimeLog) -> Result<()
             );
             let result = runner.command(&Invocation {
                 argv,
-                seconds,
+                seconds: seconds + 40,
                 environment: environment(),
             });
             let outcome = result.as_ref().map_or_else(
@@ -240,9 +226,41 @@ fn prepare(host: &Host, runner: &mut impl Runner, log: &RuntimeLog) -> Result<()
                 "numera.camoufox-runtime",
                 &format!("Runtime APT phase={phase} {outcome}"),
             );
-            if result?.exit != 0 {
-                return fail("Camoufox runtime package installation failed");
-            }
+            Ok(result?.exit)
+        };
+        let install_options = |mode| {
+            [
+                "install",
+                mode,
+                "-y",
+                "--no-install-recommends",
+                "--no-remove",
+                "--no-upgrade",
+            ]
+            .into_iter()
+            .chain(absent.iter().map(String::as_str))
+            .collect::<Vec<_>>()
+        };
+        if apt(
+            "update",
+            75,
+            &["update", "--no-list-cleanup", "--error-on=any"],
+        )? != 0
+        {
+            return fail("Camoufox runtime package index update failed");
+        }
+        let download = install_options("--download-only");
+        // A captured exit proves natural settlement. APT can resume from its
+        // partial cache because neither download attempt unpacks packages.
+        let mut exit = apt("download", 210, &download)?;
+        if exit == 124 {
+            exit = apt("download-retry", 210, &download)?;
+        }
+        if exit != 0 {
+            return fail("Camoufox runtime package download failed");
+        }
+        if apt("install", 75, &install_options("--no-download"))? != 0 {
+            return fail("Camoufox runtime package installation failed");
         }
         if !missing(&runner.command(&query())?)?.is_empty() {
             return fail("Camoufox runtime packages remain missing after installation");
