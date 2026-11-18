@@ -862,6 +862,10 @@ fn parent_publication(publication: &str) -> TestResult {
     // mistake its parent's still-pending transfer for a missing identity.
     let temp = Temp::new("observer parent publication")?;
     let source = r#"
+// Both the observer and its application receive explicit stdio pipes from
+// their owners. A Windows console is unnecessary and can add a conhost to
+// the very Job whose natural exit the fixture must prove.
+#![cfg_attr(windows, windows_subsystem = "windows")]
 use numera_xtask::ci::{self,browser_benchmark::{Native,observe}};
 use numera_core::ownership::{test_support::{self,Backend},unit_report};
 use serde_json::json;
@@ -957,7 +961,17 @@ fn main()->ci::Result<()> {
         Duration::from_secs(8),
         32768,
     )?;
-    assert_eq!(output.exit, 0, "Parent publication helper failed");
+    assert_eq!(
+        output.exit,
+        0,
+        "Parent publication helper failed ({publication})\nstdout:\n{}\nstderr:\n{}",
+        numera_core::ownership::resources::redact_diagnostics(&String::from_utf8_lossy(
+            &output.stdout
+        )),
+        numera_core::ownership::resources::redact_diagnostics(&String::from_utf8_lossy(
+            &output.stderr
+        )),
+    );
     let answer = ci::decode(&output.stdout)?;
     if publication == "delayed" && answer["exit"] != 0 {
         assert!(
