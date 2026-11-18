@@ -922,11 +922,26 @@ pub fn baseline(
         "json".into(),
         "--json".into(),
     ])?;
-    crate::acceptance::require_equal(
+    let expected_export = json!({"ok":true,"count":2,"file":destination,"format":"json"});
+    if let Err(error) = crate::acceptance::require_equal(
         &exported,
-        &json!({"ok":true,"count":2,"file":destination,"format":"json"}),
+        &expected_export,
         "Native checkpoint export metadata",
-    )?;
+    ) {
+        // Report only fixed comparisons and a bounded count, never output values or paths.
+        let count = match exported["count"].as_u64() {
+            Some(count @ 0..=2) => count.to_string(),
+            Some(_) => ">2".into(),
+            None => "non-unsigned-integer".into(),
+        };
+        return fail(format!(
+            "{error} expected_count=2 actual_count={count} ok_matches={} file_matches={} format_matches={} field_count_matches={}",
+            exported["ok"] == expected_export["ok"],
+            exported["file"] == expected_export["file"],
+            exported["format"] == expected_export["format"],
+            exported.as_object().is_some_and(|fields| fields.len() == 4),
+        ));
+    }
     let payload = super::decode(&fs::read(destination)?)?;
     let mut observed = payload["cookies"]
         .as_array()
