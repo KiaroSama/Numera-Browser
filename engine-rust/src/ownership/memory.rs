@@ -127,10 +127,10 @@ pub fn members_from_buffer(bytes: &[u8], returned: usize, width: usize) -> io::R
     }
     let assigned = u32::from_le_bytes(bytes[..4].try_into().map_err(io::Error::other)?) as usize;
     let count = u32::from_le_bytes(bytes[4..8].try_into().map_err(io::Error::other)?) as usize;
-    if assigned != count || count > MAX_PROCESSES || returned < 8 + count * width {
-        return Err(io::Error::other(
-            "Owned memory diagnostic job list is truncated",
-        ));
+    if assigned > MAX_PROCESSES || count > assigned || returned < 8 + count * width {
+        return Err(io::Error::other(format!(
+            "Owned memory diagnostic job list is truncated (assigned: {assigned}, listed: {count}, bytes: {returned})"
+        )));
     }
     let mut result = Vec::with_capacity(count);
     let mut unique = BTreeSet::new();
@@ -151,6 +151,12 @@ pub fn members_from_buffer(bytes: &[u8], returned: usize, width: usize) -> io::R
             ));
         }
         result.push(pid);
+    }
+    if count < assigned {
+        return Err(io::Error::new(
+            io::ErrorKind::WouldBlock,
+            format!("Owned Job membership is incomplete (assigned: {assigned}, listed: {count})"),
+        ));
     }
     Ok(result)
 }
@@ -253,6 +259,45 @@ mod windows {
     pub struct Native<'a> {
         job: BorrowedHandle<'a>,
     }
+    pub(in crate::ownership) fn query_job_members(job: BorrowedHandle<'_>) -> io::Result<Vec<u32>> {
+        // usize storage gives JOBOBJECT_BASIC_PROCESS_ID_LIST pointer alignment.
+        let width = mem::size_of::<usize>();
+        let mut buffer = vec![0usize; (8 + MAX_PROCESSES * width).div_ceil(width)];
+        let size = buffer.len() * width;
+        let mut query = || {
+            buffer.fill(0);
+            let mut returned = 0;
+            // SAFETY: the original retained Job and the aligned, initialized output are both live.
+            if unsafe {
+                QueryInformationJobObject(
+                    job.as_raw_handle(),
+                    JobObjectBasicProcessIdList,
+                    buffer.as_mut_ptr().cast(),
+                    size as u32,
+                    &mut returned,
+                )
+            } == 0
+            {
+                return Err(io::Error::last_os_error());
+            }
+            // SAFETY: the initialized allocation bounds this temporary byte view.
+            let raw = unsafe { std::slice::from_raw_parts(buffer.as_ptr().cast::<u8>(), size) };
+            members_from_buffer(raw, returned as usize, width)
+        };
+        let mut result = query();
+        for _ in 0..3 {
+            if !result.as_ref().is_err_and(|error| {
+                error.raw_os_error().is_none() && error.kind() == io::ErrorKind::WouldBlock
+            }) {
+                break;
+            }
+            // The buffer already fits every supported member. Let in-flight Job
+            // accounting settle, then require a new complete kernel observation.
+            std::thread::sleep(std::time::Duration::from_millis(1));
+            result = query();
+        }
+        result
+    }
     pub struct Process(HANDLE);
     /// A query-only duplicate of the retained owner. Never opens a job by name
     /// or adopts a foreign/inherited string; explicit close failures stay fatal.
@@ -335,30 +380,7 @@ mod windows {
     impl Backend for Native<'_> {
         type Process = Process;
         fn members(&mut self) -> io::Result<Vec<u32>> {
-            // usize storage gives JOBOBJECT_BASIC_PROCESS_ID_LIST pointer alignment.
-            let mut bytes = vec![
-                0usize;
-                (8 + MAX_PROCESSES * mem::size_of::<usize>())
-                    .div_ceil(mem::size_of::<usize>())
-            ];
-            let size = bytes.len() * mem::size_of::<usize>();
-            let mut returned = 0;
-            // SAFETY: exact retained query-only job and aligned initialized output buffer; the borrowed job outlives this call.
-            if unsafe {
-                QueryInformationJobObject(
-                    self.job.as_raw_handle(),
-                    JobObjectBasicProcessIdList,
-                    bytes.as_mut_ptr().cast(),
-                    size as u32,
-                    &mut returned,
-                )
-            } == 0
-            {
-                return Err(io::Error::last_os_error());
-            }
-            // SAFETY: initialized usize buffer remains live, and its exact byte capacity bounds the read-only slice.
-            let raw = unsafe { std::slice::from_raw_parts(bytes.as_ptr().cast::<u8>(), size) };
-            members_from_buffer(raw, returned as usize, mem::size_of::<usize>())
+            query_job_members(self.job)
         }
         fn open(&mut self, pid: u32) -> io::Result<Option<Process>> {
             // SAFETY: query-limited non-inheritable handle; no creation, adoption or process mutation.
@@ -454,5 +476,7 @@ mod windows {
         observe_joint(&mut Native::new(tree))
     }
 }
+#[cfg(windows)]
+pub(super) use windows::query_job_members;
 #[cfg(windows)]
 pub use windows::{AccountingQuery, joint_snapshot, snapshot};
