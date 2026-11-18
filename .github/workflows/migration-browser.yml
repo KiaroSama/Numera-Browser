@@ -61,7 +61,7 @@ jobs:
         if: runner.os == 'Linux' && matrix.engine == 'camoufox'
         env:
           NUMERA_TEST_ENGINE: camoufox
-        run: cargo xtask ci owned --wall 300 --idle 120 -- cargo xtask ci camoufox-runtime "${{ runner.temp }}/numera-live-resources"
+        run: cargo xtask ci owned --wall 600 --idle 570 -- cargo xtask ci camoufox-runtime "${{ runner.temp }}/numera-live-resources"
       - name: Require the selected backend and its exact consent-controlled resources
         run: cargo xtask ci owned --wall 1200 --idle 180 -- cargo xtask ci prepare-live "engine-rust/target/release/numera-browser-runtime${{ runner.os == 'Windows' && '.exe' || '' }}" "engine-rust/target/release/numera-engine${{ runner.os == 'Windows' && '.exe' || '' }}" "${{ runner.temp }}/numera-live-resources" "${{ matrix.engine }}" "${{ runner.temp }}/numera-live-data" "${{ github.env }}"
       - name: Require native SDK, independent application acceptance and native checkpoint comparison
@@ -73,5 +73,15 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: native-live-${{ matrix.os }}-${{ matrix.engine }}-${{ github.sha }}
-          path: build/live-*.log
+          path: |
+            .ci-work/logs/ci-owned_*.log
+            build/selected-sdk.log
+            build/selected-sdk.stderr.log
+            build/logs/camoufox-runtime_*.log
+            build/native-candidate/entry-performance.json
+            build/native-candidate/browser-performance.json
+            build/owned-command-failure-*.log
+            build/owned-members-*.json
+            engine-rust/target/release/*.build.json
+            ${{ runner.temp }}/numera-native-checkpoint.receipt.json
           if-no-files-found: error

@@ -174,6 +174,8 @@ pub fn prepare(host: &Host, runner: &mut impl Runner) -> Result<()> {
     host.require()?;
     let absent = missing(&runner.command(&query())?)?;
     if !absent.is_empty() {
+        // APT runs under sudo. Its watchdog signals the privileged process
+        // group and finishes before the unprivileged capture deadline.
         let prefix = [
             "sudo",
             "-n",
@@ -181,7 +183,16 @@ pub fn prepare(host: &Host, runner: &mut impl Runner) -> Result<()> {
             "DEBIAN_FRONTEND=noninteractive",
             "LC_ALL=C.UTF-8",
             "LANGUAGE=C",
-            "apt-get",
+            "/usr/bin/timeout",
+            "--kill-after=10s",
+            "230s",
+            "/usr/bin/apt-get",
+            "-o",
+            "Acquire::Retries=1",
+            "-o",
+            "Acquire::http::Timeout=15",
+            "-o",
+            "Acquire::https::Timeout=15",
         ]
         .map(str::to_owned)
         .to_vec();
@@ -264,7 +275,7 @@ impl Runner for Native<'_> {
             &mut command,
             owned::limits(
                 Duration::from_secs(invocation.seconds),
-                Duration::from_secs(invocation.seconds.min(120)),
+                Duration::from_secs(invocation.seconds),
                 32768,
             ),
         )?
