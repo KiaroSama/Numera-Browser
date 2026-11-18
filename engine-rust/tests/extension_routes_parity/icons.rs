@@ -5,7 +5,7 @@ use axum::{
 use base64::{Engine, engine::general_purpose::STANDARD};
 use numera_core::http::extension_routes::router;
 use serde_json::{Value, json};
-use std::{fs, time::Duration};
+use std::{borrow::Cow, fs, time::Duration};
 use tower::ServiceExt;
 
 #[test]
@@ -36,9 +36,21 @@ fn extension_icon_http_matches_original_known_folder_and_file_contracts()
     runtime.block_on(async {
         let app = router(root.clone(), "fixture-api");
         for case in cases {
+            let uri = case["uri"].as_str().ok_or("URI missing")?;
+            // The frozen observations use Unix separators. A Windows verbatim
+            // path needs backslashes to retain its literal dot components.
+            let uri = if cfg!(windows)
+                && matches!(
+                    case["label"].as_str(),
+                    Some("dot-components" | "literal-dot-components")
+                ) {
+                Cow::Owned(uri.replace("%2F", "%5C"))
+            } else {
+                Cow::Borrowed(uri)
+            };
             let mut request = Request::builder()
                 .method(case["method"].as_str().ok_or("Method missing")?)
-                .uri(case["uri"].as_str().ok_or("URI missing")?);
+                .uri(uri.as_ref());
             if case["authorized"] == true {
                 request = request.header("authorization", "Bearer fixture-api");
             }
