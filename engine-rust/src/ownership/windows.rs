@@ -20,8 +20,8 @@ use windows_sys::Win32::{
             AssignProcessToJobObject, CreateJobObjectW, IsProcessInJob,
             JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE, JOBOBJECT_BASIC_ACCOUNTING_INFORMATION,
             JOBOBJECT_EXTENDED_LIMIT_INFORMATION, JobObjectBasicAccountingInformation,
-            JobObjectBasicProcessIdList, JobObjectExtendedLimitInformation, OpenJobObjectW,
-            QueryInformationJobObject, SetInformationJobObject, TerminateJobObject,
+            JobObjectExtendedLimitInformation, OpenJobObjectW, QueryInformationJobObject,
+            SetInformationJobObject, TerminateJobObject,
         },
         SystemServices::{JOB_OBJECT_QUERY, JOB_OBJECT_TERMINATE},
         Threading::{
@@ -374,30 +374,7 @@ impl Job {
         if let Some(result) = super::test_support::job_query() {
             result?;
         }
-        let mut buffer = vec![
-            0usize;
-            (8 + super::memory::MAX_PROCESSES * mem::size_of::<usize>())
-                .div_ceil(mem::size_of::<usize>())
-        ];
-        let size = buffer.len() * mem::size_of::<usize>();
-        let mut returned = 0;
-        // SAFETY: initialized, pointer-aligned output for this retained Job;
-        // no process or Job is reopened to establish tree ownership.
-        if unsafe {
-            QueryInformationJobObject(
-                self.0.as_raw_handle(),
-                JobObjectBasicProcessIdList,
-                buffer.as_mut_ptr().cast(),
-                size as u32,
-                &mut returned,
-            )
-        } == 0
-        {
-            return Err(io::Error::last_os_error());
-        }
-        // SAFETY: the initialized allocation bounds this temporary byte view.
-        let bytes = unsafe { std::slice::from_raw_parts(buffer.as_ptr().cast::<u8>(), size) };
-        super::memory::members_from_buffer(bytes, returned as usize, mem::size_of::<usize>())
+        super::memory::query_job_members(self.0.as_handle())
     }
     /// Passive, bounded diagnostic evidence. Never used as an ownership proof.
     /// Paths, arguments and arbitrary executable names cannot escape this API.

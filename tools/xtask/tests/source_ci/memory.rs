@@ -602,6 +602,29 @@ fn members(damage: &str) -> TestResult {
             native::members_from_buffer(&raw, if damage == "short" { 4 } else { raw.len() }, width);
         if damage == "None" {
             assert_eq!(result?, vec![41, 42]);
+        } else if damage == "truncated" {
+            assert_eq!(
+                result.expect_err("The list is incomplete").kind(),
+                io::ErrorKind::WouldBlock
+            );
+            let returned = raw.len() - 1;
+            assert_ne!(
+                native::members_from_buffer(&raw, returned, width)
+                    .expect_err("The list is malformed")
+                    .kind(),
+                io::ErrorKind::WouldBlock,
+                "Missing PID bytes are a malformed response"
+            );
+            for assigned in [1, (native::MAX_PROCESSES + 1) as u32] {
+                raw[..4].copy_from_slice(&assigned.to_le_bytes());
+                assert_ne!(
+                    native::members_from_buffer(&raw, raw.len(), width)
+                        .expect_err("The assigned process count is invalid")
+                        .kind(),
+                    io::ErrorKind::WouldBlock,
+                    "An impossible list or one beyond the cap stays fatal"
+                );
+            }
         } else {
             assert!(result.is_err());
         }
