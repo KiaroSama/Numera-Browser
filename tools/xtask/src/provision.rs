@@ -12,6 +12,8 @@ use std::{
     time::Duration,
 };
 
+const CURL_PARTIAL_FILE: i32 = 18;
+
 pub fn pins() -> Result<Value> {
     Ok(serde_json::from_str(include_str!(
         "../provision-pins.json"
@@ -114,6 +116,7 @@ pub fn execute(command: &mut Command, seconds: u64) -> Result<capture::Output> {
             completed_nonempty_job: result.exit == 0
                 && natural == Some(false)
                 && natural_reason == "final-nonempty-tree",
+            naturally_settled_exit: (natural == Some(true)).then_some(result.exit),
         }));
     }
     Ok(result)
@@ -123,6 +126,7 @@ pub fn execute(command: &mut Command, seconds: u64) -> Result<capture::Output> {
 struct VendorRefusal {
     diagnostic: String,
     completed_nonempty_job: bool,
+    naturally_settled_exit: Option<i32>,
 }
 
 impl std::fmt::Display for VendorRefusal {
@@ -141,11 +145,8 @@ fn retryable_natural_refusal(error: &(dyn std::error::Error + 'static)) -> bool 
         .is_some_and(|failure| failure.completed_nonempty_job)
 }
 
-fn transfer(
-    target: &Path,
-    mut can_retry: bool,
-    mut acquire: impl FnMut() -> Result<()>,
-) -> Result<()> {
+fn transfer(target: &Path, mut acquire: impl FnMut() -> Result<()>) -> Result<()> {
+    let mut can_retry = true;
     loop {
         fs::OpenOptions::new()
             .write(true)
@@ -155,13 +156,23 @@ fn transfer(
             return Ok(());
         };
         fs::remove_file(target)?;
-        if !can_retry || !retryable_natural_refusal(error.as_ref()) {
+        if !can_retry {
             return Err(error);
         }
-        // A clean retry still needs its own natural proof. Never hash or use
-        // the bytes from the first transfer after its independent refusal.
+        let Some(refusal) = error.downcast_ref::<VendorRefusal>() else {
+            return Err(error);
+        };
+        let reason = if refusal.naturally_settled_exit == Some(CURL_PARTIAL_FILE) {
+            "an incomplete curl response"
+        } else if cfg!(windows) && refusal.completed_nonempty_job {
+            "a refused natural Job observation"
+        } else {
+            return Err(error);
+        };
+        // Replay from an empty file after a proved cleanup. The new download
+        // still has to settle and pass the pinned size and digest checks.
         can_retry = false;
-        eprintln!("Retrying vendor download after a refused natural Job observation: {error}");
+        eprintln!("Retrying vendor download after {reason}: {error}");
     }
 }
 
@@ -188,7 +199,7 @@ fn download(url: &str, target: &Path, expected: &str, limit: u64) -> Result<()> 
         return ci::fail("Invalid, unpinned or existing vendor download");
     }
     fs::create_dir_all(target.parent().ok_or("Download parent missing")?)?;
-    transfer(target, cfg!(windows), || {
+    transfer(target, || {
         execute(
             Command::new("curl")
                 .args([
