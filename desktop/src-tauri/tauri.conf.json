@@ -4,7 +4,7 @@
   "version": "0.36.0",
   "identifier": "com.numera.desktop",
   "build": {
-    "frontendDist": "../ui"
+    "frontendDist": "../../dashboard/dist"
   },
   "app": {
     "withGlobalTauri": false,
@@ -26,10 +26,11 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis"],
-    "icon": ["icons/icon.ico"],
-    "copyright": "Numera",
+    "targets": "all",
+    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.png", "icons/icon.ico"],
+    "publisher": "KiaroSama",
+    "copyright": "KiaroSama",
     "category": "DeveloperTool",
-    "shortDescription": "Anti-detect browser profile manager"
+    "shortDescription": "Local-first browser-profile manager for authorized testing and automation"
   }
 }

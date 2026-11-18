@@ -9,44 +9,21 @@ use numera_core::{
     storage::dashboard::DashboardStore,
 };
 use serde_json::{Value, json};
-use std::{collections::BTreeMap, path::Path, process::Command, sync::Arc, time::Duration};
+use std::{collections::BTreeMap, sync::Arc, time::Duration};
 use tower::ServiceExt;
 mod common;
+use numera_core as core;
+#[allow(dead_code)]
+#[path = "common/browser_fixture.rs"]
+mod fixture;
+#[allow(dead_code)]
+#[path = "common/http_fixture.rs"]
+mod http_fixture;
 
 #[test]
 fn http_stop_preserves_source_refusals_and_closes_only_its_native_owner()
 -> Result<(), Box<dyn std::error::Error>> {
-    let python = std::env::var_os("NUMERA_ORACLE_PYTHON").ok_or("Fixture interpreter required")?;
-    let source_root = common::TempDirectory::new("http-stop-source")?;
-    let module = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or("Repository missing")?
-        .join("scripts/migration");
-    let script = r#"
-import json, os, sys
-request = json.loads(sys.stdin.readline())
-print(json.dumps({'protocol':1, 'id':request['id'], 'ok':True, 'result':{}}), flush=True)
-request = json.loads(sys.stdin.readline())
-from session_stop_cases import cases
-print(json.dumps({'protocol':1, 'id':request['id'], 'ok':True, 'result':{'cases':cases(os.environ['FIXTURE_ROOT'])}}), flush=True)
-"#;
-    let mut command = Command::new(&python);
-    command
-        .args(["-u", "-c", script])
-        .env("PYTHONPATH", &module)
-        .env("FIXTURE_ROOT", source_root.path().join("cases"))
-        .env("PYTHONUTF8", "1");
-    let mut source = Adapter::spawn(
-        source_root.path(),
-        "a",
-        "fixture-host",
-        &mut command,
-        Duration::from_secs(5),
-    )?;
-    let document = source.call("observe-stop", Default::default(), Duration::from_secs(30))?;
-    source.finish(Duration::from_secs(5))?;
-    drop(source);
-    source_root.cleanup()?;
+    let document = http_fixture::oracle("stop-http")?;
     let cases = document["cases"]
         .as_array()
         .ok_or("Stop source cases missing")?;
@@ -122,16 +99,7 @@ print(json.dumps({'protocol':1, 'id':request['id'], 'ok':True, 'result':{'cases'
         1700000000.0,
     )?;
     let sessions = Arc::new(Registry::new(root.into(), "fixture-host".into(), None)?);
-    let script = r#"
-import json, sys
-for line in sys.stdin:
-    request = json.loads(line)
-    result = {'closing':True} if request['operation'] == 'close' else {}
-    print(json.dumps({'protocol':1, 'id':request['id'], 'ok':True, 'result':result}), flush=True)
-    if request['operation'] == 'close': break
-"#;
-    let mut command = Command::new(&python);
-    command.args(["-u", "-c", script]);
+    let mut command = fixture::command(root, "rpc", json!({}))?;
     let adapter = Adapter::spawn(
         root,
         "a",

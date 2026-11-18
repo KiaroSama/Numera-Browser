@@ -1,0 +1,50 @@
+{
+  "schema": 1,
+  "scope": "Native build tooling only; application release opt3 and archive options unchanged",
+  "inputs": {
+    "sdk": "official provisioned Playwright1.65 driver",
+    "files": 118,
+    "bytes": 144142133,
+    "dataset_sha256": "bcc006ed330c5ea8f81b61eebeb6ad4f9b756cf92d56befc81e981eae2cca167",
+    "existing_archive_sha256": "86bc2cd9526b816a1c000e62b847d1c4b9ca432050900e4485fcf08f169554ea"
+  },
+  "before": {
+    "label": "before",
+    "files": 118,
+    "input_bytes": 144142133,
+    "dataset_sha256": "bcc006ed330c5ea8f81b61eebeb6ad4f9b756cf92d56befc81e981eae2cca167",
+    "hash_ns": 5221936746,
+    "archive_ns": 21718338765,
+    "archive_bytes": 52970738,
+    "archive_sha256": "5f5cd9cee0d5778e2087ac76ca2af8a65d8b7d7ba3586227d08c591fc7747aea",
+    "existing_archive_sha256": "86bc2cd9526b816a1c000e62b847d1c4b9ca432050900e4485fcf08f169554ea",
+    "extract_ns": 138984302
+  },
+  "after": {
+    "label": "after",
+    "files": 118,
+    "input_bytes": 144142133,
+    "dataset_sha256": "bcc006ed330c5ea8f81b61eebeb6ad4f9b756cf92d56befc81e981eae2cca167",
+    "hash_ns": 167705970,
+    "archive_ns": 2890478984,
+    "archive_bytes": 52970738,
+    "archive_sha256": "5f5cd9cee0d5778e2087ac76ca2af8a65d8b7d7ba3586227d08c591fc7747aea",
+    "existing_archive_sha256": "86bc2cd9526b816a1c000e62b847d1c4b9ca432050900e4485fcf08f169554ea",
+    "extract_ns": 55327928
+  },
+  "ratio": {
+    "hash": 31.137452924305556,
+    "archive": 7.5137507953595275,
+    "extract": 2.512009884049878
+  },
+  "archive_byte_equality": "cmp succeeded; SHA256 and all52970738bytes identical",
+  "extracted_byte_equality": "cmp succeeded for all three members of existing hosted archive",
+  "compiler": {
+    "tool": "numera_xtask",
+    "profile": "dev package opt-level3",
+    "debug_assertions": true,
+    "overflow_checks": true,
+    "application_release_profile_changed": false
+  },
+  "limitations": "Representative local throughput, not a hosted macOS full-distribution completion claim; all original wall and idle limits retained."
+}

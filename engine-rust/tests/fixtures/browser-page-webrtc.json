@@ -1,0 +1,402 @@
+{
+  "schema": 1,
+  "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+  "source_path": "engine/numera/stealth.py",
+  "source_sha256": "a58ac4f74e633462bd6b184f58a989fba0d96f746b0561bddb2c14f5c4ee090c",
+  "original_fixture_sha256": "ed0383fd02663f98ee4778ae51e4aeb1f3461be2a9cc6287f68262eb36adbb9d",
+  "method": "Executed the immutable original WebRTC addrOf/safe/scrub/drop function block under the ECMAScript runtime; only immutable JSON observations remain. Browser event and descriptor behavior is verified independently by the existing actual-browser live case.",
+  "candidate_cases": [
+    {
+      "line": "candidate:f 1 udp 1 0.0.0.0 9 typ host",
+      "address": "0.0.0.0",
+      "safe": true,
+      "drop": false
+    },
+    {
+      "line": "candidate:f 1 udp 1 0.1.2.3 9 typ host",
+      "address": "0.1.2.3",
+      "safe": true,
+      "drop": false
+    },
+    {
+      "line": "candidate:f 1 udp 1 10.0.0.1 9 typ host",
+      "address": "10.0.0.1",
+      "safe": true,
+      "drop": false
+    },
+    {
+      "line": "candidate:f 1 udp 1 10.255.255.255 9 typ host",
+      "address": "10.255.255.255",
+      "safe": true,
+      "drop": false
+    },
+    {
+      "line": "candidate:f 1 udp 1 100.64.0.1 9 typ host",
+      "address": "100.64.0.1",
+      "safe": false,
+      "drop": true
+    },
+    {
+      "line": "candidate:f 1 udp 1 127.0.0.1 9 typ host",
+      "address": "127.0.0.1",
+      "safe": true,
+      "drop": false
+    },
+    {
+      "line": "candidate:f 1 udp 1 169.254.1.2 9 typ host",
+      "address": "169.254.1.2",
+      "safe": true,
+      "drop": false
+    },
+    {
+      "line": "candidate:f 1 udp 1 169.253.1.2 9 typ host",
+      "address": "169.253.1.2",
+      "safe": false,
+      "drop": true
+    },
+    {
+      "line": "candidate:f 1 udp 1 172.15.255.255 9 typ host",
+      "address": "172.15.255.255",
+      "safe": false,
+      "drop": true
+    },
+    {
+      "line": "candidate:f 1 udp 1 172.16.0.1 9 typ host",
+      "address": "172.16.0.1",
+      "safe": true,
+      "drop": false
+    },
+    {
+      "line": "candidate:f 1 udp 1 172.19.0.1 9 typ host",
+      "address": "172.19.0.1",
+      "safe": true,
+      "drop": false
+    },
+    {
+      "line": "candidate:f 1 udp 1 172.20.0.1 9 typ host",
+      "address": "172.20.0.1",
+      "safe": true,
+      "drop": false
+    },
+    {
+      "line": "candidate:f 1 udp 1 172.29.0.1 9 typ host",
+      "address": "172.29.0.1",
+      "safe": true,
+      "drop": false
+    },
+    {
+      "line": "candidate:f 1 udp 1 172.30.0.1 9 typ host",
+      "address": "172.30.0.1",
+      "safe": true,
+      "drop": false
+    },
+    {
+      "line": "candidate:f 1 udp 1 172.31.255.255 9 typ host",
+      "address": "172.31.255.255",
+      "safe": true,
+      "drop": false
+    },
+    {
+      "line": "candidate:f 1 udp 1 172.32.0.1 9 typ host",
+      "address": "172.32.0.1",
+      "safe": false,
+      "drop": true
+    },
+    {
+      "line": "candidate:f 1 udp 1 192.168.1.2 9 typ host",
+      "address": "192.168.1.2",
+      "safe": true,
+      "drop": false
+    },
+    {
+      "line": "candidate:f 1 udp 1 192.169.1.2 9 typ host",
+      "address": "192.169.1.2",
+      "safe": false,
+      "drop": true
+    },
+    {
+      "line": "candidate:f 1 udp 1 8.8.8.8 9 typ host",
+      "address": "8.8.8.8",
+      "safe": false,
+      "drop": true
+    },
+    {
+      "line": "candidate:f 1 udp 1 203.0.113.9 9 typ host",
+      "address": "203.0.113.9",
+      "safe": false,
+      "drop": true
+    },
+    {
+      "line": "candidate:f 1 udp 1 :: 9 typ host",
+      "address": "::",
+      "safe": true,
+      "drop": false
+    },
+    {
+      "line": "candidate:f 1 udp 1 ::1 9 typ host",
+      "address": "::1",
+      "safe": true,
+      "drop": false
+    },
+    {
+      "line": "candidate:f 1 udp 1 ::2 9 typ host",
+      "address": "::2",
+      "safe": false,
+      "drop": true
+    },
+    {
+      "line": "candidate:f 1 udp 1 fe7f::1 9 typ host",
+      "address": "fe7f::1",
+      "safe": false,
+      "drop": true
+    },
+    {
+      "line": "candidate:f 1 udp 1 fe80::1 9 typ host",
+      "address": "fe80::1",
+      "safe": true,
+      "drop": false
+    },
+    {
+      "line": "candidate:f 1 udp 1 fe90::1 9 typ host",
+      "address": "fe90::1",
+      "safe": true,
+      "drop": false
+    },
+    {
+      "line": "candidate:f 1 udp 1 fea0::1 9 typ host",
+      "address": "fea0::1",
+      "safe": true,
+      "drop": false
+    },
+    {
+      "line": "candidate:f 1 udp 1 febf::1 9 typ host",
+      "address": "febf::1",
+      "safe": true,
+      "drop": false
+    },
+    {
+      "line": "candidate:f 1 udp 1 fec0::1 9 typ host",
+      "address": "fec0::1",
+      "safe": false,
+      "drop": true
+    },
+    {
+      "line": "candidate:f 1 udp 1 fc00::1 9 typ host",
+      "address": "fc00::1",
+      "safe": true,
+      "drop": false
+    },
+    {
+      "line": "candidate:f 1 udp 1 fdff::1 9 typ host",
+      "address": "fdff::1",
+      "safe": true,
+      "drop": false
+    },
+    {
+      "line": "candidate:f 1 udp 1 FE80::1%eth0 9 typ host",
+      "address": "FE80::1%eth0",
+      "safe": true,
+      "drop": false
+    },
+    {
+      "line": "candidate:f 1 udp 1 2001:db8::1 9 typ host",
+      "address": "2001:db8::1",
+      "safe": false,
+      "drop": true
+    },
+    {
+      "line": "candidate:f 1 udp 1 ::ffff:192.168.1.2 9 typ host",
+      "address": "::ffff:192.168.1.2",
+      "safe": false,
+      "drop": true
+    },
+    {
+      "line": "candidate:f 1 udp 1 peer.local 9 typ host",
+      "address": "peer.local",
+      "safe": true,
+      "drop": false
+    },
+    {
+      "line": "candidate:f 1 udp 1 peer.LOCAL 9 typ host",
+      "address": "peer.LOCAL",
+      "safe": true,
+      "drop": false
+    },
+    {
+      "line": "candidate:f 1 udp 1 notlocal.example 9 typ host",
+      "address": "notlocal.example",
+      "safe": false,
+      "drop": true
+    },
+    {
+      "line": "candidate:f 1 udp 1 peer.localhost 9 typ host",
+      "address": "peer.localhost",
+      "safe": false,
+      "drop": true
+    },
+    {
+      "line": "candidate:f 1 udp 1 peer.local.evil 9 typ host",
+      "address": "peer.local.evil",
+      "safe": true,
+      "drop": false
+    },
+    {
+      "line": "candidate:f 1 udp 1 10.not-an-ip 9 typ host",
+      "address": "10.not-an-ip",
+      "safe": true,
+      "drop": false
+    },
+    {
+      "line": "candidate:f 1 udp 1 fc-not-an-address::x 9 typ host",
+      "address": "fc-not-an-address::x",
+      "safe": true,
+      "drop": false
+    },
+    {
+      "line": "",
+      "address": null,
+      "safe": true,
+      "drop": false
+    },
+    {
+      "line": "not a candidate",
+      "address": null,
+      "safe": true,
+      "drop": false
+    },
+    {
+      "line": "candidate:f 1 udp 1 8.8.8.8",
+      "address": null,
+      "safe": true,
+      "drop": false
+    },
+    {
+      "line": "candidate:f 1 udp 1 8.8.8.8 ",
+      "address": "8.8.8.8",
+      "safe": false,
+      "drop": true
+    },
+    {
+      "line": "a=candidate:f 1 udp 1 8.8.8.8 9 typ host",
+      "address": "8.8.8.8",
+      "safe": false,
+      "drop": true
+    },
+    {
+      "line": "candidate:f 1 udp 1 8.8.8.8 9 typ host raddr peer.local",
+      "address": "8.8.8.8",
+      "safe": true,
+      "drop": false
+    },
+    {
+      "line": "candidate:f 1 udp 1 8.8.8.8 9 typ host raddr peer.localhost",
+      "address": "8.8.8.8",
+      "safe": false,
+      "drop": true
+    },
+    {
+      "line": "candidate:f  1 udp 1 8.8.8.8 9 typ host",
+      "address": null,
+      "safe": true,
+      "drop": false
+    },
+    {
+      "line": "candidate:f 1\tudp 1 8.8.8.8 9 typ host",
+      "address": null,
+      "safe": true,
+      "drop": false
+    },
+    {
+      "line": "candidate:f -1 udp 1 8.8.8.8 9 typ host",
+      "address": null,
+      "safe": true,
+      "drop": false
+    },
+    {
+      "line": "candidate:f 1 udp 1.5 8.8.8.8 9 typ host",
+      "address": null,
+      "safe": true,
+      "drop": false
+    },
+    {
+      "line": "candidate:f﻿x 1 udp 1 8.8.8.8 9 typ host",
+      "address": null,
+      "safe": true,
+      "drop": false
+    },
+    {
+      "line": "candidate:fx 1 udp 1 8.8.8.8 9 typ host",
+      "address": "8.8.8.8",
+      "safe": false,
+      "drop": true
+    },
+    {
+      "line": "candidate:f 1 u﻿dp 1 8.8.8.8 9 typ host",
+      "address": null,
+      "safe": true,
+      "drop": false
+    }
+  ],
+  "sdp_cases": [
+    {
+      "input": "",
+      "output": ""
+    },
+    {
+      "input": "v=0",
+      "output": "v=0"
+    },
+    {
+      "input": "a=candidate:f 1 udp 1 8.8.8.8 9 typ host\r\na=candidate:f 1 udp 1 192.168.1.2 9 typ host\r\na=candidate:f 1 udp 1 2001:db8::1 9 typ host\r\na=candidate:f 1 udp 1 peer.local 9 typ host\r\n",
+      "output": "a=candidate:f 1 udp 1 192.168.1.2 9 typ host\r\na=candidate:f 1 udp 1 peer.local 9 typ host\r\n"
+    },
+    {
+      "input": "v=0\na=candidate:f 1 udp 1 8.8.8.8 9 typ host\na=candidate:f 1 udp 1 192.168.1.2 9 typ host\n",
+      "output": "v=0\r\na=candidate:f 1 udp 1 192.168.1.2 9 typ host\r\n"
+    },
+    {
+      "input": "a=candidate:f 1 udp 1 8.8.8.8 9 typ host\ra=candidate:f 1 udp 1 192.168.1.2 9 typ host",
+      "output": ""
+    },
+    {
+      "input": "a=candidate:f 1 udp 1 192.168.1.2 9 typ host\ra=candidate:f 1 udp 1 8.8.8.8 9 typ host",
+      "output": "a=candidate:f 1 udp 1 192.168.1.2 9 typ host\ra=candidate:f 1 udp 1 8.8.8.8 9 typ host"
+    },
+    {
+      "input": "v=0\r\na=candidate:f 1 udp 1 8.8.8.8 9 typ host\r\n\r\na=end-of-candidates\r\n",
+      "output": "v=0\r\n\r\na=end-of-candidates\r\n"
+    },
+    {
+      "input": "a=candidate:f 1 udp 1 8.8.8.8 9 typ host\na=candidate:f 1 udp 1 192.168.1.2 9 typ host\r\na=candidate:f 1 udp 1 peer.local 9 typ host\n",
+      "output": "a=candidate:f 1 udp 1 192.168.1.2 9 typ host\r\na=candidate:f 1 udp 1 peer.local 9 typ host\r\n"
+    },
+    {
+      "input": "candidate:f 1 udp 1 8.8.8.8 9 typ host\na=candidate:f 1 udp 1 8.8.8.8 9 typ host",
+      "output": "candidate:f 1 udp 1 8.8.8.8 9 typ host"
+    }
+  ],
+  "end_events": [
+    {
+      "event": null,
+      "drop": false
+    },
+    {
+      "event": {},
+      "drop": false
+    },
+    {
+      "event": {
+        "candidate": null
+      },
+      "drop": false
+    },
+    {
+      "event": {
+        "candidate": {
+          "candidate": ""
+        }
+      },
+      "drop": false
+    }
+  ]
+}

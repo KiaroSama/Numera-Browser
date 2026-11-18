@@ -1,0 +1,1495 @@
+[
+  {
+    "operation": "listing",
+    "args": [],
+    "location": "dashboard-config.json",
+    "inputs": {
+      "dashboard-config.json": "ff",
+      "dashboard/a.json": "7b226964223a202261222c2022666f6c646572223a2022736f75726365222c2022667574757265223a205b375d7d",
+      "dashboard/b.json": "7b226964223a202262222c2022666f6c646572223a2022616c706861227d"
+    },
+    "result": null,
+    "error": "UnicodeDecodeError",
+    "written": {
+      "dashboard-config.json": null,
+      "dashboard/a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "dashboard/b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": true,
+      "dashboard/a.json": true,
+      "dashboard/b.json": true
+    }
+  },
+  {
+    "operation": "create",
+    "args": [
+      "new"
+    ],
+    "location": "dashboard-config.json",
+    "inputs": {
+      "dashboard-config.json": "ff",
+      "dashboard/a.json": "7b226964223a202261222c2022666f6c646572223a2022736f75726365222c2022667574757265223a205b375d7d",
+      "dashboard/b.json": "7b226964223a202262222c2022666f6c646572223a2022616c706861227d"
+    },
+    "result": null,
+    "error": "UnicodeDecodeError",
+    "written": {
+      "dashboard-config.json": null,
+      "dashboard/a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "dashboard/b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": true,
+      "dashboard/a.json": true,
+      "dashboard/b.json": true
+    }
+  },
+  {
+    "operation": "rename",
+    "args": [
+      "source",
+      "target"
+    ],
+    "location": "dashboard-config.json",
+    "inputs": {
+      "dashboard-config.json": "ff",
+      "dashboard/a.json": "7b226964223a202261222c2022666f6c646572223a2022736f75726365222c2022667574757265223a205b375d7d",
+      "dashboard/b.json": "7b226964223a202262222c2022666f6c646572223a2022616c706861227d"
+    },
+    "result": null,
+    "error": "UnicodeDecodeError",
+    "written": {
+      "dashboard-config.json": null,
+      "dashboard/a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "dashboard/b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": true,
+      "dashboard/a.json": true,
+      "dashboard/b.json": true
+    }
+  },
+  {
+    "operation": "delete",
+    "args": [
+      "source"
+    ],
+    "location": "dashboard-config.json",
+    "inputs": {
+      "dashboard-config.json": "ff",
+      "dashboard/a.json": "7b226964223a202261222c2022666f6c646572223a2022736f75726365222c2022667574757265223a205b375d7d",
+      "dashboard/b.json": "7b226964223a202262222c2022666f6c646572223a2022616c706861227d"
+    },
+    "result": null,
+    "error": "UnicodeDecodeError",
+    "written": {
+      "dashboard-config.json": null,
+      "dashboard/a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "dashboard/b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": true,
+      "dashboard/a.json": true,
+      "dashboard/b.json": true
+    }
+  },
+  {
+    "operation": "listing",
+    "args": [],
+    "location": "dashboard-config.json",
+    "inputs": {
+      "dashboard-config.json": "7b22667574757265223a22c328227d",
+      "dashboard/a.json": "7b226964223a202261222c2022666f6c646572223a2022736f75726365222c2022667574757265223a205b375d7d",
+      "dashboard/b.json": "7b226964223a202262222c2022666f6c646572223a2022616c706861227d"
+    },
+    "result": null,
+    "error": "UnicodeDecodeError",
+    "written": {
+      "dashboard-config.json": null,
+      "dashboard/a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "dashboard/b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": true,
+      "dashboard/a.json": true,
+      "dashboard/b.json": true
+    }
+  },
+  {
+    "operation": "create",
+    "args": [
+      "new"
+    ],
+    "location": "dashboard-config.json",
+    "inputs": {
+      "dashboard-config.json": "7b22667574757265223a22c328227d",
+      "dashboard/a.json": "7b226964223a202261222c2022666f6c646572223a2022736f75726365222c2022667574757265223a205b375d7d",
+      "dashboard/b.json": "7b226964223a202262222c2022666f6c646572223a2022616c706861227d"
+    },
+    "result": null,
+    "error": "UnicodeDecodeError",
+    "written": {
+      "dashboard-config.json": null,
+      "dashboard/a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "dashboard/b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": true,
+      "dashboard/a.json": true,
+      "dashboard/b.json": true
+    }
+  },
+  {
+    "operation": "rename",
+    "args": [
+      "source",
+      "target"
+    ],
+    "location": "dashboard-config.json",
+    "inputs": {
+      "dashboard-config.json": "7b22667574757265223a22c328227d",
+      "dashboard/a.json": "7b226964223a202261222c2022666f6c646572223a2022736f75726365222c2022667574757265223a205b375d7d",
+      "dashboard/b.json": "7b226964223a202262222c2022666f6c646572223a2022616c706861227d"
+    },
+    "result": null,
+    "error": "UnicodeDecodeError",
+    "written": {
+      "dashboard-config.json": null,
+      "dashboard/a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "dashboard/b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": true,
+      "dashboard/a.json": true,
+      "dashboard/b.json": true
+    }
+  },
+  {
+    "operation": "delete",
+    "args": [
+      "source"
+    ],
+    "location": "dashboard-config.json",
+    "inputs": {
+      "dashboard-config.json": "7b22667574757265223a22c328227d",
+      "dashboard/a.json": "7b226964223a202261222c2022666f6c646572223a2022736f75726365222c2022667574757265223a205b375d7d",
+      "dashboard/b.json": "7b226964223a202262222c2022666f6c646572223a2022616c706861227d"
+    },
+    "result": null,
+    "error": "UnicodeDecodeError",
+    "written": {
+      "dashboard-config.json": null,
+      "dashboard/a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "dashboard/b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": true,
+      "dashboard/a.json": true,
+      "dashboard/b.json": true
+    }
+  },
+  {
+    "operation": "listing",
+    "args": [],
+    "location": "dashboard-config.json",
+    "inputs": {
+      "dashboard-config.json": "7b22667574757265223a22e282",
+      "dashboard/a.json": "7b226964223a202261222c2022666f6c646572223a2022736f75726365222c2022667574757265223a205b375d7d",
+      "dashboard/b.json": "7b226964223a202262222c2022666f6c646572223a2022616c706861227d"
+    },
+    "result": null,
+    "error": "UnicodeDecodeError",
+    "written": {
+      "dashboard-config.json": null,
+      "dashboard/a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "dashboard/b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": true,
+      "dashboard/a.json": true,
+      "dashboard/b.json": true
+    }
+  },
+  {
+    "operation": "create",
+    "args": [
+      "new"
+    ],
+    "location": "dashboard-config.json",
+    "inputs": {
+      "dashboard-config.json": "7b22667574757265223a22e282",
+      "dashboard/a.json": "7b226964223a202261222c2022666f6c646572223a2022736f75726365222c2022667574757265223a205b375d7d",
+      "dashboard/b.json": "7b226964223a202262222c2022666f6c646572223a2022616c706861227d"
+    },
+    "result": null,
+    "error": "UnicodeDecodeError",
+    "written": {
+      "dashboard-config.json": null,
+      "dashboard/a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "dashboard/b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": true,
+      "dashboard/a.json": true,
+      "dashboard/b.json": true
+    }
+  },
+  {
+    "operation": "rename",
+    "args": [
+      "source",
+      "target"
+    ],
+    "location": "dashboard-config.json",
+    "inputs": {
+      "dashboard-config.json": "7b22667574757265223a22e282",
+      "dashboard/a.json": "7b226964223a202261222c2022666f6c646572223a2022736f75726365222c2022667574757265223a205b375d7d",
+      "dashboard/b.json": "7b226964223a202262222c2022666f6c646572223a2022616c706861227d"
+    },
+    "result": null,
+    "error": "UnicodeDecodeError",
+    "written": {
+      "dashboard-config.json": null,
+      "dashboard/a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "dashboard/b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": true,
+      "dashboard/a.json": true,
+      "dashboard/b.json": true
+    }
+  },
+  {
+    "operation": "delete",
+    "args": [
+      "source"
+    ],
+    "location": "dashboard-config.json",
+    "inputs": {
+      "dashboard-config.json": "7b22667574757265223a22e282",
+      "dashboard/a.json": "7b226964223a202261222c2022666f6c646572223a2022736f75726365222c2022667574757265223a205b375d7d",
+      "dashboard/b.json": "7b226964223a202262222c2022666f6c646572223a2022616c706861227d"
+    },
+    "result": null,
+    "error": "UnicodeDecodeError",
+    "written": {
+      "dashboard-config.json": null,
+      "dashboard/a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "dashboard/b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": true,
+      "dashboard/a.json": true,
+      "dashboard/b.json": true
+    }
+  },
+  {
+    "operation": "listing",
+    "args": [],
+    "location": "dashboard-config.json",
+    "inputs": {
+      "dashboard-config.json": "7b62726f6b656e",
+      "dashboard/a.json": "7b226964223a202261222c2022666f6c646572223a2022736f75726365222c2022667574757265223a205b375d7d",
+      "dashboard/b.json": "7b226964223a202262222c2022666f6c646572223a2022616c706861227d"
+    },
+    "result": [
+      "source",
+      "alpha"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": null,
+      "dashboard/a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "dashboard/b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": true,
+      "dashboard/a.json": true,
+      "dashboard/b.json": true
+    }
+  },
+  {
+    "operation": "create",
+    "args": [
+      "new"
+    ],
+    "location": "dashboard-config.json",
+    "inputs": {
+      "dashboard-config.json": "7b62726f6b656e",
+      "dashboard/a.json": "7b226964223a202261222c2022666f6c646572223a2022736f75726365222c2022667574757265223a205b375d7d",
+      "dashboard/b.json": "7b226964223a202262222c2022666f6c646572223a2022616c706861227d"
+    },
+    "result": [
+      "source",
+      "alpha",
+      "new"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha",
+          "new"
+        ]
+      },
+      "dashboard/a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "dashboard/b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "dashboard/a.json": true,
+      "dashboard/b.json": true
+    }
+  },
+  {
+    "operation": "rename",
+    "args": [
+      "source",
+      "target"
+    ],
+    "location": "dashboard-config.json",
+    "inputs": {
+      "dashboard-config.json": "7b62726f6b656e",
+      "dashboard/a.json": "7b226964223a202261222c2022666f6c646572223a2022736f75726365222c2022667574757265223a205b375d7d",
+      "dashboard/b.json": "7b226964223a202262222c2022666f6c646572223a2022616c706861227d"
+    },
+    "result": [
+      "target",
+      "alpha"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "target",
+          "alpha"
+        ],
+        "renamed": {
+          "source": "target"
+        }
+      },
+      "dashboard/a.json": {
+        "id": "a",
+        "folder": "target",
+        "future": [
+          7
+        ]
+      },
+      "dashboard/b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "dashboard/a.json": false,
+      "dashboard/b.json": true
+    }
+  },
+  {
+    "operation": "delete",
+    "args": [
+      "source"
+    ],
+    "location": "dashboard-config.json",
+    "inputs": {
+      "dashboard-config.json": "7b62726f6b656e",
+      "dashboard/a.json": "7b226964223a202261222c2022666f6c646572223a2022736f75726365222c2022667574757265223a205b375d7d",
+      "dashboard/b.json": "7b226964223a202262222c2022666f6c646572223a2022616c706861227d"
+    },
+    "result": [
+      "Unfiled",
+      "alpha"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "Unfiled",
+          "alpha"
+        ]
+      },
+      "dashboard/a.json": {
+        "id": "a",
+        "folder": "Unfiled",
+        "future": [
+          7
+        ]
+      },
+      "dashboard/b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "dashboard/a.json": false,
+      "dashboard/b.json": true
+    }
+  },
+  {
+    "operation": "listing",
+    "args": [],
+    "location": "dashboard-config.json",
+    "inputs": {
+      "dashboard-config.json": "7b22666f6c64657273223a205b22736f75726365222c2022616c706861225d2c2022667574757265223a2022e697a5e69cace8aa9e227d",
+      "dashboard/a.json": "7b226964223a202261222c2022666f6c646572223a2022736f75726365222c2022667574757265223a205b375d7d",
+      "dashboard/b.json": "7b226964223a202262222c2022666f6c646572223a2022616c706861227d"
+    },
+    "result": [
+      "source",
+      "alpha"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha"
+        ],
+        "future": "\u65e5\u672c\u8a9e"
+      },
+      "dashboard/a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "dashboard/b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": true,
+      "dashboard/a.json": true,
+      "dashboard/b.json": true
+    }
+  },
+  {
+    "operation": "create",
+    "args": [
+      "new"
+    ],
+    "location": "dashboard-config.json",
+    "inputs": {
+      "dashboard-config.json": "7b22666f6c64657273223a205b22736f75726365222c2022616c706861225d2c2022667574757265223a2022e697a5e69cace8aa9e227d",
+      "dashboard/a.json": "7b226964223a202261222c2022666f6c646572223a2022736f75726365222c2022667574757265223a205b375d7d",
+      "dashboard/b.json": "7b226964223a202262222c2022666f6c646572223a2022616c706861227d"
+    },
+    "result": [
+      "source",
+      "alpha",
+      "new"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha",
+          "new"
+        ],
+        "future": "\u65e5\u672c\u8a9e"
+      },
+      "dashboard/a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "dashboard/b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "dashboard/a.json": true,
+      "dashboard/b.json": true
+    }
+  },
+  {
+    "operation": "rename",
+    "args": [
+      "source",
+      "target"
+    ],
+    "location": "dashboard-config.json",
+    "inputs": {
+      "dashboard-config.json": "7b22666f6c64657273223a205b22736f75726365222c2022616c706861225d2c2022667574757265223a2022e697a5e69cace8aa9e227d",
+      "dashboard/a.json": "7b226964223a202261222c2022666f6c646572223a2022736f75726365222c2022667574757265223a205b375d7d",
+      "dashboard/b.json": "7b226964223a202262222c2022666f6c646572223a2022616c706861227d"
+    },
+    "result": [
+      "target",
+      "alpha"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "target",
+          "alpha"
+        ],
+        "future": "\u65e5\u672c\u8a9e",
+        "renamed": {
+          "source": "target"
+        }
+      },
+      "dashboard/a.json": {
+        "id": "a",
+        "folder": "target",
+        "future": [
+          7
+        ]
+      },
+      "dashboard/b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "dashboard/a.json": false,
+      "dashboard/b.json": true
+    }
+  },
+  {
+    "operation": "delete",
+    "args": [
+      "source"
+    ],
+    "location": "dashboard-config.json",
+    "inputs": {
+      "dashboard-config.json": "7b22666f6c64657273223a205b22736f75726365222c2022616c706861225d2c2022667574757265223a2022e697a5e69cace8aa9e227d",
+      "dashboard/a.json": "7b226964223a202261222c2022666f6c646572223a2022736f75726365222c2022667574757265223a205b375d7d",
+      "dashboard/b.json": "7b226964223a202262222c2022666f6c646572223a2022616c706861227d"
+    },
+    "result": [
+      "alpha",
+      "Unfiled"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "alpha",
+          "Unfiled"
+        ],
+        "future": "\u65e5\u672c\u8a9e"
+      },
+      "dashboard/a.json": {
+        "id": "a",
+        "folder": "Unfiled",
+        "future": [
+          7
+        ]
+      },
+      "dashboard/b.json": {
+        "id": "b",
+        "folder": "alpha"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "dashboard/a.json": false,
+      "dashboard/b.json": true
+    }
+  },
+  {
+    "operation": "listing",
+    "args": [],
+    "location": "dashboard/b.json",
+    "inputs": {
+      "dashboard-config.json": "7b22666f6c64657273223a205b22736f75726365222c2022616c706861225d2c2022667574757265223a20225c7530336231227d",
+      "dashboard/a.json": "7b226964223a202261222c2022666f6c646572223a2022736f75726365222c2022667574757265223a205b375d7d",
+      "dashboard/b.json": "ff"
+    },
+    "result": null,
+    "error": "UnicodeDecodeError",
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha"
+        ],
+        "future": "\u03b1"
+      },
+      "dashboard/a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "dashboard/b.json": null
+    },
+    "unchanged": {
+      "dashboard-config.json": true,
+      "dashboard/a.json": true,
+      "dashboard/b.json": true
+    }
+  },
+  {
+    "operation": "create",
+    "args": [
+      "new"
+    ],
+    "location": "dashboard/b.json",
+    "inputs": {
+      "dashboard-config.json": "7b22666f6c64657273223a205b22736f75726365222c2022616c706861225d2c2022667574757265223a20225c7530336231227d",
+      "dashboard/a.json": "7b226964223a202261222c2022666f6c646572223a2022736f75726365222c2022667574757265223a205b375d7d",
+      "dashboard/b.json": "ff"
+    },
+    "result": null,
+    "error": "UnicodeDecodeError",
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha"
+        ],
+        "future": "\u03b1"
+      },
+      "dashboard/a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "dashboard/b.json": null
+    },
+    "unchanged": {
+      "dashboard-config.json": true,
+      "dashboard/a.json": true,
+      "dashboard/b.json": true
+    }
+  },
+  {
+    "operation": "rename",
+    "args": [
+      "source",
+      "target"
+    ],
+    "location": "dashboard/b.json",
+    "inputs": {
+      "dashboard-config.json": "7b22666f6c64657273223a205b22736f75726365222c2022616c706861225d2c2022667574757265223a20225c7530336231227d",
+      "dashboard/a.json": "7b226964223a202261222c2022666f6c646572223a2022736f75726365222c2022667574757265223a205b375d7d",
+      "dashboard/b.json": "ff"
+    },
+    "result": null,
+    "error": "UnicodeDecodeError",
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha"
+        ],
+        "future": "\u03b1"
+      },
+      "dashboard/a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "dashboard/b.json": null
+    },
+    "unchanged": {
+      "dashboard-config.json": true,
+      "dashboard/a.json": true,
+      "dashboard/b.json": true
+    }
+  },
+  {
+    "operation": "delete",
+    "args": [
+      "source"
+    ],
+    "location": "dashboard/b.json",
+    "inputs": {
+      "dashboard-config.json": "7b22666f6c64657273223a205b22736f75726365222c2022616c706861225d2c2022667574757265223a20225c7530336231227d",
+      "dashboard/a.json": "7b226964223a202261222c2022666f6c646572223a2022736f75726365222c2022667574757265223a205b375d7d",
+      "dashboard/b.json": "ff"
+    },
+    "result": null,
+    "error": "UnicodeDecodeError",
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha"
+        ],
+        "future": "\u03b1"
+      },
+      "dashboard/a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "dashboard/b.json": null
+    },
+    "unchanged": {
+      "dashboard-config.json": true,
+      "dashboard/a.json": true,
+      "dashboard/b.json": true
+    }
+  },
+  {
+    "operation": "listing",
+    "args": [],
+    "location": "dashboard/b.json",
+    "inputs": {
+      "dashboard-config.json": "7b22666f6c64657273223a205b22736f75726365222c2022616c706861225d2c2022667574757265223a20225c7530336231227d",
+      "dashboard/a.json": "7b226964223a202261222c2022666f6c646572223a2022736f75726365222c2022667574757265223a205b375d7d",
+      "dashboard/b.json": "7b22667574757265223a22c328227d"
+    },
+    "result": null,
+    "error": "UnicodeDecodeError",
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha"
+        ],
+        "future": "\u03b1"
+      },
+      "dashboard/a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "dashboard/b.json": null
+    },
+    "unchanged": {
+      "dashboard-config.json": true,
+      "dashboard/a.json": true,
+      "dashboard/b.json": true
+    }
+  },
+  {
+    "operation": "create",
+    "args": [
+      "new"
+    ],
+    "location": "dashboard/b.json",
+    "inputs": {
+      "dashboard-config.json": "7b22666f6c64657273223a205b22736f75726365222c2022616c706861225d2c2022667574757265223a20225c7530336231227d",
+      "dashboard/a.json": "7b226964223a202261222c2022666f6c646572223a2022736f75726365222c2022667574757265223a205b375d7d",
+      "dashboard/b.json": "7b22667574757265223a22c328227d"
+    },
+    "result": null,
+    "error": "UnicodeDecodeError",
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha"
+        ],
+        "future": "\u03b1"
+      },
+      "dashboard/a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "dashboard/b.json": null
+    },
+    "unchanged": {
+      "dashboard-config.json": true,
+      "dashboard/a.json": true,
+      "dashboard/b.json": true
+    }
+  },
+  {
+    "operation": "rename",
+    "args": [
+      "source",
+      "target"
+    ],
+    "location": "dashboard/b.json",
+    "inputs": {
+      "dashboard-config.json": "7b22666f6c64657273223a205b22736f75726365222c2022616c706861225d2c2022667574757265223a20225c7530336231227d",
+      "dashboard/a.json": "7b226964223a202261222c2022666f6c646572223a2022736f75726365222c2022667574757265223a205b375d7d",
+      "dashboard/b.json": "7b22667574757265223a22c328227d"
+    },
+    "result": null,
+    "error": "UnicodeDecodeError",
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha"
+        ],
+        "future": "\u03b1"
+      },
+      "dashboard/a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "dashboard/b.json": null
+    },
+    "unchanged": {
+      "dashboard-config.json": true,
+      "dashboard/a.json": true,
+      "dashboard/b.json": true
+    }
+  },
+  {
+    "operation": "delete",
+    "args": [
+      "source"
+    ],
+    "location": "dashboard/b.json",
+    "inputs": {
+      "dashboard-config.json": "7b22666f6c64657273223a205b22736f75726365222c2022616c706861225d2c2022667574757265223a20225c7530336231227d",
+      "dashboard/a.json": "7b226964223a202261222c2022666f6c646572223a2022736f75726365222c2022667574757265223a205b375d7d",
+      "dashboard/b.json": "7b22667574757265223a22c328227d"
+    },
+    "result": null,
+    "error": "UnicodeDecodeError",
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha"
+        ],
+        "future": "\u03b1"
+      },
+      "dashboard/a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "dashboard/b.json": null
+    },
+    "unchanged": {
+      "dashboard-config.json": true,
+      "dashboard/a.json": true,
+      "dashboard/b.json": true
+    }
+  },
+  {
+    "operation": "listing",
+    "args": [],
+    "location": "dashboard/b.json",
+    "inputs": {
+      "dashboard-config.json": "7b22666f6c64657273223a205b22736f75726365222c2022616c706861225d2c2022667574757265223a20225c7530336231227d",
+      "dashboard/a.json": "7b226964223a202261222c2022666f6c646572223a2022736f75726365222c2022667574757265223a205b375d7d",
+      "dashboard/b.json": "7b22667574757265223a22e282"
+    },
+    "result": null,
+    "error": "UnicodeDecodeError",
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha"
+        ],
+        "future": "\u03b1"
+      },
+      "dashboard/a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "dashboard/b.json": null
+    },
+    "unchanged": {
+      "dashboard-config.json": true,
+      "dashboard/a.json": true,
+      "dashboard/b.json": true
+    }
+  },
+  {
+    "operation": "create",
+    "args": [
+      "new"
+    ],
+    "location": "dashboard/b.json",
+    "inputs": {
+      "dashboard-config.json": "7b22666f6c64657273223a205b22736f75726365222c2022616c706861225d2c2022667574757265223a20225c7530336231227d",
+      "dashboard/a.json": "7b226964223a202261222c2022666f6c646572223a2022736f75726365222c2022667574757265223a205b375d7d",
+      "dashboard/b.json": "7b22667574757265223a22e282"
+    },
+    "result": null,
+    "error": "UnicodeDecodeError",
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha"
+        ],
+        "future": "\u03b1"
+      },
+      "dashboard/a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "dashboard/b.json": null
+    },
+    "unchanged": {
+      "dashboard-config.json": true,
+      "dashboard/a.json": true,
+      "dashboard/b.json": true
+    }
+  },
+  {
+    "operation": "rename",
+    "args": [
+      "source",
+      "target"
+    ],
+    "location": "dashboard/b.json",
+    "inputs": {
+      "dashboard-config.json": "7b22666f6c64657273223a205b22736f75726365222c2022616c706861225d2c2022667574757265223a20225c7530336231227d",
+      "dashboard/a.json": "7b226964223a202261222c2022666f6c646572223a2022736f75726365222c2022667574757265223a205b375d7d",
+      "dashboard/b.json": "7b22667574757265223a22e282"
+    },
+    "result": null,
+    "error": "UnicodeDecodeError",
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha"
+        ],
+        "future": "\u03b1"
+      },
+      "dashboard/a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "dashboard/b.json": null
+    },
+    "unchanged": {
+      "dashboard-config.json": true,
+      "dashboard/a.json": true,
+      "dashboard/b.json": true
+    }
+  },
+  {
+    "operation": "delete",
+    "args": [
+      "source"
+    ],
+    "location": "dashboard/b.json",
+    "inputs": {
+      "dashboard-config.json": "7b22666f6c64657273223a205b22736f75726365222c2022616c706861225d2c2022667574757265223a20225c7530336231227d",
+      "dashboard/a.json": "7b226964223a202261222c2022666f6c646572223a2022736f75726365222c2022667574757265223a205b375d7d",
+      "dashboard/b.json": "7b22667574757265223a22e282"
+    },
+    "result": null,
+    "error": "UnicodeDecodeError",
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha"
+        ],
+        "future": "\u03b1"
+      },
+      "dashboard/a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "dashboard/b.json": null
+    },
+    "unchanged": {
+      "dashboard-config.json": true,
+      "dashboard/a.json": true,
+      "dashboard/b.json": true
+    }
+  },
+  {
+    "operation": "listing",
+    "args": [],
+    "location": "dashboard/b.json",
+    "inputs": {
+      "dashboard-config.json": "7b22666f6c64657273223a205b22736f75726365222c2022616c706861225d2c2022667574757265223a20225c7530336231227d",
+      "dashboard/a.json": "7b226964223a202261222c2022666f6c646572223a2022736f75726365222c2022667574757265223a205b375d7d",
+      "dashboard/b.json": "7b62726f6b656e"
+    },
+    "result": [
+      "source",
+      "alpha"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha"
+        ],
+        "future": "\u03b1"
+      },
+      "dashboard/a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "dashboard/b.json": null
+    },
+    "unchanged": {
+      "dashboard-config.json": true,
+      "dashboard/a.json": true,
+      "dashboard/b.json": true
+    }
+  },
+  {
+    "operation": "create",
+    "args": [
+      "new"
+    ],
+    "location": "dashboard/b.json",
+    "inputs": {
+      "dashboard-config.json": "7b22666f6c64657273223a205b22736f75726365222c2022616c706861225d2c2022667574757265223a20225c7530336231227d",
+      "dashboard/a.json": "7b226964223a202261222c2022666f6c646572223a2022736f75726365222c2022667574757265223a205b375d7d",
+      "dashboard/b.json": "7b62726f6b656e"
+    },
+    "result": [
+      "source",
+      "alpha",
+      "new"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha",
+          "new"
+        ],
+        "future": "\u03b1"
+      },
+      "dashboard/a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "dashboard/b.json": null
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "dashboard/a.json": true,
+      "dashboard/b.json": true
+    }
+  },
+  {
+    "operation": "rename",
+    "args": [
+      "source",
+      "target"
+    ],
+    "location": "dashboard/b.json",
+    "inputs": {
+      "dashboard-config.json": "7b22666f6c64657273223a205b22736f75726365222c2022616c706861225d2c2022667574757265223a20225c7530336231227d",
+      "dashboard/a.json": "7b226964223a202261222c2022666f6c646572223a2022736f75726365222c2022667574757265223a205b375d7d",
+      "dashboard/b.json": "7b62726f6b656e"
+    },
+    "result": [
+      "target",
+      "alpha"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "target",
+          "alpha"
+        ],
+        "future": "\u03b1",
+        "renamed": {
+          "source": "target"
+        }
+      },
+      "dashboard/a.json": {
+        "id": "a",
+        "folder": "target",
+        "future": [
+          7
+        ]
+      },
+      "dashboard/b.json": null
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "dashboard/a.json": false,
+      "dashboard/b.json": true
+    }
+  },
+  {
+    "operation": "delete",
+    "args": [
+      "source"
+    ],
+    "location": "dashboard/b.json",
+    "inputs": {
+      "dashboard-config.json": "7b22666f6c64657273223a205b22736f75726365222c2022616c706861225d2c2022667574757265223a20225c7530336231227d",
+      "dashboard/a.json": "7b226964223a202261222c2022666f6c646572223a2022736f75726365222c2022667574757265223a205b375d7d",
+      "dashboard/b.json": "7b62726f6b656e"
+    },
+    "result": [
+      "alpha",
+      "Unfiled"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "alpha",
+          "Unfiled"
+        ],
+        "future": "\u03b1"
+      },
+      "dashboard/a.json": {
+        "id": "a",
+        "folder": "Unfiled",
+        "future": [
+          7
+        ]
+      },
+      "dashboard/b.json": null
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "dashboard/a.json": false,
+      "dashboard/b.json": true
+    }
+  },
+  {
+    "operation": "listing",
+    "args": [],
+    "location": "dashboard/b.json",
+    "inputs": {
+      "dashboard-config.json": "7b22666f6c64657273223a205b22736f75726365222c2022616c706861225d2c2022667574757265223a20225c7530336231227d",
+      "dashboard/a.json": "7b226964223a202261222c2022666f6c646572223a2022736f75726365222c2022667574757265223a205b375d7d",
+      "dashboard/b.json": "7b226964223a202262222c2022666f6c646572223a2022616c706861222c2022667574757265223a2022e697a5e69cace8aa9e227d"
+    },
+    "result": [
+      "source",
+      "alpha"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha"
+        ],
+        "future": "\u03b1"
+      },
+      "dashboard/a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "dashboard/b.json": {
+        "id": "b",
+        "folder": "alpha",
+        "future": "\u65e5\u672c\u8a9e"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": true,
+      "dashboard/a.json": true,
+      "dashboard/b.json": true
+    }
+  },
+  {
+    "operation": "create",
+    "args": [
+      "new"
+    ],
+    "location": "dashboard/b.json",
+    "inputs": {
+      "dashboard-config.json": "7b22666f6c64657273223a205b22736f75726365222c2022616c706861225d2c2022667574757265223a20225c7530336231227d",
+      "dashboard/a.json": "7b226964223a202261222c2022666f6c646572223a2022736f75726365222c2022667574757265223a205b375d7d",
+      "dashboard/b.json": "7b226964223a202262222c2022666f6c646572223a2022616c706861222c2022667574757265223a2022e697a5e69cace8aa9e227d"
+    },
+    "result": [
+      "source",
+      "alpha",
+      "new"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "source",
+          "alpha",
+          "new"
+        ],
+        "future": "\u03b1"
+      },
+      "dashboard/a.json": {
+        "id": "a",
+        "folder": "source",
+        "future": [
+          7
+        ]
+      },
+      "dashboard/b.json": {
+        "id": "b",
+        "folder": "alpha",
+        "future": "\u65e5\u672c\u8a9e"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "dashboard/a.json": true,
+      "dashboard/b.json": true
+    }
+  },
+  {
+    "operation": "rename",
+    "args": [
+      "source",
+      "target"
+    ],
+    "location": "dashboard/b.json",
+    "inputs": {
+      "dashboard-config.json": "7b22666f6c64657273223a205b22736f75726365222c2022616c706861225d2c2022667574757265223a20225c7530336231227d",
+      "dashboard/a.json": "7b226964223a202261222c2022666f6c646572223a2022736f75726365222c2022667574757265223a205b375d7d",
+      "dashboard/b.json": "7b226964223a202262222c2022666f6c646572223a2022616c706861222c2022667574757265223a2022e697a5e69cace8aa9e227d"
+    },
+    "result": [
+      "target",
+      "alpha"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "target",
+          "alpha"
+        ],
+        "future": "\u03b1",
+        "renamed": {
+          "source": "target"
+        }
+      },
+      "dashboard/a.json": {
+        "id": "a",
+        "folder": "target",
+        "future": [
+          7
+        ]
+      },
+      "dashboard/b.json": {
+        "id": "b",
+        "folder": "alpha",
+        "future": "\u65e5\u672c\u8a9e"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "dashboard/a.json": false,
+      "dashboard/b.json": true
+    }
+  },
+  {
+    "operation": "delete",
+    "args": [
+      "source"
+    ],
+    "location": "dashboard/b.json",
+    "inputs": {
+      "dashboard-config.json": "7b22666f6c64657273223a205b22736f75726365222c2022616c706861225d2c2022667574757265223a20225c7530336231227d",
+      "dashboard/a.json": "7b226964223a202261222c2022666f6c646572223a2022736f75726365222c2022667574757265223a205b375d7d",
+      "dashboard/b.json": "7b226964223a202262222c2022666f6c646572223a2022616c706861222c2022667574757265223a2022e697a5e69cace8aa9e227d"
+    },
+    "result": [
+      "alpha",
+      "Unfiled"
+    ],
+    "error": null,
+    "written": {
+      "dashboard-config.json": {
+        "folders": [
+          "alpha",
+          "Unfiled"
+        ],
+        "future": "\u03b1"
+      },
+      "dashboard/a.json": {
+        "id": "a",
+        "folder": "Unfiled",
+        "future": [
+          7
+        ]
+      },
+      "dashboard/b.json": {
+        "id": "b",
+        "folder": "alpha",
+        "future": "\u65e5\u672c\u8a9e"
+      }
+    },
+    "unchanged": {
+      "dashboard-config.json": false,
+      "dashboard/a.json": false,
+      "dashboard/b.json": true
+    }
+  }
+]

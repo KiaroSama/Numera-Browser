@@ -1,0 +1,88 @@
+{
+  "schema": 1,
+  "date": "2026-11-14",
+  "source_commit": "3bf1d839fd33e42a10b982bd8607a7052ea7c4cd",
+  "failing_ci": {
+    "head": "001d8a11e120e45da932588dc10938c9182574a0",
+    "run_id": 43536453687,
+    "job_id": 132267500611,
+    "platform": "macOS"
+  },
+  "groups": [
+    {
+      "cases": [
+        "network::tests::rotation_control_revalidates_redirect_pin_host_and_missing_header"
+      ],
+      "observed": "AddrNotAvailable49 while binding the second fixture listener, before control transport.",
+      "cause": "Unconfigured127.0.0.2 loopback alias assumption.",
+      "change": "Use actual127.0.0.1 and::1 listeners on the same port; require second-hop local IPv6 address, original Host headers and per-hop resolution. No product network policy change.",
+      "linux_result": "passed0.12s"
+    },
+    {
+      "cases": [
+        "adapter_acquisition::test_windows_frame_wait_stops_on_readiness_or_its_deadline_arrival",
+        "adapter_acquisition::test_windows_frame_wait_stops_on_readiness_or_its_deadline_ready"
+      ],
+      "observed": "Both read/payload/<2second assertions completed, then OwnedTree::settle returned rawEPERM at original line297.",
+      "cause_qualification": "The raw error narrows to leader-birth observation or group signaling. The immediate birth-error return was deterministically reproduced in the same existing ready case; exact Darwin syscall stage was not retained by that completed CI job.",
+      "change": "Retry uncertain Unix leader-birth observations only within the existing cleanup deadline. After uncertainty, require matching birth identity or a complete subsequent real kernel empty-group proof; persistent uncertainty returns an error without signaling.",
+      "red": "Existing ready case failed with rawEPERM on Linux before the production fix.",
+      "green": "Existing five frame-wait cases passed0.77s. Added transient-error/real-empty and persistent-error/actual-live/no-signal controls inside the existing ready ID; no new tests."
+    },
+    {
+      "cases": [
+        "lifecycle::helper_ownership_a_wedged_helper_with_a_driver_times_out_within_the_declared_bound"
+      ],
+      "observed": "350ms native-port deadline expired without a real descendant marker.",
+      "cause": "Port fixture budget disagreed with authenticated source3second helper+descendant startup budget.",
+      "change": "Restore source wall3seconds, cleanup5seconds, elapsed<9seconds. Require real streamed TAIL and descendant marker before the3second deadline, timeout classification, and actual post-cleanup empty-group proof.",
+      "source_evidence": [
+        "engine/tests/test_helper_ownership.py:BUDGET_WEDGED=3.0",
+        "engine/numera/server/helpers.py:CLEANUP_BUDGET=5.0"
+      ],
+      "linux_result": "passed4.41s including isolated fixture preparation"
+    }
+  ],
+  "verification": {
+    "strict_clippy": "Final Core/source_browser/source_ownership strictClippy passed;72s including shared build lock wait",
+    "full_source_ownership": "380/380 passed36.26s before the final top-of-retry deadline guard; final focused readiness controls then passed5/5 on that guard in0.79s.",
+    "full_source_browser": "delegated to cloak_native",
+    "actual_macOS_rerun": "pending hosted CI",
+    "inventory": "Original IDs/types/platform conditions preserved; no new test names or ignored cases.",
+    "optional_full_native_unit": {
+      "passed": 42,
+      "failed": 1,
+      "cause": "The actual-supervisor cancellation case requires NUMERA_NATIVE_CANDIDATE, absent from this optional direct invocation. Its current-engine proof is owned by rust_build_tools; this is not a product failure or a full-native pass claim."
+    },
+    "final_readiness": "5/5 passed0.79s on final Unix retry bytes including pre-retry deadline check"
+  },
+  "logs": {
+    "readiness-red.log": {
+      "sha256": "42af0519d461f9f2494169e479a088e969a4bcc146be862b7b1b4677c7c023ad"
+    },
+    "readiness-green.log": {
+      "sha256": "61df388f62b648164e97a14ddee86540a1ef778933df3b434c33c4d7b14175f7"
+    },
+    "ownership-green.log": {
+      "sha256": "b599667ef2f8c92384d7c1f2ae8cb9905104a54aaf371e67338da969c2e931d2"
+    },
+    "rotation-green.log": {
+      "sha256": "30082b88d4ca03eced544c69c8229d5720daa2c65c33a59666f74eedfed2caeb"
+    },
+    "strict-clippy.log": {
+      "sha256": "61565ee51c8309e99acb39df331a713f4a7fa4408dae2d3da55a34a301358f96"
+    },
+    "ownership-full.log": {
+      "sha256": "2bfc36ed124d297170cfc07de91f3851d15e7ed99d5ae88f1149c4ae86dbd6ba"
+    },
+    "native-unit-full.log": {
+      "sha256": "c98e97274825d19b7a71e30105054b842d437fa7670addc352dedde43daf5bfa"
+    },
+    "readiness-final.log": {
+      "sha256": "407c5fb4f175632fb322cc64783f0c5f5e54e205199ba8faf83d5202bdcc5985"
+    },
+    "clippy-final.log": {
+      "sha256": "06cab98b754ea7db0162e4dce37694b733f0963483671ed75893c6a81da5928a"
+    }
+  }
+}

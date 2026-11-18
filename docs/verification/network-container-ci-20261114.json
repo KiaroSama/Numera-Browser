@@ -1,0 +1,149 @@
+{
+  "schema": 1,
+  "review_date": "2026-11-14",
+  "source_run": 43536453687,
+  "source_checkout": "0f7dd89a6f6ecb0bee1f4969af799148e62e7fee",
+  "network": {
+    "ci6_fixture_lifecycle": {
+      "run": 43553932142,
+      "job": 132323567703,
+      "source_head": "68d3ef32d9d3b0718945bc6ed197cf4d1cbd52e6",
+      "actual_checkout": "ec0eff8d3e655c3428ef74652eb68d7e479b1482",
+      "observed": "The Windows functional test phase hit its existing900s wall. source_network had reported90 passed and1 failed, with59 cases not completed; several TCP/SOCKS cases ran beyond60s. The tunnel_thread_ends_when_its_sockets_are_pulled case failed, but its final panic details were not emitted before the unfinished target was terminated.",
+      "artifact": 14098561898,
+      "actual_test_log": "/workspace/work/functional-ci-68-windows/build/native-phase-test.log",
+      "test_log_sha256": "5221a47e221dec4b789c0ed7d8583677d128d885d5af621aa5ce5811b9871e59",
+      "artifact_retrieval": "Authenticated job/artifact metadata was cross-checked; the complete extracted test log was read from SourceDomain's retained artifact extraction. This agent did not re-download that artifact.",
+      "cause_proved_locally": "Server retained an accepted socket clone after its handler completed. A completed Site HTTP200/body therefore did not signal peer EOF while Server remained alive. duplex could wait indefinitely on its connected-origin read, which had no timeout, while finish joined copies after pulling only the registered client-side socket.",
+      "portable_red": "A standalone Rust harness used the exact unmodified Server/Site/request code and real loopback TCP. After consuming the complete HTTP response, its existing3s read timeout returned WouldBlock instead of EOF; exit1. No mock socket or Python runtime was involved.",
+      "red_log": "/workspace/work/network-fixture-eof/red.log",
+      "red_log_sha256": "fb1b95f06a19568dcba2c4b6b856e7418a30202ee130512d104695867ae29b72",
+      "red_fixture_source_sha256": "c3d970ef7d5c17c1ef82a3ebfd0e20a4e157ce849940a24eeaa9034a97d85c2a",
+      "change": "A handler-owned RAII socket guard shuts the endpoint on completion/unwind so the registry clone cannot keep its peer alive. Both duplex sockets receive the existing3s read/write bounds before cloning. The original stop/admission synchronization and joined worker behavior remain.",
+      "paths": [
+        "engine-rust/tests/source_network/servers.rs",
+        "engine-rust/tests/source_network/relay.rs"
+      ],
+      "durable_case": "relay::c000_the_tunnel_thread_ends_when_its_sockets_are_pulled",
+      "source_id": "tests/test_relay.py::test_the_tunnel_thread_ends_when_its_sockets_are_pulled",
+      "durable_control": "A separate actual Site request inside the original case requires HTTP200, the exact expected body and peer EOF while the completed server still retains its shutdown-registry clone. All original tunnel assertions and payloads follow unchanged.",
+      "portable_green": "The same external TCP probe now reports Ok(0) and exits0.",
+      "green_log": "/workspace/work/network-fixture-eof/green.log",
+      "green_log_sha256": "23647ac9b15fd824d7e05804d18ba0bf81ef8c214e80f797de69eecdcafd2397",
+      "final_linux_result": "150 passed;0 failed;0 ignored;0 filtered out;7.03 seconds.",
+      "final_linux_log": "/workspace/work/ci7-network-fixture-150.log",
+      "final_linux_log_sha256": "0c360439480df372654f98438a05e29b0b9bb8bffe93d692a738139ac13af46f",
+      "strict_clippy": "Actual source_network target and shared core passed strict Clippy in0.63 seconds.",
+      "strict_clippy_log": "/workspace/work/ci7-network-fixture-clippy.log",
+      "strict_clippy_log_sha256": "d82a32f9d9780d044ab06037e501842ca98a70d3305e9d15ef45c0bbacd1180f",
+      "unchanged": "All150 original IDs/counts/types, original assertions/payloads,3s/5s socket limits and900s test-phase bound remain. No production relay code, backend skip or tolerance was changed.",
+      "remaining": "The portable real-I/O defect is proved and corrected. Fresh Windows150 execution remains required to establish its hosted effect; the exact OS-specific interruption behavior is not claimed from Linux alone.",
+      "artifact_zip_sha256": "42356ac2aac867f0d831a43aa690f7e0764d4e4283230a4c051153d25d4ccc6d"
+    },
+    "macos_job": 132267500611,
+    "macos_result": "137 passed; 13 failed; 0 ignored; 150 total",
+    "windows_job": 132267500699,
+    "windows_result": "135 passed; 15 failed; 0 ignored; 150 total",
+    "common_symptoms": "SOCKS requests failed or timed out; CONNECT responses ended with UnexpectedEof at source_network/servers.rs:226.",
+    "cause": "The fixture accepts from a nonblocking listener, then uses blocking read_exact and duplex handlers without explicitly selecting blocking mode for accepted sockets. Socket-mode inheritance differs across operating systems. Forcing nonblocking accepted sockets on Linux reproduces both the hosted SOCKS request error and exact CONNECT UnexpectedEof.",
+    "changes": [
+      "Explicitly select blocking mode for every accepted fixture socket before protocol IO.",
+      "Recheck stop while holding the socket registry mutex, making late admission atomic with finish's shutdown sweep. The prior check outside the mutex allowed a late socket to miss shutdown while finish joined its handler.",
+      "The Windows extension flag case compares canonical filesystem path equality. Temporary paths contain mixed separator spellings; a raw substring comparison incorrectly rejected the same resolved directory."
+    ],
+    "paths": [
+      "engine-rust/tests/source_network/servers.rs",
+      "engine-rust/tests/source_network/extensions.rs"
+    ],
+    "red_cases": [
+      "proxy_check_socks::c000_a_socks_proxy_is_no_longer_reported_as_untestable",
+      "relay::c000_connect_tunnel_reaches_the_origin"
+    ],
+    "red_logs": [
+      "/workspace/work/network-cross-platform-red.log",
+      "/workspace/work/network-cross-platform-tunnel-red.log"
+    ],
+    "final_linux_result": "150 passed; 0 failed; 0 ignored; 0 filtered out; 6.98 seconds",
+    "final_linux_log": "/workspace/work/network-cross-platform-final.log",
+    "strict_clippy": "Actual core, source_network target and native browser worker passed in 1.43 seconds.",
+    "strict_clippy_log": "/workspace/work/network-cross-platform-clippy.log",
+    "limits": "Original case IDs, native TCP/protocol test types, assertions, two-worker execution and time limits remain. No backend or platform skips were added. Fresh macOS/Windows execution is still required."
+  },
+  "container": {
+    "ci6_observation": {
+      "run": 43553932142,
+      "job": 132323256978,
+      "source_head": "68d3ef32d9d3b0718945bc6ed197cf4d1cbd52e6",
+      "actual_checkout": "ec0eff8d3e655c3428ef74652eb68d7e479b1482",
+      "source_tree": "5912136069b70587970d3fee68d3e83361ef2671",
+      "result": "The real network:none/no-host-cache image reached Start/started, then the owned startup stderr drain reported the dynamic loader failure before initialization completed. Chromium Launch was not reached.",
+      "exact_loader_diagnostic": "/app/drivers/playwright/node: error while loading shared libraries: libatomic.so.1: cannot open shared object file: No such file or directory",
+      "static_categories": [
+        "transport",
+        "timeout"
+      ],
+      "step_started_at": "2026-11-14T04:13:07Z",
+      "step_completed_at": "2026-11-14T04:13:38Z",
+      "complete_log": "/workspace/work/ci6-docker/job.log",
+      "log_utf8_bytes": 274654,
+      "log_sha256": "544f4e9b0e2c5f134c02d929007f14773058fb140433931300a76e2c1464f5b6",
+      "metadata": "/workspace/work/ci6-docker/job-metadata.json",
+      "retrieval": "Authenticated GitHub connector supplied the complete decoded log; authenticated job metadata identifies the failed smoke step. Source head and actual PR checkout remain separately labeled."
+    },
+    "ci5_observation": {
+      "run": 43546474618,
+      "job": 132299856210,
+      "source_head": "63b09f46a65071ca4bbb25862525151c866c0169",
+      "actual_checkout": "cb0fcc3239cd52ba21283516dbc9b9834db885cd",
+      "result": "Real isolated image reached Start/started then Start/failed; Chromium Launch was never reached. Failure is localized to native SDK startup, not page evaluation or browser cleanup.",
+      "limitation": "Static phase evidence did not retain the underlying startup error; normal SDK policy still suppresses vendor messages. The actual startup cause is not yet established."
+    },
+    "job": 132267327022,
+    "step": "Require the real image browser without network or host cache",
+    "observed_failure": "Inner owned command exceeded idle deadline after 30011ms; idle30003ms; leader still running; stdout/stderr EOF false; both output byte counts zero.",
+    "cause_status": "CI6 established the actual startup cause: the runtime image lacks libatomic.so.1, required by the bundled Node startup. Earlier silent and static-phase-only observations are retained as historical evidence.",
+    "runtime_prerequisite_fix": {
+      "paths": [
+        "Dockerfile",
+        "tools/xtask/tests/source_ci/container.rs"
+      ],
+      "change": "Add only Ubuntu's libatomic1 runtime package. The existing container_pin case requires that exact package token.",
+      "focused_result": "43 passed; 0 failed; 0 ignored; 600 filtered out; 0.23 seconds.",
+      "focused_log": "/workspace/work/ci6-docker-libatomic-contracts.log",
+      "focused_log_sha256": "a53450942e5c5c935dd2054ab98bd61a2f041b07dd0eb04e61662f10230a204f",
+      "strict_clippy": "Tools all-targets strict Clippy passed in16.61 seconds.",
+      "strict_clippy_log": "/workspace/work/ci6-docker-libatomic-clippy.log",
+      "strict_clippy_log_sha256": "782a4243effc39d6b5f8522e460fe3c50004bdddfa19aaa0acef49357456c157",
+      "final_combined_proof": "Fresh source-CI643 passed41.50 seconds including all43 container cases and the explicit Linux Debian dependency/layout control. Original tooling6 passed0.25 seconds; Tools all-target strict Clippy passed10.28 seconds. Logs:/workspace/work/ci7-{source643,tooling6,clippy}.log.",
+      "limit": "These are local contract/lint proofs. The corrected image has not yet passed the mandatory real hosted offline-browser smoke; no local Docker rebuild was attempted."
+    },
+    "diagnostic_changes": [
+      "The real native Driver::perform emits bounded static enum phase start/completed/failed messages, without vendor error text or arguments.",
+      "The orchestrator streams only exact allowlisted enum/status messages from each output stream, with a 64KiB input budget per stream. Fragmented lines are reconstructed; arbitrary text, invalid phases and secret-bearing suffixes are rejected.",
+      "After a capture error, a bounded docker logs --tail64 command runs before mandatory daemon-container removal and absence proof. Its wall10s/idle5s/64KiB bounds and exact same allowlist prevent raw vendor output from escaping."
+    ],
+    "paths": [
+      "engine-rust/src/browser/sdk/container_smoke.rs",
+      "tools/xtask/src/ci/container.rs",
+      "tools/xtask/tests/source_ci/container.rs"
+    ],
+    "unchanged_acceptance": "Inner wall60s/idle30s; outer wall120s/idle60s; real reviewed bundled Playwright Chromium; non-root user; network:none; no host mounts or caches; mandatory cleanup and unchanged existing source case counts.",
+    "local_checks": [
+      "An empty phase parser failed the existing container_ci_offline case; the implemented parser passed its fragmented-line, secret-suffix and byte-budget controls.",
+      "All 43 existing container_cases passed in 0.18 seconds; Tools all-targets strict Clippy passed in 9.96 seconds.",
+      "A host-only Rust diagnostic linked the actual native driver.rs and current generated Rust browser runtime, then completed the same nonpersistent launch/context/page/content/text/evaluate42/close/stop API sequence with Playwright1.65 and bundled Chromium. This does not establish container isolation or Docker acceptance.",
+      "The exact SHA-verified upstream Linux driver wheel has executable node/cli0755 and data0644 permissions, excluding an archive-permission hypothesis.",
+      "The local diagnostic Docker image build exhausted disk before execution because this daemon uses full-copy VFS layers. Its six exact owned cache records and diagnostic context were removed; Docker then reported zero images, containers, volumes and build-cache records. No local Docker smoke result is claimed."
+    ],
+    "logs": [
+      "/workspace/work/container-phase-evidence-red.log",
+      "/workspace/work/container-phase-evidence-green.log",
+      "/workspace/work/container-phase-tools-clippy.log",
+      "/workspace/work/container-smoke-diagnostic/host-api.log",
+      "/workspace/work/container-smoke-diagnostic/wheel-permissions.log",
+      "/workspace/work/container-smoke-diagnostic/image-build.log"
+    ],
+    "next_diagnostic": "Only explicit container smoke now selects a bounded64KiB startup stderr drain owned by the real driver. It continues draining after its retention cap, is aborted and joined in stop, and is aborted in Drop. Nonempty stderr is reported at EOF while startup is pending, preserving actual loader/Node evidence before the unchanged30s watchdog can expire; this early report is disabled after successful initialization. Original startup error and stderr use static category plus compact JSON; complete messages are redacted and control-filtered before16KiB UTF8 clipping. Normal SDK/public errors and stderr-null policy remain unchanged. SourceBrowser235 passed17.97s; final core SDK/worker strictClippy passed8.88s. Native runtime evidence remains mandatory.",
+    "remaining": "Run the corrected libatomic1 image through the same real hosted network:none/no-host-cache browser smoke, retaining every acceptance condition."
+  }
+}

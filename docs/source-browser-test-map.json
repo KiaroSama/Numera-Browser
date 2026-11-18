@@ -1,0 +1,1690 @@
+{
+  "schema": 1,
+  "baseline": "docs/rust-test-baseline.json",
+  "baseline_source_commit": "3bf1d839fd33e42a10b982bd8607a7052ea7c4cd",
+  "suite": "source_browser",
+  "count": 235,
+  "files": {
+    "tests/test_adapter_acquisition.py": 33,
+    "tests/test_bundled_engines.py": 10,
+    "tests/test_camoufox_startup_cleanup.py": 3,
+    "tests/test_cookies.py": 15,
+    "tests/test_drivers.py": 18,
+    "tests/test_fingerprint_parity.py": 30,
+    "tests/test_launch_extras.py": 31,
+    "tests/test_probe.py": 14,
+    "tests/test_startup_resources.py": 12,
+    "tests/test_startup_urls.py": 9,
+    "tests/test_startup_urls_stay_whole.py": 14,
+    "tests/test_timezone_aliases.py": 20,
+    "tests/test_ua_metadata.py": 14,
+    "tests/test_warmup.py": 5,
+    "tests/test_warning_gate.py": 7
+  },
+  "case_types": {
+    "standard": 150,
+    "parameterized": 85
+  },
+  "native_only": true,
+  "verification": {
+    "status": "passed",
+    "command": "cargo test --locked --manifest-path engine-rust/Cargo.toml --features test-support,native-product,native-browser --test source_browser -- --test-threads=8",
+    "reported": 235,
+    "passed": 235,
+    "failed": 0,
+    "ignored": 0,
+    "source_oracle_processes": 0,
+    "failures": [],
+    "clippy": "passed: cargo clippy --locked --manifest-path engine-rust/Cargo.toml --features test-support,native-product,native-browser --test source_browser -- -D warnings",
+    "individually_reported_cases": 235,
+    "mapping_set_equals_frozen_baseline_subset": true,
+    "platform_verified": "Linux executed; Windows/macOS execution pending hosted CI."
+  },
+  "cases": [
+    {
+      "source_id": "tests/test_adapter_acquisition.py::test_existing_native_selection_disables_updates_before_import_and_preserves_sdk_options",
+      "rust_test": "adapter_acquisition::test_existing_native_selection_disables_updates_before_import_and_preserves_sdk_options",
+      "rust_file": "engine-rust/tests/source_browser/adapter_acquisition.rs",
+      "case_type": "standard",
+      "adaptation": "Actual native SDK worker and Rust binary Playwright vendor transport, including fragmented requests, idle input, failures, payload-free timings and cleanup. Legacy implementation mutants become independent named scheduling-regression inputs against the fixed native implementation."
+    },
+    {
+      "source_id": "tests/test_adapter_acquisition.py::test_frame_input_preserves_readiness_framing_and_eof[buffered]",
+      "rust_test": "adapter_acquisition::test_frame_input_preserves_readiness_framing_and_eof_buffered",
+      "rust_file": "engine-rust/tests/source_browser/adapter_acquisition.rs",
+      "case_type": "parameterized",
+      "adaptation": "Actual bounded frame parser and real native input pipe, with typed reader errors replacing Python os.read monkeypatches."
+    },
+    {
+      "source_id": "tests/test_adapter_acquisition.py::test_frame_input_preserves_readiness_framing_and_eof[eof]",
+      "rust_test": "adapter_acquisition::test_frame_input_preserves_readiness_framing_and_eof_eof",
+      "rust_file": "engine-rust/tests/source_browser/adapter_acquisition.rs",
+      "case_type": "parameterized",
+      "adaptation": "Actual bounded frame parser and real native input pipe, with typed reader errors replacing Python os.read monkeypatches."
+    },
+    {
+      "source_id": "tests/test_adapter_acquisition.py::test_frame_input_preserves_readiness_framing_and_eof[idle]",
+      "rust_test": "adapter_acquisition::test_frame_input_preserves_readiness_framing_and_eof_idle",
+      "rust_file": "engine-rust/tests/source_browser/adapter_acquisition.rs",
+      "case_type": "parameterized",
+      "adaptation": "Actual bounded frame parser and real native input pipe, with typed reader errors replacing Python os.read monkeypatches."
+    },
+    {
+      "source_id": "tests/test_adapter_acquisition.py::test_frame_input_preserves_readiness_framing_and_eof[invalid-json]",
+      "rust_test": "adapter_acquisition::test_frame_input_preserves_readiness_framing_and_eof_invalid_json",
+      "rust_file": "engine-rust/tests/source_browser/adapter_acquisition.rs",
+      "case_type": "parameterized",
+      "adaptation": "Actual bounded frame parser and real native input pipe, with typed reader errors replacing Python os.read monkeypatches."
+    },
+    {
+      "source_id": "tests/test_adapter_acquisition.py::test_frame_input_preserves_readiness_framing_and_eof[nonobject]",
+      "rust_test": "adapter_acquisition::test_frame_input_preserves_readiness_framing_and_eof_nonobject",
+      "rust_file": "engine-rust/tests/source_browser/adapter_acquisition.rs",
+      "case_type": "parameterized",
+      "adaptation": "Actual bounded frame parser and real native input pipe, with typed reader errors replacing Python os.read monkeypatches."
+    },
+    {
+      "source_id": "tests/test_adapter_acquisition.py::test_frame_input_preserves_readiness_framing_and_eof[oversized]",
+      "rust_test": "adapter_acquisition::test_frame_input_preserves_readiness_framing_and_eof_oversized",
+      "rust_file": "engine-rust/tests/source_browser/adapter_acquisition.rs",
+      "case_type": "parameterized",
+      "adaptation": "Actual bounded frame parser and real native input pipe, with typed reader errors replacing Python os.read monkeypatches."
+    },
+    {
+      "source_id": "tests/test_adapter_acquisition.py::test_frame_input_preserves_readiness_framing_and_eof[partial-eof]",
+      "rust_test": "adapter_acquisition::test_frame_input_preserves_readiness_framing_and_eof_partial_eof",
+      "rust_file": "engine-rust/tests/source_browser/adapter_acquisition.rs",
+      "case_type": "parameterized",
+      "adaptation": "Actual bounded frame parser and real native input pipe, with typed reader errors replacing Python os.read monkeypatches."
+    },
+    {
+      "source_id": "tests/test_adapter_acquisition.py::test_frame_input_preserves_readiness_framing_and_eof[partial]",
+      "rust_test": "adapter_acquisition::test_frame_input_preserves_readiness_framing_and_eof_partial",
+      "rust_file": "engine-rust/tests/source_browser/adapter_acquisition.rs",
+      "case_type": "parameterized",
+      "adaptation": "Actual bounded frame parser and real native input pipe, with typed reader errors replacing Python os.read monkeypatches."
+    },
+    {
+      "source_id": "tests/test_adapter_acquisition.py::test_frame_input_preserves_readiness_framing_and_eof[read-error]",
+      "rust_test": "adapter_acquisition::test_frame_input_preserves_readiness_framing_and_eof_read_error",
+      "rust_file": "engine-rust/tests/source_browser/adapter_acquisition.rs",
+      "case_type": "parameterized",
+      "adaptation": "Actual bounded frame parser and real native input pipe, with typed reader errors replacing Python os.read monkeypatches."
+    },
+    {
+      "source_id": "tests/test_adapter_acquisition.py::test_frame_input_preserves_readiness_framing_and_eof[ready]",
+      "rust_test": "adapter_acquisition::test_frame_input_preserves_readiness_framing_and_eof_ready",
+      "rust_file": "engine-rust/tests/source_browser/adapter_acquisition.rs",
+      "case_type": "parameterized",
+      "adaptation": "Actual bounded frame parser and real native input pipe, with typed reader errors replacing Python os.read monkeypatches."
+    },
+    {
+      "source_id": "tests/test_adapter_acquisition.py::test_frame_input_preserves_readiness_framing_and_eof[would-block]",
+      "rust_test": "adapter_acquisition::test_frame_input_preserves_readiness_framing_and_eof_would_block",
+      "rust_file": "engine-rust/tests/source_browser/adapter_acquisition.rs",
+      "case_type": "parameterized",
+      "adaptation": "Actual bounded frame parser and real native input pipe, with typed reader errors replacing Python os.read monkeypatches."
+    },
+    {
+      "source_id": "tests/test_adapter_acquisition.py::test_frame_input_rejects_invalid_wait_before_pipe_access[-1]",
+      "rust_test": "adapter_acquisition::test_frame_input_rejects_invalid_wait_before_pipe_access_1",
+      "rust_file": "engine-rust/tests/source_browser/adapter_acquisition.rs",
+      "case_type": "parameterized",
+      "adaptation": "Typed Duration rejects nonfinite/negative values; native Input::with_wait rejects >25ms before I/O."
+    },
+    {
+      "source_id": "tests/test_adapter_acquisition.py::test_frame_input_rejects_invalid_wait_before_pipe_access[0.026]",
+      "rust_test": "adapter_acquisition::test_frame_input_rejects_invalid_wait_before_pipe_access_0_026",
+      "rust_file": "engine-rust/tests/source_browser/adapter_acquisition.rs",
+      "case_type": "parameterized",
+      "adaptation": "Typed Duration rejects nonfinite/negative values; native Input::with_wait rejects >25ms before I/O."
+    },
+    {
+      "source_id": "tests/test_adapter_acquisition.py::test_frame_input_rejects_invalid_wait_before_pipe_access[inf]",
+      "rust_test": "adapter_acquisition::test_frame_input_rejects_invalid_wait_before_pipe_access_inf",
+      "rust_file": "engine-rust/tests/source_browser/adapter_acquisition.rs",
+      "case_type": "parameterized",
+      "adaptation": "Typed Duration rejects nonfinite/negative values; native Input::with_wait rejects >25ms before I/O."
+    },
+    {
+      "source_id": "tests/test_adapter_acquisition.py::test_frame_input_rejects_invalid_wait_before_pipe_access[nan]",
+      "rust_test": "adapter_acquisition::test_frame_input_rejects_invalid_wait_before_pipe_access_nan",
+      "rust_file": "engine-rust/tests/source_browser/adapter_acquisition.rs",
+      "case_type": "parameterized",
+      "adaptation": "Typed Duration rejects nonfinite/negative values; native Input::with_wait rejects >25ms before I/O."
+    },
+    {
+      "source_id": "tests/test_adapter_acquisition.py::test_missing_selected_binary_refuses_before_vendor_import[absent]",
+      "rust_test": "adapter_acquisition::test_missing_selected_binary_refuses_before_vendor_import_absent",
+      "rust_file": "engine-rust/tests/source_browser/adapter_acquisition.rs",
+      "case_type": "parameterized",
+      "adaptation": "Actual native SDK worker and Rust binary Playwright vendor transport, including fragmented requests, idle input, failures, payload-free timings and cleanup. Legacy implementation mutants become independent named scheduling-regression inputs against the fixed native implementation."
+    },
+    {
+      "source_id": "tests/test_adapter_acquisition.py::test_missing_selected_binary_refuses_before_vendor_import[directory]",
+      "rust_test": "adapter_acquisition::test_missing_selected_binary_refuses_before_vendor_import_directory",
+      "rust_file": "engine-rust/tests/source_browser/adapter_acquisition.rs",
+      "case_type": "parameterized",
+      "adaptation": "Actual native SDK worker and Rust binary Playwright vendor transport, including fragmented requests, idle input, failures, payload-free timings and cleanup. Legacy implementation mutants become independent named scheduling-regression inputs against the fixed native implementation."
+    },
+    {
+      "source_id": "tests/test_adapter_acquisition.py::test_missing_selected_binary_refuses_before_vendor_import[empty]",
+      "rust_test": "adapter_acquisition::test_missing_selected_binary_refuses_before_vendor_import_empty",
+      "rust_file": "engine-rust/tests/source_browser/adapter_acquisition.rs",
+      "case_type": "parameterized",
+      "adaptation": "Actual native SDK worker and Rust binary Playwright vendor transport, including fragmented requests, idle input, failures, payload-free timings and cleanup. Legacy implementation mutants become independent named scheduling-regression inputs against the fixed native implementation."
+    },
+    {
+      "source_id": "tests/test_adapter_acquisition.py::test_missing_selected_binary_refuses_before_vendor_import[missing]",
+      "rust_test": "adapter_acquisition::test_missing_selected_binary_refuses_before_vendor_import_missing",
+      "rust_file": "engine-rust/tests/source_browser/adapter_acquisition.rs",
+      "case_type": "parameterized",
+      "adaptation": "Actual native SDK worker and Rust binary Playwright vendor transport, including fragmented requests, idle input, failures, payload-free timings and cleanup. Legacy implementation mutants become independent named scheduling-regression inputs against the fixed native implementation."
+    },
+    {
+      "source_id": "tests/test_adapter_acquisition.py::test_sdk_operation_timing_never_logs_payloads[False-False-0-None]",
+      "rust_test": "adapter_acquisition::test_sdk_operation_timing_never_logs_payloads_false_false_0_none",
+      "rust_file": "engine-rust/tests/source_browser/adapter_acquisition.rs",
+      "case_type": "parameterized",
+      "adaptation": "Actual native worker and Rust vendor transport, bounded actual input-read/dispatch observations, deterministic fragment rendezvous, strict operation timing labels and payload-free logs. The three legacy rows select genuine test-support-only poll=0, idle-delay=25ms and fragment-delay=25ms worker mutations; the same scheduling checker must reject each corresponding regression. Product builds contain no mutation controls."
+    },
+    {
+      "source_id": "tests/test_adapter_acquisition.py::test_sdk_operation_timing_never_logs_payloads[False-False-0-poll]",
+      "rust_test": "adapter_acquisition::test_sdk_operation_timing_never_logs_payloads_false_false_0_poll",
+      "rust_file": "engine-rust/tests/source_browser/adapter_acquisition.rs",
+      "case_type": "parameterized",
+      "adaptation": "Actual native worker and Rust vendor transport, bounded actual input-read/dispatch observations, deterministic fragment rendezvous, strict operation timing labels and payload-free logs. The three legacy rows select genuine test-support-only poll=0, idle-delay=25ms and fragment-delay=25ms worker mutations; the same scheduling checker must reject each corresponding regression. Product builds contain no mutation controls."
+    },
+    {
+      "source_id": "tests/test_adapter_acquisition.py::test_sdk_operation_timing_never_logs_payloads[False-False-7-fragment-wait]",
+      "rust_test": "adapter_acquisition::test_sdk_operation_timing_never_logs_payloads_false_false_7_fragment_wait",
+      "rust_file": "engine-rust/tests/source_browser/adapter_acquisition.rs",
+      "case_type": "parameterized",
+      "adaptation": "Actual native worker and Rust vendor transport, bounded actual input-read/dispatch observations, deterministic fragment rendezvous, strict operation timing labels and payload-free logs. The three legacy rows select genuine test-support-only poll=0, idle-delay=25ms and fragment-delay=25ms worker mutations; the same scheduling checker must reject each corresponding regression. Product builds contain no mutation controls."
+    },
+    {
+      "source_id": "tests/test_adapter_acquisition.py::test_sdk_operation_timing_never_logs_payloads[False-False-7-None]",
+      "rust_test": "adapter_acquisition::test_sdk_operation_timing_never_logs_payloads_false_false_7_none",
+      "rust_file": "engine-rust/tests/source_browser/adapter_acquisition.rs",
+      "case_type": "parameterized",
+      "adaptation": "Actual native worker and Rust vendor transport, bounded actual input-read/dispatch observations, deterministic fragment rendezvous, strict operation timing labels and payload-free logs. The three legacy rows select genuine test-support-only poll=0, idle-delay=25ms and fragment-delay=25ms worker mutations; the same scheduling checker must reject each corresponding regression. Product builds contain no mutation controls."
+    },
+    {
+      "source_id": "tests/test_adapter_acquisition.py::test_sdk_operation_timing_never_logs_payloads[False-True-0-None]",
+      "rust_test": "adapter_acquisition::test_sdk_operation_timing_never_logs_payloads_false_true_0_none",
+      "rust_file": "engine-rust/tests/source_browser/adapter_acquisition.rs",
+      "case_type": "parameterized",
+      "adaptation": "Actual native worker and Rust vendor transport, bounded actual input-read/dispatch observations, deterministic fragment rendezvous, strict operation timing labels and payload-free logs. The three legacy rows select genuine test-support-only poll=0, idle-delay=25ms and fragment-delay=25ms worker mutations; the same scheduling checker must reject each corresponding regression. Product builds contain no mutation controls."
+    },
+    {
+      "source_id": "tests/test_adapter_acquisition.py::test_sdk_operation_timing_never_logs_payloads[False-True-0-pump]",
+      "rust_test": "adapter_acquisition::test_sdk_operation_timing_never_logs_payloads_false_true_0_pump",
+      "rust_file": "engine-rust/tests/source_browser/adapter_acquisition.rs",
+      "case_type": "parameterized",
+      "adaptation": "Actual native worker and Rust vendor transport, bounded actual input-read/dispatch observations, deterministic fragment rendezvous, strict operation timing labels and payload-free logs. The three legacy rows select genuine test-support-only poll=0, idle-delay=25ms and fragment-delay=25ms worker mutations; the same scheduling checker must reject each corresponding regression. Product builds contain no mutation controls."
+    },
+    {
+      "source_id": "tests/test_adapter_acquisition.py::test_sdk_operation_timing_never_logs_payloads[True-False-0-None]",
+      "rust_test": "adapter_acquisition::test_sdk_operation_timing_never_logs_payloads_true_false_0_none",
+      "rust_file": "engine-rust/tests/source_browser/adapter_acquisition.rs",
+      "case_type": "parameterized",
+      "adaptation": "Actual native worker and Rust vendor transport, bounded actual input-read/dispatch observations, deterministic fragment rendezvous, strict operation timing labels and payload-free logs. The three legacy rows select genuine test-support-only poll=0, idle-delay=25ms and fragment-delay=25ms worker mutations; the same scheduling checker must reject each corresponding regression. Product builds contain no mutation controls."
+    },
+    {
+      "source_id": "tests/test_adapter_acquisition.py::test_sdk_operation_timing_never_logs_payloads[True-False-7-None]",
+      "rust_test": "adapter_acquisition::test_sdk_operation_timing_never_logs_payloads_true_false_7_none",
+      "rust_file": "engine-rust/tests/source_browser/adapter_acquisition.rs",
+      "case_type": "parameterized",
+      "adaptation": "Actual native worker and Rust vendor transport, bounded actual input-read/dispatch observations, deterministic fragment rendezvous, strict operation timing labels and payload-free logs. The three legacy rows select genuine test-support-only poll=0, idle-delay=25ms and fragment-delay=25ms worker mutations; the same scheduling checker must reject each corresponding regression. Product builds contain no mutation controls."
+    },
+    {
+      "source_id": "tests/test_adapter_acquisition.py::test_windows_frame_wait_stops_on_readiness_or_its_deadline[arrival]",
+      "rust_test": "adapter_acquisition::test_windows_frame_wait_stops_on_readiness_or_its_deadline_arrival",
+      "rust_file": "engine-rust/tests/source_browser/adapter_acquisition.rs",
+      "case_type": "parameterized",
+      "adaptation": "Actual native Input uses OS pipe readiness/cancellation on this platform; same five ready/arrival/idle/EOF/error behaviors also run on Windows with its PeekNamedPipe implementation."
+    },
+    {
+      "source_id": "tests/test_adapter_acquisition.py::test_windows_frame_wait_stops_on_readiness_or_its_deadline[eof]",
+      "rust_test": "adapter_acquisition::test_windows_frame_wait_stops_on_readiness_or_its_deadline_eof",
+      "rust_file": "engine-rust/tests/source_browser/adapter_acquisition.rs",
+      "case_type": "parameterized",
+      "adaptation": "Actual native Input uses OS pipe readiness/cancellation on this platform; same five ready/arrival/idle/EOF/error behaviors also run on Windows with its PeekNamedPipe implementation."
+    },
+    {
+      "source_id": "tests/test_adapter_acquisition.py::test_windows_frame_wait_stops_on_readiness_or_its_deadline[error]",
+      "rust_test": "adapter_acquisition::test_windows_frame_wait_stops_on_readiness_or_its_deadline_error",
+      "rust_file": "engine-rust/tests/source_browser/adapter_acquisition.rs",
+      "case_type": "parameterized",
+      "adaptation": "Actual native Input uses OS pipe readiness/cancellation on this platform; same five ready/arrival/idle/EOF/error behaviors also run on Windows with its PeekNamedPipe implementation."
+    },
+    {
+      "source_id": "tests/test_adapter_acquisition.py::test_windows_frame_wait_stops_on_readiness_or_its_deadline[idle]",
+      "rust_test": "adapter_acquisition::test_windows_frame_wait_stops_on_readiness_or_its_deadline_idle",
+      "rust_file": "engine-rust/tests/source_browser/adapter_acquisition.rs",
+      "case_type": "parameterized",
+      "adaptation": "Actual native Input uses OS pipe readiness/cancellation on this platform; same five ready/arrival/idle/EOF/error behaviors also run on Windows with its PeekNamedPipe implementation."
+    },
+    {
+      "source_id": "tests/test_adapter_acquisition.py::test_windows_frame_wait_stops_on_readiness_or_its_deadline[ready]",
+      "rust_test": "adapter_acquisition::test_windows_frame_wait_stops_on_readiness_or_its_deadline_ready",
+      "rust_file": "engine-rust/tests/source_browser/adapter_acquisition.rs",
+      "case_type": "parameterized",
+      "adaptation": "Actual native Input uses OS pipe readiness/cancellation on this platform; same five ready/arrival/idle/EOF/error behaviors also run on Windows with its PeekNamedPipe implementation."
+    },
+    {
+      "source_id": "tests/test_bundled_engines.py::test_broken_bundle_refuses_fallback_to_a_personal_cache[escape]",
+      "rust_test": "bundled_engines::test_broken_bundle_refuses_fallback_to_a_personal_cache_escape",
+      "rust_file": "engine-rust/tests/source_browser/bundled_engines.rs",
+      "case_type": "parameterized",
+      "adaptation": "Actual portable manifest/resource selection against owned temporary files. Explicit environment map replaces process-global monkeypatching."
+    },
+    {
+      "source_id": "tests/test_bundled_engines.py::test_broken_bundle_refuses_fallback_to_a_personal_cache[missing-addon]",
+      "rust_test": "bundled_engines::test_broken_bundle_refuses_fallback_to_a_personal_cache_missing_addon",
+      "rust_file": "engine-rust/tests/source_browser/bundled_engines.rs",
+      "case_type": "parameterized",
+      "adaptation": "Actual portable manifest/resource selection against owned temporary files. Explicit environment map replaces process-global monkeypatching."
+    },
+    {
+      "source_id": "tests/test_bundled_engines.py::test_broken_bundle_refuses_fallback_to_a_personal_cache[missing]",
+      "rust_test": "bundled_engines::test_broken_bundle_refuses_fallback_to_a_personal_cache_missing",
+      "rust_file": "engine-rust/tests/source_browser/bundled_engines.rs",
+      "case_type": "parameterized",
+      "adaptation": "Actual portable manifest/resource selection against owned temporary files. Explicit environment map replaces process-global monkeypatching."
+    },
+    {
+      "source_id": "tests/test_bundled_engines.py::test_camoufox_uses_packaged_resources_and_default_addons",
+      "rust_test": "bundled_engines::test_camoufox_uses_packaged_resources_and_default_addons",
+      "rust_file": "engine-rust/tests/source_browser/bundled_engines.rs",
+      "case_type": "standard",
+      "adaptation": "Actual portable manifest/resource selection against owned temporary files. Explicit environment map replaces process-global monkeypatching."
+    },
+    {
+      "source_id": "tests/test_bundled_engines.py::test_chromium_backends_select_distinct_bundled_executables",
+      "rust_test": "bundled_engines::test_chromium_backends_select_distinct_bundled_executables",
+      "rust_file": "engine-rust/tests/source_browser/bundled_engines.rs",
+      "case_type": "standard",
+      "adaptation": "Actual portable manifest/resource selection against owned temporary files. Explicit environment map replaces process-global monkeypatching."
+    },
+    {
+      "source_id": "tests/test_bundled_engines.py::test_distribution_cloak_has_no_bundled_binary_or_override",
+      "rust_test": "bundled_engines::test_distribution_cloak_has_no_bundled_binary_or_override",
+      "rust_file": "engine-rust/tests/source_browser/bundled_engines.rs",
+      "case_type": "standard",
+      "adaptation": "Actual portable manifest/resource selection against owned temporary files. Explicit environment map replaces process-global monkeypatching."
+    },
+    {
+      "source_id": "tests/test_bundled_engines.py::test_explicit_chromium_cache_override_wins[patchright]",
+      "rust_test": "bundled_engines::test_explicit_chromium_cache_override_wins_patchright",
+      "rust_file": "engine-rust/tests/source_browser/bundled_engines.rs",
+      "case_type": "parameterized",
+      "adaptation": "Actual portable manifest/resource selection against owned temporary files. Explicit environment map replaces process-global monkeypatching."
+    },
+    {
+      "source_id": "tests/test_bundled_engines.py::test_explicit_chromium_cache_override_wins[playwright]",
+      "rust_test": "bundled_engines::test_explicit_chromium_cache_override_wins_playwright",
+      "rust_file": "engine-rust/tests/source_browser/bundled_engines.rs",
+      "case_type": "parameterized",
+      "adaptation": "Actual portable manifest/resource selection against owned temporary files. Explicit environment map replaces process-global monkeypatching."
+    },
+    {
+      "source_id": "tests/test_bundled_engines.py::test_geoip_is_seeded_into_writable_data_without_overwriting_refreshes",
+      "rust_test": "bundled_engines::test_geoip_is_seeded_into_writable_data_without_overwriting_refreshes",
+      "rust_file": "engine-rust/tests/source_browser/bundled_engines.rs",
+      "case_type": "standard",
+      "adaptation": "Actual portable manifest/resource selection against owned temporary files. Explicit environment map replaces process-global monkeypatching."
+    },
+    {
+      "source_id": "tests/test_bundled_engines.py::test_internal_cloak_binary_is_explicit_and_user_override_wins",
+      "rust_test": "bundled_engines::test_internal_cloak_binary_is_explicit_and_user_override_wins",
+      "rust_file": "engine-rust/tests/source_browser/bundled_engines.rs",
+      "case_type": "standard",
+      "adaptation": "Actual portable manifest/resource selection against owned temporary files. Explicit environment map replaces process-global monkeypatching."
+    },
+    {
+      "source_id": "tests/test_camoufox_startup_cleanup.py::test_ownership_refusal_and_failed_exit_preserve_both_failures_and_claim",
+      "rust_test": "camoufox_startup_cleanup::test_ownership_refusal_and_failed_exit_preserve_both_failures_and_claim",
+      "rust_file": "engine-rust/tests/source_browser/camoufox_startup_cleanup.rs",
+      "case_type": "standard",
+      "adaptation": "Rust admits and publishes kernel ownership before vendor activation, making old adoption-after-enter impossible. Exercise the same production ownership controller with actual native worker and Rust vendor transport: a live context then startup failure, vendor suppression true/false cannot replace authority; close observes held claim and lease; signal denial preserves both failures and durable claim until actual quarantine settlement. Camoufox preparation identity remains tested independently."
+    },
+    {
+      "source_id": "tests/test_camoufox_startup_cleanup.py::test_ownership_refusal_exits_entered_backend_before_releasing[False]",
+      "rust_test": "camoufox_startup_cleanup::test_ownership_refusal_exits_entered_backend_before_releasing_false",
+      "rust_file": "engine-rust/tests/source_browser/camoufox_startup_cleanup.rs",
+      "case_type": "parameterized",
+      "adaptation": "Rust admits and publishes kernel ownership before vendor activation, making old adoption-after-enter impossible. Exercise the same production ownership controller with actual native worker and Rust vendor transport: a live context then startup failure, vendor suppression true/false cannot replace authority; close observes held claim and lease; signal denial preserves both failures and durable claim until actual quarantine settlement. Camoufox preparation identity remains tested independently."
+    },
+    {
+      "source_id": "tests/test_camoufox_startup_cleanup.py::test_ownership_refusal_exits_entered_backend_before_releasing[True]",
+      "rust_test": "camoufox_startup_cleanup::test_ownership_refusal_exits_entered_backend_before_releasing_true",
+      "rust_file": "engine-rust/tests/source_browser/camoufox_startup_cleanup.rs",
+      "case_type": "parameterized",
+      "adaptation": "Rust admits and publishes kernel ownership before vendor activation, making old adoption-after-enter impossible. Exercise the same production ownership controller with actual native worker and Rust vendor transport: a live context then startup failure, vendor suppression true/false cannot replace authority; close observes held claim and lease; signal denial preserves both failures and durable claim until actual quarantine settlement. Camoufox preparation identity remains tested independently."
+    },
+    {
+      "source_id": "tests/test_cookies.py::test_a_malformed_expiry_does_not_abort_the_whole_import",
+      "rust_test": "cookies::test_a_malformed_expiry_does_not_abort_the_whole_import",
+      "rust_file": "engine-rust/tests/source_browser/cookies.rs",
+      "case_type": "standard",
+      "adaptation": "Native production boundary with original inputs and behavior assertions; no Python runtime."
+    },
+    {
+      "source_id": "tests/test_cookies.py::test_an_iso_expiry_is_understood",
+      "rust_test": "cookies::test_an_iso_expiry_is_understood",
+      "rust_file": "engine-rust/tests/source_browser/cookies.rs",
+      "case_type": "standard",
+      "adaptation": "Native production boundary with original inputs and behavior assertions; no Python runtime."
+    },
+    {
+      "source_id": "tests/test_cookies.py::test_dumps_json_is_storage_state",
+      "rust_test": "cookies::test_dumps_json_is_storage_state",
+      "rust_file": "engine-rust/tests/source_browser/cookies.rs",
+      "case_type": "standard",
+      "adaptation": "Native production boundary with original inputs and behavior assertions; no Python runtime."
+    },
+    {
+      "source_id": "tests/test_cookies.py::test_incomplete_cookies_are_dropped",
+      "rust_test": "cookies::test_incomplete_cookies_are_dropped",
+      "rust_file": "engine-rust/tests/source_browser/cookies.rs",
+      "case_type": "standard",
+      "adaptation": "Native production boundary with original inputs and behavior assertions; no Python runtime."
+    },
+    {
+      "source_id": "tests/test_cookies.py::test_netscape_round_trip",
+      "rust_test": "cookies::test_netscape_round_trip",
+      "rust_file": "engine-rust/tests/source_browser/cookies.rs",
+      "case_type": "standard",
+      "adaptation": "Native production boundary with original inputs and behavior assertions; no Python runtime."
+    },
+    {
+      "source_id": "tests/test_cookies.py::test_normalize_extension_cookie",
+      "rust_test": "cookies::test_normalize_extension_cookie",
+      "rust_file": "engine-rust/tests/source_browser/cookies.rs",
+      "case_type": "standard",
+      "adaptation": "Native production boundary with original inputs and behavior assertions; no Python runtime."
+    },
+    {
+      "source_id": "tests/test_cookies.py::test_parse_empty_input",
+      "rust_test": "cookies::test_parse_empty_input",
+      "rust_file": "engine-rust/tests/source_browser/cookies.rs",
+      "case_type": "standard",
+      "adaptation": "Native production boundary with original inputs and behavior assertions; no Python runtime."
+    },
+    {
+      "source_id": "tests/test_cookies.py::test_parse_extension_json_list",
+      "rust_test": "cookies::test_parse_extension_json_list",
+      "rust_file": "engine-rust/tests/source_browser/cookies.rs",
+      "case_type": "standard",
+      "adaptation": "Native production boundary with original inputs and behavior assertions; no Python runtime."
+    },
+    {
+      "source_id": "tests/test_cookies.py::test_parse_netscape",
+      "rust_test": "cookies::test_parse_netscape",
+      "rust_file": "engine-rust/tests/source_browser/cookies.rs",
+      "case_type": "standard",
+      "adaptation": "Native production boundary with original inputs and behavior assertions; no Python runtime."
+    },
+    {
+      "source_id": "tests/test_cookies.py::test_parse_playwright_storage_state",
+      "rust_test": "cookies::test_parse_playwright_storage_state",
+      "rust_file": "engine-rust/tests/source_browser/cookies.rs",
+      "case_type": "standard",
+      "adaptation": "Native production boundary with original inputs and behavior assertions; no Python runtime."
+    },
+    {
+      "source_id": "tests/test_cookies.py::test_parse_single_cookie_object",
+      "rust_test": "cookies::test_parse_single_cookie_object",
+      "rust_file": "engine-rust/tests/source_browser/cookies.rs",
+      "case_type": "standard",
+      "adaptation": "Native production boundary with original inputs and behavior assertions; no Python runtime."
+    },
+    {
+      "source_id": "tests/test_cookies.py::test_read_file",
+      "rust_test": "cookies::test_read_file",
+      "rust_file": "engine-rust/tests/source_browser/cookies.rs",
+      "case_type": "standard",
+      "adaptation": "Native production boundary with original inputs and behavior assertions; no Python runtime."
+    },
+    {
+      "source_id": "tests/test_cookies.py::test_samesite_none_requires_secure",
+      "rust_test": "cookies::test_samesite_none_requires_secure",
+      "rust_file": "engine-rust/tests/source_browser/cookies.rs",
+      "case_type": "standard",
+      "adaptation": "Native production boundary with original inputs and behavior assertions; no Python runtime."
+    },
+    {
+      "source_id": "tests/test_cookies.py::test_session_cookie_gets_minus_one",
+      "rust_test": "cookies::test_session_cookie_gets_minus_one",
+      "rust_file": "engine-rust/tests/source_browser/cookies.rs",
+      "case_type": "standard",
+      "adaptation": "Native production boundary with original inputs and behavior assertions; no Python runtime."
+    },
+    {
+      "source_id": "tests/test_cookies.py::test_write_nothing_is_a_noop",
+      "rust_test": "cookies::test_write_nothing_is_a_noop",
+      "rust_file": "engine-rust/tests/source_browser/cookies.rs",
+      "case_type": "standard",
+      "adaptation": "Native production boundary with original inputs and behavior assertions; no Python runtime."
+    },
+    {
+      "source_id": "tests/test_drivers.py::test_a_mobile_profile_does_not_become_a_silently_wrong_desktop",
+      "rust_test": "drivers::test_a_mobile_profile_does_not_become_a_silently_wrong_desktop",
+      "rust_file": "engine-rust/tests/source_browser/drivers.rs",
+      "case_type": "standard",
+      "adaptation": "Native SDK registry/launch options. CDP launcher case executes actual native worker and Rust vendor transport fixture."
+    },
+    {
+      "source_id": "tests/test_drivers.py::test_availability_map_covers_all",
+      "rust_test": "drivers::test_availability_map_covers_all",
+      "rust_file": "engine-rust/tests/source_browser/drivers.rs",
+      "case_type": "standard",
+      "adaptation": "Native SDK registry/launch options. CDP launcher case executes actual native worker and Rust vendor transport fixture."
+    },
+    {
+      "source_id": "tests/test_drivers.py::test_builtin_engines_registered",
+      "rust_test": "drivers::test_builtin_engines_registered",
+      "rust_file": "engine-rust/tests/source_browser/drivers.rs",
+      "case_type": "standard",
+      "adaptation": "Native SDK registry/launch options. CDP launcher case executes actual native worker and Rust vendor transport fixture."
+    },
+    {
+      "source_id": "tests/test_drivers.py::test_camoufox_geoip_follows_the_profiles_own_choice",
+      "rust_test": "drivers::test_camoufox_geoip_follows_the_profiles_own_choice",
+      "rust_file": "engine-rust/tests/source_browser/drivers.rs",
+      "case_type": "standard",
+      "adaptation": "Native SDK registry/launch options. CDP launcher case executes actual native worker and Rust vendor transport fixture."
+    },
+    {
+      "source_id": "tests/test_drivers.py::test_camoufox_launch_and_session_build_the_same_options",
+      "rust_test": "drivers::test_camoufox_launch_and_session_build_the_same_options",
+      "rust_file": "engine-rust/tests/source_browser/drivers.rs",
+      "case_type": "standard",
+      "adaptation": "Native SDK registry/launch options. CDP launcher case executes actual native worker and Rust vendor transport fixture."
+    },
+    {
+      "source_id": "tests/test_drivers.py::test_geolocation_falls_back_to_locale_without_proxy",
+      "rust_test": "drivers::test_geolocation_falls_back_to_locale_without_proxy",
+      "rust_file": "engine-rust/tests/source_browser/drivers.rs",
+      "case_type": "standard",
+      "adaptation": "Native SDK registry/launch options. CDP launcher case executes actual native worker and Rust vendor transport fixture."
+    },
+    {
+      "source_id": "tests/test_drivers.py::test_geolocation_follows_proxy_country",
+      "rust_test": "drivers::test_geolocation_follows_proxy_country",
+      "rust_file": "engine-rust/tests/source_browser/drivers.rs",
+      "case_type": "standard",
+      "adaptation": "Native SDK registry/launch options. CDP launcher case executes actual native worker and Rust vendor transport fixture."
+    },
+    {
+      "source_id": "tests/test_drivers.py::test_geolocation_none_for_unknown_country",
+      "rust_test": "drivers::test_geolocation_none_for_unknown_country",
+      "rust_file": "engine-rust/tests/source_browser/drivers.rs",
+      "case_type": "standard",
+      "adaptation": "Native SDK registry/launch options. CDP launcher case executes actual native worker and Rust vendor transport fixture."
+    },
+    {
+      "source_id": "tests/test_drivers.py::test_headed_leaves_the_channel_alone",
+      "rust_test": "drivers::test_headed_leaves_the_channel_alone",
+      "rust_file": "engine-rust/tests/source_browser/drivers.rs",
+      "case_type": "standard",
+      "adaptation": "Native SDK registry/launch options. CDP launcher case executes actual native worker and Rust vendor transport fixture."
+    },
+    {
+      "source_id": "tests/test_drivers.py::test_headless_uses_the_full_chromium_channel",
+      "rust_test": "drivers::test_headless_uses_the_full_chromium_channel",
+      "rust_file": "engine-rust/tests/source_browser/drivers.rs",
+      "case_type": "standard",
+      "adaptation": "Native SDK registry/launch options. CDP launcher case executes actual native worker and Rust vendor transport fixture."
+    },
+    {
+      "source_id": "tests/test_drivers.py::test_profile_defaults_to_playwright_engine",
+      "rust_test": "drivers::test_profile_defaults_to_playwright_engine",
+      "rust_file": "engine-rust/tests/source_browser/drivers.rs",
+      "case_type": "standard",
+      "adaptation": "Native SDK registry/launch options. CDP launcher case executes actual native worker and Rust vendor transport fixture."
+    },
+    {
+      "source_id": "tests/test_drivers.py::test_the_all_or_nothing_limitation_is_stated",
+      "rust_test": "drivers::test_the_all_or_nothing_limitation_is_stated",
+      "rust_file": "engine-rust/tests/source_browser/drivers.rs",
+      "case_type": "standard",
+      "adaptation": "Native SDK registry/launch options. CDP launcher case executes actual native worker and Rust vendor transport fixture."
+    },
+    {
+      "source_id": "tests/test_drivers.py::test_the_high_entropy_hints_are_not_pinned_as_headers",
+      "rust_test": "drivers::test_the_high_entropy_hints_are_not_pinned_as_headers",
+      "rust_file": "engine-rust/tests/source_browser/drivers.rs",
+      "case_type": "standard",
+      "adaptation": "Native SDK registry/launch options. CDP launcher case executes actual native worker and Rust vendor transport fixture."
+    },
+    {
+      "source_id": "tests/test_drivers.py::test_the_launcher_hands_chromium_the_ua_metadata",
+      "rust_test": "drivers::test_the_launcher_hands_chromium_the_ua_metadata",
+      "rust_file": "engine-rust/tests/source_browser/drivers.rs",
+      "case_type": "standard",
+      "adaptation": "Native SDK registry/launch options. CDP launcher case executes actual native worker and Rust vendor transport fixture."
+    },
+    {
+      "source_id": "tests/test_drivers.py::test_uninstalled_engine_raises_with_hint",
+      "rust_test": "drivers::test_uninstalled_engine_raises_with_hint",
+      "rust_file": "engine-rust/tests/source_browser/drivers.rs",
+      "case_type": "standard",
+      "adaptation": "Native SDK registry/launch options. CDP launcher case executes actual native worker and Rust vendor transport fixture."
+    },
+    {
+      "source_id": "tests/test_drivers.py::test_unknown_engine_raises",
+      "rust_test": "drivers::test_unknown_engine_raises",
+      "rust_file": "engine-rust/tests/source_browser/drivers.rs",
+      "case_type": "standard",
+      "adaptation": "Native SDK registry/launch options. CDP launcher case executes actual native worker and Rust vendor transport fixture."
+    },
+    {
+      "source_id": "tests/test_drivers.py::test_webrtc_forces_proxy_when_one_is_set",
+      "rust_test": "drivers::test_webrtc_forces_proxy_when_one_is_set",
+      "rust_file": "engine-rust/tests/source_browser/drivers.rs",
+      "case_type": "standard",
+      "adaptation": "Native SDK registry/launch options. CDP launcher case executes actual native worker and Rust vendor transport fixture."
+    },
+    {
+      "source_id": "tests/test_drivers.py::test_webrtc_hides_local_ip_without_proxy",
+      "rust_test": "drivers::test_webrtc_hides_local_ip_without_proxy",
+      "rust_file": "engine-rust/tests/source_browser/drivers.rs",
+      "case_type": "standard",
+      "adaptation": "Native SDK registry/launch options. CDP launcher case executes actual native worker and Rust vendor transport fixture."
+    },
+    {
+      "source_id": "tests/test_fingerprint_parity.py::test_a_seedless_dashboard_profile_gets_the_same_seed_every_time",
+      "rust_test": "fingerprint_parity::test_a_seedless_dashboard_profile_gets_the_same_seed_every_time",
+      "rust_file": "engine-rust/tests/source_browser/fingerprint_parity.rs",
+      "case_type": "standard",
+      "adaptation": "Native production identity/generation API with original seeded inputs and assertions."
+    },
+    {
+      "source_id": "tests/test_fingerprint_parity.py::test_a_trimmed_font_list_survives_conversion",
+      "rust_test": "fingerprint_parity::test_a_trimmed_font_list_survives_conversion",
+      "rust_file": "engine-rust/tests/source_browser/fingerprint_parity.rs",
+      "case_type": "standard",
+      "adaptation": "Native production identity/generation API with original seeded inputs and assertions."
+    },
+    {
+      "source_id": "tests/test_fingerprint_parity.py::test_an_explicit_seed_still_wins",
+      "rust_test": "fingerprint_parity::test_an_explicit_seed_still_wins",
+      "rust_file": "engine-rust/tests/source_browser/fingerprint_parity.rs",
+      "case_type": "standard",
+      "adaptation": "Native production identity/generation API with original seeded inputs and assertions."
+    },
+    {
+      "source_id": "tests/test_fingerprint_parity.py::test_desktop_font_lists_do_vary_between_profiles",
+      "rust_test": "fingerprint_parity::test_desktop_font_lists_do_vary_between_profiles",
+      "rust_file": "engine-rust/tests/source_browser/fingerprint_parity.rs",
+      "case_type": "standard",
+      "adaptation": "Native production identity/generation API with original seeded inputs and assertions."
+    },
+    {
+      "source_id": "tests/test_fingerprint_parity.py::test_desktop_targets_are_not_touch_phones",
+      "rust_test": "fingerprint_parity::test_desktop_targets_are_not_touch_phones",
+      "rust_file": "engine-rust/tests/source_browser/fingerprint_parity.rs",
+      "case_type": "standard",
+      "adaptation": "Native production identity/generation API with original seeded inputs and assertions."
+    },
+    {
+      "source_id": "tests/test_fingerprint_parity.py::test_every_os_target_generates_coherently[android]",
+      "rust_test": "fingerprint_parity::test_every_os_target_generates_coherently_android",
+      "rust_file": "engine-rust/tests/source_browser/fingerprint_parity.rs",
+      "case_type": "parameterized",
+      "adaptation": "Native production identity/generation API with original seeded inputs and assertions."
+    },
+    {
+      "source_id": "tests/test_fingerprint_parity.py::test_every_os_target_generates_coherently[ios]",
+      "rust_test": "fingerprint_parity::test_every_os_target_generates_coherently_ios",
+      "rust_file": "engine-rust/tests/source_browser/fingerprint_parity.rs",
+      "case_type": "parameterized",
+      "adaptation": "Native production identity/generation API with original seeded inputs and assertions."
+    },
+    {
+      "source_id": "tests/test_fingerprint_parity.py::test_every_os_target_generates_coherently[linux]",
+      "rust_test": "fingerprint_parity::test_every_os_target_generates_coherently_linux",
+      "rust_file": "engine-rust/tests/source_browser/fingerprint_parity.rs",
+      "case_type": "parameterized",
+      "adaptation": "Native production identity/generation API with original seeded inputs and assertions."
+    },
+    {
+      "source_id": "tests/test_fingerprint_parity.py::test_every_os_target_generates_coherently[macos]",
+      "rust_test": "fingerprint_parity::test_every_os_target_generates_coherently_macos",
+      "rust_file": "engine-rust/tests/source_browser/fingerprint_parity.rs",
+      "case_type": "parameterized",
+      "adaptation": "Native production identity/generation API with original seeded inputs and assertions."
+    },
+    {
+      "source_id": "tests/test_fingerprint_parity.py::test_every_os_target_generates_coherently[windows]",
+      "rust_test": "fingerprint_parity::test_every_os_target_generates_coherently_windows",
+      "rust_file": "engine-rust/tests/source_browser/fingerprint_parity.rs",
+      "case_type": "parameterized",
+      "adaptation": "Native production identity/generation API with original seeded inputs and assertions."
+    },
+    {
+      "source_id": "tests/test_fingerprint_parity.py::test_every_os_target_has_a_full_set_of_device_tables[android]",
+      "rust_test": "fingerprint_parity::test_every_os_target_has_a_full_set_of_device_tables_android",
+      "rust_file": "engine-rust/tests/source_browser/fingerprint_parity.rs",
+      "case_type": "parameterized",
+      "adaptation": "Native production identity/generation API with original seeded inputs and assertions."
+    },
+    {
+      "source_id": "tests/test_fingerprint_parity.py::test_every_os_target_has_a_full_set_of_device_tables[ios]",
+      "rust_test": "fingerprint_parity::test_every_os_target_has_a_full_set_of_device_tables_ios",
+      "rust_file": "engine-rust/tests/source_browser/fingerprint_parity.rs",
+      "case_type": "parameterized",
+      "adaptation": "Native production identity/generation API with original seeded inputs and assertions."
+    },
+    {
+      "source_id": "tests/test_fingerprint_parity.py::test_every_os_target_has_a_full_set_of_device_tables[linux]",
+      "rust_test": "fingerprint_parity::test_every_os_target_has_a_full_set_of_device_tables_linux",
+      "rust_file": "engine-rust/tests/source_browser/fingerprint_parity.rs",
+      "case_type": "parameterized",
+      "adaptation": "Native production identity/generation API with original seeded inputs and assertions."
+    },
+    {
+      "source_id": "tests/test_fingerprint_parity.py::test_every_os_target_has_a_full_set_of_device_tables[macos]",
+      "rust_test": "fingerprint_parity::test_every_os_target_has_a_full_set_of_device_tables_macos",
+      "rust_file": "engine-rust/tests/source_browser/fingerprint_parity.rs",
+      "case_type": "parameterized",
+      "adaptation": "Native production identity/generation API with original seeded inputs and assertions."
+    },
+    {
+      "source_id": "tests/test_fingerprint_parity.py::test_every_os_target_has_a_full_set_of_device_tables[windows]",
+      "rust_test": "fingerprint_parity::test_every_os_target_has_a_full_set_of_device_tables_windows",
+      "rust_file": "engine-rust/tests/source_browser/fingerprint_parity.rs",
+      "case_type": "parameterized",
+      "adaptation": "Native production identity/generation API with original seeded inputs and assertions."
+    },
+    {
+      "source_id": "tests/test_fingerprint_parity.py::test_gpus_are_drawn_from_a_realistic_mix_not_uniformly",
+      "rust_test": "fingerprint_parity::test_gpus_are_drawn_from_a_realistic_mix_not_uniformly",
+      "rust_file": "engine-rust/tests/source_browser/fingerprint_parity.rs",
+      "case_type": "standard",
+      "adaptation": "Native production identity/generation API with original seeded inputs and assertions."
+    },
+    {
+      "source_id": "tests/test_fingerprint_parity.py::test_ios_claims_the_webkit_shaped_surface",
+      "rust_test": "fingerprint_parity::test_ios_claims_the_webkit_shaped_surface",
+      "rust_file": "engine-rust/tests/source_browser/fingerprint_parity.rs",
+      "case_type": "standard",
+      "adaptation": "Native production identity/generation API with original seeded inputs and assertions."
+    },
+    {
+      "source_id": "tests/test_fingerprint_parity.py::test_ios_dashboard_profiles_convert_and_stay_coherent",
+      "rust_test": "fingerprint_parity::test_ios_dashboard_profiles_convert_and_stay_coherent",
+      "rust_file": "engine-rust/tests/source_browser/fingerprint_parity.rs",
+      "case_type": "standard",
+      "adaptation": "Native production identity/generation API with original seeded inputs and assertions."
+    },
+    {
+      "source_id": "tests/test_fingerprint_parity.py::test_mobile_targets_are_flagged_mobile_and_touch_capable",
+      "rust_test": "fingerprint_parity::test_mobile_targets_are_flagged_mobile_and_touch_capable",
+      "rust_file": "engine-rust/tests/source_browser/fingerprint_parity.rs",
+      "case_type": "standard",
+      "adaptation": "Native production identity/generation API with original seeded inputs and assertions."
+    },
+    {
+      "source_id": "tests/test_fingerprint_parity.py::test_no_parity_field_is_dropped_in_conversion[android]",
+      "rust_test": "fingerprint_parity::test_no_parity_field_is_dropped_in_conversion_android",
+      "rust_file": "engine-rust/tests/source_browser/fingerprint_parity.rs",
+      "case_type": "parameterized",
+      "adaptation": "Native production identity/generation API with original seeded inputs and assertions."
+    },
+    {
+      "source_id": "tests/test_fingerprint_parity.py::test_no_parity_field_is_dropped_in_conversion[ios]",
+      "rust_test": "fingerprint_parity::test_no_parity_field_is_dropped_in_conversion_ios",
+      "rust_file": "engine-rust/tests/source_browser/fingerprint_parity.rs",
+      "case_type": "parameterized",
+      "adaptation": "Native production identity/generation API with original seeded inputs and assertions."
+    },
+    {
+      "source_id": "tests/test_fingerprint_parity.py::test_no_parity_field_is_dropped_in_conversion[linux]",
+      "rust_test": "fingerprint_parity::test_no_parity_field_is_dropped_in_conversion_linux",
+      "rust_file": "engine-rust/tests/source_browser/fingerprint_parity.rs",
+      "case_type": "parameterized",
+      "adaptation": "Native production identity/generation API with original seeded inputs and assertions."
+    },
+    {
+      "source_id": "tests/test_fingerprint_parity.py::test_no_parity_field_is_dropped_in_conversion[macos]",
+      "rust_test": "fingerprint_parity::test_no_parity_field_is_dropped_in_conversion_macos",
+      "rust_file": "engine-rust/tests/source_browser/fingerprint_parity.rs",
+      "case_type": "parameterized",
+      "adaptation": "Native production identity/generation API with original seeded inputs and assertions."
+    },
+    {
+      "source_id": "tests/test_fingerprint_parity.py::test_no_parity_field_is_dropped_in_conversion[windows]",
+      "rust_test": "fingerprint_parity::test_no_parity_field_is_dropped_in_conversion_windows",
+      "rust_file": "engine-rust/tests/source_browser/fingerprint_parity.rs",
+      "case_type": "parameterized",
+      "adaptation": "Native production identity/generation API with original seeded inputs and assertions."
+    },
+    {
+      "source_id": "tests/test_fingerprint_parity.py::test_os_choice_follows_desktop_market_share_not_a_coin_flip",
+      "rust_test": "fingerprint_parity::test_os_choice_follows_desktop_market_share_not_a_coin_flip",
+      "rust_file": "engine-rust/tests/source_browser/fingerprint_parity.rs",
+      "case_type": "standard",
+      "adaptation": "Native production identity/generation API with original seeded inputs and assertions."
+    },
+    {
+      "source_id": "tests/test_fingerprint_parity.py::test_phones_do_not_have_a_randomly_trimmed_font_list",
+      "rust_test": "fingerprint_parity::test_phones_do_not_have_a_randomly_trimmed_font_list",
+      "rust_file": "engine-rust/tests/source_browser/fingerprint_parity.rs",
+      "case_type": "standard",
+      "adaptation": "Native production identity/generation API with original seeded inputs and assertions."
+    },
+    {
+      "source_id": "tests/test_fingerprint_parity.py::test_the_header_and_the_brand_list_cannot_drift_apart",
+      "rust_test": "fingerprint_parity::test_the_header_and_the_brand_list_cannot_drift_apart",
+      "rust_file": "engine-rust/tests/source_browser/fingerprint_parity.rs",
+      "case_type": "standard",
+      "adaptation": "Native production identity/generation API with original seeded inputs and assertions."
+    },
+    {
+      "source_id": "tests/test_fingerprint_parity.py::test_two_seedless_profiles_do_not_share_a_seed",
+      "rust_test": "fingerprint_parity::test_two_seedless_profiles_do_not_share_a_seed",
+      "rust_file": "engine-rust/tests/source_browser/fingerprint_parity.rs",
+      "case_type": "standard",
+      "adaptation": "Native production identity/generation API with original seeded inputs and assertions."
+    },
+    {
+      "source_id": "tests/test_fingerprint_parity.py::test_unknown_dashboard_os_still_falls_back_to_windows",
+      "rust_test": "fingerprint_parity::test_unknown_dashboard_os_still_falls_back_to_windows",
+      "rust_file": "engine-rust/tests/source_browser/fingerprint_parity.rs",
+      "case_type": "standard",
+      "adaptation": "Native production identity/generation API with original seeded inputs and assertions."
+    },
+    {
+      "source_id": "tests/test_fingerprint_parity.py::test_weight_tables_stay_aligned_with_the_pools_they_weight",
+      "rust_test": "fingerprint_parity::test_weight_tables_stay_aligned_with_the_pools_they_weight",
+      "rust_file": "engine-rust/tests/source_browser/fingerprint_parity.rs",
+      "case_type": "standard",
+      "adaptation": "Native production identity/generation API with original seeded inputs and assertions."
+    },
+    {
+      "source_id": "tests/test_launch_extras.py::test_a_bookmark_the_user_made_in_the_browser_survives",
+      "rust_test": "launch_extras::test_a_bookmark_the_user_made_in_the_browser_survives",
+      "rust_file": "engine-rust/tests/source_browser/launch_extras.rs",
+      "case_type": "standard",
+      "adaptation": "Actual admitted resource preparation, native launch-option/IP-resolution boundary or typed storage round-trip; same source outcome assertions."
+    },
+    {
+      "source_id": "tests/test_launch_extras.py::test_a_cleared_directory_goes_with_its_contents",
+      "rust_test": "launch_extras::test_a_cleared_directory_goes_with_its_contents",
+      "rust_file": "engine-rust/tests/source_browser/launch_extras.rs",
+      "case_type": "standard",
+      "adaptation": "Actual admitted resource preparation, native launch-option/IP-resolution boundary or typed storage round-trip; same source outcome assertions."
+    },
+    {
+      "source_id": "tests/test_launch_extras.py::test_a_corrupt_bookmarks_file_is_replaced_rather_than_crashing_the_launch",
+      "rust_test": "launch_extras::test_a_corrupt_bookmarks_file_is_replaced_rather_than_crashing_the_launch",
+      "rust_file": "engine-rust/tests/source_browser/launch_extras.rs",
+      "case_type": "standard",
+      "adaptation": "Actual admitted resource preparation, native launch-option/IP-resolution boundary or typed storage round-trip; same source outcome assertions."
+    },
+    {
+      "source_id": "tests/test_launch_extras.py::test_a_doh_url_is_passed_through",
+      "rust_test": "launch_extras::test_a_doh_url_is_passed_through",
+      "rust_file": "engine-rust/tests/source_browser/launch_extras.rs",
+      "case_type": "standard",
+      "adaptation": "Assert the actual Chromium launch option DNS flags and rejection."
+    },
+    {
+      "source_id": "tests/test_launch_extras.py::test_a_known_resolver_ip_becomes_its_doh_endpoint",
+      "rust_test": "launch_extras::test_a_known_resolver_ip_becomes_its_doh_endpoint",
+      "rust_file": "engine-rust/tests/source_browser/launch_extras.rs",
+      "case_type": "standard",
+      "adaptation": "Assert the actual Chromium launch option DNS flags and rejection."
+    },
+    {
+      "source_id": "tests/test_launch_extras.py::test_a_nameserver_chromium_cannot_use_is_refused_not_ignored",
+      "rust_test": "launch_extras::test_a_nameserver_chromium_cannot_use_is_refused_not_ignored",
+      "rust_file": "engine-rust/tests/source_browser/launch_extras.rs",
+      "case_type": "standard",
+      "adaptation": "Assert the actual Chromium launch option DNS flags and rejection."
+    },
+    {
+      "source_id": "tests/test_launch_extras.py::test_a_profile_saved_before_these_fields_existed_still_loads",
+      "rust_test": "launch_extras::test_a_profile_saved_before_these_fields_existed_still_loads",
+      "rust_file": "engine-rust/tests/source_browser/launch_extras.rs",
+      "case_type": "standard",
+      "adaptation": "Actual admitted resource preparation, native launch-option/IP-resolution boundary or typed storage round-trip; same source outcome assertions."
+    },
+    {
+      "source_id": "tests/test_launch_extras.py::test_an_unknown_key_adds_no_flags",
+      "rust_test": "launch_extras::test_an_unknown_key_adds_no_flags",
+      "rust_file": "engine-rust/tests/source_browser/launch_extras.rs",
+      "case_type": "standard",
+      "adaptation": "Actual admitted resource preparation, native launch-option/IP-resolution boundary or typed storage round-trip; same source outcome assertions."
+    },
+    {
+      "source_id": "tests/test_launch_extras.py::test_an_unknown_key_cannot_delete_anything",
+      "rust_test": "launch_extras::test_an_unknown_key_cannot_delete_anything",
+      "rust_file": "engine-rust/tests/source_browser/launch_extras.rs",
+      "case_type": "standard",
+      "adaptation": "Actual admitted resource preparation, native launch-option/IP-resolution boundary or typed storage round-trip; same source outcome assertions."
+    },
+    {
+      "source_id": "tests/test_launch_extras.py::test_an_unreachable_proxy_leaves_the_stored_identity_alone",
+      "rust_test": "launch_extras::test_an_unreachable_proxy_leaves_the_stored_identity_alone",
+      "rust_file": "engine-rust/tests/source_browser/launch_extras.rs",
+      "case_type": "standard",
+      "adaptation": "Actual admitted resource preparation, native launch-option/IP-resolution boundary or typed storage round-trip; same source outcome assertions."
+    },
+    {
+      "source_id": "tests/test_launch_extras.py::test_an_unticked_store_is_gone_before_the_browser_opens",
+      "rust_test": "launch_extras::test_an_unticked_store_is_gone_before_the_browser_opens",
+      "rust_file": "engine-rust/tests/source_browser/launch_extras.rs",
+      "case_type": "standard",
+      "adaptation": "Actual admitted resource preparation, native launch-option/IP-resolution boundary or typed storage round-trip; same source outcome assertions."
+    },
+    {
+      "source_id": "tests/test_launch_extras.py::test_bookmarks_are_written_where_chromium_reads_them",
+      "rust_test": "launch_extras::test_bookmarks_are_written_where_chromium_reads_them",
+      "rust_file": "engine-rust/tests/source_browser/launch_extras.rs",
+      "case_type": "standard",
+      "adaptation": "Actual admitted resource preparation, native launch-option/IP-resolution boundary or typed storage round-trip; same source outcome assertions."
+    },
+    {
+      "source_id": "tests/test_launch_extras.py::test_clearing_bookmarks_still_reseeds_the_configured_ones",
+      "rust_test": "launch_extras::test_clearing_bookmarks_still_reseeds_the_configured_ones",
+      "rust_file": "engine-rust/tests/source_browser/launch_extras.rs",
+      "case_type": "standard",
+      "adaptation": "Actual admitted resource preparation, native launch-option/IP-resolution boundary or typed storage round-trip; same source outcome assertions."
+    },
+    {
+      "source_id": "tests/test_launch_extras.py::test_geolocation_follows_the_country_the_proxy_actually_exits_from",
+      "rust_test": "launch_extras::test_geolocation_follows_the_country_the_proxy_actually_exits_from",
+      "rust_file": "engine-rust/tests/source_browser/launch_extras.rs",
+      "case_type": "standard",
+      "adaptation": "Actual admitted resource preparation, native launch-option/IP-resolution boundary or typed storage round-trip; same source outcome assertions."
+    },
+    {
+      "source_id": "tests/test_launch_extras.py::test_no_bookmarks_leaves_the_file_alone",
+      "rust_test": "launch_extras::test_no_bookmarks_leaves_the_file_alone",
+      "rust_file": "engine-rust/tests/source_browser/launch_extras.rs",
+      "case_type": "standard",
+      "adaptation": "Actual admitted resource preparation, native launch-option/IP-resolution boundary or typed storage round-trip; same source outcome assertions."
+    },
+    {
+      "source_id": "tests/test_launch_extras.py::test_no_checksum_is_written",
+      "rust_test": "launch_extras::test_no_checksum_is_written",
+      "rust_file": "engine-rust/tests/source_browser/launch_extras.rs",
+      "case_type": "standard",
+      "adaptation": "Actual admitted resource preparation, native launch-option/IP-resolution boundary or typed storage round-trip; same source outcome assertions."
+    },
+    {
+      "source_id": "tests/test_launch_extras.py::test_no_dns_configured_adds_no_flags",
+      "rust_test": "launch_extras::test_no_dns_configured_adds_no_flags",
+      "rust_file": "engine-rust/tests/source_browser/launch_extras.rs",
+      "case_type": "standard",
+      "adaptation": "Assert the actual Chromium launch option DNS flags and rejection."
+    },
+    {
+      "source_id": "tests/test_launch_extras.py::test_nothing_here_uses_disable_features",
+      "rust_test": "launch_extras::test_nothing_here_uses_disable_features",
+      "rust_file": "engine-rust/tests/source_browser/launch_extras.rs",
+      "case_type": "standard",
+      "adaptation": "Actual admitted resource preparation, native launch-option/IP-resolution boundary or typed storage round-trip; same source outcome assertions."
+    },
+    {
+      "source_id": "tests/test_launch_extras.py::test_nothing_marked_means_no_lookup",
+      "rust_test": "launch_extras::test_nothing_marked_means_no_lookup",
+      "rust_file": "engine-rust/tests/source_browser/launch_extras.rs",
+      "case_type": "standard",
+      "adaptation": "Actual admitted resource preparation, native launch-option/IP-resolution boundary or typed storage round-trip; same source outcome assertions."
+    },
+    {
+      "source_id": "tests/test_launch_extras.py::test_only_the_marked_signals_move",
+      "rust_test": "launch_extras::test_only_the_marked_signals_move",
+      "rust_file": "engine-rust/tests/source_browser/launch_extras.rs",
+      "case_type": "standard",
+      "adaptation": "Actual admitted resource preparation, native launch-option/IP-resolution boundary or typed storage round-trip; same source outcome assertions."
+    },
+    {
+      "source_id": "tests/test_launch_extras.py::test_relaunching_does_not_stack_duplicates",
+      "rust_test": "launch_extras::test_relaunching_does_not_stack_duplicates",
+      "rust_file": "engine-rust/tests/source_browser/launch_extras.rs",
+      "case_type": "standard",
+      "adaptation": "Actual admitted resource preparation, native launch-option/IP-resolution boundary or typed storage round-trip; same source outcome assertions."
+    },
+    {
+      "source_id": "tests/test_launch_extras.py::test_switched_off_survives_export_and_import",
+      "rust_test": "launch_extras::test_switched_off_survives_export_and_import",
+      "rust_file": "engine-rust/tests/source_browser/launch_extras.rs",
+      "case_type": "standard",
+      "adaptation": "Actual admitted resource preparation, native launch-option/IP-resolution boundary or typed storage round-trip; same source outcome assertions."
+    },
+    {
+      "source_id": "tests/test_launch_extras.py::test_switching_off_google_services_adds_the_flags_that_do_it",
+      "rust_test": "launch_extras::test_switching_off_google_services_adds_the_flags_that_do_it",
+      "rust_file": "engine-rust/tests/source_browser/launch_extras.rs",
+      "case_type": "standard",
+      "adaptation": "Actual admitted resource preparation, native launch-option/IP-resolution boundary or typed storage round-trip; same source outcome assertions."
+    },
+    {
+      "source_id": "tests/test_launch_extras.py::test_the_dashboard_and_the_engine_agree_on_the_key_names",
+      "rust_test": "launch_extras::test_the_dashboard_and_the_engine_agree_on_the_key_names",
+      "rust_file": "engine-rust/tests/source_browser/launch_extras.rs",
+      "case_type": "standard",
+      "adaptation": "Actual admitted resource preparation, native launch-option/IP-resolution boundary or typed storage round-trip; same source outcome assertions."
+    },
+    {
+      "source_id": "tests/test_launch_extras.py::test_the_dashboard_and_the_engine_agree_on_the_switch_names",
+      "rust_test": "launch_extras::test_the_dashboard_and_the_engine_agree_on_the_switch_names",
+      "rust_file": "engine-rust/tests/source_browser/launch_extras.rs",
+      "case_type": "standard",
+      "adaptation": "Actual admitted resource preparation, native launch-option/IP-resolution boundary or typed storage round-trip; same source outcome assertions."
+    },
+    {
+      "source_id": "tests/test_launch_extras.py::test_the_default_leaves_chromium_alone",
+      "rust_test": "launch_extras::test_the_default_leaves_chromium_alone",
+      "rust_file": "engine-rust/tests/source_browser/launch_extras.rs",
+      "case_type": "standard",
+      "adaptation": "Actual admitted resource preparation, native launch-option/IP-resolution boundary or typed storage round-trip; same source outcome assertions."
+    },
+    {
+      "source_id": "tests/test_launch_extras.py::test_the_default_profile_carries_everything",
+      "rust_test": "launch_extras::test_the_default_profile_carries_everything",
+      "rust_file": "engine-rust/tests/source_browser/launch_extras.rs",
+      "case_type": "standard",
+      "adaptation": "Actual admitted resource preparation, native launch-option/IP-resolution boundary or typed storage round-trip; same source outcome assertions."
+    },
+    {
+      "source_id": "tests/test_launch_extras.py::test_the_flags_and_the_dns_flag_survive_together",
+      "rust_test": "launch_extras::test_the_flags_and_the_dns_flag_survive_together",
+      "rust_file": "engine-rust/tests/source_browser/launch_extras.rs",
+      "case_type": "standard",
+      "adaptation": "Actual admitted resource preparation, native launch-option/IP-resolution boundary or typed storage round-trip; same source outcome assertions."
+    },
+    {
+      "source_id": "tests/test_launch_extras.py::test_the_new_fields_survive_export_and_import",
+      "rust_test": "launch_extras::test_the_new_fields_survive_export_and_import",
+      "rust_file": "engine-rust/tests/source_browser/launch_extras.rs",
+      "case_type": "standard",
+      "adaptation": "Actual admitted resource preparation, native launch-option/IP-resolution boundary or typed storage round-trip; same source outcome assertions."
+    },
+    {
+      "source_id": "tests/test_launch_extras.py::test_the_profiles_own_flags_are_on_the_command_line",
+      "rust_test": "launch_extras::test_the_profiles_own_flags_are_on_the_command_line",
+      "rust_file": "engine-rust/tests/source_browser/launch_extras.rs",
+      "case_type": "standard",
+      "adaptation": "Actual admitted resource preparation, native launch-option/IP-resolution boundary or typed storage round-trip; same source outcome assertions."
+    },
+    {
+      "source_id": "tests/test_launch_extras.py::test_timezone_and_languages_follow_the_real_exit_country",
+      "rust_test": "launch_extras::test_timezone_and_languages_follow_the_real_exit_country",
+      "rust_file": "engine-rust/tests/source_browser/launch_extras.rs",
+      "case_type": "standard",
+      "adaptation": "Actual admitted resource preparation, native launch-option/IP-resolution boundary or typed storage round-trip; same source outcome assertions."
+    },
+    {
+      "source_id": "tests/test_probe.py::test_garbage_is_treated_as_private",
+      "rust_test": "probe::test_garbage_is_treated_as_private",
+      "rust_file": "engine-rust/tests/source_browser/probe.rs",
+      "case_type": "standard",
+      "adaptation": "Native production boundary with original inputs and behavior assertions; no Python runtime."
+    },
+    {
+      "source_id": "tests/test_probe.py::test_private_addresses_are_not_a_leak",
+      "rust_test": "probe::test_private_addresses_are_not_a_leak",
+      "rust_file": "engine-rust/tests/source_browser/probe.rs",
+      "case_type": "standard",
+      "adaptation": "Native production boundary with original inputs and behavior assertions; no Python runtime."
+    },
+    {
+      "source_id": "tests/test_probe.py::test_private_ipv4_ranges",
+      "rust_test": "probe::test_private_ipv4_ranges",
+      "rust_file": "engine-rust/tests/source_browser/probe.rs",
+      "case_type": "standard",
+      "adaptation": "Native production boundary with original inputs and behavior assertions; no Python runtime."
+    },
+    {
+      "source_id": "tests/test_probe.py::test_private_ipv6",
+      "rust_test": "probe::test_private_ipv6",
+      "rust_file": "engine-rust/tests/source_browser/probe.rs",
+      "case_type": "standard",
+      "adaptation": "Native production boundary with original inputs and behavior assertions; no Python runtime."
+    },
+    {
+      "source_id": "tests/test_probe.py::test_public_address_that_is_not_the_exit_ip_is_a_leak",
+      "rust_test": "probe::test_public_address_that_is_not_the_exit_ip_is_a_leak",
+      "rust_file": "engine-rust/tests/source_browser/probe.rs",
+      "case_type": "standard",
+      "adaptation": "Native production boundary with original inputs and behavior assertions; no Python runtime."
+    },
+    {
+      "source_id": "tests/test_probe.py::test_public_ipv4_is_not_private",
+      "rust_test": "probe::test_public_ipv4_is_not_private",
+      "rust_file": "engine-rust/tests/source_browser/probe.rs",
+      "case_type": "standard",
+      "adaptation": "Native production boundary with original inputs and behavior assertions; no Python runtime."
+    },
+    {
+      "source_id": "tests/test_probe.py::test_public_ipv6_is_not_private",
+      "rust_test": "probe::test_public_ipv6_is_not_private",
+      "rust_file": "engine-rust/tests/source_browser/probe.rs",
+      "case_type": "standard",
+      "adaptation": "Native production boundary with original inputs and behavior assertions; no Python runtime."
+    },
+    {
+      "source_id": "tests/test_probe.py::test_the_exit_ip_itself_is_not_a_leak",
+      "rust_test": "probe::test_the_exit_ip_itself_is_not_a_leak",
+      "rust_file": "engine-rust/tests/source_browser/probe.rs",
+      "case_type": "standard",
+      "adaptation": "Native production boundary with original inputs and behavior assertions; no Python runtime."
+    },
+    {
+      "source_id": "tests/test_probe.py::test_tls_does_not_penalise_grease_when_service_hides_ciphers",
+      "rust_test": "probe::test_tls_does_not_penalise_grease_when_service_hides_ciphers",
+      "rust_file": "engine-rust/tests/source_browser/probe.rs",
+      "case_type": "standard",
+      "adaptation": "Native production boundary with original inputs and behavior assertions; no Python runtime."
+    },
+    {
+      "source_id": "tests/test_probe.py::test_tls_flags_a_non_tls13_handshake",
+      "rust_test": "probe::test_tls_flags_a_non_tls13_handshake",
+      "rust_file": "engine-rust/tests/source_browser/probe.rs",
+      "case_type": "standard",
+      "adaptation": "Native production boundary with original inputs and behavior assertions; no Python runtime."
+    },
+    {
+      "source_id": "tests/test_probe.py::test_tls_flags_missing_grease_when_ciphers_were_exposed",
+      "rust_test": "probe::test_tls_flags_missing_grease_when_ciphers_were_exposed",
+      "rust_file": "engine-rust/tests/source_browser/probe.rs",
+      "case_type": "standard",
+      "adaptation": "Native production boundary with original inputs and behavior assertions; no Python runtime."
+    },
+    {
+      "source_id": "tests/test_probe.py::test_tls_flags_missing_http2",
+      "rust_test": "probe::test_tls_flags_missing_http2",
+      "rust_file": "engine-rust/tests/source_browser/probe.rs",
+      "case_type": "standard",
+      "adaptation": "Native production boundary with original inputs and behavior assertions; no Python runtime."
+    },
+    {
+      "source_id": "tests/test_probe.py::test_tls_real_chromium_passes_every_check",
+      "rust_test": "probe::test_tls_real_chromium_passes_every_check",
+      "rust_file": "engine-rust/tests/source_browser/probe.rs",
+      "case_type": "standard",
+      "adaptation": "Native production boundary with original inputs and behavior assertions; no Python runtime."
+    },
+    {
+      "source_id": "tests/test_probe.py::test_tls_reports_error_when_no_service_answers",
+      "rust_test": "probe::test_tls_reports_error_when_no_service_answers",
+      "rust_file": "engine-rust/tests/source_browser/probe.rs",
+      "case_type": "standard",
+      "adaptation": "Native production boundary with original inputs and behavior assertions; no Python runtime."
+    },
+    {
+      "source_id": "tests/test_startup_resources.py::test_a_bookkeeping_failure_after_ready_stops_the_browser_it_opened",
+      "rust_test": "startup_resources::test_a_bookkeeping_failure_after_ready_stops_the_browser_it_opened",
+      "rust_file": "engine-rust/tests/source_browser/startup_resources.rs",
+      "case_type": "standard",
+      "adaptation": "Actual production scheduler tick with native SDK runtime, persisted profile/schedule, real worker, and one-shot actual atomic-write failure after page readiness; assert durable outcome and owned-browser cleanup."
+    },
+    {
+      "source_id": "tests/test_startup_resources.py::test_a_cleanup_that_fails_is_surfaced_not_swallowed",
+      "rust_test": "startup_resources::test_a_cleanup_that_fails_is_surfaced_not_swallowed",
+      "rust_file": "engine-rust/tests/source_browser/startup_resources.rs",
+      "case_type": "standard",
+      "adaptation": "Actual native SDK worker and compiled Rust vendor protocol inject errors before context or after live context/init/page; assert context close, driver stop, lease release and surfaced failure."
+    },
+    {
+      "source_id": "tests/test_startup_resources.py::test_a_confirmed_start_still_records_normally",
+      "rust_test": "startup_resources::test_a_confirmed_start_still_records_normally",
+      "rust_file": "engine-rust/tests/source_browser/startup_resources.rs",
+      "case_type": "standard",
+      "adaptation": "Actual production scheduler tick with native SDK runtime, persisted profile/schedule, real worker, and one-shot actual atomic-write failure after page readiness; assert durable outcome and owned-browser cleanup."
+    },
+    {
+      "source_id": "tests/test_startup_resources.py::test_cloak_releases_everything_when_startup_fails_after_the_context",
+      "rust_test": "startup_resources::test_cloak_releases_everything_when_startup_fails_after_the_context",
+      "rust_file": "engine-rust/tests/source_browser/startup_resources.rs",
+      "case_type": "standard",
+      "adaptation": "Actual native SDK worker and compiled Rust vendor protocol inject errors before context or after live context/init/page; assert context close, driver stop, lease release and surfaced failure."
+    },
+    {
+      "source_id": "tests/test_startup_resources.py::test_end_child_escalates_only_when_the_polite_ask_is_ignored",
+      "rust_test": "startup_resources::test_end_child_escalates_only_when_the_polite_ask_is_ignored",
+      "rust_file": "engine-rust/tests/source_browser/startup_resources.rs",
+      "case_type": "standard",
+      "adaptation": "Actual Rust owned process/SDK session termination and real exit codes. Native SDK close is the polite boundary; kernel whole-tree settlement is the forced boundary. Successful SDK close is not force-killed again; force settlement waits for actual kernel emptiness/reaping."
+    },
+    {
+      "source_id": "tests/test_startup_resources.py::test_end_child_on_a_dead_child_reports_its_real_code",
+      "rust_test": "startup_resources::test_end_child_on_a_dead_child_reports_its_real_code",
+      "rust_file": "engine-rust/tests/source_browser/startup_resources.rs",
+      "case_type": "standard",
+      "adaptation": "Actual Rust owned process/SDK session termination and real exit codes. Native SDK close is the polite boundary; kernel whole-tree settlement is the forced boundary. Successful SDK close is not force-killed again; force settlement waits for actual kernel emptiness/reaping."
+    },
+    {
+      "source_id": "tests/test_startup_resources.py::test_end_child_returns_a_real_code_and_only_once_the_child_is_gone",
+      "rust_test": "startup_resources::test_end_child_returns_a_real_code_and_only_once_the_child_is_gone",
+      "rust_file": "engine-rust/tests/source_browser/startup_resources.rs",
+      "case_type": "standard",
+      "adaptation": "Actual Rust owned process/SDK session termination and real exit codes. Native SDK close is the polite boundary; kernel whole-tree settlement is the forced boundary. Successful SDK close is not force-killed again; force settlement waits for actual kernel emptiness/reaping."
+    },
+    {
+      "source_id": "tests/test_startup_resources.py::test_end_child_waits_after_the_kill_escalation",
+      "rust_test": "startup_resources::test_end_child_waits_after_the_kill_escalation",
+      "rust_file": "engine-rust/tests/source_browser/startup_resources.rs",
+      "case_type": "standard",
+      "adaptation": "Actual Rust owned process/SDK session termination and real exit codes. Native SDK close is the polite boundary; kernel whole-tree settlement is the forced boundary. Successful SDK close is not force-killed again; force settlement waits for actual kernel emptiness/reaping."
+    },
+    {
+      "source_id": "tests/test_startup_resources.py::test_playwright_releases_everything_when_startup_fails_after_the_context",
+      "rust_test": "startup_resources::test_playwright_releases_everything_when_startup_fails_after_the_context",
+      "rust_file": "engine-rust/tests/source_browser/startup_resources.rs",
+      "case_type": "standard",
+      "adaptation": "Actual native SDK worker and compiled Rust vendor protocol inject errors before context or after live context/init/page; assert context close, driver stop, lease release and surfaced failure."
+    },
+    {
+      "source_id": "tests/test_startup_resources.py::test_playwright_stops_the_driver_when_the_context_itself_fails",
+      "rust_test": "startup_resources::test_playwright_stops_the_driver_when_the_context_itself_fails",
+      "rust_file": "engine-rust/tests/source_browser/startup_resources.rs",
+      "case_type": "standard",
+      "adaptation": "Actual native SDK worker and compiled Rust vendor protocol inject errors before context or after live context/init/page; assert context close, driver stop, lease release and surfaced failure."
+    },
+    {
+      "source_id": "tests/test_startup_resources.py::test_the_lease_is_free_again_after_a_failed_open",
+      "rust_test": "startup_resources::test_the_lease_is_free_again_after_a_failed_open",
+      "rust_file": "engine-rust/tests/source_browser/startup_resources.rs",
+      "case_type": "standard",
+      "adaptation": "Actual native SDK worker and compiled Rust vendor protocol inject errors before context or after live context/init/page; assert context close, driver stop, lease release and surfaced failure."
+    },
+    {
+      "source_id": "tests/test_startup_resources.py::test_the_relay_is_closed_when_the_driver_will_not_even_start",
+      "rust_test": "startup_resources::test_the_relay_is_closed_when_the_driver_will_not_even_start",
+      "rust_file": "engine-rust/tests/source_browser/startup_resources.rs",
+      "case_type": "standard",
+      "adaptation": "Isolated linked Rust worker initializes the process-owned Tokio signal subsystem, then production ResourceGuard measures the entire actual admitted session plus authenticated relay lifecycle around a missing SDK executable. Require no additional OS handles, threads or panics after failure."
+    },
+    {
+      "source_id": "tests/test_startup_urls_stay_whole.py::test_a_colon_in_a_path_segment_does_not_start_a_new_url",
+      "rust_test": "startup_urls_stay_whole::test_a_colon_in_a_path_segment_does_not_start_a_new_url",
+      "rust_file": "engine-rust/tests/source_browser/startup_urls_stay_whole.rs",
+      "case_type": "standard",
+      "adaptation": "Production dashboard conversion preserves the same text/list URL semantics."
+    },
+    {
+      "source_id": "tests/test_startup_urls_stay_whole.py::test_a_comma_in_a_fragment_stays_in_the_fragment",
+      "rust_test": "startup_urls_stay_whole::test_a_comma_in_a_fragment_stays_in_the_fragment",
+      "rust_file": "engine-rust/tests/source_browser/startup_urls_stay_whole.rs",
+      "case_type": "standard",
+      "adaptation": "Production dashboard conversion preserves the same text/list URL semantics."
+    },
+    {
+      "source_id": "tests/test_startup_urls_stay_whole.py::test_a_legacy_split_leaves_the_rest_of_the_line_alone",
+      "rust_test": "startup_urls_stay_whole::test_a_legacy_split_leaves_the_rest_of_the_line_alone",
+      "rust_file": "engine-rust/tests/source_browser/startup_urls_stay_whole.rs",
+      "case_type": "standard",
+      "adaptation": "Production dashboard conversion preserves the same text/list URL semantics."
+    },
+    {
+      "source_id": "tests/test_startup_urls_stay_whole.py::test_a_list_entry_holding_the_legacy_comma_form_is_one_entry",
+      "rust_test": "startup_urls_stay_whole::test_a_list_entry_holding_the_legacy_comma_form_is_one_entry",
+      "rust_file": "engine-rust/tests/source_browser/startup_urls_stay_whole.rs",
+      "case_type": "standard",
+      "adaptation": "Production dashboard conversion preserves the same text/list URL semantics."
+    },
+    {
+      "source_id": "tests/test_startup_urls_stay_whole.py::test_a_list_still_gets_a_missing_scheme_filled_in",
+      "rust_test": "startup_urls_stay_whole::test_a_list_still_gets_a_missing_scheme_filled_in",
+      "rust_file": "engine-rust/tests/source_browser/startup_urls_stay_whole.rs",
+      "case_type": "standard",
+      "adaptation": "Production dashboard conversion preserves the same text/list URL semantics."
+    },
+    {
+      "source_id": "tests/test_startup_urls_stay_whole.py::test_a_saved_legacy_profile_still_launches_both_hosts",
+      "rust_test": "startup_urls_stay_whole::test_a_saved_legacy_profile_still_launches_both_hosts",
+      "rust_file": "engine-rust/tests/source_browser/startup_urls_stay_whole.rs",
+      "case_type": "standard",
+      "adaptation": "Actual HTTP POST/PUT/GET and engine JSON twin on disk; same source URLs and assertions."
+    },
+    {
+      "source_id": "tests/test_startup_urls_stay_whole.py::test_a_saved_profile_launches_the_urls_that_were_typed",
+      "rust_test": "startup_urls_stay_whole::test_a_saved_profile_launches_the_urls_that_were_typed",
+      "rust_file": "engine-rust/tests/source_browser/startup_urls_stay_whole.rs",
+      "case_type": "standard",
+      "adaptation": "Actual HTTP POST/PUT/GET and engine JSON twin on disk; same source URLs and assertions."
+    },
+    {
+      "source_id": "tests/test_startup_urls_stay_whole.py::test_a_url_inside_a_query_value_is_not_a_second_entry",
+      "rust_test": "startup_urls_stay_whole::test_a_url_inside_a_query_value_is_not_a_second_entry",
+      "rust_file": "engine-rust/tests/source_browser/startup_urls_stay_whole.rs",
+      "case_type": "standard",
+      "adaptation": "Production dashboard conversion preserves the same text/list URL semantics."
+    },
+    {
+      "source_id": "tests/test_startup_urls_stay_whole.py::test_about_blank_keeps_its_own_scheme_beside_a_comma_line",
+      "rust_test": "startup_urls_stay_whole::test_about_blank_keeps_its_own_scheme_beside_a_comma_line",
+      "rust_file": "engine-rust/tests/source_browser/startup_urls_stay_whole.rs",
+      "case_type": "standard",
+      "adaptation": "Production dashboard conversion preserves the same text/list URL semantics."
+    },
+    {
+      "source_id": "tests/test_startup_urls_stay_whole.py::test_an_encoded_comma_is_neither_a_split_point_nor_decoded",
+      "rust_test": "startup_urls_stay_whole::test_an_encoded_comma_is_neither_a_split_point_nor_decoded",
+      "rust_file": "engine-rust/tests/source_browser/startup_urls_stay_whole.rs",
+      "case_type": "standard",
+      "adaptation": "Production dashboard conversion preserves the same text/list URL semantics."
+    },
+    {
+      "source_id": "tests/test_startup_urls_stay_whole.py::test_an_explicit_list_entry_is_never_split",
+      "rust_test": "startup_urls_stay_whole::test_an_explicit_list_entry_is_never_split",
+      "rust_file": "engine-rust/tests/source_browser/startup_urls_stay_whole.rs",
+      "case_type": "standard",
+      "adaptation": "Production dashboard conversion preserves the same text/list URL semantics."
+    },
+    {
+      "source_id": "tests/test_startup_urls_stay_whole.py::test_an_unrelated_edit_does_not_re_split_the_urls",
+      "rust_test": "startup_urls_stay_whole::test_an_unrelated_edit_does_not_re_split_the_urls",
+      "rust_file": "engine-rust/tests/source_browser/startup_urls_stay_whole.rs",
+      "case_type": "standard",
+      "adaptation": "Actual HTTP POST/PUT/GET and engine JSON twin on disk; same source URLs and assertions."
+    },
+    {
+      "source_id": "tests/test_startup_urls_stay_whole.py::test_legacy_comma_separated_hosts_still_split",
+      "rust_test": "startup_urls_stay_whole::test_legacy_comma_separated_hosts_still_split",
+      "rust_file": "engine-rust/tests/source_browser/startup_urls_stay_whole.rs",
+      "case_type": "standard",
+      "adaptation": "Production dashboard conversion preserves the same text/list URL semantics."
+    },
+    {
+      "source_id": "tests/test_startup_urls_stay_whole.py::test_one_url_per_line_is_still_the_contract",
+      "rust_test": "startup_urls_stay_whole::test_one_url_per_line_is_still_the_contract",
+      "rust_file": "engine-rust/tests/source_browser/startup_urls_stay_whole.rs",
+      "case_type": "standard",
+      "adaptation": "Production dashboard conversion preserves the same text/list URL semantics."
+    },
+    {
+      "source_id": "tests/test_startup_urls.py::test_a_comma_in_a_path_is_not_a_separator",
+      "rust_test": "startup_urls::test_a_comma_in_a_path_is_not_a_separator",
+      "rust_file": "engine-rust/tests/source_browser/startup_urls.rs",
+      "case_type": "standard",
+      "adaptation": "Production dashboard conversion preserves the same text/list URL semantics."
+    },
+    {
+      "source_id": "tests/test_startup_urls.py::test_a_comma_in_a_query_string_is_not_a_separator",
+      "rust_test": "startup_urls::test_a_comma_in_a_query_string_is_not_a_separator",
+      "rust_file": "engine-rust/tests/source_browser/startup_urls.rs",
+      "case_type": "standard",
+      "adaptation": "Production dashboard conversion preserves the same text/list URL semantics."
+    },
+    {
+      "source_id": "tests/test_startup_urls.py::test_a_list_is_taken_entry_by_entry",
+      "rust_test": "startup_urls::test_a_list_is_taken_entry_by_entry",
+      "rust_file": "engine-rust/tests/source_browser/startup_urls.rs",
+      "case_type": "standard",
+      "adaptation": "Production dashboard conversion preserves the same text/list URL semantics."
+    },
+    {
+      "source_id": "tests/test_startup_urls.py::test_a_missing_scheme_is_filled_in",
+      "rust_test": "startup_urls::test_a_missing_scheme_is_filled_in",
+      "rust_file": "engine-rust/tests/source_browser/startup_urls.rs",
+      "case_type": "standard",
+      "adaptation": "Production dashboard conversion preserves the same text/list URL semantics."
+    },
+    {
+      "source_id": "tests/test_startup_urls.py::test_about_blank_is_kept_as_a_scheme_of_its_own",
+      "rust_test": "startup_urls::test_about_blank_is_kept_as_a_scheme_of_its_own",
+      "rust_file": "engine-rust/tests/source_browser/startup_urls.rs",
+      "case_type": "standard",
+      "adaptation": "Production dashboard conversion preserves the same text/list URL semantics."
+    },
+    {
+      "source_id": "tests/test_startup_urls.py::test_an_encoded_comma_is_left_exactly_as_written",
+      "rust_test": "startup_urls::test_an_encoded_comma_is_left_exactly_as_written",
+      "rust_file": "engine-rust/tests/source_browser/startup_urls.rs",
+      "case_type": "standard",
+      "adaptation": "Production dashboard conversion preserves the same text/list URL semantics."
+    },
+    {
+      "source_id": "tests/test_startup_urls.py::test_legacy_comma_separated_entries_still_split_where_they_cannot_be_one_url",
+      "rust_test": "startup_urls::test_legacy_comma_separated_entries_still_split_where_they_cannot_be_one_url",
+      "rust_file": "engine-rust/tests/source_browser/startup_urls.rs",
+      "case_type": "standard",
+      "adaptation": "Production dashboard conversion preserves the same text/list URL semantics."
+    },
+    {
+      "source_id": "tests/test_startup_urls.py::test_nothing_in_means_nothing_out",
+      "rust_test": "startup_urls::test_nothing_in_means_nothing_out",
+      "rust_file": "engine-rust/tests/source_browser/startup_urls.rs",
+      "case_type": "standard",
+      "adaptation": "Production dashboard conversion preserves the same text/list URL semantics."
+    },
+    {
+      "source_id": "tests/test_startup_urls.py::test_one_url_per_line_is_the_contract",
+      "rust_test": "startup_urls::test_one_url_per_line_is_the_contract",
+      "rust_file": "engine-rust/tests/source_browser/startup_urls.rs",
+      "case_type": "standard",
+      "adaptation": "Production dashboard conversion preserves the same text/list URL semantics."
+    },
+    {
+      "source_id": "tests/test_timezone_aliases.py::test_a_missing_name_is_never_a_match[-Asia/Kolkata]",
+      "rust_test": "timezone_aliases::test_a_missing_name_is_never_a_match_empty_first",
+      "rust_file": "engine-rust/tests/source_browser/timezone_aliases.rs",
+      "case_type": "parameterized",
+      "adaptation": "Exercise the actual trust timezone grade (and proxy grade for the original package source check); missing Python None maps to optional JSON observation/string field."
+    },
+    {
+      "source_id": "tests/test_timezone_aliases.py::test_a_missing_name_is_never_a_match[Asia/Kolkata-]",
+      "rust_test": "timezone_aliases::test_a_missing_name_is_never_a_match_empty_second",
+      "rust_file": "engine-rust/tests/source_browser/timezone_aliases.rs",
+      "case_type": "parameterized",
+      "adaptation": "Exercise the actual trust timezone grade (and proxy grade for the original package source check); missing Python None maps to optional JSON observation/string field."
+    },
+    {
+      "source_id": "tests/test_timezone_aliases.py::test_a_missing_name_is_never_a_match[Asia/Kolkata-None]",
+      "rust_test": "timezone_aliases::test_a_missing_name_is_never_a_match_asia_kolkata_none",
+      "rust_file": "engine-rust/tests/source_browser/timezone_aliases.rs",
+      "case_type": "parameterized",
+      "adaptation": "Exercise the actual trust timezone grade (and proxy grade for the original package source check); missing Python None maps to optional JSON observation/string field."
+    },
+    {
+      "source_id": "tests/test_timezone_aliases.py::test_a_missing_name_is_never_a_match[None-Asia/Kolkata]",
+      "rust_test": "timezone_aliases::test_a_missing_name_is_never_a_match_none_asia_kolkata",
+      "rust_file": "engine-rust/tests/source_browser/timezone_aliases.rs",
+      "case_type": "parameterized",
+      "adaptation": "Exercise the actual trust timezone grade (and proxy grade for the original package source check); missing Python None maps to optional JSON observation/string field."
+    },
+    {
+      "source_id": "tests/test_timezone_aliases.py::test_a_missing_name_is_never_a_match[None-None]",
+      "rust_test": "timezone_aliases::test_a_missing_name_is_never_a_match_none_none",
+      "rust_file": "engine-rust/tests/source_browser/timezone_aliases.rs",
+      "case_type": "parameterized",
+      "adaptation": "Exercise the actual trust timezone grade (and proxy grade for the original package source check); missing Python None maps to optional JSON observation/string field."
+    },
+    {
+      "source_id": "tests/test_timezone_aliases.py::test_case_does_not_decide_it",
+      "rust_test": "timezone_aliases::test_case_does_not_decide_it",
+      "rust_file": "engine-rust/tests/source_browser/timezone_aliases.rs",
+      "case_type": "standard",
+      "adaptation": "Exercise the actual trust timezone grade (and proxy grade for the original package source check); missing Python None maps to optional JSON observation/string field."
+    },
+    {
+      "source_id": "tests/test_timezone_aliases.py::test_different_zones_do_not_match[Asia/Kolkata-Asia/Colombo]",
+      "rust_test": "timezone_aliases::test_different_zones_do_not_match_asia_kolkata_asia_colombo",
+      "rust_file": "engine-rust/tests/source_browser/timezone_aliases.rs",
+      "case_type": "parameterized",
+      "adaptation": "Exercise the actual trust timezone grade (and proxy grade for the original package source check); missing Python None maps to optional JSON observation/string field."
+    },
+    {
+      "source_id": "tests/test_timezone_aliases.py::test_different_zones_do_not_match[Europe/Berlin-Europe/Paris]",
+      "rust_test": "timezone_aliases::test_different_zones_do_not_match_europe_berlin_europe_paris",
+      "rust_file": "engine-rust/tests/source_browser/timezone_aliases.rs",
+      "case_type": "parameterized",
+      "adaptation": "Exercise the actual trust timezone grade (and proxy grade for the original package source check); missing Python None maps to optional JSON observation/string field."
+    },
+    {
+      "source_id": "tests/test_timezone_aliases.py::test_different_zones_do_not_match[Europe/London-Asia/Kolkata]",
+      "rust_test": "timezone_aliases::test_different_zones_do_not_match_europe_london_asia_kolkata",
+      "rust_file": "engine-rust/tests/source_browser/timezone_aliases.rs",
+      "case_type": "parameterized",
+      "adaptation": "Exercise the actual trust timezone grade (and proxy grade for the original package source check); missing Python None maps to optional JSON observation/string field."
+    },
+    {
+      "source_id": "tests/test_timezone_aliases.py::test_different_zones_do_not_match[Europe/London-Europe/Lisbon]",
+      "rust_test": "timezone_aliases::test_different_zones_do_not_match_europe_london_europe_lisbon",
+      "rust_file": "engine-rust/tests/source_browser/timezone_aliases.rs",
+      "case_type": "parameterized",
+      "adaptation": "Exercise the actual trust timezone grade (and proxy grade for the original package source check); missing Python None maps to optional JSON observation/string field."
+    },
+    {
+      "source_id": "tests/test_timezone_aliases.py::test_the_probe_compares_with_the_alias_rule",
+      "rust_test": "timezone_aliases::test_the_probe_compares_with_the_alias_rule",
+      "rust_file": "engine-rust/tests/source_browser/timezone_aliases.rs",
+      "case_type": "standard",
+      "adaptation": "Exercise the actual trust timezone grade (and proxy grade for the original package source check); missing Python None maps to optional JSON observation/string field."
+    },
+    {
+      "source_id": "tests/test_timezone_aliases.py::test_the_same_name_matches_itself",
+      "rust_test": "timezone_aliases::test_the_same_name_matches_itself",
+      "rust_file": "engine-rust/tests/source_browser/timezone_aliases.rs",
+      "case_type": "standard",
+      "adaptation": "Exercise the actual trust timezone grade (and proxy grade for the original package source check); missing Python None maps to optional JSON observation/string field."
+    },
+    {
+      "source_id": "tests/test_timezone_aliases.py::test_the_table_is_symmetric",
+      "rust_test": "timezone_aliases::test_the_table_is_symmetric",
+      "rust_file": "engine-rust/tests/source_browser/timezone_aliases.rs",
+      "case_type": "standard",
+      "adaptation": "Exercise the actual trust timezone grade (and proxy grade for the original package source check); missing Python None maps to optional JSON observation/string field."
+    },
+    {
+      "source_id": "tests/test_timezone_aliases.py::test_two_names_for_one_zone_match[America/Argentina/Buenos_Aires-America/Buenos_Aires]",
+      "rust_test": "timezone_aliases::test_two_names_for_one_zone_match_america_argentina_buenos_aires_america_buenos_aires",
+      "rust_file": "engine-rust/tests/source_browser/timezone_aliases.rs",
+      "case_type": "parameterized",
+      "adaptation": "Exercise the actual trust timezone grade (and proxy grade for the original package source check); missing Python None maps to optional JSON observation/string field."
+    },
+    {
+      "source_id": "tests/test_timezone_aliases.py::test_two_names_for_one_zone_match[America/Nuuk-America/Godthab]",
+      "rust_test": "timezone_aliases::test_two_names_for_one_zone_match_america_nuuk_america_godthab",
+      "rust_file": "engine-rust/tests/source_browser/timezone_aliases.rs",
+      "case_type": "parameterized",
+      "adaptation": "Exercise the actual trust timezone grade (and proxy grade for the original package source check); missing Python None maps to optional JSON observation/string field."
+    },
+    {
+      "source_id": "tests/test_timezone_aliases.py::test_two_names_for_one_zone_match[Asia/Calcutta-Asia/Kolkata]",
+      "rust_test": "timezone_aliases::test_two_names_for_one_zone_match_asia_calcutta_asia_kolkata",
+      "rust_file": "engine-rust/tests/source_browser/timezone_aliases.rs",
+      "case_type": "parameterized",
+      "adaptation": "Exercise the actual trust timezone grade (and proxy grade for the original package source check); missing Python None maps to optional JSON observation/string field."
+    },
+    {
+      "source_id": "tests/test_timezone_aliases.py::test_two_names_for_one_zone_match[Asia/Ho_Chi_Minh-Asia/Saigon]",
+      "rust_test": "timezone_aliases::test_two_names_for_one_zone_match_asia_ho_chi_minh_asia_saigon",
+      "rust_file": "engine-rust/tests/source_browser/timezone_aliases.rs",
+      "case_type": "parameterized",
+      "adaptation": "Exercise the actual trust timezone grade (and proxy grade for the original package source check); missing Python None maps to optional JSON observation/string field."
+    },
+    {
+      "source_id": "tests/test_timezone_aliases.py::test_two_names_for_one_zone_match[Asia/Kolkata-Asia/Calcutta]",
+      "rust_test": "timezone_aliases::test_two_names_for_one_zone_match_asia_kolkata_asia_calcutta",
+      "rust_file": "engine-rust/tests/source_browser/timezone_aliases.rs",
+      "case_type": "parameterized",
+      "adaptation": "Exercise the actual trust timezone grade (and proxy grade for the original package source check); missing Python None maps to optional JSON observation/string field."
+    },
+    {
+      "source_id": "tests/test_timezone_aliases.py::test_two_names_for_one_zone_match[Europe/Kyiv-Europe/Kiev]",
+      "rust_test": "timezone_aliases::test_two_names_for_one_zone_match_europe_kyiv_europe_kiev",
+      "rust_file": "engine-rust/tests/source_browser/timezone_aliases.rs",
+      "case_type": "parameterized",
+      "adaptation": "Exercise the actual trust timezone grade (and proxy grade for the original package source check); missing Python None maps to optional JSON observation/string field."
+    },
+    {
+      "source_id": "tests/test_timezone_aliases.py::test_two_names_for_one_zone_match[Pacific/Chuuk-Pacific/Truk]",
+      "rust_test": "timezone_aliases::test_two_names_for_one_zone_match_pacific_chuuk_pacific_truk",
+      "rust_file": "engine-rust/tests/source_browser/timezone_aliases.rs",
+      "case_type": "parameterized",
+      "adaptation": "Exercise the actual trust timezone grade (and proxy grade for the original package source check); missing Python None maps to optional JSON observation/string field."
+    },
+    {
+      "source_id": "tests/test_ua_metadata.py::test_a_phone_reports_its_handset_and_a_desktop_reports_none",
+      "rust_test": "ua_metadata::test_a_phone_reports_its_handset_and_a_desktop_reports_none",
+      "rust_file": "engine-rust/tests/source_browser/ua_metadata.rs",
+      "case_type": "standard",
+      "adaptation": "Native production identity/generation API with original seeded inputs and assertions."
+    },
+    {
+      "source_id": "tests/test_ua_metadata.py::test_a_profile_whose_browser_has_no_client_hints_sends_none",
+      "rust_test": "ua_metadata::test_a_profile_whose_browser_has_no_client_hints_sends_none",
+      "rust_file": "engine-rust/tests/source_browser/ua_metadata.rs",
+      "case_type": "standard",
+      "adaptation": "Native production identity/generation API with original seeded inputs and assertions."
+    },
+    {
+      "source_id": "tests/test_ua_metadata.py::test_apple_silicon_is_arm_and_an_intel_mac_is_not",
+      "rust_test": "ua_metadata::test_apple_silicon_is_arm_and_an_intel_mac_is_not",
+      "rust_file": "engine-rust/tests/source_browser/ua_metadata.rs",
+      "case_type": "standard",
+      "adaptation": "Native production identity/generation API with original seeded inputs and assertions."
+    },
+    {
+      "source_id": "tests/test_ua_metadata.py::test_the_full_version_list_carries_four_part_versions",
+      "rust_test": "ua_metadata::test_the_full_version_list_carries_four_part_versions",
+      "rust_file": "engine-rust/tests/source_browser/ua_metadata.rs",
+      "case_type": "standard",
+      "adaptation": "Native production identity/generation API with original seeded inputs and assertions."
+    },
+    {
+      "source_id": "tests/test_ua_metadata.py::test_the_header_view_is_the_metadata_view[android]",
+      "rust_test": "ua_metadata::test_the_header_view_is_the_metadata_view_android",
+      "rust_file": "engine-rust/tests/source_browser/ua_metadata.rs",
+      "case_type": "parameterized",
+      "adaptation": "Native production identity/generation API with original seeded inputs and assertions."
+    },
+    {
+      "source_id": "tests/test_ua_metadata.py::test_the_header_view_is_the_metadata_view[linux]",
+      "rust_test": "ua_metadata::test_the_header_view_is_the_metadata_view_linux",
+      "rust_file": "engine-rust/tests/source_browser/ua_metadata.rs",
+      "case_type": "parameterized",
+      "adaptation": "Native production identity/generation API with original seeded inputs and assertions."
+    },
+    {
+      "source_id": "tests/test_ua_metadata.py::test_the_header_view_is_the_metadata_view[macos]",
+      "rust_test": "ua_metadata::test_the_header_view_is_the_metadata_view_macos",
+      "rust_file": "engine-rust/tests/source_browser/ua_metadata.rs",
+      "case_type": "parameterized",
+      "adaptation": "Native production identity/generation API with original seeded inputs and assertions."
+    },
+    {
+      "source_id": "tests/test_ua_metadata.py::test_the_header_view_is_the_metadata_view[windows]",
+      "rust_test": "ua_metadata::test_the_header_view_is_the_metadata_view_windows",
+      "rust_file": "engine-rust/tests/source_browser/ua_metadata.rs",
+      "case_type": "parameterized",
+      "adaptation": "Native production identity/generation API with original seeded inputs and assertions."
+    },
+    {
+      "source_id": "tests/test_ua_metadata.py::test_the_metadata_is_shaped_the_way_cdp_wants_it[android]",
+      "rust_test": "ua_metadata::test_the_metadata_is_shaped_the_way_cdp_wants_it_android",
+      "rust_file": "engine-rust/tests/source_browser/ua_metadata.rs",
+      "case_type": "parameterized",
+      "adaptation": "Native production identity/generation API with original seeded inputs and assertions."
+    },
+    {
+      "source_id": "tests/test_ua_metadata.py::test_the_metadata_is_shaped_the_way_cdp_wants_it[ios]",
+      "rust_test": "ua_metadata::test_the_metadata_is_shaped_the_way_cdp_wants_it_ios",
+      "rust_file": "engine-rust/tests/source_browser/ua_metadata.rs",
+      "case_type": "parameterized",
+      "adaptation": "Native production identity/generation API with original seeded inputs and assertions."
+    },
+    {
+      "source_id": "tests/test_ua_metadata.py::test_the_metadata_is_shaped_the_way_cdp_wants_it[linux]",
+      "rust_test": "ua_metadata::test_the_metadata_is_shaped_the_way_cdp_wants_it_linux",
+      "rust_file": "engine-rust/tests/source_browser/ua_metadata.rs",
+      "case_type": "parameterized",
+      "adaptation": "Native production identity/generation API with original seeded inputs and assertions."
+    },
+    {
+      "source_id": "tests/test_ua_metadata.py::test_the_metadata_is_shaped_the_way_cdp_wants_it[macos]",
+      "rust_test": "ua_metadata::test_the_metadata_is_shaped_the_way_cdp_wants_it_macos",
+      "rust_file": "engine-rust/tests/source_browser/ua_metadata.rs",
+      "case_type": "parameterized",
+      "adaptation": "Native production identity/generation API with original seeded inputs and assertions."
+    },
+    {
+      "source_id": "tests/test_ua_metadata.py::test_the_metadata_is_shaped_the_way_cdp_wants_it[windows]",
+      "rust_test": "ua_metadata::test_the_metadata_is_shaped_the_way_cdp_wants_it_windows",
+      "rust_file": "engine-rust/tests/source_browser/ua_metadata.rs",
+      "case_type": "parameterized",
+      "adaptation": "Native production identity/generation API with original seeded inputs and assertions."
+    },
+    {
+      "source_id": "tests/test_ua_metadata.py::test_the_platform_version_matches_the_shared_encoding",
+      "rust_test": "ua_metadata::test_the_platform_version_matches_the_shared_encoding",
+      "rust_file": "engine-rust/tests/source_browser/ua_metadata.rs",
+      "case_type": "standard",
+      "adaptation": "Native production identity/generation API with original seeded inputs and assertions."
+    },
+    {
+      "source_id": "tests/test_warmup.py::test_known_presets_exist",
+      "rust_test": "warmup::test_known_presets_exist",
+      "rust_file": "engine-rust/tests/source_browser/warmup.rs",
+      "case_type": "standard",
+      "adaptation": "Native production boundary with original inputs and behavior assertions; no Python runtime."
+    },
+    {
+      "source_id": "tests/test_warmup.py::test_preset_sites_is_case_insensitive",
+      "rust_test": "warmup::test_preset_sites_is_case_insensitive",
+      "rust_file": "engine-rust/tests/source_browser/warmup.rs",
+      "case_type": "standard",
+      "adaptation": "Native production boundary with original inputs and behavior assertions; no Python runtime."
+    },
+    {
+      "source_id": "tests/test_warmup.py::test_preset_sites_resolves_by_name",
+      "rust_test": "warmup::test_preset_sites_resolves_by_name",
+      "rust_file": "engine-rust/tests/source_browser/warmup.rs",
+      "case_type": "standard",
+      "adaptation": "Native production boundary with original inputs and behavior assertions; no Python runtime."
+    },
+    {
+      "source_id": "tests/test_warmup.py::test_preset_sites_returns_a_copy",
+      "rust_test": "warmup::test_preset_sites_returns_a_copy",
+      "rust_file": "engine-rust/tests/source_browser/warmup.rs",
+      "case_type": "standard",
+      "adaptation": "Native production boundary with original inputs and behavior assertions; no Python runtime."
+    },
+    {
+      "source_id": "tests/test_warmup.py::test_unknown_preset_falls_back_to_default",
+      "rust_test": "warmup::test_unknown_preset_falls_back_to_default",
+      "rust_file": "engine-rust/tests/source_browser/warmup.rs",
+      "case_type": "standard",
+      "adaptation": "Native production boundary with original inputs and behavior assertions; no Python runtime."
+    },
+    {
+      "source_id": "tests/test_warning_gate.py::test_a_clean_test_still_passes_under_the_gate",
+      "rust_test": "warning_gate::test_a_clean_test_still_passes_under_the_gate",
+      "rust_file": "engine-rust/tests/source_browser/warning_gate.rs",
+      "case_type": "standard",
+      "adaptation": "Isolated compiled native worker plants a forgotten OS file, actual panicking thread, or actual child. The production ResourceGuard and natural-settlement policy used by CI decide the gate; the control disables enforcement. Owned capture cleans each fixture after observing the verdict."
+    },
+    {
+      "source_id": "tests/test_warning_gate.py::test_the_gate_fails_a_planted_leak[running subprocess]",
+      "rust_test": "warning_gate::test_the_gate_fails_a_planted_leak_running_subprocess",
+      "rust_file": "engine-rust/tests/source_browser/warning_gate.rs",
+      "case_type": "parameterized",
+      "adaptation": "Isolated compiled native worker plants a forgotten OS file, actual panicking thread, or actual child. The production ResourceGuard and natural-settlement policy used by CI decide the gate; the control disables enforcement. Owned capture cleans each fixture after observing the verdict."
+    },
+    {
+      "source_id": "tests/test_warning_gate.py::test_the_gate_fails_a_planted_leak[thread failure]",
+      "rust_test": "warning_gate::test_the_gate_fails_a_planted_leak_thread_failure",
+      "rust_file": "engine-rust/tests/source_browser/warning_gate.rs",
+      "case_type": "parameterized",
+      "adaptation": "Isolated compiled native worker plants a forgotten OS file, actual panicking thread, or actual child. The production ResourceGuard and natural-settlement policy used by CI decide the gate; the control disables enforcement. Owned capture cleans each fixture after observing the verdict."
+    },
+    {
+      "source_id": "tests/test_warning_gate.py::test_the_gate_fails_a_planted_leak[unclosed file]",
+      "rust_test": "warning_gate::test_the_gate_fails_a_planted_leak_unclosed_file",
+      "rust_file": "engine-rust/tests/source_browser/warning_gate.rs",
+      "case_type": "parameterized",
+      "adaptation": "Isolated compiled native worker plants a forgotten OS file, actual panicking thread, or actual child. The production ResourceGuard and natural-settlement policy used by CI decide the gate; the control disables enforcement. Owned capture cleans each fixture after observing the verdict."
+    },
+    {
+      "source_id": "tests/test_warning_gate.py::test_the_planted_leak_is_otherwise_a_passing_test[running subprocess]",
+      "rust_test": "warning_gate::test_the_planted_leak_is_otherwise_a_passing_test_running_subprocess",
+      "rust_file": "engine-rust/tests/source_browser/warning_gate.rs",
+      "case_type": "parameterized",
+      "adaptation": "Isolated compiled native worker plants a forgotten OS file, actual panicking thread, or actual child. The production ResourceGuard and natural-settlement policy used by CI decide the gate; the control disables enforcement. Owned capture cleans each fixture after observing the verdict."
+    },
+    {
+      "source_id": "tests/test_warning_gate.py::test_the_planted_leak_is_otherwise_a_passing_test[thread failure]",
+      "rust_test": "warning_gate::test_the_planted_leak_is_otherwise_a_passing_test_thread_failure",
+      "rust_file": "engine-rust/tests/source_browser/warning_gate.rs",
+      "case_type": "parameterized",
+      "adaptation": "Isolated compiled native worker plants a forgotten OS file, actual panicking thread, or actual child. The production ResourceGuard and natural-settlement policy used by CI decide the gate; the control disables enforcement. Owned capture cleans each fixture after observing the verdict."
+    },
+    {
+      "source_id": "tests/test_warning_gate.py::test_the_planted_leak_is_otherwise_a_passing_test[unclosed file]",
+      "rust_test": "warning_gate::test_the_planted_leak_is_otherwise_a_passing_test_unclosed_file",
+      "rust_file": "engine-rust/tests/source_browser/warning_gate.rs",
+      "case_type": "parameterized",
+      "adaptation": "Isolated compiled native worker plants a forgotten OS file, actual panicking thread, or actual child. The production ResourceGuard and natural-settlement policy used by CI decide the gate; the control disables enforcement. Owned capture cleans each fixture after observing the verdict."
+    }
+  ]
+}

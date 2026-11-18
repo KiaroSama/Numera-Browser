@@ -1,0 +1,1561 @@
+{
+  "total": 195,
+  "suites": [
+    {
+      "original_suite": "test/api-response-contract.test.ts",
+      "rust_module": "api_response_contract",
+      "cases": [
+        {
+          "original": "health accepts its nullable proxy and summary-only schedule",
+          "parameter": "healthRow",
+          "rust_test": "api_response_contract::health_nullable_proxy",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "health accepts its nullable proxy and summary-only schedule",
+          "parameter": "{ ...healthRow, schedule: { enabled: true, everyHours: 24, preset: \"general\" } }",
+          "rust_test": "api_response_contract::health_summary_only_schedule",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "rotation preserves valid outcome-dependent fields",
+          "parameter": "{ ok: null, rotated: false, error: \"no change-IP URL is set for this proxy\" }",
+          "rust_test": "api_response_contract::rotation_refusal",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "rotation preserves valid outcome-dependent fields",
+          "parameter": "{ ok: true, rotated: true, previousIp: null, ip: \"192.0.2.1\", country: null, city: null }",
+          "rust_test": "api_response_contract::rotation_unknown_previous_ip",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "a proxy check can return unknown location without invalidating its IP",
+          "parameter": null,
+          "rust_test": "api_response_contract::proxy_unknown_location",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "TLS and profile proxy checks preserve absent fingerprint observations",
+          "parameter": "{ ja3Hash: null, ja4: \"fixture-ja4\" }",
+          "rust_test": "api_response_contract::tls_null_ja3",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "TLS and profile proxy checks preserve absent fingerprint observations",
+          "parameter": "{ ja3Hash: \"fixture-ja3\", ja4: null }",
+          "rust_test": "api_response_contract::tls_null_ja4",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "TLS and profile proxy checks preserve absent fingerprint observations",
+          "parameter": "{ ja3Hash: null, ja4: null }",
+          "rust_test": "api_response_contract::tls_both_null",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "TLS still refuses malformed fingerprint values",
+          "parameter": null,
+          "rust_test": "api_response_contract::tls_refuses_numeric_fingerprint",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "pool listing retains a successful check with unknown country",
+          "parameter": null,
+          "rust_test": "api_response_contract::pool_unknown_country",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "malformed health scalars are still refused",
+          "parameter": null,
+          "rust_test": "api_response_contract::health_refuses_string_boolean",
+          "runner": "native",
+          "original_kind": "unit"
+        }
+      ],
+      "original_sha256": "73f047f415bc0db3102df4a9dd89881f8bb9237c1d56d43f354ddd740a6141e7"
+    },
+    {
+      "original_suite": "test/auth-lockout.test.tsx",
+      "rust_module": "auth_lockout",
+      "cases": [
+        {
+          "original": "minting the first token keeps this session authorised to its own engine",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::auth_lockout::first_token_adopted",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "minting a second token leaves the credential this session already has",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::auth_lockout::second_token_preserves_session_credential",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "revoking the token in use shows the locked screen instead of staying live",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::auth_lockout::revoked_token_shows_lock_screen",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        }
+      ],
+      "original_sha256": "a6f55a40cefc1e945d76dfb09e4a7b0716cc6cdceea8d8f4a1aa5b278195942f"
+    },
+    {
+      "original_suite": "test/bulk-actions.test.tsx",
+      "rust_module": "bulk_actions",
+      "cases": [
+        {
+          "original": "bulk Launch starts the stopped profiles and never stops a running one",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::bulk_actions::launch_ignores_running",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "launching a selection that is already running issues no calls at all",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::bulk_actions::all_running_launch_has_no_targets",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "a profile that fails to launch stays selected and is named",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::bulk_actions::failed_launch_remains_selected",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "Launch is launch-only in demo mode too",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::bulk_actions::demo_launch_is_launch_only",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "bulk warm-up reports failures instead of clearing the selection",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::bulk_actions::warmup_reports_partial_failure",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "a warm-up that fails outright never reports success",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::bulk_actions::warmup_failure_is_never_success",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "warm-up cannot be fired twice while it is still running",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::bulk_actions::warmup_busy_disables_repeat",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "a filter hides rows without shrinking what Delete is about to destroy",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::bulk_actions::filter_does_not_shrink_delete",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "export writes every selected profile, not only the visible ones",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::bulk_actions::export_includes_hidden_selection",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "Launch and Export resolve the identical set of ids",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::bulk_actions::launch_export_same_scope",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        }
+      ],
+      "original_sha256": "5d35b2b3adc1c9a47e0ae8fc9d03e500153e2c268aff372ff1760db8955ff461"
+    },
+    {
+      "original_suite": "test/bulk-edit-scope.test.tsx",
+      "rust_module": "bulk_edit_scope",
+      "cases": [
+        {
+          "original": "Edit all offers the count the toolbar shows, not the ids selected before the refresh",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::bulk_edit_scope::disappeared_profile_not_in_modal_count",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "a filter hides a selected profile without shrinking what Edit all changes",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::bulk_edit_scope::filtered_selection_stays_whole",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "switching folders leaves the selection Edit all is about to change alone",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::bulk_edit_scope::folder_change_preserves_selection",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "a selection spanning pages is edited whole, from whichever page is on screen",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::bulk_edit_scope::selection_spans_pages",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "a profile deleted while the modal is open is reported, not counted as edited",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::bulk_edit_scope::partial_bulk_edit_reports_missing",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        }
+      ],
+      "original_sha256": "e62ccfc40f76dcfc15137bc0469597494341148d50361c820b71f8f726225739"
+    },
+    {
+      "original_suite": "test/bulk-generate.test.tsx",
+      "rust_module": "bulk_generate",
+      "cases": [
+        {
+          "original": "the batch pairs every OS with every country rather than locking them together",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::bulk_generate::os_country_cartesian_spread",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "names are padded to one width across the batch, counted from the last number",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::bulk_generate::names_padded_from_last_number",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "an unset launch engine is sent as null, not an empty string",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::bulk_generate::unset_engine_is_null",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "every generated profile is internally coherent",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::bulk_generate::generated_devices_are_coherent",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "a bulk edit sends only the fields that were filled in",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::bulk_generate::sync_omits_untouched_fields",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "whitespace is not a tag, and an untouched form cannot be applied at all",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::bulk_generate::empty_and_whitespace_sync_cannot_apply",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        }
+      ],
+      "original_sha256": "625b34c37fe20f4a7916fa21f187d30ae5dab77fdf96cb894bf1d4769d5682a4"
+    },
+    {
+      "original_suite": "test/cloak-consent.test.tsx",
+      "rust_module": "cloak_consent",
+      "cases": [
+        {
+          "original": "Cloak download requires reviewing local metadata and explicit exact offer consent",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::cloak_consent::exact_offer_needs_explicit_consent",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "a failed acquisition consumes consent and requires reviewing local state again",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::cloak_consent::failed_acquisition_consumes_consent",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "an unavailable vendor generation cannot be approved",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::cloak_consent::unavailable_offer_cannot_be_approved",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        }
+      ],
+      "original_sha256": "015b368a641fbb3d8abf0d5aff28bce88273d33cec0f03efe9db026fa826fe52"
+    },
+    {
+      "original_suite": "test/country-picker-offers-each-place-once.test.tsx",
+      "rust_module": "country_picker_offers_each_place_once",
+      "cases": [
+        {
+          "original": "the lookup still accepts the alias, and it resolves where GB does",
+          "parameter": null,
+          "rust_test": "country_picker_offers_each_place_once::uk_alias_lookup_preserved",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "no two offered countries share a locale, and the alias is not offered",
+          "parameter": null,
+          "rust_test": "country_picker_offers_each_place_once::countries_offer_unique_locales",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "the editor's proxy country select offers each country once",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::country_picker_offers_each_place_once::proxy_country_select_unique",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "a profile that already stores the alias still shows it",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::country_picker_offers_each_place_once::stored_alias_is_selected",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "the bulk dialog offers each country once",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::country_picker_offers_each_place_once::bulk_country_chips_unique",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        }
+      ],
+      "original_sha256": "f20a20cf4ae678e107d6254af7d88a549615bfd210ddda8dad35b42146f57791"
+    },
+    {
+      "original_suite": "test/default-engine-authority.test.tsx",
+      "rust_module": "default_engine_authority",
+      "cases": [
+        {
+          "original": "editing notes does not move the default engine to the profile's engine",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::default_engine_authority::notes_save_does_not_move_default",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "changing a profile's engine does move the default, because the server did",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::default_engine_authority::server_engine_change_moves_default",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        }
+      ],
+      "original_sha256": "3ec207810a6da809ed829a0d47452def420b98e5d7345cab6e6e39cdcac742c1"
+    },
+    {
+      "original_suite": "test/dev-proxy.test.ts",
+      "rust_module": "dev_proxy",
+      "cases": [
+        {
+          "original": "the dev server forwards /api to the engine, so npm run dev is not demo mode",
+          "parameter": null,
+          "rust_test": "dev_proxy::dev_api_forwards_to_engine",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "the client still asks its own origin, so the built dashboard is unaffected",
+          "parameter": null,
+          "rust_test": "dev_proxy::production_api_uses_own_origin",
+          "runner": "native",
+          "original_kind": "unit"
+        }
+      ],
+      "original_sha256": "faa0cc238fc4667ab828570de07fa2d285cf4c2bb23592e7d695f2112c21ea16"
+    },
+    {
+      "original_suite": "test/dom-cleanup.test.tsx",
+      "rust_module": "dom_cleanup",
+      "cases": [
+        {
+          "original": "nested stylesheet cleanup does not accumulate sheets between renders",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::dom_cleanup::render_does_not_create_nested_stylesheets",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "cleanup preserves stylesheets whose owner is still connected",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::dom_cleanup::connected_css_remains_external",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        }
+      ],
+      "original_sha256": "76131a38792ab8951c28253301fea7d4546baa8914d633d705d612e7bd610692"
+    },
+    {
+      "original_suite": "test/editor-save-lifecycle.test.tsx",
+      "rust_module": "editor_save_lifecycle",
+      "cases": [
+        {
+          "original": "failed save (%s) keeps notes and permits retry",
+          "parameter": "409",
+          "rust_test": "browser::tests::cases::editor_save_lifecycle::failed_409_preserves_draft",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "failed save (%s) keeps notes and permits retry",
+          "parameter": "423",
+          "rust_test": "browser::tests::cases::editor_save_lifecycle::failed_423_preserves_draft",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "failed save (%s) keeps notes and permits retry",
+          "parameter": "422",
+          "rust_test": "browser::tests::cases::editor_save_lifecycle::failed_422_preserves_draft",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "failed save (%s) keeps notes and permits retry",
+          "parameter": "500",
+          "rust_test": "browser::tests::cases::editor_save_lifecycle::failed_500_preserves_draft",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "failed save (%s) keeps notes and permits retry",
+          "parameter": "\"network\"",
+          "rust_test": "browser::tests::cases::editor_save_lifecycle::failed_network_preserves_draft",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "stale revision rebases local notes while preserving remote tags",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::editor_save_lifecycle::stale_notes_retain_remote_tags",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "stale revision resolves overlapping notes explicitly: %s",
+          "parameter": "\"Keep my edit\"",
+          "rust_test": "browser::tests::cases::editor_save_lifecycle::overlapping_notes_keep_mine",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "stale revision resolves overlapping notes explicitly: %s",
+          "parameter": "\"Use latest\"",
+          "rust_test": "browser::tests::cases::editor_save_lifecycle::overlapping_notes_use_latest",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "stale revision preserves proxy %s intent",
+          "parameter": "\"clear\"",
+          "rust_test": "browser::tests::cases::editor_save_lifecycle::stale_proxy_clear",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "stale revision preserves proxy %s intent",
+          "parameter": "\"replace\"",
+          "rust_test": "browser::tests::cases::editor_save_lifecycle::stale_proxy_replace",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "stale revision preserves proxy %s intent",
+          "parameter": "\"remove\"",
+          "rust_test": "browser::tests::cases::editor_save_lifecycle::stale_proxy_remove",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "stale revision preserves proxy %s intent",
+          "parameter": "\"preserve\"",
+          "rust_test": "browser::tests::cases::editor_save_lifecycle::stale_proxy_preserve",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "a proxy conflict locks draft controls until its explicit resolution",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::editor_save_lifecycle::conflict_locks_draft_and_masks_secrets",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "keeping a remotely removed proxy restores its credential after editing %s",
+          "parameter": "[\"host\", \"host.proxy.io\", \"127.0.0.2\", \"original\"]",
+          "rust_test": "browser::tests::cases::editor_save_lifecycle::removed_proxy_restore_host",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "keeping a remotely removed proxy restores its credential after editing %s",
+          "parameter": "[\"port\", \"8080\", \"8082\", \"original\"]",
+          "rust_test": "browser::tests::cases::editor_save_lifecycle::removed_proxy_restore_port",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "keeping a remotely removed proxy restores its credential after editing %s",
+          "parameter": "[\"user\", null, \"other-user\", \"original\"]",
+          "rust_test": "browser::tests::cases::editor_save_lifecycle::removed_proxy_restore_user",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "keeping a remotely removed proxy restores its credential after editing %s",
+          "parameter": "[\"host\", \"host.proxy.io\", \"127.0.0.2\", \"\"]",
+          "rust_test": "browser::tests::cases::editor_save_lifecycle::removed_proxy_restore_empty_password",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "using the latest whole proxy accepts removal without replaying credentials (%s)",
+          "parameter": "\"original\"",
+          "rust_test": "browser::tests::cases::editor_save_lifecycle::latest_proxy_removal_with_secret",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "using the latest whole proxy accepts removal without replaying credentials (%s)",
+          "parameter": "null",
+          "rust_test": "browser::tests::cases::editor_save_lifecycle::latest_proxy_removal_without_secret",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "keeping a whole proxy with an unavailable password refuses safely and retains the draft",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::editor_save_lifecycle::unavailable_restoration_is_refused",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "ProfileDiverged is not mistaken for a stale revision",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::editor_save_lifecycle::diverged_error_is_not_stale",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "a failed stale refresh preserves the draft and can recover on a later attempt",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::editor_save_lifecycle::failed_stale_read_retains_draft_for_retry",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "423 retains proxy %s intent through retry",
+          "parameter": "\"clear\"",
+          "rust_test": "browser::tests::cases::editor_save_lifecycle::locked_retry_retains_clear",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "423 retains proxy %s intent through retry",
+          "parameter": "\"remove\"",
+          "rust_test": "browser::tests::cases::editor_save_lifecycle::locked_retry_retains_remove",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "pending save issues one mutation and retains the editor until commit",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::editor_save_lifecycle::pending_save_cannot_repeat",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "a committed save is not retried when the following list refresh fails",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::editor_save_lifecycle::committed_save_survives_refresh_failure",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "password intent follows editor actions: %s",
+          "parameter": "\"notes\"",
+          "rust_test": "browser::tests::cases::editor_save_lifecycle::editor_notes_preserves_password",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "password intent follows editor actions: %s",
+          "parameter": "\"retype\"",
+          "rust_test": "browser::tests::cases::editor_save_lifecycle::editor_retype_replaces_password",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "password intent follows editor actions: %s",
+          "parameter": "\"pool\"",
+          "rust_test": "browser::tests::cases::editor_save_lifecycle::editor_pool_replaces_password",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "password intent follows editor actions: %s",
+          "parameter": "\"off-on\"",
+          "rust_test": "browser::tests::cases::editor_save_lifecycle::editor_off_on_clears_password",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        }
+      ],
+      "original_sha256": "16bf5a1161ac4fd7436c386f88e708c5aa27c9b68093cc028c90ddbf59c486d4"
+    },
+    {
+      "original_suite": "test/engine-built-identity-is-not-claimed.test.tsx",
+      "rust_module": "engine_built_identity_is_not_claimed",
+      "cases": [
+        {
+          "original": "camoufox is the engine that builds its own identity; chromium ones do not",
+          "parameter": null,
+          "rust_test": "engine_built_identity_is_not_claimed::camoufox_only_builds_identity",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "the summary stops claiming Chrome, and says who generates the rest",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::engine_built_identity_is_not_claimed::summary_marks_generated_rows",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "a chromium engine is presented exactly as before",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::engine_built_identity_is_not_claimed::chromium_summary_remains_concrete",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "coherence grades only the signals the engine is actually given",
+          "parameter": null,
+          "rust_test": "engine_built_identity_is_not_claimed::only_honored_hardware_is_graded",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "locale, timezone and proxy country are still graded on camoufox",
+          "parameter": null,
+          "rust_test": "engine_built_identity_is_not_claimed::camoufox_locale_zone_proxy_still_graded",
+          "runner": "native",
+          "original_kind": "unit"
+        }
+      ],
+      "original_sha256": "db4eb92b3618ba73d0ac79397067e28d4296103d982eaa5da1cf34f6cf55949b"
+    },
+    {
+      "original_suite": "test/extension-icon-auth.test.tsx",
+      "rust_module": "extension_icon_auth",
+      "cases": [
+        {
+          "original": "the icon is fetched with the app's credential, not by a bare <img>",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::extension_icon_auth::extension_icon_uses_blob_not_bare_protected_url",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "the object URL is released when the row goes away",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::extension_icon_auth::removed_icon_has_no_dom_reference",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "an extension whose icon is missing falls back instead of breaking the row",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::extension_icon_auth::missing_icon_has_svg_fallback",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        }
+      ],
+      "original_sha256": "88bcb76b79fc255ee2fed57c9a15ce8c814b81f201906082dc92588784a974a0"
+    },
+    {
+      "original_suite": "test/field-names-each-control.test.tsx",
+      "rust_module": "field_names_each_control",
+      "cases": [
+        {
+          "original": "a button in a field keeps its own name, and never the field's",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::field_names_each_control::buttons_keep_their_names",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "the plain case still works: one control, named by its field",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::field_names_each_control::input_named_by_field",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "a select and a textarea are named too, not only inputs",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::field_names_each_control::select_and_textarea_named",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "a control that brought its own name keeps it",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::field_names_each_control::explicit_control_name_preserved",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "a field of buttons is announced by its label, as a group",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::field_names_each_control::buttons_group_has_context",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "the label is announced once, never by the group AND the control",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::field_names_each_control::label_announced_once",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        }
+      ],
+      "original_sha256": "ebbdddd7c1151e271d1eaed13522bb9e4a8c2452c522488f792e9e8d397b0b4a"
+    },
+    {
+      "original_suite": "test/fingerprint-coherence.test.tsx",
+      "rust_module": "fingerprint_coherence",
+      "cases": [
+        {
+          "original": "choosing macOS rewrites the user-agent, hardware and GPU as one device",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::fingerprint_coherence::macos_rewrites_whole_device",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "choosing Android moves the memory and the mobile token too",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::fingerprint_coherence::android_rewrites_mobile_and_memory",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "choosing a locale moves the timezone with it",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::fingerprint_coherence::locale_moves_zone",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "the coherence meter reports the contradiction a stored profile arrives with",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::fingerprint_coherence::stored_contradiction_visible",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "a profile cannot be saved without a name",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::fingerprint_coherence::unnamed_cannot_save",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "saving clears the new-profile flag, so a second save updates instead of duplicating",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::fingerprint_coherence::new_flag_cleared_for_committed_write",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        }
+      ],
+      "original_sha256": "06458cb31366d06d870d565d26a42c61585896ddd27fa0ae80e6a086ba8b2038"
+    },
+    {
+      "original_suite": "test/health-actions-say-what-they-did.test.tsx",
+      "rust_module": "health_actions_say_what_they_did",
+      "cases": [
+        {
+          "original": "a trust check reports the grade it measured",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::health_actions_say_what_they_did::trust_grade_reported",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "auto-adjust names what it rewrote, and the grade it moved to",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::health_actions_say_what_they_did::align_names_fields_and_grade_change",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "nothing to change is said, not left looking like a dead button",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::health_actions_say_what_they_did::unchanged_alignment_explained",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "a failure is still reported, and not as a success",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::health_actions_say_what_they_did::failure_has_no_success_grade",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        }
+      ],
+      "original_sha256": "ab6399a9e851d6e0637dd462392ebce2ff0a262e85801655aa9869a75d7fc616"
+    },
+    {
+      "original_suite": "test/legacy-name-render.test.tsx",
+      "rust_module": "legacy_name_render",
+      "cases": [
+        {
+          "original": "the repaired view of damaged records renders every row",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::legacy_name_render::repaired_names_all_render",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "search still works across the repaired names",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::legacy_name_render::repaired_names_are_searchable",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "an unrepaired name does not take the application down",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::legacy_name_render::raw_legacy_names_do_not_blank_view",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        }
+      ],
+      "original_sha256": "4bb1e6d91273715aee37c1c467bf7d7fe10919199189c293f97b89f7f47d0079"
+    },
+    {
+      "original_suite": "test/native-export-round-trip.test.tsx",
+      "rust_module": "native_export_round_trip",
+      "cases": [
+        {
+          "original": "export writes a versioned Numera file, not a bare array",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::native_export_round_trip::file_is_versioned_numera_envelope",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "every editable field is in the file, including the ones the vendor importer never read",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::native_export_round_trip::every_editable_unknown_field_preserved",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "the export says it is configuration and not a browser session",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::native_export_round_trip::session_exclusion_is_explained",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "a proxy password the vault is holding is named, not quietly omitted",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::native_export_round_trip::withheld_vault_password_is_named",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "the chosen file reaches the engine exactly as written",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::native_export_round_trip::exact_file_text_is_opaque_to_import",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "a file read as a vendor export says so instead of implying a faithful import",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::native_export_round_trip::vendor_import_explains_regeneration",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "a native import reports plainly and claims nothing about vendor heuristics",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::native_export_round_trip::native_import_reports_plainly",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "a profile whose password could not come back is reported",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::native_export_round_trip::import_password_warning_count_reported",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "a file the engine refuses shows the engine's reason",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::native_export_round_trip::engine_import_refusal_reason_preserved",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "choosing no file asks the engine for nothing",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::native_export_round_trip::canceled_file_has_no_import_request",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        }
+      ],
+      "original_sha256": "527ed3d07775db4f0dd031bfb4031794fc4d5f14875b05879a91c52a22bf6a4d"
+    },
+    {
+      "original_suite": "test/nav-reaches-a-screen.test.tsx",
+      "rust_module": "nav_reaches_a_screen",
+      "cases": [
+        {
+          "original": "every nav button opens a screen, none falls through to the fallback",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::nav_reaches_a_screen::every_nav_destination_renders",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "the command palette can reach every section the sidebar can",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::nav_reaches_a_screen::palette_reaches_all_nav_sections",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "the fallback still answers a view name nothing renders",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::nav_reaches_a_screen::unknown_view_has_honest_fallback",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        }
+      ],
+      "original_sha256": "3e62e4e338a3656e4eb3e7510bf974b06c130e9a690926c682ec7160ccc1a975"
+    },
+    {
+      "original_suite": "test/optimistic-rollback.test.tsx",
+      "rust_module": "optimistic_rollback",
+      "cases": [
+        {
+          "original": "the view asks the handler to create; it does not add the folder itself",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::optimistic_rollback::create_view_does_not_invent_folder",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "a rejected create leaves the list exactly as the server has it",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::optimistic_rollback::refused_create_retains_authoritative_folders",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "renaming asks the handler for both names and shows neither until it says so",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::optimistic_rollback::rename_awaits_authority",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "an empty name is never sent",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::optimistic_rollback::blank_create_name_refused",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        }
+      ],
+      "original_sha256": "6dcf0e71236211d75cc9238027340ef70e738a28cf05c9618158617497335783"
+    },
+    {
+      "original_suite": "test/profile-edits.test.ts",
+      "rust_module": "profile_edits",
+      "cases": [
+        {
+          "original": "nested proxy edits retain a remote password without replacing its intent",
+          "parameter": null,
+          "rust_test": "profile_edits::nested_proxy_edit_keeps_remote_password",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "retyping the old password remains an explicit conflict after remote replacement",
+          "parameter": null,
+          "rust_test": "profile_edits::retyped_old_password_is_conflict",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "remote proxy removal conflicts with a local member edit without building an invalid proxy",
+          "parameter": null,
+          "rust_test": "profile_edits::removed_proxy_conflicts_as_whole",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "equal concurrent edits need no conflict and later revisions rebase from the new base",
+          "parameter": null,
+          "rust_test": "profile_edits::equal_concurrent_edits_need_no_conflict",
+          "runner": "native",
+          "original_kind": "unit"
+        }
+      ],
+      "original_sha256": "c2c620cbf4ea663e88ed11860764680ae43856d5ce78d575f14089bab09f53aa"
+    },
+    {
+      "original_suite": "test/proxy-password-intent.test.ts",
+      "rust_module": "proxy_password_intent",
+      "cases": [
+        {
+          "original": "an untouched password is not transmitted at all",
+          "parameter": null,
+          "rust_test": "proxy_password_intent::untouched_password_omitted",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "a password the user set is transmitted",
+          "parameter": null,
+          "rust_test": "proxy_password_intent::chosen_password_transmitted",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "re-entering the password it already had is still a decision",
+          "parameter": null,
+          "rust_test": "proxy_password_intent::retyping_same_password_is_decision",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "an explicit clear survives as an empty string",
+          "parameter": null,
+          "rust_test": "proxy_password_intent::explicit_clear_is_empty_string",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "the marker itself never reaches the server",
+          "parameter": null,
+          "rust_test": "proxy_password_intent::marker_never_reaches_engine",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "a profile with no proxy is passed through untouched",
+          "parameter": null,
+          "rust_test": "proxy_password_intent::no_proxy_passes_unchanged",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "turning the proxy off sends the removal, not a password statement",
+          "parameter": null,
+          "rust_test": "proxy_password_intent::proxy_off_is_removal",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "turning it off and on again sends what the form now holds",
+          "parameter": null,
+          "rust_test": "proxy_password_intent::off_on_transmits_new_empty_password",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "picking a saved pooled proxy sends its password explicitly",
+          "parameter": null,
+          "rust_test": "proxy_password_intent::pool_pick_transmits_pool_password",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "a profile refetched after a save carries no dirty marker",
+          "parameter": null,
+          "rust_test": "proxy_password_intent::refetched_profile_has_no_dirty_marker",
+          "runner": "native",
+          "original_kind": "unit"
+        }
+      ],
+      "original_sha256": "27651b20cbdf6de5001a8151044b217bbc86a49e4cd925cdaa5724df6951fc8f"
+    },
+    {
+      "original_suite": "test/proxy-pool-password-intent.test.tsx",
+      "rust_module": "proxy_pool_password_intent",
+      "cases": [
+        {
+          "original": "the proxy pool editor transmits %s password intent",
+          "parameter": "[\"clear\", \"fixture-password\", \"\", \"\"]",
+          "rust_test": "browser::tests::cases::proxy_pool_password_intent::pool_clear_is_preserved",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "the proxy pool editor transmits %s password intent",
+          "parameter": "[\"replace\", \"fixture-password\", \"replacement\", \"replacement\"]",
+          "rust_test": "browser::tests::cases::proxy_pool_password_intent::pool_replace_is_preserved",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "the proxy pool editor transmits %s password intent",
+          "parameter": "[\"preserve withheld\", null, undefined, null]",
+          "rust_test": "browser::tests::cases::proxy_pool_password_intent::pool_withheld_remains_null",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        }
+      ],
+      "original_sha256": "062fefe609442ce71ff28e08d7279c3c1c6c3e5460958b34dba00318c2db3871"
+    },
+    {
+      "original_suite": "test/tag-search.test.tsx",
+      "rust_module": "tag_search",
+      "cases": [
+        {
+          "original": "searching %s finds the profile tagged Work",
+          "parameter": "[\"work\"]",
+          "rust_test": "browser::tests::cases::tag_search::lowercase_finds_mixed_tag",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "searching %s finds the profile tagged Work",
+          "parameter": "[\"Work\"]",
+          "rust_test": "browser::tests::cases::tag_search::titlecase_finds_mixed_tag",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "searching %s finds the profile tagged Work",
+          "parameter": "[\"WORK\"]",
+          "rust_test": "browser::tests::cases::tag_search::uppercase_finds_mixed_tag",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "searching %s finds the profile tagged Work",
+          "parameter": "[\"WoRk\"]",
+          "rust_test": "browser::tests::cases::tag_search::arbitrary_case_finds_mixed_tag",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "the stored tag keeps its own capitalisation",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::tag_search::search_does_not_rewrite_tag",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "a legacy non-string tag does not take the application down",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::tag_search::numeric_legacy_tag_cannot_crash",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        }
+      ],
+      "original_sha256": "49160d030b40dd154769adadbb82f6164fb2fc841e5dbfcc2a2247bb161e242e"
+    },
+    {
+      "original_suite": "test/timezone-auto-or-searchable.test.tsx",
+      "rust_module": "timezone_auto_or_searchable",
+      "cases": [
+        {
+          "original": "the list is the platform's, not the ten pairs the dashboard had",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::timezone_auto_or_searchable::locale_defaults_all_offered",
+          "runner": "chromium-wasm",
+          "original_kind": "platform-unit"
+        },
+        {
+          "original": "every zone is offered, and through a datalist so it stays searchable",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::timezone_auto_or_searchable::every_zone_uses_searchable_datalist",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "Auto and Manual are two buttons, not one toggle with two labels",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::timezone_auto_or_searchable::auto_manual_are_distinct_buttons",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "Auto asks to follow the exit IP; Manual stops following it",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::timezone_auto_or_searchable::auto_signal_does_not_remove_language_signal",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "Auto needs a proxy, and never locks a field nothing can fill",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::timezone_auto_or_searchable::auto_without_proxy_never_locks_input",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "a zone the runtime does not know is flagged, not silently accepted",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::timezone_auto_or_searchable::unknown_timezone_is_flagged",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        }
+      ],
+      "original_sha256": "9e9a761d6f7efed3620439ab9a2684a397d73ab547acfc9ec9ce9f3e87c4316f"
+    },
+    {
+      "original_suite": "test/update-consent.test.tsx",
+      "rust_module": "update_consent",
+      "cases": [
+        {
+          "original": "source mode never probes or offers a pretend updater",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::update_consent::source_mode_has_no_update_action",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "an invalid bridge cannot receive a capability: %s",
+          "parameter": "\"https://example.com\"",
+          "rust_test": "update_consent::https_bridge_refused",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "an invalid bridge cannot receive a capability: %s",
+          "parameter": "\"http://localhost:19876\"",
+          "rust_test": "update_consent::localhost_bridge_refused",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "an invalid bridge cannot receive a capability: %s",
+          "parameter": "\"http://127.0.0.1:19876/other\"",
+          "rust_test": "update_consent::non_root_bridge_refused",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "an invalid bridge cannot receive a capability: %s",
+          "parameter": "\"http://127.0.0.1:0\"",
+          "rust_test": "update_consent::zero_port_bridge_refused",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "an offer and Later never authorize a download; each exact target needs confirmation",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::update_consent::exact_update_target_needs_each_confirmation",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "malformed bridge status is rejected rather than enabling an install",
+          "parameter": null,
+          "rust_test": "update_consent::malformed_status_cannot_enable_install",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "status text rejects control code %i before enabling an action",
+          "parameter": "0",
+          "rust_test": "update_consent::control_00",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "status text rejects control code %i before enabling an action",
+          "parameter": "1",
+          "rust_test": "update_consent::control_01",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "status text rejects control code %i before enabling an action",
+          "parameter": "2",
+          "rust_test": "update_consent::control_02",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "status text rejects control code %i before enabling an action",
+          "parameter": "3",
+          "rust_test": "update_consent::control_03",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "status text rejects control code %i before enabling an action",
+          "parameter": "4",
+          "rust_test": "update_consent::control_04",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "status text rejects control code %i before enabling an action",
+          "parameter": "5",
+          "rust_test": "update_consent::control_05",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "status text rejects control code %i before enabling an action",
+          "parameter": "6",
+          "rust_test": "update_consent::control_06",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "status text rejects control code %i before enabling an action",
+          "parameter": "7",
+          "rust_test": "update_consent::control_07",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "status text rejects control code %i before enabling an action",
+          "parameter": "8",
+          "rust_test": "update_consent::control_08",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "status text rejects control code %i before enabling an action",
+          "parameter": "9",
+          "rust_test": "update_consent::control_09",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "status text rejects control code %i before enabling an action",
+          "parameter": "10",
+          "rust_test": "update_consent::control_10",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "status text rejects control code %i before enabling an action",
+          "parameter": "11",
+          "rust_test": "update_consent::control_11",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "status text rejects control code %i before enabling an action",
+          "parameter": "12",
+          "rust_test": "update_consent::control_12",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "status text rejects control code %i before enabling an action",
+          "parameter": "13",
+          "rust_test": "update_consent::control_13",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "status text rejects control code %i before enabling an action",
+          "parameter": "14",
+          "rust_test": "update_consent::control_14",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "status text rejects control code %i before enabling an action",
+          "parameter": "15",
+          "rust_test": "update_consent::control_15",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "status text rejects control code %i before enabling an action",
+          "parameter": "16",
+          "rust_test": "update_consent::control_16",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "status text rejects control code %i before enabling an action",
+          "parameter": "17",
+          "rust_test": "update_consent::control_17",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "status text rejects control code %i before enabling an action",
+          "parameter": "18",
+          "rust_test": "update_consent::control_18",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "status text rejects control code %i before enabling an action",
+          "parameter": "19",
+          "rust_test": "update_consent::control_19",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "status text rejects control code %i before enabling an action",
+          "parameter": "20",
+          "rust_test": "update_consent::control_20",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "status text rejects control code %i before enabling an action",
+          "parameter": "21",
+          "rust_test": "update_consent::control_21",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "status text rejects control code %i before enabling an action",
+          "parameter": "22",
+          "rust_test": "update_consent::control_22",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "status text rejects control code %i before enabling an action",
+          "parameter": "23",
+          "rust_test": "update_consent::control_23",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "status text rejects control code %i before enabling an action",
+          "parameter": "24",
+          "rust_test": "update_consent::control_24",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "status text rejects control code %i before enabling an action",
+          "parameter": "25",
+          "rust_test": "update_consent::control_25",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "status text rejects control code %i before enabling an action",
+          "parameter": "26",
+          "rust_test": "update_consent::control_26",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "status text rejects control code %i before enabling an action",
+          "parameter": "27",
+          "rust_test": "update_consent::control_27",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "status text rejects control code %i before enabling an action",
+          "parameter": "28",
+          "rust_test": "update_consent::control_28",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "status text rejects control code %i before enabling an action",
+          "parameter": "29",
+          "rust_test": "update_consent::control_29",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "status text rejects control code %i before enabling an action",
+          "parameter": "30",
+          "rust_test": "update_consent::control_30",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "status text rejects control code %i before enabling an action",
+          "parameter": "31",
+          "rust_test": "update_consent::control_31",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "status text rejects control code %i before enabling an action",
+          "parameter": "127",
+          "rust_test": "update_consent::control_127",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "status text preserves Unicode and printable ASCII boundaries",
+          "parameter": null,
+          "rust_test": "update_consent::printable_unicode_preserved",
+          "runner": "native",
+          "original_kind": "unit"
+        },
+        {
+          "original": "HTTP refusal carries a safe deferred state and never starts an implicit retry",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::update_consent::http_refusal_retains_safe_deferred_state",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        },
+        {
+          "original": "unmount aborts the one outstanding status request",
+          "parameter": null,
+          "rust_test": "browser::tests::cases::update_consent::request_lifetime_owns_abort_controller",
+          "runner": "chromium-wasm",
+          "original_kind": "dom-component"
+        }
+      ],
+      "original_sha256": "a8115a9c04438c5ba21fa286384358fba2397d09a86944b33320b10926a3ff21"
+    }
+  ],
+  "classification": {
+    "native": 71,
+    "chromium_wasm": 124
+  },
+  "original_case_kinds": {
+    "unit": 71,
+    "platform-unit": 1,
+    "dom-component": 123
+  }
+}

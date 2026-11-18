@@ -1,0 +1,805 @@
+{
+  "schema": 1,
+  "reviewed_on": "2026-11-13",
+  "sources": [
+    {
+      "backend": "playwright",
+      "repository": "microsoft/playwright",
+      "releases_reviewed": [
+        {
+          "tag": "v1.65.0",
+          "published_at": "2026-11-05T18:25:45Z",
+          "url": "https://github.com/microsoft/playwright/releases/tag/v1.65.0",
+          "body": "## 🥟 Run tests with Bun\r\n\r\nThe test runner now runs under [Bun](https://bun.com). Bun transpiles your TypeScript test files itself, so Playwright does not use Babel or its compilation cache. Pass the `--bun` flag, because without it `bunx playwright test` runs on Node.js:\r\n\r\n```bash\r\nbunx --bun playwright test\r\n```\r\n\r\nOur CI runs the test runner tests under Bun 1.4.3 on Linux. Some features work differently under Bun:\r\n\r\n- There is no watch mode. UI mode does not run tests again when files change, and `--only-changed` does not follow imports.\r\n- Bun loads modules itself, so `--tsconfig` and the JSX options in `tsconfig.json` have no effect, and custom ESM loaders are not supported.\r\n- Stack traces do not include async frames, and API names do not include the class name: `click` instead of `locator.click`. This changes some step locations, step titles and error messages.\r\n- Console output of a test does not get into the trace and UI mode.\r\n\r\n## 🚨 Reports with only failures\r\n\r\nNew [`failures`](https://playwright.dev/docs/test-reporters#failures-reporter) reporter prints failures and successful retries as they occur, followed by a summary, without progress output.\r\n\r\nNew `onlyFailures` option of the HTML, JSON and JUnit reporters [keeps only](https://playwright.dev/docs/test-reporters#report-only-failures) tests with unexpected outcomes, flaky tests and interrupted tests:\r\n\r\n```js\r\n// playwright.config.ts\r\nimport { defineConfig } from '@playwright/test';\r\n\r\nexport default defineConfig({\r\n  reporter: [\r\n    ['failures'],\r\n    ['html', { onlyFailures: true }],\r\n  ],\r\n});\r\n```\r\n\r\n## 🎯 Test runner\r\n\r\n- New built-in `-exclusive-` [test lock](https://playwright.dev/docs/test-parallel#test-locks) runs a test only when no other tests are running. All other tests continue to run in parallel with each other:\r\n\r\n  ```js\r\n  test('restart the server', { lock: '-exclusive-' }, async () => {\r\n    // No other test runs while this one is running.\r\n  });\r\n  ```\r\n\r\n- [test.skip()](https://playwright.dev/docs/api/class-test#test-skip), [test.fixme()](https://playwright.dev/docs/api/class-test#test-fixme), [test.fail()](https://playwright.dev/docs/api/class-test#test-fail) and [test.slow()](https://playwright.dev/docs/api/class-test#test-slow) now accept only a description. It is recorded in the test annotation:\r\n\r\n  ```js\r\n  test('upload a file', async ({ page }) => {\r\n    test.skip('Not implemented yet');\r\n  });\r\n  ```\r\n\r\n- New `PLAYWRIGHT_TRANSFORM_CACHE_DIR` environment variable sets the directory for transpiled test files, for example on a Linux machine shared with other users.\r\n\r\n## New APIs\r\n\r\n- New options [`timeout`](https://playwright.dev/docs/api/class-cdpsession#cdp-session-send-option-timeout) and [`signal`](https://playwright.dev/docs/api/class-cdpsession#cdp-session-send-option-signal) in [cdpSession.send()](https://playwright.dev/docs/api/class-cdpsession#cdp-session-send).\r\n- New [testRun.mode()](https://playwright.dev/docs/api/class-testrun#test-run-mode) returns the execution mode of a suite during [reporter.preprocess()](https://playwright.dev/docs/api/class-reporter#reporter-preprocess).\r\n\r\n## Notable Changes ⚠️\r\n\r\n- TypeScript class fields now follow [`useDefineForClassFields`](https://playwright.dev/docs/test-typescript#tsconfig-class-fields) from your `tsconfig.json`, the same as `tsc`. It is enabled for `ES2022` and later targets, and when `target` is not specified. A field initializer that reads a constructor parameter property now fails, because the initializer runs first:\r\n\r\n  ```js\r\n  class LoginPage {\r\n    // TypeError: Cannot read properties of undefined (reading 'getByRole')\r\n    readonly submit = this.page.getByRole('button', { name: 'Submit' });\r\n\r\n    constructor(private readonly page: Page) {}\r\n  }\r\n  ```\r\n\r\n  Move the initialization to the constructor, or set `\"useDefineForClassFields\": false` in your `tsconfig.json`.\r\n\r\n- Actions such as [locator.click()](https://playwright.dev/docs/api/class-locator#locator-click), [locator.check()](https://playwright.dev/docs/api/class-locator#locator-check), [locator.tap()](https://playwright.dev/docs/api/class-locator#locator-tap), [locator.fill()](https://playwright.dev/docs/api/class-locator#locator-fill), [locator.clear()](https://playwright.dev/docs/api/class-locator#locator-clear) and [locator.selectOption()](https://playwright.dev/docs/api/class-locator#locator-select-option) now wait for the element to be [not inert](https://playwright.dev/docs/actionability#not-inert). An action on an element with the `inert` attribute, or inside such an element, now times out if the element stays inert.\r\n\r\n- A sharded run now fails with \"No tests found\" when no tests match across all shards. Pass `--pass-with-no-tests` to allow this. An empty shard still passes when other shards have tests.\r\n\r\n- Cookie matching now follows RFC 6265. With a URL, [browserContext.cookies()](https://playwright.dev/docs/api/class-browsercontext#browser-context-cookies) and [apiRequestContext.cookies()](https://playwright.dev/docs/api/class-apirequestcontext#api-request-context-cookies) no longer return host-only cookies for subdomains or `Path=/api` cookies for `/apiv2`, and a `Path=/foo/` cookie does not match `/foo`. [APIRequestContext](https://playwright.dev/docs/api/class-apirequestcontext) sends a cookie without a name as `Cookie: x` instead of `Cookie: =x`, and stores `Set-Cookie: token` as a cookie without a name.\r\n\r\n- Proxy credentials are no longer sent to websites. The credentials in the [`proxy`](https://playwright.dev/docs/api/class-browsertype#browser-type-launch-option-proxy) option now answer only proxy challenges. To authenticate on a website, use [`httpCredentials`](https://playwright.dev/docs/api/class-browser#browser-new-context-option-http-credentials).\r\n\r\n- Text that the browser does not render, such as text that is not assigned to a slot or text directly inside a closed `<details>`, is no longer part of accessible names and aria snapshots. This can change the results of [page.getByRole()](https://playwright.dev/docs/api/class-page#page-get-by-role) with a name, [locator.ariaSnapshot()](https://playwright.dev/docs/api/class-locator#locator-aria-snapshot) and [expect(locator).toMatchAriaSnapshot()](https://playwright.dev/docs/api/class-locatorassertions#locator-assertions-to-match-aria-snapshot).\r\n\r\n- String and `URLSearchParams` values of the `params` option in [APIRequestContext](https://playwright.dev/docs/api/class-apirequestcontext) requests are now appended to the query that the URL already has, instead of replacing it.\r\n\r\n- `.css`, `.less` and `.scss` imports in test files now load as empty modules instead of being removed, so the imported file must exist.\r\n\r\n- The blob reporter again deletes the content of its output directory before it writes the report. Playwright 1.64 kept reports with other names.\r\n\r\n- Test locations of imported calls such as `test(` in CommonJS output now point to the start of the callee, for example `a.spec.ts:3:7` instead of `a.spec.ts:3:11`. This is the same as in ESM.\r\n\r\n## Announcements\r\n\r\n* ⚠️ Playwright no longer tests on Node.js 20. Use Node.js 22, 24 or 26, as listed in the [system requirements](https://playwright.dev/docs/intro#system-requirements).\r\n* 🐳 [Docker images](https://playwright.dev/docs/docker) now include Node.js 26 instead of Node.js 24, and the latest patch of Chromium on the same branch.\r\n\r\n## Browser Versions\r\n\r\n- Chromium 158.0.8127.18\r\n- Mozilla Firefox 159.0\r\n- WebKit 27.2\r\n\r\nThis version was also tested against the following stable channels:\r\n\r\n- Google Chrome 157\r\n- Microsoft Edge 156\r\n",
+          "assets": []
+        },
+        {
+          "tag": "v1.64.1",
+          "published_at": "2026-10-14T11:51:33Z",
+          "url": "https://github.com/microsoft/playwright/releases/tag/v1.64.1",
+          "body": "### Bug Fixes\r\n\r\n- #43247 [Bug]: _electron.launch intermittently loses a packaged app's first window since 1.64.0\r\n- #43242 [Regression]: Chromium 155+ aborts a preflighted cross-origin redirect whenever any route is registered (net::ERR_ABORTED)\r\n",
+          "assets": []
+        }
+      ],
+      "reviewed_source_head": "0ad21f1d34e40a51649a97e14da787172d68d073",
+      "recent_changes_reviewed": [
+        {
+          "sha": "0ad21f1d34e40a51649a97e14da787172d68d073",
+          "date": "2026-11-13T18:09:23Z",
+          "message": "fix(mcp): do not generate setFiles(undefined) when file chooser is cancelled (#44104)",
+          "url": "https://github.com/microsoft/playwright/commit/0ad21f1d34e40a51649a97e14da787172d68d073"
+        },
+        {
+          "sha": "5127ad8a941714a265e325a0202b3cff8dd920c9",
+          "date": "2026-11-13T17:47:50Z",
+          "message": "fix(tracing): remove discarded chunk files and temporary screenshots (#44089)\n\nCo-authored-by: microsoft-playwright-automation[bot] <203992400+microsoft-playwright-automation[bot]@users.noreply.github.com>\nCo-authored-by: Yury Semikhatsky <yurys@chromium.org>",
+          "url": "https://github.com/microsoft/playwright/commit/5127ad8a941714a265e325a0202b3cff8dd920c9"
+        },
+        {
+          "sha": "dbcf1194a7978a59e05268edb7738cf1a0aeddb8",
+          "date": "2026-11-13T16:49:50Z",
+          "message": "devops: add publish_manual.yml workflow for patch releases (#44077)",
+          "url": "https://github.com/microsoft/playwright/commit/dbcf1194a7978a59e05268edb7738cf1a0aeddb8"
+        }
+      ],
+      "comparison_url": "https://api.github.com/repos/microsoft/playwright/compare/v1.65.0...main",
+      "commits_ahead": 96,
+      "changes_since_previous_review": [
+        {
+          "sha": "cbae73294152177d21bf3a1069785c505c05ac9f",
+          "message": "chore: mark 1.66.0-next (#43890)"
+        },
+        {
+          "sha": "0ea36910324ed8aa2a5f460317cbd35881ee88d4",
+          "message": "chore: roll browser_patches to c0c14044b (#43891)"
+        },
+        {
+          "sha": "97dd3b70dbbf64cc326a6e1c04652b91ffa79746",
+          "message": "devops(bots): let a publish-calls pull request go to a branch (#43892)"
+        },
+        {
+          "sha": "6cc61f00b953daf32b807fccfe0f635d6072b7a9",
+          "message": "test(android): skip NA-051 and report a missing device clearly (#43896)"
+        },
+        {
+          "sha": "1af60d94ac714d4007828bafa02b0f1cbd8646b9",
+          "message": "fix(recorder): coalesce highlight resolutions and update highlights atomically (#43897)"
+        },
+        {
+          "sha": "b434048f461895056416628de0fa6fcd614386cf",
+          "message": "feat(firefox): roll to r1573 (#43908)\n\nCo-authored-by: microsoft-playwright-automation[bot] <203992400+microsoft-playwright-automation[bot]@users.noreply.github.com>"
+        },
+        {
+          "sha": "f0eadb9783f97ea495cb8bd55860c5d5b99fe1c1",
+          "message": "chore(deps): bump runtime deps (#43902)\n\nCo-authored-by: Pavel Feldman <pavel.feldman@gmail.com>"
+        },
+        {
+          "sha": "21effe64659e209ee40e7271723c949d131ebc39",
+          "message": "feat(chromium): roll to r1254 (#43912)\n\nCo-authored-by: microsoft-playwright-automation[bot] <203992400+microsoft-playwright-automation[bot]@users.noreply.github.com>"
+        },
+        {
+          "sha": "26137face0500cacddf90c767dc1364da7262559",
+          "message": "docs(release-notes): update Chromium version for 1.65 (#43914)"
+        },
+        {
+          "sha": "9c1ec954cdef6f2c207c07ca8c67b867905ffd31",
+          "message": "chore(mcp): fold the v2 relay handler into the relay and BrowserModel (#43893)"
+        },
+        {
+          "sha": "1482237ae441b56b777dd128d98606fe6d26b61c",
+          "message": "chore: add skill that rolls runtime deps flagged by npm audit (#43909)"
+        },
+        {
+          "sha": "36e454432c5f3ac2587b8e1373d22e3309bb28f7",
+          "message": "fix(zip): never write through a symlink when extracting (#43910)"
+        },
+        {
+          "sha": "71350712ca049af48d50f8d23441c6ac82a21da0",
+          "message": "fix(trace-viewer): reject unsafe snapshot attribute names (#43911)"
+        },
+        {
+          "sha": "478f14f29e9bcd5a631ebb27d1aa14add8551720",
+          "message": "Revert \"fix(docker): use latest stable Chrome for Testing and Node.js LTS (#43679)\" (#43918)"
+        },
+        {
+          "sha": "5c55bfa2c7a65962eebdaa60c6a51cbd230305f0",
+          "message": "test: popup opened while a cross-site iframe is loading (#43919)"
+        },
+        {
+          "sha": "75e5227cb85467c9e98c98764a05d0f322032527",
+          "message": "docs(dotnet): document retrying failed tests (#43920)"
+        },
+        {
+          "sha": "d1518e3e3fca90352c4390814943cced496fd7e4",
+          "message": "feat(webkit): roll to r2389 (#43913)\n\nCo-authored-by: microsoft-playwright-automation[bot] <203992400+microsoft-playwright-automation[bot]@users.noreply.github.com>"
+        },
+        {
+          "sha": "35190a44932b6d13a4586e49b07fc72524665a8e",
+          "message": "fix(chromium): account for tabs and toolbar in the new headless mode (#43904)"
+        },
+        {
+          "sha": "edeb0bd05176ff187c372c1e38e5d89a232bd5b3",
+          "message": "devops(bots): pin the shared actions to a commit SHA (#43923)"
+        },
+        {
+          "sha": "d29ee76bf145b8c1ace72d52348b610bff5cda5b",
+          "message": "devops: publish npm packages in dependency order and wait for them to go live (#43933)"
+        },
+        {
+          "sha": "17ec699e4f4760bab5ad95f6ef9b954d5f1ce7eb",
+          "message": "fix(cli): restrict profile deletion to the exact session (#43928)\n\nCo-authored-by: microsoft-playwright-automation[bot] <203992400+microsoft-playwright-automation[bot]@users.noreply.github.com>"
+        },
+        {
+          "sha": "143ab3c55f2b38593a656e5b822490aaf08ddff9",
+          "message": "feat(test): support project-specific web servers (#43860)\n\nCo-authored-by: microsoft-playwright-automation[bot] <203992400+microsoft-playwright-automation[bot]@users.noreply.github.com>"
+        },
+        {
+          "sha": "ae56e267e44a4d9fe72dd43ed3a8559ef71d1784",
+          "message": "feat(locator): add locateOnlyVisible context option (#43903)\n\nCo-authored-by: microsoft-playwright-automation[bot] <203992400+microsoft-playwright-automation[bot]@users.noreply.github.com>"
+        },
+        {
+          "sha": "2344315c542af22002c132567b5a66464e7f4db6",
+          "message": "feat(cli): let embedders reuse parsed arguments (#43941)\n\nCo-authored-by: microsoft-playwright-automation[bot] <203992400+microsoft-playwright-automation[bot]@users.noreply.github.com>"
+        },
+        {
+          "sha": "89c9341e24b0ef089658b8ad88951f2e1a2a39b2",
+          "message": "fix(transform): preserve decorated class static initialization (#43940)\n\nCo-authored-by: microsoft-playwright-automation[bot] <203992400+microsoft-playwright-automation[bot]@users.noreply.github.com>"
+        },
+        {
+          "sha": "01b9c15acadb8bcf1d1b43399cebd96689040bbe",
+          "message": "fix(test runner): correct test locations on Bun 1.4.4 and later (#43942)\n\nCo-authored-by: microsoft-playwright-automation[bot] <203992400+microsoft-playwright-automation[bot]@users.noreply.github.com>\nCo-authored-by: Pavel Feldman <pavel.feldman@gmail.com>"
+        },
+        {
+          "sha": "7565d4735b2757f6124e3bb39c0bd3be26816ff2",
+          "message": "chore(deps): lint that lock file versions are at least 7 days old (#43944)"
+        },
+        {
+          "sha": "350d96c470fd9552fd6920d0eff3c1eddc7dda2b",
+          "message": "feat(test runner): conditional retries based on error (#43929)"
+        },
+        {
+          "sha": "afde6496e3e71786a58e671bdb59ba21ea468147",
+          "message": "fix(cli): use CLI command names in error messages (#43932)\n\nCo-authored-by: microsoft-playwright-automation[bot] <203992400+microsoft-playwright-automation[bot]@users.noreply.github.com>"
+        },
+        {
+          "sha": "3db8701b630f478a387800fbbdefb1e5f41b9540",
+          "message": "fix(test): resolve aliases in dynamically imported CommonJS on Node 22 (#43943)\n\nCo-authored-by: Pavel Feldman <pavel.feldman@gmail.com>"
+        },
+        {
+          "sha": "58d69dcc392af3a6994eab0323dc2e883f05f396",
+          "message": "devops(revision): read the issue from its own repo, move collect-review to a file (#43946)"
+        },
+        {
+          "sha": "dc668b5a44c1810a06c7114f405c9ecf975f15ec",
+          "message": "feat(webkit): roll to r2391 (#43963)\n\nCo-authored-by: microsoft-playwright-automation[bot] <203992400+microsoft-playwright-automation[bot]@users.noreply.github.com>"
+        },
+        {
+          "sha": "fae3b10350c72a2efc703de028aa4cbe9b91550e",
+          "message": "devops: publish npm packages under a pending dist-tag, promote them once live (#43979)"
+        },
+        {
+          "sha": "2101c2c8242c9e3d5348e4854a2859f58482290d",
+          "message": "docs(api): clarify JSON string request bodies (#43945)\n\nCo-authored-by: microsoft-playwright-automation[bot] <203992400+microsoft-playwright-automation[bot]@users.noreply.github.com>"
+        },
+        {
+          "sha": "3a29778836508e556c625d68f3d79d242d833af3",
+          "message": "fix(clock): advance zero-delay intervals between callbacks (#43948)\n\nCo-authored-by: microsoft-playwright-automation[bot] <203992400+microsoft-playwright-automation[bot]@users.noreply.github.com>"
+        },
+        {
+          "sha": "ec88d4f2926a5e25d6cd60a1b1156bfb2cef8d05",
+          "message": "Revert \"fix(test): resolve aliases in dynamically imported CommonJS on Node 22\" (#43974)"
+        },
+        {
+          "sha": "d5f7c562ada333f2d86efe7c89002749e5d59667",
+          "message": "devops(bots): add a review call to publish-calls (#43927)"
+        },
+        {
+          "sha": "530161aae0ba59643dbbfa3c1b8c929874cc18ec",
+          "message": "fix(mcp): preserve non-JSON evaluation results (#43973)\n\nCo-authored-by: microsoft-playwright-automation[bot] <203992400+microsoft-playwright-automation[bot]@users.noreply.github.com>"
+        },
+        {
+          "sha": "3eb8346a4f8ac8d3b74646d8027cd0e2d8024a8b",
+          "message": "fix(selectors): support labels for form-associated custom elements (#43900)\n\nCo-authored-by: microsoft-playwright-automation[bot] <203992400+microsoft-playwright-automation[bot]@users.noreply.github.com>"
+        },
+        {
+          "sha": "bc5a72bbe2c71f5668353da8ab6401c1c7762e31",
+          "message": "fix(mcp): validate device names and preserve device descriptors (#43971)\n\nCo-authored-by: microsoft-playwright-automation[bot] <203992400+microsoft-playwright-automation[bot]@users.noreply.github.com>"
+        },
+        {
+          "sha": "21b1c7b14e610e74530681869917aecf512315c8",
+          "message": "fix(mcp): report one-based console source lines (#43975)\n\nCo-authored-by: microsoft-playwright-automation[bot] <203992400+microsoft-playwright-automation[bot]@users.noreply.github.com>"
+        },
+        {
+          "sha": "07c7069cdbb1f5c7331d3f4d2abd864dcfde745a",
+          "message": "fix(mcp): resolve config file paths relative to their source (#43970)\n\nCo-authored-by: microsoft-playwright-automation[bot] <203992400+microsoft-playwright-automation[bot]@users.noreply.github.com>"
+        },
+        {
+          "sha": "84e2bdcaa5a6e4a9e8afcbe8b1bca4ff8a8cb69a",
+          "message": "fix(screenshot): support full-page SVG documents (#43972)\n\nCo-authored-by: microsoft-playwright-automation[bot] <203992400+microsoft-playwright-automation[bot]@users.noreply.github.com>"
+        },
+        {
+          "sha": "df1ca47b1eb95a907c559f54675e680a2b7ea901",
+          "message": "devops: move the npm dist-tag in the publish workflow (#44009)"
+        },
+        {
+          "sha": "489470e3bbf48a50bd8f4a59401d50cb531b5902",
+          "message": "fix(cli): avoid killing Windows process enumerators (#44008)"
+        },
+        {
+          "sha": "95e5dca31981bcd0970165853fcc713269d2433a",
+          "message": "fix(cli): use ordinal filenames for repeated downloads (#44011)"
+        },
+        {
+          "sha": "b43d534c5e36ea4d5f1ed1f800dad5270a10314a",
+          "message": "fix(chromium): skip on-device model performance measurement (#44014)"
+        },
+        {
+          "sha": "51328259d100b64f5e51ec025668dfe22532ac3b",
+          "message": "chore(bots): hand agent-* labels to the bot in devops.playwright.dev (#44019)"
+        },
+        {
+          "sha": "8fd981fea266ee59586ebdac76bbc0ce853cdffc",
+          "message": "feat(firefox): roll to r1575 (#43982)\n\nCo-authored-by: microsoft-playwright-automation[bot] <203992400+microsoft-playwright-automation[bot]@users.noreply.github.com>"
+        },
+        {
+          "sha": "ce81b8028d1a4a2a9563b4598fba4a4f7d315d87",
+          "message": "fix(chromium): apply timezone to service workers (#44021)\n\nCo-authored-by: microsoft-playwright-automation[bot] <203992400+microsoft-playwright-automation[bot]@users.noreply.github.com>"
+        },
+        {
+          "sha": "e9d68919607ad347765f2f4aeafcc8046c8d0990",
+          "message": "feat(webkit): roll to r2392 (#44018)"
+        },
+        {
+          "sha": "ab5fac4a15bee1d2ef614247df5bdd7770075af0",
+          "message": "fix(firefox): record WebSocket handshakes after frame detachment (#44016)"
+        },
+        {
+          "sha": "452a71b174f4f52fd3ba4c99b6eb6ee52d488c61",
+          "message": "fix(fetch): retire idle API request connections (#44024)"
+        },
+        {
+          "sha": "06e2c7d5538e6761ec01ccb725c11ec602e9ffc3",
+          "message": "docs(dotnet): document PlaywrightAssertionException and PlaywrightException (#44003)"
+        },
+        {
+          "sha": "e69f4b3b6b0fbbf2b76fbf10e1007201dc8602df",
+          "message": "docs: remove outdated getting-started-cli and getting-started-mcp guides (#44034)"
+        },
+        {
+          "sha": "62e11d73d23ba19fc6747fa73f4f2f0f05d79183",
+          "message": "devops(docker): install libatomic1 for Node.js (#44035)"
+        },
+        {
+          "sha": "5b71acb336b7fd9228f761d8e1986770c307ae4b",
+          "message": "chore(bots): hand triage, review and tasks to the Playwright bot (#44025)"
+        },
+        {
+          "sha": "9f8e1648787d67d3bcee8ac933be77a565baf94f",
+          "message": "fix(trace): select browser context for trace metadata (#44040)"
+        },
+        {
+          "sha": "fa266946139aa44c514e5a3f46cfca39d1e9c9d4",
+          "message": "docs(cli): state the minimum version for the local cli fallback (#44039)"
+        },
+        {
+          "sha": "d3dd246651e2524bad5b7a05ed9eaf84e6753b4c",
+          "message": "docs(python): use snake_case API names in two Python snippets (#44030)"
+        },
+        {
+          "sha": "c6405a9ebcf74fba1db96a5e358c7462348fbd3e",
+          "message": "feat(firefox): roll to r1577 (#44029)"
+        },
+        {
+          "sha": "1b6478349d42ecbd66493e9bc2fdb4158a636bbd",
+          "message": "fix(screenshot): preserve scroll-driven animation progress (#44022)"
+        },
+        {
+          "sha": "27c2c23dec1c7cfe79a8e8ec99859fca0fa1d5f2",
+          "message": "chore(bots): hand the failed tests of a PR to the Playwright bot (#44042)"
+        },
+        {
+          "sha": "ffacb1572d6dff7fe82b8c0423775c74f1a3331c",
+          "message": "test: skip webkit crash tests on linux on ci (#44044)"
+        },
+        {
+          "sha": "b6110e409d2087143d5722fa47b4197f71654734",
+          "message": "feat(install): support stable Chrome on Linux arm64 (#44020)"
+        },
+        {
+          "sha": "7f43bf807c31f13bfefc6e573493fe9fc86bab92",
+          "message": "feat(firefox): roll to r1578 (#44045)"
+        },
+        {
+          "sha": "c6c86f7e7b95f66c2f92d68f635b7ecdd7b33279",
+          "message": "docs(test): fix page.screenshot() call in TestInfo example (#44049)\n\nCo-authored-by: Rodrigo Araujo <3254949+rodrigogaraujo@users.noreply.github.com>"
+        },
+        {
+          "sha": "e17f0972aea40d9bba5601d84470a090ad3dbdbc",
+          "message": "test: do not depend on outline shorthand serialization order in highlight tests (#44051)"
+        },
+        {
+          "sha": "bb81ef0e26e5a2cbbde9e5df945e40ba84421188",
+          "message": "test(firefox): cover background cache revalidation and cached module body (#44050)"
+        },
+        {
+          "sha": "3b438229c6a2ccdbe2d3572755935892203d83c3",
+          "message": "test(firefox): cover file chooser cancel event and cross-page mouse drag (#44043)"
+        },
+        {
+          "sha": "d3ca7ab3750151b3a636e878d6e3a7ba4c60db18",
+          "message": "docs: release notes for v1.65 .NET (#44054)"
+        },
+        {
+          "sha": "c9b46324c036da2f228a2feb4015e1e7bb0cfb32",
+          "message": "fix(docker): upgrade base image packages during the build (#44059)"
+        },
+        {
+          "sha": "6ca1ba9018acf8ab5b4454c1a42209fa12147304",
+          "message": "fix(screenshot): only keep scroll-driven timelines running when animations are disabled (#44061)"
+        },
+        {
+          "sha": "392ab0f0de39feb99dbe71eb5fea61e7ad07a480",
+          "message": "test(extension): run extension tests headless (#44063)"
+        },
+        {
+          "sha": "b443881b4358468a285614a2d66b2a853092a0bd",
+          "message": "fix(tracing): hold dropped screencast frames while throttling (#44068)"
+        },
+        {
+          "sha": "0921375af7db0e1cc74811858b392d376aed78eb",
+          "message": "fix(transform): strip definite assignment before decorators run (#44066)"
+        },
+        {
+          "sha": "bac1f9f67e9cff2a8e7ecbac25d56ec3bb1d15c6",
+          "message": "fix(chromium): pass deep evaluation arguments outside protocol JSON (#44069)\n\nCo-authored-by: microsoft-playwright-automation[bot] <203992400+microsoft-playwright-automation[bot]@users.noreply.github.com>\nCo-authored-by: Yury Semikhatsky <yurys@chromium.org>"
+        },
+        {
+          "sha": "4f0a96464e3c3c4a86a80c3c0429aea092959cf0",
+          "message": "docs(dotnet): add Expect(callback).ToPassAsync() (#44076)"
+        },
+        {
+          "sha": "ed835d7cab30c25d283cdfe44264e56f9a90fdec",
+          "message": "docs: clarify offline emulation limits for WebSockets (#44058)\n\nCo-authored-by: microsoft-playwright-automation[bot] <203992400+microsoft-playwright-automation[bot]@users.noreply.github.com>"
+        },
+        {
+          "sha": "6d772defb863d545ee0b9c800b22da408cd4f54e",
+          "message": "feat(webkit): roll to r2393 (#44072)\n\nCo-authored-by: microsoft-playwright-automation[bot] <203992400+microsoft-playwright-automation[bot]@users.noreply.github.com>"
+        },
+        {
+          "sha": "acd6629c139363c98c7ccdfae341e013be2e86ad",
+          "message": "feat(extension): tab ownership and resumable tab groups (#44047)"
+        },
+        {
+          "sha": "9a82788d83cf91d8262e65a432b9bf93dc5418a7",
+          "message": "fix(tracing): skip fetching omitted script bodies (#44078)\n\nCo-authored-by: microsoft-playwright-automation[bot] <203992400+microsoft-playwright-automation[bot]@users.noreply.github.com>"
+        },
+        {
+          "sha": "8882d1c85ef808500d99a2e28778e544c8a77fef",
+          "message": "chore(extension): upload the built extension as an artifact of the test job (#44081)"
+        },
+        {
+          "sha": "2a5c094cc0b9a6d33f742c0c5d0c8eac24db88cf",
+          "message": "feat(test runner): resolve package.json imports like TypeScript (#44010)"
+        },
+        {
+          "sha": "188c63e7c7141ba828d4e76140ec6cbdd1c17c37",
+          "message": "fix(mcp): validate run-code input (#44087)\n\nCo-authored-by: microsoft-playwright-automation[bot] <203992400+microsoft-playwright-automation[bot]@users.noreply.github.com>"
+        },
+        {
+          "sha": "fb10ea7d556bbf149b6ee0d44d0abaf9b1c6d845",
+          "message": "feat(cli): detach --close-tabs for extension sessions (#44084)"
+        },
+        {
+          "sha": "1dc2d6dc50558b4fefe8ca6fe8b2b0ae2419cf62",
+          "message": "fix(locator): select among visible elements in first/last/nth with locateOnlyVisible (#44083)"
+        },
+        {
+          "sha": "c59cf2040091ece8b59f56dd59a6d0e9080a7dfd",
+          "message": "fix(cli): suggest matching ffmpeg installer for video recording (#44088)\n\nCo-authored-by: microsoft-playwright-automation[bot] <203992400+microsoft-playwright-automation[bot]@users.noreply.github.com>"
+        },
+        {
+          "sha": "622b3db4c94a6619e6470b4fcc40ad8227a12cbb",
+          "message": "chore(mcp): remove unused running tool state (#44082)\n\nCo-authored-by: microsoft-playwright-automation[bot] <203992400+microsoft-playwright-automation[bot]@users.noreply.github.com>\nCo-authored-by: Yury Semikhatsky <yurys@chromium.org>"
+        },
+        {
+          "sha": "8534271f0413bae6a455b7cf43b2637391bc614b",
+          "message": "test(webkit): no pageerror for a caught fetch during pending navigation (#44090)"
+        },
+        {
+          "sha": "3a52f0e6dd20031ad7b4372de14296bb3a55b3ce",
+          "message": "test: fix WS-041, SS-098, EM-028, SS-095 (#44095)"
+        },
+        {
+          "sha": "45387e54244a398623c3b2118caec505992f9f0c",
+          "message": "chore: remove chromium._connectToWorker (#44097)"
+        },
+        {
+          "sha": "65353e6d53a78a5271ae0b22eb61e3374dfee47a",
+          "message": "browser(chromium): roll to r1255, v159.0.8154.6 (#44098)"
+        },
+        {
+          "sha": "dbcf1194a7978a59e05268edb7738cf1a0aeddb8",
+          "message": "devops: add publish_manual.yml workflow for patch releases (#44077)"
+        },
+        {
+          "sha": "5127ad8a941714a265e325a0202b3cff8dd920c9",
+          "message": "fix(tracing): remove discarded chunk files and temporary screenshots (#44089)\n\nCo-authored-by: microsoft-playwright-automation[bot] <203992400+microsoft-playwright-automation[bot]@users.noreply.github.com>\nCo-authored-by: Yury Semikhatsky <yurys@chromium.org>"
+        },
+        {
+          "sha": "0ad21f1d34e40a51649a97e14da787172d68d073",
+          "message": "fix(mcp): do not generate setFiles(undefined) when file chooser is cancelled (#44104)"
+        }
+      ]
+    },
+    {
+      "backend": "patchright",
+      "repository": "Kaliiiiiiiiii-Vinyzu/patchright",
+      "releases_reviewed": [
+        {
+          "tag": "v1.64.1",
+          "published_at": "2026-10-15T13:33:38Z",
+          "url": "https://github.com/Kaliiiiiiiiii-Vinyzu/patchright/releases/tag/v1.64.1",
+          "body": "This is an automatic deployment in response to a new release of [microsoft/playwright](https://github.com/microsoft/playwright). The original release can be seen [here](https://github.com/microsoft/playwright/releases/tag/v1.64.1).",
+          "assets": []
+        },
+        {
+          "tag": "v1.64.0",
+          "published_at": "2026-10-14T14:40:22Z",
+          "url": "https://github.com/Kaliiiiiiiiii-Vinyzu/patchright/releases/tag/v1.64.0",
+          "body": "This is an automatic deployment in response to a new release of [microsoft/playwright](https://github.com/microsoft/playwright). The original release can be seen [here](https://github.com/microsoft/playwright/releases/tag/v1.64.0).",
+          "assets": []
+        }
+      ],
+      "reviewed_source_head": "521ad98adbb35e09c135864058428b117bf47be8",
+      "recent_changes_reviewed": [
+        {
+          "sha": "521ad98adbb35e09c135864058428b117bf47be8",
+          "date": "2026-11-12T07:34:14Z",
+          "message": "Remove Proxylane Sponsor",
+          "url": "https://github.com/Kaliiiiiiiiii-Vinyzu/patchright/commit/521ad98adbb35e09c135864058428b117bf47be8"
+        },
+        {
+          "sha": "6a0b43608e21ffa3e5f245f25eba68a73382cd52",
+          "date": "2026-11-10T14:21:38Z",
+          "message": "Edit Nodemaven Sponsor",
+          "url": "https://github.com/Kaliiiiiiiiii-Vinyzu/patchright/commit/6a0b43608e21ffa3e5f245f25eba68a73382cd52"
+        },
+        {
+          "sha": "f14e043660ff14cc252d7610c4356835f2d04cf8",
+          "date": "2026-11-02T20:56:44Z",
+          "message": "Fix Restarted Requests hanging behind Authenticated Proxies (#260)\n\nCo-authored-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+          "url": "https://github.com/Kaliiiiiiiiii-Vinyzu/patchright/commit/f14e043660ff14cc252d7610c4356835f2d04cf8"
+        }
+      ],
+      "comparison_url": "https://api.github.com/repos/Kaliiiiiiiiii-Vinyzu/patchright/compare/v1.64.1...main",
+      "commits_ahead": 8,
+      "changes_since_previous_review": [
+        {
+          "sha": "b6c0f27445a7ad13faf9573e74b35ded4cba6404",
+          "message": "Update NodeMaven Sponsor"
+        },
+        {
+          "sha": "929d8041b41764d0dc67d1918d0a440697545428",
+          "message": "Fix Playwright 1.64.1 compatibility and MediaRouter detection (#256)\n\nCo-authored-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>"
+        },
+        {
+          "sha": "47ec2d9ebcb26a31e1694e21deb98957a58be5ce",
+          "message": "[Patch-Comparison] Automatic Commit: Fix Playwright 1.64.1 compatibility and MediaRouter detection (#256)"
+        },
+        {
+          "sha": "e2876b7bc0bef67b38164794b3108eadbc2eb647",
+          "message": "Add package-lock.json (#257)"
+        },
+        {
+          "sha": "bd714e6090344762d7c241b7e8f3d37ebdc5dab7",
+          "message": "Various Effiency/Speed Improvements (#258)"
+        },
+        {
+          "sha": "f14e043660ff14cc252d7610c4356835f2d04cf8",
+          "message": "Fix Restarted Requests hanging behind Authenticated Proxies (#260)\n\nCo-authored-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>"
+        },
+        {
+          "sha": "6a0b43608e21ffa3e5f245f25eba68a73382cd52",
+          "message": "Edit Nodemaven Sponsor"
+        },
+        {
+          "sha": "521ad98adbb35e09c135864058428b117bf47be8",
+          "message": "Remove Proxylane Sponsor"
+        }
+      ]
+    },
+    {
+      "backend": "camoufox",
+      "repository": "daijro/camoufox",
+      "releases_reviewed": [
+        {
+          "tag": "font-bundle-v4",
+          "published_at": "2026-11-04T17:35:04Z",
+          "url": "https://github.com/daijro/camoufox/releases/tag/font-bundle-v4",
+          "body": "Build input, not a browser download. Nothing here is meant to be installed.\n\n`fonts-bundle-v4.tar.xz` is the font bundle the build stages into every package\n(1532 files). `scripts/data/font-bundle.json` pins the asset name, size and\nsha256, and `scripts/fetch-fonts.py` verifies it, so a truncated or substituted\ndownload fails loudly.\n\n    sha256  cb7cab7061843e00817af98983c35b3b3fc6092563e29944d9cb878f09c5bf92\n    size    896100416\n\nChanges since v1 (v2 and v3 were never published):\n- Added Windows faces measured on stock Windows 11: Cascadia Code / Cascadia Mono\n  (Windows copies), Dubai Light / Medium, Franklin Gothic Medium Cond,\n  Lucida Sans (4 faces), SimSun-ExtG.\n- Wingdings, Wingdings 2/3, Symbol, Webdings and Arial Rounded MT Bold now serve\n  Windows identities as well as macOS (same bytes on both).\n- The Linux/macOS Cascadia copies no longer serve Windows identities.\n- `000_README.txt` and `cleanfonts.sh` are no longer in the archive; see `docs/FONTS.md`.\n\nNo Adobe fonts: Adobe permits no redistribution, and they were removed in v1.\n\nTags matching `font-bundle-*` start no workflow.\n",
+          "assets": [
+            {
+              "name": "fonts-bundle-v4.tar.xz",
+              "digest": "sha256:cb7cab7061843e00817af98983c35b3b3fc6092563e29944d9cb878f09c5bf92",
+              "size": 896100416,
+              "url": "https://github.com/daijro/camoufox/releases/download/font-bundle-v4/fonts-bundle-v4.tar.xz"
+            }
+          ]
+        },
+        {
+          "tag": "v158.0.1-beta.41",
+          "published_at": "2026-10-29T22:14:10Z",
+          "url": "https://github.com/daijro/camoufox/releases/tag/v158.0.1-beta.41",
+          "body": "Bundles uBlock Origin 1.75.0.\n\n## What's Changed\n* Release: run the publish jobs past a job their channel skips by @JWriter20 in https://github.com/daijro/camoufox/pull/814\n* Release: pass npm publish a local path by @JWriter20 in https://github.com/daijro/camoufox/pull/816\n* Release: publish each registry only when its package changed by @JWriter20 in https://github.com/daijro/camoufox/pull/817\n* Make GeoIP AIO the default source, deprecate GeoLite2 by @JWriter20 in https://github.com/daijro/camoufox/pull/820\n* Fix fill() change events (#825) and proxy credential encoding (#823), guard explicit locales (#824) by @JWriter20 in https://github.com/daijro/camoufox/pull/827\n* Fix npm `camoufox fetch` failing with EXDEV, and gate merges on a real package install by @JWriter20 in https://github.com/daijro/camoufox/pull/828\n* Fix Windows + Python 3.13+: model and GeoIP files installed by one account unreadable by another by @JWriter20 in https://github.com/daijro/camoufox/pull/829\n* npm: adm-zip 0.6.1 (three high advisories), and document `npx @camoufox/camoufox` by @JWriter20 in https://github.com/daijro/camoufox/pull/831\n* Update vendored cursory-js to 2.0.2 by @JWriter20 in https://github.com/daijro/camoufox/pull/833\n* Retry a TypeScript download whose connection drops before any response by @JWriter20 in https://github.com/daijro/camoufox/pull/834\n* Keep config keys that older libraries send declared in properties.json by @JWriter20 in https://github.com/daijro/camoufox/pull/836\n* Install the paired browser on first launch, and refuse a browser the library cannot drive by @JWriter20 in https://github.com/daijro/camoufox/pull/837\n* Publish the npm package as `camoufox` instead of `@camoufox/camoufox` by @JWriter20 in https://github.com/daijro/camoufox/pull/838\n* Split the repo into browser/, python/ and typescript/, and fix version pinning (#843) and the WebGL renderer pair (#839) by @JWriter20 in https://github.com/daijro/camoufox/pull/846\n* Install the camoufox package before the release's font check by @JWriter20 in https://github.com/daijro/camoufox/pull/848\n* Hide Juggler from pages, and show them an official Firefox build by @JWriter20 in https://github.com/daijro/camoufox/pull/852\n* Date fpgen's model within signed 32-bit time, so read-only Lambda launches work by @JWriter20 in https://github.com/daijro/camoufox/pull/856\n* Launch, click and type through each installed package in the install gate by @JWriter20 in https://github.com/daijro/camoufox/pull/859\n* Keep pages rendering when another window covers their browser window (#804) by @JWriter20 in https://github.com/daijro/camoufox/pull/861\n* Release on a twice-monthly train instead of on every merge by @JWriter20 in https://github.com/daijro/camoufox/pull/864\n* Behave as on an IPv4-only network when the host's IPv6 disagrees with geoip by @JWriter20 in https://github.com/daijro/camoufox/pull/857\n* Validate IP addresses with standard library parsers instead of regex by @RinZ27 in https://github.com/daijro/camoufox/pull/866\n* Stop Xvfb when the process that launched it dies (#868) by @JWriter20 in https://github.com/daijro/camoufox/pull/869\n* Read response bodies sent with Content-Encoding: identity (#867) by @JWriter20 in https://github.com/daijro/camoufox/pull/870\n* Give exit-IP lookups through a proxy 15 seconds by @coffeegrind123 in https://github.com/daijro/camoufox/pull/906\n* Update vendored cursory-js to 2.1.0 (Cursory 2.1.0) by @JWriter20 in https://github.com/daijro/camoufox/pull/911\n* Test the commit the run started on, in every job by @coffeegrind123 in https://github.com/daijro/camoufox/pull/876\n* Let a re-run job's result replace the first attempt's by @coffeegrind123 in https://github.com/daijro/camoufox/pull/878\n* Stop the virtual display when a Python launch fails by @coffeegrind123 in https://github.com/daijro/camoufox/pull/908\n* Add headless=\"virtual-gpu\": render on a named GPU with no monitor attached by @JWriter20 in https://github.com/daijro/camoufox/pull/912\n* Update to Firefox 158.0 by @JWriter20 in https://github.com/daijro/camoufox/pull/914\n* Wait thirty seconds for Xvfb to report its display by @coffeegrind123 in https://github.com/daijro/camoufox/pull/884\n* Report leftover browsers and full guard output by @coffeegrind123 in https://github.com/daijro/camoufox/pull/880\n* Give packaged font files ASCII names by @coffeegrind123 in https://github.com/daijro/camoufox/pull/882\n* Give a worker's OffscreenCanvas its context's font list by @coffeegrind123 in https://github.com/daijro/camoufox/pull/898\n* Download the default addons once under concurrent launches by @coffeegrind123 in https://github.com/daijro/camoufox/pull/902\n* Derive a context's appVersion from its own user agent by @coffeegrind123 in https://github.com/daijro/camoufox/pull/892\n* Run ci/tests as a first attempt on a re-run job by @JWriter20 in https://github.com/daijro/camoufox/pull/925\n* fix(ts): safely resolve maxmind reader constructor using official Reader import by @eduardotashiro in https://github.com/daijro/camoufox/pull/874\n* Fetch a named build with one API call, and fail fetch loudly by @shbernal in https://github.com/daijro/camoufox/pull/920\n* Enforce the bundled OneCRL revocations in fresh profiles by @msmolkin in https://github.com/daijro/camoufox/pull/923\n* Claim the macOS system font under one name, not thirty by @epcosta17 in https://github.com/daijro/camoufox/pull/871\n* ipv4-only-network guard: bring its own resolver into the namespace by @JWriter20 in https://github.com/daijro/camoufox/pull/932\n* Make a Windows identity on another host behave as Windows by @coffeegrind123 in https://github.com/daijro/camoufox/pull/894\n* Audio renders as stock Firefox does: remove the audio noise and audio:seed by @JWriter20 in https://github.com/daijro/camoufox/pull/927\n* fetch-by-tag: mock browser-pin once, so the paired-build test gets its pin by @JWriter20 in https://github.com/daijro/camoufox/pull/936\n* Fail a launch whose default addon cannot be downloaded by @shbernal in https://github.com/daijro/camoufox/pull/938\n* Keep the host's hidden system fonts out of the macOS bundle by @JWriter20 in https://github.com/daijro/camoufox/pull/930\n* Always render at the identity's devicePixelRatio by @JWriter20 in https://github.com/daijro/camoufox/pull/934\n* Make spoofed getters cost what stock Firefox's do by @coffeegrind123 in https://github.com/daijro/camoufox/pull/888\n* Bound input dispatch's APZ and drag waits; deliver wheel deltas at the real scale by @JWriter20 in https://github.com/daijro/camoufox/pull/929\n* Pin uBlock Origin to one release per package by @shbernal in https://github.com/daijro/camoufox/pull/940\n* Keep uBlock Origin on its packaged filter lists by @shbernal in https://github.com/daijro/camoufox/pull/946\n* Bundle AMO's newest uBlock Origin in every browser release by @JWriter20 in https://github.com/daijro/camoufox/pull/949\n* fix(screen): screen.availWidth/availHeight cost parity with stock (fixes main's getter-cost-parity failure) by @JWriter20 in https://github.com/daijro/camoufox/pull/950\n* fix docker build for windows by @cvspvr in https://github.com/daijro/camoufox/pull/813\n* Update to Firefox 158.0.1 by @JWriter20 in https://github.com/daijro/camoufox/pull/944\n* Keep a pinned identity's draws across browser upgrades by @coffeegrind123 in https://github.com/daijro/camoufox/pull/954\n* Fix WebDriver BiDi windows and tab switches by @Miguel0888 in https://github.com/daijro/camoufox/pull/952\n* Keep a pointer-locked X11 window alive when it is partly off screen by @JWriter20 in https://github.com/daijro/camoufox/pull/960\n\n## New Contributors\n* @RinZ27 made their first contribution in https://github.com/daijro/camoufox/pull/866\n* @eduardotashiro made their first contribution in https://github.com/daijro/camoufox/pull/874\n* @shbernal made their first contribution in https://github.com/daijro/camoufox/pull/920\n* @msmolkin made their first contribution in https://github.com/daijro/camoufox/pull/923\n* @epcosta17 made their first contribution in https://github.com/daijro/camoufox/pull/871\n* @cvspvr made their first contribution in https://github.com/daijro/camoufox/pull/813\n* @Miguel0888 made their first contribution in https://github.com/daijro/camoufox/pull/952\n\n**Full Changelog**: https://github.com/daijro/camoufox/compare/v156.0.1-beta.33...v158.0.1-beta.41",
+          "assets": [
+            {
+              "name": "camoufox-158.0.1-beta.41-lin.arm64.zip",
+              "digest": "sha256:60e25f6eb95e13d9ec655bc02913d51057e669cb31542e6ace9d2190ab5380af",
+              "size": 1297503606,
+              "url": "https://github.com/daijro/camoufox/releases/download/v158.0.1-beta.41/camoufox-158.0.1-beta.41-lin.arm64.zip"
+            },
+            {
+              "name": "camoufox-158.0.1-beta.41-lin.x86_64.zip",
+              "digest": "sha256:3f2eb1d0451fa58e45e43e55f5e6181565069791ae60c0574f0ceb1f01341c33",
+              "size": 1303577033,
+              "url": "https://github.com/daijro/camoufox/releases/download/v158.0.1-beta.41/camoufox-158.0.1-beta.41-lin.x86_64.zip"
+            },
+            {
+              "name": "camoufox-158.0.1-beta.41-mac.arm64.zip",
+              "digest": "sha256:9038f86d666c9780b6fff199d488737b8596c01f24e3e517845a0ecfb0cf8add",
+              "size": 1297694189,
+              "url": "https://github.com/daijro/camoufox/releases/download/v158.0.1-beta.41/camoufox-158.0.1-beta.41-mac.arm64.zip"
+            },
+            {
+              "name": "camoufox-158.0.1-beta.41-mac.x86_64.zip",
+              "digest": "sha256:1afd6caa1e82caa41a4f56d8519f673e36b0835700b1c9c904e78a84c5711f3a",
+              "size": 1305712546,
+              "url": "https://github.com/daijro/camoufox/releases/download/v158.0.1-beta.41/camoufox-158.0.1-beta.41-mac.x86_64.zip"
+            },
+            {
+              "name": "camoufox-158.0.1-beta.41-win.i686.zip",
+              "digest": "sha256:5c6b4e57764ff6caa568c6ce77a01c03c7ad5da560c3e22097def2c28235f09d",
+              "size": 1304891471,
+              "url": "https://github.com/daijro/camoufox/releases/download/v158.0.1-beta.41/camoufox-158.0.1-beta.41-win.i686.zip"
+            },
+            {
+              "name": "camoufox-158.0.1-beta.41-win.x86_64.zip",
+              "digest": "sha256:2644bd14f1cc345c768f6a70b576bcc87eb3d0bf0df54856d6fe0bbc3027515f",
+              "size": 1320075455,
+              "url": "https://github.com/daijro/camoufox/releases/download/v158.0.1-beta.41/camoufox-158.0.1-beta.41-win.x86_64.zip"
+            },
+            {
+              "name": "manifest.json",
+              "digest": "sha256:c7472b036a84811364fd46688c92310ce5dbf86fd057c707651317b4840a1342",
+              "size": 395,
+              "url": "https://github.com/daijro/camoufox/releases/download/v158.0.1-beta.41/manifest.json"
+            }
+          ]
+        }
+      ],
+      "reviewed_source_head": "df9ca1156abf94bf5e8e7764effd35d3a7b298f9",
+      "recent_changes_reviewed": [
+        {
+          "sha": "df9ca1156abf94bf5e8e7764effd35d3a7b298f9",
+          "date": "2026-11-13T08:16:24Z",
+          "message": "verify-fonts: check aliases per OS version, and run it on pull requests (#1036)\n\n#997 made an alias name (a macOS TTC weight such as \"Noto Sans Canadian\nAboriginal Regular\") part of an OS version's base only where that version\nhas the alias's target, and took it off the always-reported list. The\nverifier still required every live alias on that list, so the release\nfailed before building on macOS's Canadian Aboriginal alias, which only\nSonoma reports, with its target.\n\nThe check now asks what the launcher reports: every OS version that\nreports an alias's target (its base plus the essentials) must report the\nalias, and no optional font group may add a target on its own.\n\nverify-fonts.py ran only in the release, so the pull request that broke it\nmerged green. build-tester now runs it with --quick on the fonts its\nbrowser artifact carries.\n\nCo-authored-by: Claude Opus 5.5 <noreply@anthropic.com>",
+          "url": "https://github.com/daijro/camoufox/commit/df9ca1156abf94bf5e8e7764effd35d3a7b298f9"
+        },
+        {
+          "sha": "84da37bda4b94c3d183970e3031a3e341ccf5620",
+          "date": "2026-11-13T02:26:51Z",
+          "message": "driven-move-coalescing: pin the display scale and expect device pixels (#1035)\n\nThe guard launched a random Linux identity and expected the page to read\nthe exact CSS point move() was given. A pointer sits on whole device pixels,\nso when the identity drew a fractional devicePixelRatio the page read the\nnearest one: at 1.25, (415, 226) is device pixel (519, 283), read back as\n(415.2, 226.4), as from a real mouse. That failed the release run on main.\n\nThe guard now runs at a scale of 1.25 every time, in a window that fits a\n1080-pixel display at that scale, and expects the nearest device pixel.\n\nCo-authored-by: Claude Opus 5.5 <noreply@anthropic.com>",
+          "url": "https://github.com/daijro/camoufox/commit/84da37bda4b94c3d183970e3031a3e341ccf5620"
+        },
+        {
+          "sha": "9c473387e49a26acfcf37540adf129622eca5f79",
+          "date": "2026-11-12T23:47:31Z",
+          "message": "cpu-vendor-estimates: compute as Intel or AMD x86-64 on an ARM64 host (#1034)\n\n* cpu-vendor-estimates: compute as Intel or AMD x86-64 on an ARM64 host\n\ngeneral.cpu_identity 1 or 2 on an aarch64 build now gives what Firefox's\nx86-64 build gives on that vendor's AVX2 and FMA CPU, the reverse of the\nARM64 emulation on x86-64:\n\n- Skia, Web Audio, the speex resampler and libopus compile their x86 paths\n  for aarch64 against third_party/simde/x86emu, SIMDe's intrinsics with\n  x86's default NaN, NaN operand order and out-of-range conversions. Skia\n  and libopus keep the recorded vendor estimate tables.\n- ffvpx's FFT runs its x86-64 AVX2/FMA3 assembly translated to C by\n  browser/scripts/x86toc.py.\n- The JIT, the interpreter, constant folding and Math make x86's negative\n  default NaN, and wasm relaxed SIMD gives the x64 backend's lanes\n  (JS::SetEmulateX86).\n\nThe cpu-vendor-estimates guard now runs on an ARM64 host too, checking the\nIntel and AMD launches against stock x86-64. On an Apple M4 (Linux\ncontainer) both match in all 46 probe keys that split the architectures,\nplus canvas and Opus; on a Ryzen 9850X3D the ARM64 leg still matches.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\n\n* Regenerate the Math.cpp hunks in patch-apply order\n\ncpu-vendor-estimates.patch applies before windows-crt-math.patch, but its\nMath.cpp hunks were written against a tree that already had the CRT patch,\nso three hunks were rejected on a clean `make dir`. Each patch's Math.cpp\nsection is now the diff from the tree its predecessors leave; the resulting\nfile is unchanged.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\n\n---------\n\nCo-authored-by: Claude Opus 5.5 <noreply@anthropic.com>",
+          "url": "https://github.com/daijro/camoufox/commit/9c473387e49a26acfcf37540adf129622eca5f79"
+        }
+      ],
+      "comparison_url": "https://api.github.com/repos/daijro/camoufox/compare/079a6ce8249bab98063e5ac9241e3879a3e6578d...main",
+      "commits_ahead": 8,
+      "changes_since_previous_review": [
+        {
+          "sha": "20916cc330b4c84df9a88d45e3af5128b30a53f4",
+          "message": "Report WebGL2's value for every parameter WebGL1 shares (#1020)\n\n* Report WebGL2's value for every parameter WebGL1 shares\n\nFirefox 156+ creates WebGL1 on WebGL2's GL profile, so every parameter\nboth contexts report is one driver value. fpgen recorded Firefox 146,\nwhich put WebGL1 on a compatibility profile, and the launchers already\ncopied WebGL2's line width range over WebGL1's for that reason. Two\nLinux records (GeForce GTX 480 and 980) also differ in\nALIASED_POINT_SIZE_RANGE, which CreepJS checks: it flags any mirrored\nWebGL1/WebGL2 parameter that differs, except the version strings and\nthe line width range.\n\nThe copy now covers every shared non-string parameter, in both\nlaunchers. A test checks every recorded device.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\n\n* webgl: test every shared parameter in TypeScript; record the rule's new scope\n\nThe TypeScript test still checked only the line width range, so the\nlauncher's new copy of every shared parameter had no TypeScript test: the\nnew one walks every recorded GPU and fails on main for the Linux GTX 480\n(ALIASED_POINT_SIZE_RANGE). The Python line-width test is covered by the\nevery-parameter one and goes. webgl-browser-owned-values-follow-firefox\nnow says WebGL1 takes WebGL2's value for every parameter both report, with\nthe GTX 480/980 records as evidence.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\n\n---------\n\nCo-authored-by: Claude Opus 5.5 <noreply@anthropic.com>\nCo-authored-by: Jake Writer <jake_writer@jobharvest.com>",
+          "date": "2026-11-10T22:17:48Z"
+        },
+        {
+          "sha": "46a8d920ccec1a76df37b0179625e372e8b86bf7",
+          "message": "Keep a routed request's header order on the wire (#989)\n\n* Keep original header order when routing\n\nResuming an intercepted request rebuilds the Firefox channel, losing the order captured at http-on-modify-request. Record that order and merge route overrides back into it, including headers supplied to route.continue_(headers=...). Add document and fetch wire-order tests that compare routed requests with unrouted ones.\n\n* ci: re-run after an unrelated flaky parity test\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\n\n* Drop the unused header-order fallback; test a plain continue with a custom header\n\nEvery request records its original header order in the constructor, so\norderRequestHeaders never ran without one: the fallback, its lateNames\nargument and DEFAULT_REQUEST_HEADERS were dead. The fetch test now sends a\nheader of its own and covers route.continue_() with and without headers,\nthe case the fix is for; both fail on main.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\n\n---------\n\nCo-authored-by: Claude Opus 5.5 <noreply@anthropic.com>\nCo-authored-by: Jake Writer <jake_writer@jobharvest.com>",
+          "date": "2026-11-10T22:17:52Z"
+        },
+        {
+          "sha": "fe3a3f7593116a7460ada02c42739911104dfbc5",
+          "message": "humanize: leave the page straight across the edge, 3px from the last move (#1026)\n\nThe exit point lay on the curve's next step, at least 2px from the last\nmousemove as Juggler measured it. The page measures from pixels Gecko\nrounded, and with the content's top at a fraction (85.5 on some hosts'\ntoolbars) it saw the two 1.4px apart, closer than any stock exit, and\nhumanize-mouse-trajectory.py failed now and then in CI.\n\nThe exit now leaves straight across the edge it crosses from the pixel the\npage last saw, 3px on, which a 1px rounding error keeps at least 2px apart.\nThe guard also sweeps with text scaled to 105%, which puts the content's\ntop at 85.5 and failed every run before the change.\n\nCo-authored-by: Claude Opus 5.5 <noreply@anthropic.com>",
+          "date": "2026-11-11T00:16:42Z"
+        },
+        {
+          "sha": "b09085c8f041e962e665f8163947188000fa14fe",
+          "message": "Bundle a committed uBlock Origin release, not AMO's newest (#1012)\n\n* Bundle a committed uBlock Origin release, not AMO's newest\n\nuBO 1.76.0 reached AMO and changed what pages observe: in every tab\nafter the first, RegExp moved after URL in the page's global order,\nwhere stock 158 and 159 (every tab and window), no uBO and uBO 1.75.4\nkeep it after Number. main-world-eval-globals.py caught it, and\n534430e0 then took the first tab out of the comparison, which hides\nthe difference instead of removing it.\n\nfetch-ubo.py resolve now reads browser/scripts/data/ubo.json (1.75.4,\nsha256-pinned); `newest` prints AMO's latest as a candidate, so a bump\nis a reviewed commit. main-world-eval-globals.py compares the first\ntab again.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\n\n* Describe the bundled uBlock Origin as the committed pin everywhere\n\nREADME.md, ci/README.md, release.yml, package.py and ci/release.py still\nsaid every package bundles AMO's newest uBO, and release.py that the pin is\nin no commit. It is now browser/scripts/data/ubo.json.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\n\n---------\n\nCo-authored-by: Claude Opus 5.5 <noreply@anthropic.com>\nCo-authored-by: Jake Writer <jake_writer@jobharvest.com>",
+          "date": "2026-11-11T02:33:45Z"
+        },
+        {
+          "sha": "21fdf1c59cfd933489b70ac15a441988f600523a",
+          "message": "Canvas and Opus follow a claimed CPU vendor (Intel/AMD); vendor joins the fingerprint (#1024)\n\n* Canvas: reproduce Intel's or AMD's RCPPS/RSQRTPS, chosen per identity\n\nSkia's raster pipeline uses x86's estimate instructions for the\nnon-separable and dodge/burn blend modes, perspective and matrix\ninversion. Intel and AMD implement them with different tables (the same\nacross each vendor's generations and OSes), so canvas readback shows the\nhost's CPU vendor.\n\n- cpu-vendor-estimates.patch: pref gfx.skia.cpu_vendor_estimates\n  (0 host, 1 Intel, 2 AMD). When it names the other vendor, rcp_approx\n  and rsqrt_approx in the HSW and SSE paths compute that vendor's bits\n  from a recorded table (SkCpuEstimates.h, SkCpuEstimateTables.h).\n- browser/tests/cpu-estimates: records each vendor's table and checks the\n  emulation against the native instruction over all 2^32 inputs, and\n  against the other vendor's recorded hashes.\n- Launcher (Python and TypeScript): cpu_vendor option and cpu:vendor key.\n  The identity derives it from the GPU where only one vendor carries that\n  GPU, and otherwise draws it at Firefox's x86 share (81.4% Intel). A\n  coherence rule warns when the two disagree. Apple Silicon gets none.\n- Guard cpu-vendor-estimates: stock Firefox 159 hashes from an Intel and\n  an AMD CPU; the build matches each when told to.\n\nAudio is not affected: its render splits x86-64 from ARM64, not Intel\nfrom AMD.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\n\n* Opus: encode with the claimed CPU vendor's RCPPS/RSQRTPS; add the CPU probe\n\nlibopus's PVQ search (celt/x86/vq_sse2.c) uses the same two estimate\ninstructions as Skia, so a WebCodecs, MediaRecorder or WebRTC Opus stream\nshowed the host's vendor: stock Firefox 159 gives one byte stream on Intel\nand another on AMD. libopus lives in libgkcodecs, which cannot read prefs,\nso Gecko hands it the table gfx.skia.cpu_vendor_estimates selects\n(opus_mozilla_set_cpu_estimates) before each encoder is created, and the\nSSE2 search computes the estimates from it lane by lane.\n\nThe guard now also encodes one second of Opus and checks it against both\nvendors' stock streams, on a secure page since WebCodecs needs one. It\npasses on an AMD host for both vendors.\n\nbrowser/tests/cpu-probe/ is the probe that found it: Math, DOMMatrix,\nlayout, canvas, WebGL, relaxed SIMD, Web Audio and WebCodecs, with stock\nFirefox 159 results from Intel and AMD on Linux and Windows and from an\nApple M4 on macOS and Linux. Intel and AMD differ only in the six\nestimate-based composite operations and Opus; ARM64 differs in much more,\nwhich docs/HOST-PARITY.md now lists as not emulated.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\n\n* cpu:vendor: a core count only Intel ships implies Intel\n\nNo AMD x86 CPU since 2015 reports 10, 14, 18, 22 or 28 logical cores:\nAMD runs one or two threads per core, and its one-thread parts have 2 to 8\ncores. Intel's hybrids report all of them (Core Ultra 5 225, 245K, 125H,\n155H; i7-14700K). So an identity with such a hardwareConcurrency is drawn\nIntel, and a cpu_vendor='amd' beside it is reported and repaired.\n\nThe GPU still decides first: a Radeon APU beside an Intel-only count keeps\nAMD and is reported, since no vendor matches both. The rule is renamed\ncpu-vendor-matches-hardware. The counts live in launcher-constants.json\n(intelOnlyCoreCounts) for both launchers.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\n\n* cpu {arch, manufacturer}: ARM64 emulation on x86 alongside Intel/AMD\n\nThe fingerprint's CPU is now { arch: \"x86\" | \"arm\", manufacturer } instead\nof a bare vendor, validated per OS (launcher-constants cpuManufacturers):\ne.g. Apple + x86 or AMD on macOS is rejected, as is a GPU that never sits\nbeside the claimed CPU. general.cpu_identity = 3 makes an x86 build compute\nwhat Firefox's aarch64 build computes:\n\n- Skia: the NEON raster pipeline and blend kernels, emulated lane for lane\n  (SkOpts_neonemu, SkNeonEmu.h, SkArmEstimates.h).\n- Opus: the aarch64 CELT kernels and the NEON inverse MDCT (celt_neonemu.c,\n  celt_tx_neonemu.c, translated from celt_tx_neon.S by scripts/a64toc.py),\n  for decode and encode.\n- WebAudio / wasm / NaN payloads follow the ARM rules.\n- libvpx: Firefox configures libvpx realtime-only for linux/arm64 and\n  win/aarch64 (not mac/arm64), which changes WebCodecs VP9 output and\n  rejects quality-mode VP8. The ARM64 configs are now the full encoder and\n  realtime-only is a runtime switch (media.libvpx.realtime_only), so either\n  build can produce either result. libvpx NEON itself is bit-exact with x86.\n\nThe launchers (Python and TypeScript) set general.cpu_identity and, for an\nARM Windows/Linux identity, media.libvpx.realtime_only.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\n\n* ARM64 identity: make the guard's probe reproducible, fail loudly in ffvpx\n\nThe guard served only the probe's own files, so the two webfonts 404ed and\nthe layout step threw. The probe page draws every input from one seeded\nstream, so the throw shifted every later key and made wasm relaxed SIMD and\nthe convolver look wrong. The fonts now ship beside the probe (both freely\nlicensed, from Firefox's layout reftests), and the guard fails on any probe\nstep that errors where stock does not.\n\nCanvas text is rasterized at the identity's devicePixelRatio, which the\nlauncher draws, so the guard leaves it out; at a ratio of 1 it matches the\nM4's.\n\nFFVPXRuntimeLinker asserts that libmozavutil exports the ARM64 switch\ninstead of skipping it silently. cpu:vendor is kept in properties.json as\nremoved, and the tribal rule, docs and the constants test follow the\ngeneral.cpu_identity pref.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\n\n---------\n\nCo-authored-by: Claude Opus 5.5 <noreply@anthropic.com>",
+          "date": "2026-11-12T05:59:20Z"
+        },
+        {
+          "sha": "9c473387e49a26acfcf37540adf129622eca5f79",
+          "message": "cpu-vendor-estimates: compute as Intel or AMD x86-64 on an ARM64 host (#1034)\n\n* cpu-vendor-estimates: compute as Intel or AMD x86-64 on an ARM64 host\n\ngeneral.cpu_identity 1 or 2 on an aarch64 build now gives what Firefox's\nx86-64 build gives on that vendor's AVX2 and FMA CPU, the reverse of the\nARM64 emulation on x86-64:\n\n- Skia, Web Audio, the speex resampler and libopus compile their x86 paths\n  for aarch64 against third_party/simde/x86emu, SIMDe's intrinsics with\n  x86's default NaN, NaN operand order and out-of-range conversions. Skia\n  and libopus keep the recorded vendor estimate tables.\n- ffvpx's FFT runs its x86-64 AVX2/FMA3 assembly translated to C by\n  browser/scripts/x86toc.py.\n- The JIT, the interpreter, constant folding and Math make x86's negative\n  default NaN, and wasm relaxed SIMD gives the x64 backend's lanes\n  (JS::SetEmulateX86).\n\nThe cpu-vendor-estimates guard now runs on an ARM64 host too, checking the\nIntel and AMD launches against stock x86-64. On an Apple M4 (Linux\ncontainer) both match in all 46 probe keys that split the architectures,\nplus canvas and Opus; on a Ryzen 9850X3D the ARM64 leg still matches.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\n\n* Regenerate the Math.cpp hunks in patch-apply order\n\ncpu-vendor-estimates.patch applies before windows-crt-math.patch, but its\nMath.cpp hunks were written against a tree that already had the CRT patch,\nso three hunks were rejected on a clean `make dir`. Each patch's Math.cpp\nsection is now the diff from the tree its predecessors leave; the resulting\nfile is unchanged.\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\n\n---------\n\nCo-authored-by: Claude Opus 5.5 <noreply@anthropic.com>",
+          "date": "2026-11-12T23:47:31Z"
+        },
+        {
+          "sha": "84da37bda4b94c3d183970e3031a3e341ccf5620",
+          "message": "driven-move-coalescing: pin the display scale and expect device pixels (#1035)\n\nThe guard launched a random Linux identity and expected the page to read\nthe exact CSS point move() was given. A pointer sits on whole device pixels,\nso when the identity drew a fractional devicePixelRatio the page read the\nnearest one: at 1.25, (415, 226) is device pixel (519, 283), read back as\n(415.2, 226.4), as from a real mouse. That failed the release run on main.\n\nThe guard now runs at a scale of 1.25 every time, in a window that fits a\n1080-pixel display at that scale, and expects the nearest device pixel.\n\nCo-authored-by: Claude Opus 5.5 <noreply@anthropic.com>",
+          "date": "2026-11-13T02:26:51Z"
+        },
+        {
+          "sha": "df9ca1156abf94bf5e8e7764effd35d3a7b298f9",
+          "message": "verify-fonts: check aliases per OS version, and run it on pull requests (#1036)\n\n#997 made an alias name (a macOS TTC weight such as \"Noto Sans Canadian\nAboriginal Regular\") part of an OS version's base only where that version\nhas the alias's target, and took it off the always-reported list. The\nverifier still required every live alias on that list, so the release\nfailed before building on macOS's Canadian Aboriginal alias, which only\nSonoma reports, with its target.\n\nThe check now asks what the launcher reports: every OS version that\nreports an alias's target (its base plus the essentials) must report the\nalias, and no optional font group may add a target on its own.\n\nverify-fonts.py ran only in the release, so the pull request that broke it\nmerged green. build-tester now runs it with --quick on the fonts its\nbrowser artifact carries.\n\nCo-authored-by: Claude Opus 5.5 <noreply@anthropic.com>",
+          "date": "2026-11-13T08:16:24Z"
+        }
+      ]
+    },
+    {
+      "backend": "cloak",
+      "repository": "CloakHQ/CloakBrowser",
+      "releases_reviewed": [
+        {
+          "tag": "chromium-v156.0.8078.47.1-pro",
+          "published_at": "2026-11-03T18:16:17Z",
+          "url": "https://github.com/CloakHQ/CloakBrowser/releases/tag/chromium-v156.0.8078.47.1-pro",
+          "body": "## CloakBrowser Pro: Stable advances to Chromium 156.0.8078.47.1 (all platforms)\n\nChromium `156.0.8078.47.1` is now Stable on **Linux** (x64 and ARM64), **Windows** (x64), and **macOS** (Apple Silicon and Intel).\n\nWith a valid CloakBrowser key, the wrapper automatically selects the Stable build for your platform. No version pin is required.\n\n### What's new\n\n- **The newest Chromium, 156**, on every platform.\n- **License connection that finds another way through.** When a license call can't get through, each retry now takes a different route to our servers instead of repeating the same one. This covers launch, heartbeat, and close. Seats are also released more reliably on close.\n- **Real window geometry.** The window, the page viewport, and the window position match a real maximized Chrome window for the Windows and macOS personas, in both headed and headless. The viewport is a bit shorter than before, so check scripts that rely on fixed screen coordinates.\n- **WebRTC through your SOCKS5 proxy.** With `geoip=True`, WebRTC traffic goes through your SOCKS5 proxy when the proxy supports UDP.\n- **Popup blocking and navigation limits stay on**, as in real Chrome, even when an automation tool asks to turn them off.\n- **A much more convincing macOS persona** on Linux, and **closer to real Chrome everywhere**: canvas (including inside workers), graphics card names, math, and Windows colors and fonts. On Linux, install the Mac fonts for the macOS persona.\n- **New flag `--fingerprint-max-touch-points=<N>`** to report a touch screen, like a Windows touch laptop.\n- **On Windows and macOS, this also brings what Linux Stable already had:** the more resilient license connection, request interception that no longer crashes the network process, more Windows fonts, correct Web Audio speed, and Google as the default search engine (`--fingerprint-search-engine=google|bing|duckduckgo|none`).\n\nYour profiles, cookies, and seeds are untouched. Only the browser itself is replaced.\n\n### Current wrapper: v0.7.0\n\nUpdate the wrapper before launching:\n\n```bash\npip install -U cloakbrowser\nnpm update cloakbrowser\ndotnet add package CloakBrowser --version 0.7.0\n```\n\n### Roll back if needed\n\nIf a workload regresses, pin the previous Stable build for your platform:\n\n```bash\nexport CLOAKBROWSER_VERSION=155.0.8059.39.2   # Linux\nexport CLOAKBROWSER_VERSION=155.0.8059.39.1   # Windows, macOS\n```\n\nRemove the pin to return to the newest Stable build.\n\n**If you hit a regression, please tell us.** [Open an issue](https://github.com/CloakHQ/CloakBrowser/issues) or email support@cloakbrowser.dev with the site and what you saw. Pinning the old build gets you unblocked; a report gets it fixed for everyone.\n\n### Checksums (SHA-256)\n\n```text\nversion=156.0.8078.47.1\n46f8361deb898019ef1a529da22b2c9a8f0e482c7a29600b39d932249c84a4b2  cloakbrowser-linux-x64.tar.gz\nc3f0ff8d2eca247ca28b3bc0a53cc37d69cde3878aeb4197bee61bda97c99559  cloakbrowser-linux-arm64.tar.gz\n74dd15bd8af28704f52e23ad55145c0b8c83ffeab4d9283a1779d89bd8bcc434  cloakbrowser-windows-x64.zip\nc29ba20dfe53b048760ebccb9a816eda08d0424e430208000d01d7bb216197c8  cloakbrowser-darwin-arm64.tar.gz\n1a260c6d31e26695f321a143977b175e7a72295357949da445e7a7a3a384bb5e  cloakbrowser-darwin-x64.tar.gz\n```\n\nThe signed manifest (`SHA256SUMS` and `SHA256SUMS.sig`) is attached. The wrapper verifies its Ed25519 signature and each archive's SHA-256 checksum automatically.\n",
+          "assets": [
+            {
+              "name": "SHA256SUMS",
+              "digest": "sha256:f09801fec2045166ffea1abcb2341a10d65e32adddc97a3cd8f7706da34aa0b7",
+              "size": 509,
+              "url": "https://github.com/CloakHQ/CloakBrowser/releases/download/chromium-v156.0.8078.47.1-pro/SHA256SUMS"
+            },
+            {
+              "name": "SHA256SUMS.sig",
+              "digest": "sha256:af983f02134ba9c6a58e6296eb04eeecad528025bd8ffe295deab7e0a42a4e70",
+              "size": 88,
+              "url": "https://github.com/CloakHQ/CloakBrowser/releases/download/chromium-v156.0.8078.47.1-pro/SHA256SUMS.sig"
+            }
+          ]
+        },
+        {
+          "tag": "chromium-v155.0.8059.39.2-pro",
+          "published_at": "2026-10-27T21:02:17Z",
+          "url": "https://github.com/CloakHQ/CloakBrowser/releases/tag/chromium-v155.0.8059.39.2-pro",
+          "body": "## CloakBrowser Pro: Linux Stable advances to Chromium 155.0.8059.39.2\n\nChromium `155.0.8059.39.2` is now Stable on **Linux** (x64 and ARM64). Windows and macOS Stable stay on `155.0.8059.39.1`.\n\nWith a valid CloakBrowser key, the wrapper automatically selects the Stable build for your platform. No version pin is required.\n\n### What's new since 155.0.8059.39.1 (Linux)\n\n- **A more resilient license connection.** Launch and close now ride out brief network or server hiccups by retrying, and startup is a bit quicker. Seats are also released more reliably when you close the browser.\n- **Request interception that holds up.** Using `page.route` or other request interception no longer randomly crashes Chrome's network process.\n- **More Windows fonts.** Windows personas on Linux now include more app fonts, plus language-pack fonts that follow the locale. A fixed Windows seed will report more fonts than before.\n- **Audio at the right speed.** Web Audio now plays at the correct speed on 44.1 kHz and 96 kHz audio devices, and a page's own sample rate is respected.\n- **Closer to real Chrome.** The reported window position stays inside the screen's work area, a short GPU vendor flag such as `intel` reports the full vendor name, and one more popular fingerprint test now passes.\n- **Google is the default search engine again** when you use the browser directly. Choose another with `--fingerprint-search-engine=google|bing|duckduckgo|none`, or pass your own search URL.\n\nYour profiles, cookies, and seeds are untouched. Only the browser itself is replaced.\n\n### Current wrapper: v0.6.4\n\nUpdate the wrapper before launching:\n\n```bash\npip install -U cloakbrowser\nnpm update cloakbrowser\ndotnet add package CloakBrowser --version 0.6.4\n```\n\n### Roll back if needed\n\nIf a workload regresses, pin the previous Linux Stable build:\n\n```bash\nexport CLOAKBROWSER_VERSION=155.0.8059.39.1\n```\n\nRemove the pin to return to the newest Stable build.\n\n**If you hit a regression, please tell us.** [Open an issue](https://github.com/CloakHQ/CloakBrowser/issues) or email support@cloakbrowser.dev with the site and what you saw. Pinning the old build gets you unblocked; a report gets it fixed for everyone.\n\n### Checksums (SHA-256)\n\n```text\nversion=155.0.8059.39.2\nd54521088fd2ca0a6584c490c7ce43d02d6e1190013a759517632d9b7d0a1c0d  cloakbrowser-linux-x64.tar.gz\nf9a2e4666de97f98e3bfdb5d96f9c3c32ae2aa09573b811226a3ddbad1f08430  cloakbrowser-linux-arm64.tar.gz\n```\n\nThe signed manifest (`SHA256SUMS` and `SHA256SUMS.sig`) is attached. The wrapper verifies its Ed25519 signature and each archive's SHA-256 checksum automatically.\n",
+          "assets": [
+            {
+              "name": "SHA256SUMS",
+              "digest": "sha256:33f1431f832fe0bde82aa1fffcff30dbca5dde02e9c1cef54f145c3395ac52b4",
+              "size": 218,
+              "url": "https://github.com/CloakHQ/CloakBrowser/releases/download/chromium-v155.0.8059.39.2-pro/SHA256SUMS"
+            },
+            {
+              "name": "SHA256SUMS.sig",
+              "digest": "sha256:10b396deb4f3c5e3c6c13ef3497e69216904f6f93f7d663dd2a10dccf33b9b51",
+              "size": 88,
+              "url": "https://github.com/CloakHQ/CloakBrowser/releases/download/chromium-v155.0.8059.39.2-pro/SHA256SUMS.sig"
+            }
+          ]
+        },
+        {
+          "tag": "chromium-v155.0.8059.39.1-pro",
+          "published_at": "2026-10-20T18:15:39Z",
+          "url": "https://github.com/CloakHQ/CloakBrowser/releases/tag/chromium-v155.0.8059.39.1-pro",
+          "body": "## CloakBrowser Pro: Stable advances to Chromium 155.0.8059.39.1 (all platforms)\n\nChromium `155.0.8059.39.1` is now Stable on **Linux** (x64 and ARM64), **Windows** (x64), and **macOS** (Apple Silicon and Intel).\n\nWith a valid CloakBrowser key, the wrapper automatically selects the Stable build for your platform. No version pin is required.\n\n### What's new\n\n- **The newest Chromium, 155**, on every platform.\n- **Windows and macOS catch up with Linux:** safer proxy handling, the more patient license connection with the `--license-route` flag, and the refined Windows persona.\n- **Closer to real Chrome everywhere:** graphics checks, canvas exports, network timing, the reported CPU architecture on ARM hosts, and a few more Windows font names all behave the way real Chrome does on real hardware.\n- **DNS that follows your proxy:** with `--fingerprint-transparent-proxy`, sites are resolved with Cloudflare's DNS over HTTPS, sent through your proxy. Use your own with `--fingerprint-transparent-proxy-dns=<url>`, or `local` for the old behavior.\n- **Clear license errors everywhere**, a **more stable macOS persona**, **quieter Windows security logs**, and a **smaller Linux download**.\n\nYour profiles, cookies, and seeds are untouched. Only the browser itself is replaced.\n\n### Current wrapper: v0.6.3\n\nUpdate the wrapper before launching:\n\n```bash\npip install -U cloakbrowser\nnpm update cloakbrowser\ndotnet add package CloakBrowser --version 0.6.3\n```\n\n### Roll back if needed\n\nIf a workload regresses, pin the previous Stable build for your platform:\n\n```bash\nexport CLOAKBROWSER_VERSION=154.0.8037.57.2   # Linux\nexport CLOAKBROWSER_VERSION=154.0.8037.57.1   # Windows, macOS\n```\n\nRemove the pin to return to the newest Stable build.\n\n**If you hit a regression, please tell us.** [Open an issue](https://github.com/CloakHQ/CloakBrowser/issues) or email support@cloakbrowser.dev with the site and what you saw. Pinning the old build gets you unblocked; a report gets it fixed for everyone.\n\n### Checksums (SHA-256)\n\n```text\nversion=155.0.8059.39.1\na345d8420712b4feb1db093c6f75b87b3a712dbe63d5e19ec56cac44683a1a65  cloakbrowser-linux-x64.tar.gz\n3f452084485957af8050f575a9347c002d1601cc61d2f2ec18d479d2f6471dff  cloakbrowser-linux-arm64.tar.gz\n3cd304226e0c75699368144428d07b3bff1c2b387951310f3f94b6e7dfd650b0  cloakbrowser-windows-x64.zip\nd13481c2d69e188e5f2ef12cd0a5403fe1634fe78f94b3c7b3e0086f79ae8473  cloakbrowser-darwin-arm64.tar.gz\nebc078e492ad2d730cbad368e8ef0185b98aa2185998cf1b4c77a3f288231dac  cloakbrowser-darwin-x64.tar.gz\n```\n\nThe signed manifest (`SHA256SUMS` and `SHA256SUMS.sig`) is attached. The wrapper verifies its Ed25519 signature and each archive's SHA-256 checksum automatically.\n",
+          "assets": [
+            {
+              "name": "SHA256SUMS",
+              "digest": "sha256:af56755771af3a333a09ab854c6fa3817b74c787ac15ab2c3abd72de81f9af2a",
+              "size": 509,
+              "url": "https://github.com/CloakHQ/CloakBrowser/releases/download/chromium-v155.0.8059.39.1-pro/SHA256SUMS"
+            },
+            {
+              "name": "SHA256SUMS.sig",
+              "digest": "sha256:99b7d05b7fd138aaf7d49cc23ae7493b5a177e8991d9a373f301b0fd970dd7cc",
+              "size": 88,
+              "url": "https://github.com/CloakHQ/CloakBrowser/releases/download/chromium-v155.0.8059.39.1-pro/SHA256SUMS.sig"
+            }
+          ]
+        }
+      ],
+      "reviewed_source_head": "0c110fab97ee98d7d4ba6c4f53d909cee08e92b6",
+      "recent_changes_reviewed": [
+        {
+          "sha": "0c110fab97ee98d7d4ba6c4f53d909cee08e92b6",
+          "date": "2026-11-12T23:49:42Z",
+          "message": "fix(cloakserve): count default-path connections under the default seed (#643)\n\nWith --fingerprint=<seed>, the default WebSocket counted clients under\n__default__ while Chrome was stored under the seed, so --idle-timeout\nclosed Chrome with clients still connected.",
+          "url": "https://github.com/CloakHQ/CloakBrowser/commit/0c110fab97ee98d7d4ba6c4f53d909cee08e92b6"
+        },
+        {
+          "sha": "6bae46c6d4842d25923406477dfa57e600019c28",
+          "date": "2026-11-11T19:57:28Z",
+          "message": "docs: link the binary license from the FAQ",
+          "url": "https://github.com/CloakHQ/CloakBrowser/commit/6bae46c6d4842d25923406477dfa57e600019c28"
+        },
+        {
+          "sha": "0d7f05c0e4cf3db8223aa543f66a5c4a0c8c6c36",
+          "date": "2026-11-10T22:07:43Z",
+          "message": "fix: support Playwright 1.65, remove the version cap (#641)",
+          "url": "https://github.com/CloakHQ/CloakBrowser/commit/0d7f05c0e4cf3db8223aa543f66a5c4a0c8c6c36"
+        }
+      ],
+      "comparison_url": "https://api.github.com/repos/CloakHQ/CloakBrowser/compare/1a145dbb90a26d6dd223c7642cb49fb9c850f22c...main",
+      "commits_ahead": 3,
+      "changes_since_previous_review": [
+        {
+          "sha": "0d7f05c0e4cf3db8223aa543f66a5c4a0c8c6c36",
+          "message": "fix: support Playwright 1.65, remove the version cap (#641)",
+          "date": "2026-11-10T22:07:43Z"
+        },
+        {
+          "sha": "6bae46c6d4842d25923406477dfa57e600019c28",
+          "message": "docs: link the binary license from the FAQ",
+          "date": "2026-11-11T19:57:28Z"
+        },
+        {
+          "sha": "0c110fab97ee98d7d4ba6c4f53d909cee08e92b6",
+          "message": "fix(cloakserve): count default-path connections under the default seed (#643)\n\nWith --fingerprint=<seed>, the default WebSocket counted clients under\n__default__ while Chrome was stored under the seed, so --idle-timeout\nclosed Chrome with clients still connected.",
+          "date": "2026-11-12T23:49:42Z"
+        }
+      ]
+    }
+  ],
+  "integration": {
+    "playwright": {
+      "driver": "1.65.0",
+      "status": "Native transport admitted; real Linux context, identity, cookie and cleanup acceptance passed. Full latest-head three-platform CI remains pending.",
+      "unreleased_changes": "Reviewed main branch ahead of v1.65.0; no unreleased SDK or browser substituted for a compatible release."
+    },
+    "patchright": {
+      "driver": "1.64.1",
+      "status": "Separate driver/browser generation retained; real Linux native acceptance passed.",
+      "unreleased_changes": "Authenticated-proxy restarted-request fix f14e043660ff14cc252d7610c4356835f2d04cf8 is newer than the stable packaged release; reviewed but not claimed as present in that binary."
+    },
+    "camoufox": {
+      "browser": "158.0.1-beta.41",
+      "driver": "1.62.0",
+      "native_preparation": "Fingerprint Bayesian model, identity/geometry/WebGL/locale/GeoIP/font preparation ported. Released158 native live acceptance passed on Linux in57.74seconds using the managed test environment; full latest-head cross-platform CI remains required.",
+      "source_updates": "Shared non-string WebGL parameters and CPU coherence ported against df9ca115. New CPU fields/preferences require declared packaged properties. Official158 receives none of the unsupported CPU fields. Unreleased canvas/audio/Opus/wasm capabilities are not implied; see camoufox-upstream-compatibility.json.",
+      "addon": {
+        "version": "1.75.4",
+        "id": "uBlock0@raymondhill.net",
+        "url": "https://addons.mozilla.org/firefox/downloads/file/5203014/ublock_origin-1.75.4.xpi",
+        "sha256": "e2df503cce7cf5069130618c349695f62bdddb9eb8c189156d027269ae4ae267",
+        "upstream_commit": "df9ca1156abf94bf5e8e7764effd35d3a7b298f9"
+      },
+      "corresponding_source": {
+        "component": "ublock-origin",
+        "version": "1.75.4",
+        "license": "GPL-3.0-or-later",
+        "source_url": "https://codeload.github.com/gorhill/uBlock/tar.gz/f417911934edb2d3e2700110803ed7fde6f51022",
+        "sha256": "d4a90ee3a4d15f2c792ce891e2e56c6a4fe79548d2ec7993d7d30fb476bc7159",
+        "archive": "sources/third-party/ublock-1.75.4.tar.gz"
+      }
+    },
+    "cloak": {
+      "browser": "156.0.8078.47.1",
+      "driver": "1.65.0",
+      "compatibility_commit": "0d7f05c0e4cf3db8223aa543f66a5c4a0c8c6c36",
+      "status": "Native preparation/seed/license/options translated; current upstream removed Playwright<1.65 cap, and native admission/provision pins updated. Real licensed-browser CI remains required.",
+      "scope": "Cloakserve default-WebSocket seed accounting is not a Numera service API. Proprietary browser excluded from public bundles; no implicit acquisition or automatic update."
+    },
+    "geoip": {
+      "version": "2026.11.11",
+      "url": "https://github.com/daijro/geoip-all-in-one/releases/download/2026.11.11/geoip-aio-all.mmdb",
+      "sha256": "6ee1f89253392dadfee55aff6955077c318e61aa141c1a91a977c60f277890b4",
+      "notice_url": "https://raw.githubusercontent.com/daijro/geoip-all-in-one/cd4f0e2f2756b11d93d6ab6062eaa63c92131742/README.md",
+      "notice_sha256": "d9b337a3e7981a8e587ed1bc1ed0ca36728672451802ca73522dece58a119093"
+    }
+  },
+  "verification_limits": [
+    "Read upstream release, recent commit and comparison APIs separately.",
+    "Pinned download hashes establish exact bytes; they are not public publisher trust or authorization to redistribute a proprietary binary.",
+    "No local Windows/macOS execution or full exact-head green CI is claimed by this review."
+  ]
+}

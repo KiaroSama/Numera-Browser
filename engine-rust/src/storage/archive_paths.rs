@@ -5,9 +5,9 @@ use std::{
     path::{Path, PathBuf},
 };
 
-/// Normalize archive separators and parent components before any filesystem write.
-/// Staging is privately created and contains only regular files, never symlinks.
-pub(crate) fn member_path(base: &Path, member: &str) -> io::Result<PathBuf> {
+/// Refuse lexical and physical escapes before any extraction write.
+/// Resolve the original component order so a link before `..` cannot escape.
+pub fn member_path(base: &Path, member: &str) -> io::Result<PathBuf> {
     let normalized = member.replace('\\', "/");
     let relative = normalized.trim_matches('/');
     let shown = repr(&Value::String(member.into()));
@@ -66,14 +66,33 @@ pub(crate) fn member_path(base: &Path, member: &str) -> io::Result<PathBuf> {
             }
         }
     }
-    let mut path = base.to_owned();
-    for part in parts {
-        path.push(part);
+    let base = super::locks::resolved(base)?;
+    let target = base.join(relative);
+    let refusal = || {
+        io::Error::other(format!(
+            "refusing archive member that escapes its folder: {shown}"
+        ))
+    };
+    let absolute = super::paths::lexical(&target);
+    if !absolute.starts_with(&base) {
+        return Err(refusal());
     }
-    Ok(path)
+    // Keep the original link/../ ordering for the physical check.
+    let physical = super::paths::physical(&target)?;
+    if !physical.starts_with(&base) {
+        return Err(refusal());
+    }
+    #[cfg(feature = "test-support")]
+    crate::vault::testing::event("before-path-final-probe", &physical)?;
+    let resolved = super::locks::resolved(&physical)?;
+    if !resolved.starts_with(&base) {
+        return Err(refusal());
+    }
+    Ok(resolved)
 }
 
-pub(crate) struct Staging {
+/// An exclusively created directory retained until publication or cleanup.
+pub struct Staging {
     path: Option<PathBuf>,
 }
 impl Staging {

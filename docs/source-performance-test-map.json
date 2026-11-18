@@ -1,0 +1,217 @@
+{
+  "schema": 1,
+  "baseline": "docs/rust-test-baseline.json",
+  "baseline_source_commit": "3bf1d839fd33e42a10b982bd8607a7052ea7c4cd",
+  "suite": "source_performance",
+  "required_features": [
+    "test-support",
+    "native-product"
+  ],
+  "count": 16,
+  "files": {
+    "tests/test_perf_contracts.py": 16
+  },
+  "case_types": {
+    "standard": 16,
+    "parameterized": 0
+  },
+  "native_only": true,
+  "verification": {
+    "status": "passed",
+    "command": "cargo test --locked --manifest-path engine-rust/Cargo.toml --features test-support --test source_performance",
+    "reported": 16,
+    "passed": 16,
+    "failed": 0,
+    "ignored": 0,
+    "source_oracle_processes": 0,
+    "individually_reported_cases": 16,
+    "mapping_set_equals_frozen_baseline_subset": true,
+    "clippy": "passed: cargo clippy --locked --manifest-path engine-rust/Cargo.toml --features test-support --lib --test source_vault --test source_performance --test repo_write_parity -- -D warnings",
+    "log": "/tmp/vault-salt-performance16-green.log",
+    "clippy_log": "/tmp/vault-salt-descriptor-clippy.log",
+    "elapsed_seconds": 11.37,
+    "working_tree_followup": "2026-11-14 salt fix and request-scoped listing snapshot; same16originalIDs/types.",
+    "later_working_tree_followup": {
+      "reason": "Final request snapshot and borrowed reconciliation comparison, including separately frozen NaN behavior observations.",
+      "log": "/workspace/work/http-list-snapshot-review/numeric-borrowed-green.txt",
+      "passed": 16,
+      "failed": 0,
+      "ignored": 0,
+      "elapsed_seconds": 11.86
+    }
+  },
+  "source_hashes": {
+    "tests/test_perf_contracts.py": "059a9fbf8670856fb061d0629a621827f47ac8c63572ff917f8285668daa109d"
+  },
+  "adaptations": [
+    "All 16 original tests are separately reported native #[test] functions preserving the original source ID, count, type, filesystem and API assertions. No Python runtime, oracle, ignored test, or repeated broad runner is used.",
+    "JSON read counters observe the real file read immediately before the native pool/config/profile/dashboard/token JSON decoding boundary. Byte snapshots used for atomic rollback are separate operations, matching the original read_text counter. Config cache hits do not emit a read. Positive read bounds verify the observer is active; original upper bounds remain unchanged.",
+    "Health conversion counts are emitted at the actual to_engine conversion used by both coherence and collision calculations. Five real stored profiles must produce exactly five conversions and five distinct source paths.",
+    "Whole-sweep persistence additionally verifies one actual atomic proxies.json publication. Token verification checks unchanged file modification time and zero actual atomic publications; revocation must take effect on the next real verify call.",
+    "Legacy Fernet ciphertext is generated natively using an independent PBKDF2(200000)/Fernet construction, then decrypted by the product. Current ciphertext must decrypt with PBKDF2(600000), fail under the legacy cost, and round-trip through the product. These assertions verify the real cryptographic cost rather than only inspecting a version constant.",
+    "HTTP clients are created before scoped measurement, matching the original TestClient lifetime; actual Axum requests execute normal root locking, read repair, conversion, admission, token and delete paths.",
+    "Original optional FastAPI/cryptography dependencies are native target dependencies, so no mapped case is skipped."
+  ],
+  "cases": [
+    {
+      "python_id": "tests/test_perf_contracts.py::test_reading_the_pool_does_not_reread_the_config_per_entry",
+      "rust_test": "reading_the_pool_does_not_reread_the_config_per_entry",
+      "rust_file": "engine-rust/tests/source_performance.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_perf_contracts.py::test_resolving_many_ids_costs_one_read_each_at_most",
+      "rust_test": "resolving_many_ids_costs_one_read_each_at_most",
+      "rust_file": "engine-rust/tests/source_performance.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_perf_contracts.py::test_a_single_update_reads_the_pool_once",
+      "rust_test": "a_single_update_reads_the_pool_once",
+      "rust_file": "engine-rust/tests/source_performance.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_perf_contracts.py::test_update_many_writes_once_for_the_whole_sweep",
+      "rust_test": "update_many_writes_once_for_the_whole_sweep",
+      "rust_file": "engine-rust/tests/source_performance.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_perf_contracts.py::test_update_many_preserves_the_secrets_it_did_not_touch",
+      "rust_test": "update_many_preserves_the_secrets_it_did_not_touch",
+      "rust_file": "engine-rust/tests/source_performance.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_perf_contracts.py::test_listing_profiles_reads_each_file_once",
+      "rust_test": "listing_profiles_reads_each_file_once",
+      "rust_file": "engine-rust/tests/source_performance.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]",
+      "native_adaptation": "Existing read-count case now requires exactly1realJSONread per healthy canonical twin; a later request reloads and repairs drift. Odd filenames/duplicate bodyIDs retain canonical authority, and raw500responses verify UTF8/readIOfailures without relaxing the existing strictJSON response assertions. No new case ID/count/type."
+    },
+    {
+      "python_id": "tests/test_perf_contracts.py::test_health_converts_each_profile_once",
+      "rust_test": "health_converts_each_profile_once",
+      "rust_file": "engine-rust/tests/source_performance.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_perf_contracts.py::test_verifying_a_token_does_not_rewrite_the_file_every_time",
+      "rust_test": "verifying_a_token_does_not_rewrite_the_file_every_time",
+      "rust_file": "engine-rust/tests/source_performance.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_perf_contracts.py::test_a_revoked_token_still_stops_working_immediately",
+      "rust_test": "a_revoked_token_still_stops_working_immediately",
+      "rust_file": "engine-rust/tests/source_performance.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_perf_contracts.py::test_a_v1_secret_still_opens_after_the_round_count_rose",
+      "rust_test": "a_v1_secret_still_opens_after_the_round_count_rose",
+      "rust_file": "engine-rust/tests/source_performance.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_perf_contracts.py::test_new_secrets_are_written_at_the_current_cost",
+      "rust_test": "new_secrets_are_written_at_the_current_cost",
+      "rust_file": "engine-rust/tests/source_performance.rs",
+      "original_type": "standard",
+      "original_fixtures": [],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_perf_contracts.py::test_a_secret_from_a_newer_version_says_so",
+      "rust_test": "a_secret_from_a_newer_version_says_so",
+      "rust_file": "engine-rust/tests/source_performance.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_perf_contracts.py::test_a_whole_vault_round_trips_across_the_version_change",
+      "rust_test": "a_whole_vault_round_trips_across_the_version_change",
+      "rust_file": "engine-rust/tests/source_performance.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_perf_contracts.py::test_deleting_many_profiles_takes_one_request",
+      "rust_test": "deleting_many_profiles_takes_one_request",
+      "rust_file": "engine-rust/tests/source_performance.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_perf_contracts.py::test_bulk_delete_reports_ids_that_were_not_there",
+      "rust_test": "bulk_delete_reports_ids_that_were_not_there",
+      "rust_file": "engine-rust/tests/source_performance.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    },
+    {
+      "python_id": "tests/test_perf_contracts.py::test_a_malformed_bulk_delete_is_a_4xx",
+      "rust_test": "a_malformed_bulk_delete_is_a_4xx",
+      "rust_file": "engine-rust/tests/source_performance.rs",
+      "original_type": "standard",
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "native_type": "#[test]"
+    }
+  ]
+}

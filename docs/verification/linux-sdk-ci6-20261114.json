@@ -1,0 +1,383 @@
+{
+  "schema": 1,
+  "run_id": 43553932142,
+  "head_sha": "68d3ef32d9d3b0718945bc6ed197cf4d1cbd52e6",
+  "checkout_sha": "ec0eff8d3e655c3428ef74652eb68d7e479b1482",
+  "source_binding": "Authenticated job checkouts name merge ec0eff8 from head68 and main6b; prior GitHub commit evidence in codeql-68 independently verifies head68 and ec0eff8 have the same tree5912136069b70587970d3fee68d3e83361ef2671. Each retained compiler receipt reports the same run generation, release-opt3 and disabled debug assertions. Binary SHA values are retained compiler receipts, not freshly recomputed binary downloads.",
+  "scope": "Read-only diagnosis; no Cargo, source edit, threshold change, retries or benchmark execution",
+  "shared_cause": "All selected SDK functional live tests passed. Strict performance acceptance rejects measured regressions or overlapping sample ranges. No missing SDK/license error caused these three failures.",
+  "decision_rule": {
+    "pass": "max(native)<min(reference), both time and memory for every measured scenario",
+    "regression": "min(native)>max(reference)",
+    "inconclusive": "all other ranges; overlap cannot count as pass"
+  },
+  "jobs": [
+    {
+      "backend": "playwright",
+      "job_id": 132323567895,
+      "artifact_id": 14098666225,
+      "zip_sha256": "514a90b1acf9a5a043efd9151c2468a9eeeaa5d55934a0f2261d9498b7be517e",
+      "job_log_sha256": "7a32aec520640952eb7bc15ecd338b8050dd51e931fbe9fc3d9cbd58b0e06c77",
+      "functional_live": {
+        "test": "selected_sdk_opens_real_persistent_context_in_native_owned_tree",
+        "passed": 1,
+        "failed": 0,
+        "seconds": 32.36,
+        "stdout_sha256": "e5921d2f93359b7533d5ba43b80c5202c27a9b486fe6733836ab6cb215e22d29"
+      },
+      "failed_stage": "entry-benchmark",
+      "browser_performance_stage": "skipped after entry failure",
+      "performance_sha256": "5106ae475b8418d23ce1f7220ff5f636ec4f2a133c98a3907fd89ff4a0608d58",
+      "performance_results": [
+        {
+          "scenario": "create",
+          "time_verdict": "inconclusive",
+          "memory_verdict": "inconclusive",
+          "pairs": 7,
+          "time_ns": {
+            "native_range": [
+              33995090,
+              46707996
+            ],
+            "reference_range": [
+              28670190,
+              90804934
+            ],
+            "native_median": 41701042,
+            "reference_median": 38070324,
+            "paired_delta_median": 2778083
+          },
+          "memory_bytes": {
+            "native_range": [
+              13135872,
+              13742080
+            ],
+            "reference_range": [
+              13254656,
+              13602816
+            ],
+            "native_median": 13582336,
+            "reference_median": 13398016,
+            "paired_delta_median": 12288
+          }
+        },
+        {
+          "scenario": "list",
+          "time_verdict": "regression",
+          "memory_verdict": "inconclusive",
+          "pairs": 7,
+          "time_ns": {
+            "native_range": [
+              34125016,
+              38371226
+            ],
+            "reference_range": [
+              26814610,
+              33567752
+            ],
+            "native_median": 35975890,
+            "reference_median": 29778079,
+            "paired_delta_median": 6197811
+          },
+          "memory_bytes": {
+            "native_range": [
+              13041664,
+              13824000
+            ],
+            "reference_range": [
+              13066240,
+              13606912
+            ],
+            "native_median": 13377536,
+            "reference_median": 13479936,
+            "paired_delta_median": -24576
+          }
+        },
+        {
+          "scenario": "vault-read",
+          "time_verdict": "inconclusive",
+          "memory_verdict": "inconclusive",
+          "pairs": 7,
+          "time_ns": {
+            "native_range": [
+              93518462,
+              200727018
+            ],
+            "reference_range": [
+              89946835,
+              194802553
+            ],
+            "native_median": 97041775,
+            "reference_median": 94667924,
+            "paired_delta_median": 3478216
+          },
+          "memory_bytes": {
+            "native_range": [
+              13332480,
+              13828096
+            ],
+            "reference_range": [
+              13250560,
+              13725696
+            ],
+            "native_median": 13635584,
+            "reference_median": 13631488,
+            "paired_delta_median": 40960
+          }
+        },
+        {
+          "scenario": "backup",
+          "time_verdict": "inconclusive",
+          "memory_verdict": "inconclusive",
+          "pairs": 7,
+          "time_ns": {
+            "native_range": [
+              26346024,
+              77560122
+            ],
+            "reference_range": [
+              24932014,
+              81142373
+            ],
+            "native_median": 28223185,
+            "reference_median": 76356644,
+            "paired_delta_median": -48143503
+          },
+          "memory_bytes": {
+            "native_range": [
+              13139968,
+              13791232
+            ],
+            "reference_range": [
+              13471744,
+              13885440
+            ],
+            "native_median": 13471744,
+            "reference_median": 13598720,
+            "paired_delta_median": -86016
+          }
+        },
+        {
+          "scenario": "http-list",
+          "time_verdict": "regression",
+          "memory_verdict": "regression",
+          "pairs": 7,
+          "time_ns": {
+            "native_range": [
+              31679926,
+              34255606
+            ],
+            "reference_range": [
+              23619492,
+              26008831
+            ],
+            "native_median": 32096253,
+            "reference_median": 24473888,
+            "paired_delta_median": 8319651
+          },
+          "memory_bytes": {
+            "native_range": [
+              14483456,
+              15163392
+            ],
+            "reference_range": [
+              13381632,
+              13856768
+            ],
+            "native_median": 14802944,
+            "reference_median": 13651968,
+            "paired_delta_median": 1122304
+          }
+        }
+      ],
+      "compiler_receipts": {
+        "numera-native-candidate.build.json": {
+          "receipt_sha256": "ac04cad581266aa1ed9a4a85808c158219de56868d7d53c29aa9f15350641f1d",
+          "source_sha": "3bf1d839fd33e42a10b982bd8607a7052ea7c4cd",
+          "generation": 43553932142,
+          "profile": "release-opt3",
+          "binary_sha256": "54cc1cd2e537fefe201438e81f40e64e42c00b7ab5e1f7341cc0c2458ba1dd1f",
+          "sdk_binary_sha256": "041a5387f399e242bccf2ef225b77c4f64c95bcf6c79bad658a1b0c24568fb15"
+        },
+        "numera-engine.build.json": {
+          "receipt_sha256": "139718d9f1dc2304bd6b46fab22a8f648b429bdfb71cb5492ce6978440215873",
+          "source_sha": "ec0eff8d3e655c3428ef74652eb68d7e479b1482",
+          "generation": 43553932142,
+          "profile": "release-opt3",
+          "binary_sha256": "a70c6f9c18f50abbaff3c9eba83f76d4fa1bdfe7cb2f9a469cdd91f85db9457b",
+          "sdk_binary_sha256": "041a5387f399e242bccf2ef225b77c4f64c95bcf6c79bad658a1b0c24568fb15"
+        },
+        "numera-browser-runtime.build.json": {
+          "receipt_sha256": "712f86e248444e2823762a53e545bfe279e7b393ee5fdea7782a7e9e1712fbb2",
+          "source_sha": "ec0eff8d3e655c3428ef74652eb68d7e479b1482",
+          "generation": 43553932142,
+          "profile": "release-opt3",
+          "binary_sha256": "041a5387f399e242bccf2ef225b77c4f64c95bcf6c79bad658a1b0c24568fb15",
+          "sdk_binary_sha256": "041a5387f399e242bccf2ef225b77c4f64c95bcf6c79bad658a1b0c24568fb15"
+        }
+      },
+      "checkpoint_receipt_sha256": "7254b241049ca5f3747975a03dc17b43ad277d90f9df5d29cafd7d526d1ece45",
+      "checkpoint_transport_patch_sha256": "8061692fc882228582a0a29cffa1867be3aea21b60f55dd3b2102842d3636136"
+    },
+    {
+      "backend": "patchright",
+      "job_id": 132323568048,
+      "artifact_id": 14098865747,
+      "zip_sha256": "dc2ce1571224350335265867cb94cabb206147bc99cc96b5f82dd5afe1bee4ef",
+      "job_log_sha256": "f4ec5760baca7b8a272bfb5dd84c39f60909c87a61f86adcdae07ea7db121cec",
+      "functional_live": {
+        "test": "selected_sdk_opens_real_persistent_context_in_native_owned_tree",
+        "passed": 1,
+        "failed": 0,
+        "seconds": 33.73,
+        "stdout_sha256": "23ed4b8c621a6a30f1a5153c1c8569fbbba1e686d57733ffddd0632125210d1a"
+      },
+      "failed_stage": "browser-benchmark",
+      "browser_performance_stage": "completed measurements, rejected strict verdict",
+      "performance_sha256": "0901669b4015866635fd2e87f151a5be3844094e5e721e5348fa1dc194cd4acf",
+      "performance_results": [
+        {
+          "scenario": "browser-cookie-export",
+          "time_verdict": "inconclusive",
+          "memory_verdict": "regression",
+          "pairs": 7,
+          "time_ns": {
+            "native_range": [
+              798697186,
+              891985232
+            ],
+            "reference_range": [
+              738096537,
+              920238461
+            ],
+            "native_median": 838245563,
+            "reference_median": 763149577,
+            "paired_delta_median": 60600649
+          },
+          "memory_bytes": {
+            "native_range": [
+              220155904,
+              223252480
+            ],
+            "reference_range": [
+              213241856,
+              215568384
+            ],
+            "native_median": 220995584,
+            "reference_median": 214831104,
+            "paired_delta_median": 6115328
+          }
+        }
+      ],
+      "compiler_receipts": {
+        "numera-native-candidate.build.json": {
+          "receipt_sha256": "d71b10109c1a527c4d63942463c9fed6dac7322737eaed3fbe59576b7f08ab89",
+          "source_sha": "3bf1d839fd33e42a10b982bd8607a7052ea7c4cd",
+          "generation": 43553932142,
+          "profile": "release-opt3",
+          "binary_sha256": "54cc1cd2e537fefe201438e81f40e64e42c00b7ab5e1f7341cc0c2458ba1dd1f",
+          "sdk_binary_sha256": "041a5387f399e242bccf2ef225b77c4f64c95bcf6c79bad658a1b0c24568fb15"
+        },
+        "numera-engine.build.json": {
+          "receipt_sha256": "c28031f6ba46e9e2b556aec2fb2c4d3f5b84541ec746731a5e99bb86bc72fd61",
+          "source_sha": "ec0eff8d3e655c3428ef74652eb68d7e479b1482",
+          "generation": 43553932142,
+          "profile": "release-opt3",
+          "binary_sha256": "a70c6f9c18f50abbaff3c9eba83f76d4fa1bdfe7cb2f9a469cdd91f85db9457b",
+          "sdk_binary_sha256": "041a5387f399e242bccf2ef225b77c4f64c95bcf6c79bad658a1b0c24568fb15"
+        },
+        "numera-browser-runtime.build.json": {
+          "receipt_sha256": "078de9db6315fa42389023c8c47998e4ddae254cafb3ede161125ce8890c2a09",
+          "source_sha": "ec0eff8d3e655c3428ef74652eb68d7e479b1482",
+          "generation": 43553932142,
+          "profile": "release-opt3",
+          "binary_sha256": "041a5387f399e242bccf2ef225b77c4f64c95bcf6c79bad658a1b0c24568fb15",
+          "sdk_binary_sha256": "041a5387f399e242bccf2ef225b77c4f64c95bcf6c79bad658a1b0c24568fb15"
+        }
+      },
+      "checkpoint_receipt_sha256": "7254b241049ca5f3747975a03dc17b43ad277d90f9df5d29cafd7d526d1ece45",
+      "checkpoint_transport_patch_sha256": "8061692fc882228582a0a29cffa1867be3aea21b60f55dd3b2102842d3636136"
+    },
+    {
+      "backend": "camoufox",
+      "job_id": 132329560546,
+      "artifact_id": 14098379912,
+      "zip_sha256": "2e36b433059fb992e30b0ec27874ef1d6fc28a08bf46ce3bc1f70b276198ce8f",
+      "job_log_sha256": "dea7ac6f2f3873449200d60dfe8c88b91cbaf7cc3e51dc15558ba420b8b0a0b9",
+      "functional_live": {
+        "test": "selected_sdk_opens_real_persistent_context_in_native_owned_tree",
+        "passed": 1,
+        "failed": 0,
+        "seconds": 25.0,
+        "stdout_sha256": "7c88bff8a48e3713b017164b0d0c45db1414d5a20854dbcd36a9bd07576bf04a"
+      },
+      "failed_stage": "browser-benchmark",
+      "browser_performance_stage": "completed measurements, rejected strict verdict",
+      "performance_sha256": "924c91c9049103303323ed1fb28ac984c50c23d852cecd23100efb87fc767a91",
+      "performance_results": [
+        {
+          "scenario": "browser-cookie-export",
+          "time_verdict": "inconclusive",
+          "memory_verdict": "inconclusive",
+          "pairs": 7,
+          "time_ns": {
+            "native_range": [
+              3563467018,
+              3785854935
+            ],
+            "reference_range": [
+              3578163966,
+              3709583801
+            ],
+            "native_median": 3665836971,
+            "reference_median": 3662111062,
+            "paired_delta_median": 42085605
+          },
+          "memory_bytes": {
+            "native_range": [
+              338477056,
+              361975808
+            ],
+            "reference_range": [
+              341766144,
+              362921984
+            ],
+            "native_median": 348880896,
+            "reference_median": 346959872,
+            "paired_delta_median": 1921024
+          }
+        }
+      ],
+      "compiler_receipts": {
+        "numera-native-candidate.build.json": {
+          "receipt_sha256": "648260f19f304933d2e9781b65b2fd1b13484397afe3eff4ab25d4e4aa537c84",
+          "source_sha": "3bf1d839fd33e42a10b982bd8607a7052ea7c4cd",
+          "generation": 43553932142,
+          "profile": "release-opt3",
+          "binary_sha256": "54cc1cd2e537fefe201438e81f40e64e42c00b7ab5e1f7341cc0c2458ba1dd1f",
+          "sdk_binary_sha256": "041a5387f399e242bccf2ef225b77c4f64c95bcf6c79bad658a1b0c24568fb15"
+        },
+        "numera-engine.build.json": {
+          "receipt_sha256": "7da4a7a591bfded4157c23863b43c125aef497f47ca9a940f6428ce2eeb126ba",
+          "source_sha": "ec0eff8d3e655c3428ef74652eb68d7e479b1482",
+          "generation": 43553932142,
+          "profile": "release-opt3",
+          "binary_sha256": "a70c6f9c18f50abbaff3c9eba83f76d4fa1bdfe7cb2f9a469cdd91f85db9457b",
+          "sdk_binary_sha256": "041a5387f399e242bccf2ef225b77c4f64c95bcf6c79bad658a1b0c24568fb15"
+        },
+        "numera-browser-runtime.build.json": {
+          "receipt_sha256": "99ecdd33a07f43d106b4e491beb988b0d51cc9e420636bf25d27b948ef84238e",
+          "source_sha": "ec0eff8d3e655c3428ef74652eb68d7e479b1482",
+          "generation": 43553932142,
+          "profile": "release-opt3",
+          "binary_sha256": "041a5387f399e242bccf2ef225b77c4f64c95bcf6c79bad658a1b0c24568fb15",
+          "sdk_binary_sha256": "041a5387f399e242bccf2ef225b77c4f64c95bcf6c79bad658a1b0c24568fb15"
+        }
+      },
+      "checkpoint_receipt_sha256": "7254b241049ca5f3747975a03dc17b43ad277d90f9df5d29cafd7d526d1ece45",
+      "checkpoint_transport_patch_sha256": "8061692fc882228582a0a29cffa1867be3aea21b60f55dd3b2102842d3636136"
+    }
+  ],
+  "proposal": "Retain failing verdicts and exact input/producer receipts. Existing performance owner can profile the separately evidenced CLI listing, HTTP listing and Patchright memory costs; Camoufox requires a meaningful implementation change or stronger measurements, without relabeling overlap as pass. No common SDK availability fix is indicated.",
+  "full_local_review_sha256": "f2c02bed9893b0aaa1453833d703ab9b45c4942cc83f35c58c0b9cbce6d01074"
+}

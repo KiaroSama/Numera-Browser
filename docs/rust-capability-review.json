@@ -1,0 +1,86 @@
+{
+  "schema": 1,
+  "reviewed_on": "2026-11-13",
+  "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+  "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+  "historical_inventory": "docs/migration-coverage.json",
+  "historical_inventory_sha256": "c410787a88121f5c53f2c66b67c31e2b0c6cc281afbccc7c95d304ae1fb491dc",
+  "reviewed_legacy_ids": 907,
+  "exact_id_union": true,
+  "groups": [
+    {
+      "evidence": "docs/capability-evidence-browser.json",
+      "sha256": "3d562016ea7c3efaaae827f8adbbab4dddfe14b67737f1719ccba170e9bf44e5",
+      "legacy_ids": 84,
+      "review_dispositions": {
+        "implemented": 78,
+        "partial": 6
+      }
+    },
+    {
+      "evidence": "docs/capability-evidence-cli.json",
+      "sha256": "efacb6d61be2eb1e7849ae224157b316101111bd918853d5a35ba1a1b7483742",
+      "legacy_ids": 93,
+      "review_dispositions": {
+        "partial": 4,
+        "implemented": 89
+      }
+    },
+    {
+      "evidence": "docs/capability-evidence-http.json",
+      "sha256": "f8e51c9fd30626e31cc2f5ffdb9705c6d7836ed02f9ab38b8d4a25bab857a531",
+      "legacy_ids": 240,
+      "review_dispositions": {
+        "fused_or_typed_adaptation": 157,
+        "direct_native_behavior": 83
+      }
+    },
+    {
+      "evidence": "docs/capability-evidence-network.json",
+      "sha256": "0b8d91fbba5913dc090916b0f44cf5075385fe5fdb562bc29cf27fe00a89f691",
+      "legacy_ids": 105,
+      "review_dispositions": {
+        "fused_or_typed_adaptation": 61,
+        "direct_native_behavior": 44
+      }
+    },
+    {
+      "evidence": "docs/capability-evidence-ownership.json",
+      "sha256": "cbb4b7d005aa174931fbc04bedf38f4ebc0528916a47a1c7865c1ab24292defc",
+      "legacy_ids": 100,
+      "review_dispositions": {
+        "implemented": 64,
+        "fused-into-explicit-native-owner": 36
+      }
+    },
+    {
+      "evidence": "docs/capability-evidence-storage.json",
+      "sha256": "f611fe9637dd3a9e3a453f760b13a4a3ec148b9d365d48471f84362d7361b89c",
+      "legacy_ids": 285,
+      "review_dispositions": {
+        "reviewed_behavioral_mapping": 240,
+        "needs_more_evidence": 24,
+        "reviewed_architectural_adaptation": 21
+      }
+    }
+  ],
+  "meaning": "The complete historical ID set has individually documented Rust replacements, asserted behavior and explicit adaptations. An ID mapping or symbol count is not an execution verdict. Family artifacts retain their reviewed typed, composed and platform evidence limits.",
+  "runtime_verification": "The maintained source/native/dashboard inventories and actual test reports are independently enforced by current Native CI. Consult the exact PR head for hosted platform, product packaging and browser acceptance results.",
+  "platform_limits": [
+    "Local execution evidence is Linux-host evidence.",
+    "The storage family identifies24 original Windows lock symbols whose hosted execution was pending at review time.",
+    "The CLI family records actual Linux controlling-terminal success/refusal and echo restoration; Windows physical-console interaction is not claimed."
+  ],
+  "generated_runtime": {
+    "rust_sources": "browser-page-rust",
+    "artifact": "browser-page-rust/generated/runtime.js",
+    "artifact_sha256": "d9df186713bf3517efb0d9785b2f0aed40bab9d4edc35307690c90a47fb2d9ca",
+    "receipt": "browser-page-rust/generated/receipt.json",
+    "largest_reviewed_sdk_frame_bytes": 484016,
+    "sdk_frame_limit_bytes": 1048576,
+    "artifact_bytes": 480089,
+    "receipt_sha256": "2106e86dab77733ed6523ea630501327165336e7a014de5037c19df36bfbc645",
+    "verification": "docs/verification/browser-page-printer-20261114.json"
+  },
+  "binding_boundary": "Minimal serialized native-to-WebView calls and the origin/top-frame-scoped Tauri update capability binding remain platform glue; application behavior, update authorization and state are Rust."
+}

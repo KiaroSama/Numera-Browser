@@ -1,0 +1,114 @@
+{
+  "schema": 1,
+  "review_date": "2026-11-14",
+  "status": "Three actual Windows SDK acquisition jobs were refused by finite-process ownership checks. No resource-pin/digest/browser-version/path failure was reported; no process identity is inferred from the unknown member.",
+  "source": {
+    "run": 43553932142,
+    "head_sha": "68d3ef32d9d3b0718945bc6ed197cf4d1cbd52e6",
+    "actual_checkout": "ec0eff8d3e655c3428ef74652eb68d7e479b1482"
+  },
+  "jobs": [
+    {
+      "backend": "playwright",
+      "job": 132331262296,
+      "actual_failure": "Vendor provisioning command failed (exit=0, natural_settlement=Some(false)); outer command exited1.",
+      "last_progress": "Provisioning pinned playwright SDK transport",
+      "artifact": 14099170777,
+      "artifact_bytes": 406,
+      "artifact_sha256": "71a073edbc0c578a01c8e75a1b91250f9c46dd246e0f5389d6dab43929dac74d",
+      "log_bytes": 116755,
+      "log_sha256": "5c79b42baa41c3c705a7cf4ed0a94e97cf3fd98b4edf7c2994f648938f1c4166",
+      "limit": "The inner command and remaining process identity are not in this tiny artifact; no claim of telemetry or Node identity."
+    },
+    {
+      "backend": "patchright",
+      "job": 132333886589,
+      "actual_failure": "Vendor provisioning command failed (exit=0, natural_settlement=Some(false)); outer command exited1.",
+      "last_progress": "Pinned SDK transports and browser progress reached Camoufox browser/addon acquisition.",
+      "artifact": 14099091311,
+      "artifact_bytes": 410,
+      "artifact_sha256": "8577cce0312a9852673c118d57caec6830faeeca3a9c3e6d77eeed4ce0cfa67e",
+      "log_bytes": 164083,
+      "log_sha256": "a52ec28279255b0891edf645c927b68f23364d779e05c0d09f352878f2bee6eb",
+      "limit": "The inner command and remaining process identity are not in this tiny artifact; do not equate it with the earlier-stage Playwright refusal."
+    },
+    {
+      "backend": "camoufox",
+      "job": 132334487559,
+      "actual_failure": "The complete acquisition and inventory succeeded, then the outer owned command failed: Native worker left a running owned subprocess.",
+      "actual_stdout": [
+        "Vendor bytes acquired and pinned; run prepare-resources to inventory this directory",
+        "Inventoried provisioned resources at D:\\a\\_temp/numera-live-resources"
+      ],
+      "artifact": 14099631492,
+      "artifact_bytes": 2356,
+      "artifact_sha256": "c51370428a584ee1a1df9090e7d8ec5ffdc1b2e4ebe4dfb2244ad456fc445f05",
+      "log_bytes": 112733,
+      "log_sha256": "76d97f1d012010a04cf702499069308af9b3098ed09e7d2bcd3f064e1dfa390e",
+      "owned_member": {
+        "leader_pid": 3884,
+        "leader_exited": true,
+        "natural_settlement": false,
+        "natural_reason": "live-member",
+        "complete": true,
+        "member_count": 1,
+        "pid": 4440,
+        "membership": "verified",
+        "wait": "live",
+        "image_class": "unclassified",
+        "image_error_code": 5,
+        "total_processes": 49
+      },
+      "owned_member_json_sha256": "4bdd5a527b2024f764f2a8ef0f5b0a60cca0f38a433650b676c8372c70b48fb7"
+    }
+  ],
+  "comparison": {
+    "successful_product_job": 132322948497,
+    "successful_acquisition_started_at": "2026-11-14T04:25:42Z",
+    "successful_acquisition_completed_at": "2026-11-14T04:26:53Z",
+    "observed_difference": "The same committed68 workflow sets VSCMD_SKIP_SENDTELEMETRY=1 before Windows product compilation. The product log prints that environment value and acquisition succeeds. Required-SDK jobs omit the corresponding setup/env; their complete logs contain no such setting.",
+    "independent_product_limits": "The same product job later failed at WiX CNDL0103 after compiling the actual application; that separate installer error is documented in windows-product-wix-20261114.json.",
+    "causality": "This is a concrete configuration difference and a supported optional-telemetry hypothesis. It does not identify PID4440 or prove this flag fixes any of the three refusals."
+  },
+  "telemetry_gate_review": {
+    "script_context_url": "https://github.com/mstorsjo/msvc-wine/blob/5dd115047b7ddcbb53cbc8b5b14163a20f4334fe/patches/Common7/Tools/VsDevCmd.bat.patch",
+    "script_git_blob_sha1": "b520948c96402e98cb681d90ce8647320b0c243e",
+    "downloaded_patch_sha256": "b464eaf1dbfa88b7466c4d7bf11ee4ca0b0db809eb38d16014f2546760f6759e",
+    "microsoft_hosted_script_excerpt": "https://github.com/microsoft/vcpkg/issues/8756",
+    "supported_fact": "VsDevCmd's optional Send-VsDevShellTelemetry block is gated by an empty VSCMD_SKIP_SENDTELEMETRY value. The excerpt's guarded operations are the telemetry PowerShell command; compiler/toolchain initialization is not replaced. Existing product68 actual binary compilation, native signer and acquisition passed with value1.",
+    "scope": "This is a script-supported DevCmd gate, not a guarantee that every MSVC telemetry path or arbitrary child observes it. No registry, service, linker or process-name exemption is proposed."
+  },
+  "suggested_review_diff": {
+    "file": ".github/workflows/native-ci.yml",
+    "change": "Add VSCMD_SKIP_SENDTELEMETRY: \"1\" to the existing workflow env mapping. Retain the existing product-specific setup step for the smallest one-line diff; it becomes redundant but consistent.",
+    "linux_macos": "The variable is consumed by the Windows DevCmd script; it adds no executable, compiler argument or runtime library setting to other OS jobs.",
+    "unchanged": "All budgets, required SDKs, finite-tree natural-settlement checks, unknown/live-member rejection and test counts/types remain unchanged. A fresh Windows execution and bounded identity evidence are still required.",
+    "applied": true,
+    "application_status": "The reviewed one-line setting is now present in the shared working tree. This agent supplied the proposal and source evidence; fresh hosted SDK acquisition is still required to verify its effect."
+  },
+  "evidence": {
+    "directory": "/workspace/work/ci6-windows-sdk",
+    "complete_decoded_logs": [
+      "132331262296.log",
+      "132333886589.log",
+      "132334487559.log"
+    ],
+    "job_metadata": [
+      "playwright-job.json",
+      "patchright-job.json",
+      "camoufox-job.json"
+    ],
+    "artifact_metadata": "artifact-metadata.json",
+    "tiny_archives": "All three ZIP bytes were downloaded and independently SHA256 matched authenticated API metadata.",
+    "camoufox_extracted": [
+      "camoufox-owned-members.json",
+      "camoufox-command.log",
+      "camoufox-command.stderr.log"
+    ],
+    "source_receipts": [
+      "vsdevcmd-source.patch",
+      "vcpkg-8756.json"
+    ],
+    "format": "Complete authenticated connector logs retained with LF line endings; no large resource or product artifact was downloaded."
+  }
+}

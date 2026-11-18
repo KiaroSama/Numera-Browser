@@ -1,0 +1,130 @@
+{
+  "schema": 1,
+  "review_date": "2026-11-14",
+  "status": "CI369 confirms the candle source-path fix and failure-log preservation. Windows product now fails in light's .NET temporary-file creation. Child TEMP spelling correction is prepared; focused hosted MSI/NSIS proof remains mandatory.",
+  "ci369_light_failure": {
+    "run": 43562788658,
+    "job": 132351190399,
+    "head_sha": "369e93bfdca84021b66098a43656edb09ff65b07",
+    "actual_checkout": "5b8f74aed64e5e53cf0f2c0ae93977c9d145dcf9",
+    "product_step_started_at": "2026-11-14T06:13:40Z",
+    "product_step_completed_at": "2026-11-14T06:23:47Z",
+    "candle_result": "candle3.14.1 successfully compiled the generated main.wxs using the ordinary D: path; the previous CNDL0103 did not recur.",
+    "light_error": "light.exe : error LGHT0001 : Illegal characters in path.",
+    "actual_stack": "System.Security.Permissions.FileIOPermission.EmulateFileIOPermissionChecks -> System.IO.Path.GetFullPath -> System.CodeDom.Compiler.TempFileCollection.EnsureTempNameCreated -> WixBinder.get_TempFilesLocation -> WixBinder constructor",
+    "classification": "The light command's input/output arguments are ordinary paths. This fails while constructing temporary-file state, before resource binding; no live-Job, signing, CAB-size or deadline failure is established by this evidence.",
+    "artifact": {
+      "id": 14102620676,
+      "bytes": 7664,
+      "sha256": "dedd6b46251018c7489d908d07328d1d1aa4e702195e462384166d2d338ae973",
+      "downloaded_and_independently_hash_verified": true,
+      "retained_stderr_bytes": 25303,
+      "retained_stderr_sha256": "d59387c7459a932df9a6a8cd86af1c1ca284b7413104bf7c1d444788290ce8e4",
+      "retention_result": "The two build/native-phase-tauri-7380-0 stdout/stderr logs survived failed-product rollback and were uploaded. Stdout is empty; complete redacted stderr is retained."
+    },
+    "complete_job_log": "/workspace/work/ci369-windows-product/job.log",
+    "job_log_utf8_bytes": 527023,
+    "job_log_sha256": "20ae8c36e698cb5294e2cffaff34e63a3217a17bc0e5d548d57649ee652b5ff1"
+  },
+  "owned_temp_export_correction": {
+    "source_chain": "ci::root uses std canonicalize; Windows Temporary is created below that verbatim root. owned::run_streamed previously exported raw Temporary.path into TMPDIR/TMP/TEMP. Pinned Tauri2.10.4 clear_env_for_wix preserves TMP/TEMP. The legacy .NET temporary-file consumer therefore received the unsupported verbatim spelling despite corrected Tauri work/resource/frontend arguments.",
+    "tauri_source": "tauri-bundler2.10.4 src/bundle/windows/msi/mod.rs300-309 clear_env_for_wix; the same already-verified crate pin is recorded below.",
+    "microsoft_reference_source": "https://github.com/microsoft/referencesource/blob/3b1eaf5203992df69de44c783a3eda37d3d4cd10/System/compmod/system/codedom/compiler/TempFiles.cs",
+    "microsoft_source_git_blob": "5a41e550deb7dd321ea7fabc46fbbfeac0b79b2d",
+    "microsoft_source_sha256": "33ca96bf439992c7bcdc9762062b2534daa8400411743496f57a44b111cb9ec7",
+    "reference_contract": "Default temporary-file naming calls Path.GetTempPath (322-323); EnsureTempNameCreated calls Path.GetFullPath then FileIOPermission (204-217), matching the actual stack. This reference-source corroboration is not a claimed hash of the runner's installed CLR binary.",
+    "implementation": "The exact child temporary-environment export boundary uses ci::owned_paths::temporary_environment_path. Existing directory required; pinned dunce safely chooses ordinary Windows drive/UNC representation or returns a clear InvalidInput. Non-Windows spelling is unchanged, preserving Linux's short Chromium socket paths.",
+    "ownership": "Temporary.path still feeds Units and cleanup. No physical-directory substitution, system TEMP fallback, repository-root change, generic PATH stripping, registry/service/linker alteration or deadline change.",
+    "existing_control": "migration::migration_owned_command retains its original ID and exit7/idle/cleanup checks. An actual compiled Rust child checks all three variables and OS temp resolution identify the same physical directory by canonicalization/shared-file IO; Windows requires ordinary prefixes. Direct controls cover canonical identity, missing paths and a real unsafe NT trailing-space directory.",
+    "msvc_metadata": "Exact helper and Windows-only controls passed x86_64-pc-windows-msvc metadata strict Clippy; this is typing, not Windows execution.",
+    "msvc_helper_sha256": "7562d7ba6e91c754d96b1b8d7052a5712d2a958dd901681583ecb85c0f7e422b",
+    "metadata_harness": "/workspace/work/ci369-windows-product/temp-metadata/check.rs",
+    "local_execution_status": "The coherent Tools run includes migration::migration_owned_command and macos::macos_phase_build: all643 passed;0 failed;0 ignored;71.72s. Tools all-target strict Clippy passed10.35s and the default CLI/library build passed42.22s. Frozen source hashes were independently compared with the tested manifest. Actual Windows Light/MSI/NSIS execution remains pending the next hosted product lane.",
+    "local_execution_log": "/workspace/work/ci8-final-source643.log",
+    "local_execution_log_sha256": "a840a0fed252749a7cf35d6b7f561128c3179dc0d6394357dc1b570778fa05c0",
+    "local_clippy_log": "/workspace/work/ci8-final-clippy.log",
+    "local_clippy_log_sha256": "d69aea85808574be28fcb70680702cae1789eb46ae64676063e27c06190218b3",
+    "local_build_log": "/workspace/work/ci8-final-build.log",
+    "local_build_log_sha256": "2832b0ab6b783dc8cf28a57a38f36669a12f4a94cd4e1bcf4bd339685ecd1ebb"
+  },
+  "source": {
+    "run": 43553932142,
+    "job": 132322948497,
+    "head_sha": "68d3ef32d9d3b0718945bc6ed197cf4d1cbd52e6",
+    "actual_checkout": "ec0eff8d3e655c3428ef74652eb68d7e479b1482",
+    "tree": "5912136069b70587970d3fee68d3e83361ef2671"
+  },
+  "observed": {
+    "job_conclusion": "failure",
+    "product_step_started_at": "2026-11-14T04:26:53Z",
+    "product_step_completed_at": "2026-11-14T04:38:56Z",
+    "application_compile": "Actual Tauri release build completed in6m28s; the previous real ephemeral signer case also passed.",
+    "installer_error": "candle.exe : error CNDL0103 : The system cannot find the file '\\\\?\\D:\\a\\Numera-Browser\\Numera-Browser\\build\\native-product\\.desktop-build\\target\\release\\wix\\x64\\main.wxs' with type 'Source'.",
+    "separate_signer_evidence": "windows-signer-tamper-20261114.json",
+    "unchanged_bounds": "wall1800s/idle300s; actual failure after723s, not a deadline extension request."
+  },
+  "cause": {
+    "application": "product::build_desktop used std::fs canonicalize on the work directory and supplied that Windows verbatim path through CARGO_TARGET_DIR.",
+    "upstream_cli": "Pinned tauri-cli2.12.4 src/interface/rust.rs1274 get_cargo_target_dir preserves cargo metadata target_directory; get_target_dir appends the release profile.",
+    "upstream_bundler": "Pinned tauri-bundler2.10.4 windows/msi/mod.rs494 appends wix/arch;788 writes main.wxs; run_candle378-431 passes wxs_file_path.to_string_lossy directly as the source argument, unlike the separately simplified -dSourceDir.",
+    "bundler_crate_sha256": "ec436f80e3f9dc5f87e449652cc21fd546760b5ee6b4646cec30e95b68fd9104",
+    "contract": "The exact real candle command and CNDL0103 identify the unsupported prefix. The source path is short; this was not a missing source-generation or long-path timeout inference."
+  },
+  "fix": {
+    "files": [
+      "tools/xtask/src/product.rs",
+      "tools/xtask/Cargo.toml",
+      "tools/xtask/Cargo.lock",
+      "tools/xtask/tests/source_ci/candidate.rs"
+    ],
+    "behavior": "desktop_tool_path uses dunce::canonicalize to preserve actual canonical identity while choosing a safe Win32-compatible representation. Retained unsupported prefixes produce a clear InvalidInput; no raw prefix stripping occurs. Work/CARGO_TARGET_DIR, runtime resources and frontendDist all use this external-tool boundary.",
+    "dependency": "Direct dunce=1.0.5, already present at the same checksum/version in the authoritative lock. The only lock change adds dunce to numera-xtask's dependency vector.",
+    "unchanged": "MSI and NSIS both remain required. No tool pin, installer type, OS-signature check or wall/idle budget is relaxed."
+  },
+  "checks": {
+    "existing_case": "candidate_cases::candidate_layout_integrity",
+    "host": "1 passed;0 failed;0 ignored;642 filtered out;0.42s. Real temp path with spaces, canonical identity/roundtrip and missing-path refusal, plus original resource/layout/diagnostic controls.",
+    "windows_controls": "The same existing case contains real Windows canonical/verbatim-input and drive-output assertions, actual NT trailing-space name refusal and >280-UTF16-unit path refusal. Length uses encode_wide, including when the test workspace contains Unicode. These OS behaviors require the next Windows test execution; no local execution is claimed.",
+    "tools_strict_clippy": "All targets passed5.38s.",
+    "host_log": "/workspace/work/ci7-wix-layout.log",
+    "host_log_sha256": "1b943702f25ef078da2df0e49e0ccdfe9b75c2d304c840a9d13524f01035c8ba",
+    "lint_log": "/workspace/work/ci7-wix-clippy.log",
+    "lint_log_sha256": "e0bd43cfc33e8585f6960cc3e3799900a2e3bdd53b5808966c30b47a4caf717f",
+    "msvc": "The exact production path helper, existing Windows path-control block and new reparse metadata accessor were extracted into a metadata-only scratch crate with cached dunce1.0.5; clippy-driver --target x86_64-pc-windows-msvc --emit metadata -D warnings passed. This proves typing, not Windows execution.",
+    "msvc_directory": "/workspace/work/wix-path-msvc",
+    "msvc_helper_sha256": "05cf5d499cf9f7dec54f6f5efd857624890b201f7430b95f794e70aa9a1a2326",
+    "msvc_harness_sha256": "b9f15cd549ac99104be1b185fd16bab0f52b3ca45ef17a7984474ebb84174eeb",
+    "msvc_reparse_source_sha256": "aa1a45c4223565ed00b119b6a77acc42c51bc77ffd18f04a9e2f23f959d39791",
+    "inventory": "No test IDs, test types or case counts added/removed."
+  },
+  "evidence": {
+    "directory": "/workspace/work/ci6-windows-product",
+    "job_log": "job.log",
+    "job_log_bytes": 534892,
+    "job_log_sha256": "a42eac3f40f87baeaadcceaef20e773583dd8c1974dd77652b4aa282c0770153",
+    "log_format": "Complete authenticated decoded job transcript retained locally with LF line endings.",
+    "job_metadata": "job-metadata.json",
+    "artifact": {
+      "id": 14098748784,
+      "bytes": 1992,
+      "sha256": "3cae47eb329b2cb09530c5d27d940e31071304efffa26011937499ad1c64e7a5",
+      "locally_downloaded_and_hash_verified": true,
+      "contents": "Only owned progress logs; actual candle error is retained in the authenticated job transcript."
+    }
+  },
+  "failure_evidence_preservation": {
+    "observed_defect": "The downloaded artifact contains only owned progress logs. product::build removed the whole exclusively created output after the bundler failed, including its .desktop-build/tauri-build stdout/stderr transcripts; include-hidden-files:true could not preserve files that rollback deleted.",
+    "implementation": "product::rollback_failed_build invokes product_diagnostics::preserve_failure before removing the failed output. Only the two fixed Tauri stdout/stderr file names are eligible. The complete pair is copied to unique create_new build/native-phase-tauri-<pid>-<counter>.log and matching .stderr.log files already covered by the workflow glob.",
+    "source_guards": "symlink_metadata rejects symbolic links and Windows reparse points on source directories/logs. Both logs must be regular files no larger than16MiB; bounded reads and post-read size/type checks reject changed/oversized input. Complete contents are re-redacted, checked against the same bound, then written and synced through exclusively created handles. Incomplete destination pairs are removed on write failure.",
+    "failure_policy": "Diagnostic persistence failure is reported separately. The exclusively created failed product is always removed, and the original boxed bundler error is returned unchanged. No vendor bytes, partial installers, configuration, arbitrary adjacent files or failed product tree are published.",
+    "existing_case": "candidate_cases::candidate_layout_integrity, retaining its original ID/count/type.",
+    "real_controls": "Actual compiled child exit7; complete20,000-lambda stdout; original error equality; vendor-tree deletion; child-secret and newly planted secret re-redaction; unique names; directory, oversized sparse file, missing log and linked source rejection; existing destination preservation and rollback even after persistence failure. Windows adds a real directory-junction control without requiring symbolic-link privilege; its execution awaits the next Windows lane.",
+    "final_host_result": "1 passed;0 failed;0 ignored;642 filtered out;0.56s.",
+    "final_host_log": "/workspace/work/ci7-wix-retention-layout.log",
+    "final_host_log_sha256": "94abadffe17f98fc8cefd0e1bac23735d8ed5df541a8d9d80f458d4d3d675e6d",
+    "final_tools_strict_clippy": "All targets passed5.66s.",
+    "final_lint_log": "/workspace/work/ci7-wix-retention-clippy.log",
+    "final_lint_log_sha256": "7d465da7b17717afd891f9f548fe5efbefff7e597e9394dcee7e493849f06e91"
+  },
+  "remaining": "CI369 verified candle source-path compatibility and complete failed-bundler artifact persistence. The next actual Windows native product lane must prove light with the corrected child temp environment and create/verify both MSI and NSIS installers; local Linux and metadata checks cannot establish that result."
+}

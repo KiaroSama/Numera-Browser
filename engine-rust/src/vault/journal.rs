@@ -1,4 +1,7 @@
-use base64::{Engine, engine::general_purpose::STANDARD};
+use base64::{
+    Engine, alphabet,
+    engine::general_purpose::{GeneralPurpose, GeneralPurposeConfig},
+};
 use serde_json::Value;
 use std::{fs, path::Path};
 
@@ -11,22 +14,33 @@ pub enum JournalState {
 }
 
 pub fn usable_descriptor(value: &Value) -> bool {
-    let Some(salt) = value["salt"].as_str().filter(|v| !v.trim().is_empty()) else {
+    if !value.is_object() {
+        return false;
+    }
+    let Some(salt) = value["salt"]
+        .as_str()
+        .filter(|v| !crate::pool::trim(v).is_empty())
+    else {
         return false;
     };
     if value["verifier"]
         .as_str()
-        .is_none_or(|v| v.trim().is_empty())
+        .is_none_or(|v| crate::pool::trim(v).is_empty())
     {
         return false;
     }
-    STANDARD.decode(salt).is_ok()
+    GeneralPurpose::new(
+        &alphabet::STANDARD,
+        GeneralPurposeConfig::new().with_decode_allow_trailing_bits(true),
+    )
+    .decode(salt)
+    .is_ok()
 }
 
 pub fn descriptors(record: &Value) -> (Value, Value) {
     let new = record
         .get("new")
-        .filter(|v| v.as_object().is_some_and(|v| !v.is_empty()))
+        .filter(|v| crate::conversion::truth(v))
         .cloned()
         .unwrap_or_else(
             || serde_json::json!({"salt":record["salt"],"verifier":record["verifier"]}),

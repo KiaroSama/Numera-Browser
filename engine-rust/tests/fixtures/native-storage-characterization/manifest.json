@@ -1,0 +1,103 @@
+{
+  "schema": 1,
+  "kind": "frozen immutable historical observations; data only",
+  "baseline_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+  "baseline_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+  "source_trees": {
+    "engine/numera": "25cd7f34689e4a1688c426fdb7d4a6c4b898998e",
+    "engine/tests": "ec1a33ab13ca6ee1dd6e7c629de4118ab848c82a"
+  },
+  "runtime_python": false,
+  "development_capture": "Pinned Python 3.13.15; baseline_source.activate verified immutable Git blobs; each original Rust test provided its original observer and actual generated JSON inputs. No observer code is stored in this corpus.",
+  "observations": [
+    {
+      "rust_test": "settings_instance_cache_matches_original_file_identity_and_detached_results",
+      "rust_file": "engine-rust/tests/config_parity.rs",
+      "observer_sha256": "24356012d092b25d3b3aad957ef6238c210af98e6a78f2eab6f8e51e9686add1",
+      "captured_stdout_sha256": "504a166ea31b6d8d05037c4175cea3ceba5cf65a0ff5885b94ae83ccecfe6fef",
+      "output": "engine-rust/tests/fixtures/native-storage-characterization/settings_instance_cache_matches_original_file_identity_and_detached_results.json",
+      "output_sha256": "041a08647e5da7cba7675a9a0c0716cf077a5a4e75bf2109f3faddf2117d976f",
+      "root_substitution": "/owned-fixture",
+      "matrix_rows": 11
+    },
+    {
+      "rust_test": "direct_settings_and_current_thread_replacement_match_original",
+      "rust_file": "engine-rust/tests/config_parity.rs",
+      "observer_sha256": "d57829d48732d9332eaee548158dc58781f35987aefe18a1586831a728f573e2",
+      "captured_stdout_sha256": "166db78d815584d23b787c63b810c242a32bc702c53a1cf8e2e2b649a634bb3b",
+      "output": "engine-rust/tests/fixtures/native-storage-characterization/direct_settings_and_current_thread_replacement_match_original.json",
+      "output_sha256": "e821a58f32722072b212e12f35b3094f73d62d9830da579f55f4917a67645d7e",
+      "root_substitution": "/owned-fixture",
+      "matrix_rows": 71
+    },
+    {
+      "rust_test": "optional_proxy_reads_match_original_without_rewriting_storage",
+      "rust_file": "engine-rust/tests/model_parity.rs",
+      "observer_sha256": "6679017f494b9aa95a3edf17383ef1bd4314fbada669cfda80876cf092e0dbe9",
+      "captured_stdout_sha256": "d3251941afb78121d27c85259568b1f31f12838019aeb82c2c4c1e4324c78672",
+      "output": "engine-rust/tests/fixtures/native-storage-characterization/optional_proxy_reads_match_original_without_rewriting_storage.json",
+      "output_sha256": "868951cb86f2ef536ee42093d23639d194126ad7df9a99263a82c2b8956af13e",
+      "root_substitution": "/owned-fixture",
+      "matrix_rows": 15
+    },
+    {
+      "rust_test": "pooled_proxy_text_boundaries_match_original_full_results",
+      "rust_file": "engine-rust/tests/pool_parse_parity.rs",
+      "observer_sha256": "e6180229707d65c425779a28bbaa1ba3df4a077da2b17a5390fc083e7305bea5",
+      "captured_stdout_sha256": "d0406da66c653353819b1ddece8d162c6049445c0201cbfee08ef77f298e992e",
+      "output": "engine-rust/tests/fixtures/native-storage-characterization/pooled_proxy_text_boundaries_match_original_full_results.json",
+      "output_sha256": "99ebf865f52f820bb5c2c343eaa7886472ea77d1e32bf8c10cf004385cbd2ab2",
+      "root_substitution": "/owned-fixture",
+      "matrix_rows": 50,
+      "input": "engine-rust/tests/fixtures/native-storage-characterization/pooled_proxy_text_boundaries_match_original_full_results.inputs.json",
+      "input_sha256": "1dc054aeee27c17586eea63d90147dbf66fe03f4e1c74d16166dc3e418a7c238",
+      "captured_input_sha256": "354b6af11f1804d760fdb9067b62321cf755be45a6edbdbcd8e3de355517a3c0"
+    },
+    {
+      "rust_test": "pooled_proxy_integer_and_whitespace_normalization_matches_original",
+      "rust_file": "engine-rust/tests/pool_normalize_parity.rs",
+      "observer_sha256": "a74ec1c31dd650e8733380889d26fe2866404ebd0eb0f19b9c9ebe612f9b7736",
+      "captured_stdout_sha256": "42cbbd0b0c27efc1b1fe310015fb613295b89e8a7f6b56d1dc300263646f625f",
+      "output": "engine-rust/tests/fixtures/native-storage-characterization/pooled_proxy_integer_and_whitespace_normalization_matches_original.json",
+      "output_sha256": "2a0e83cb552af9e77ca5c84b394e1d87de744cb3ad2c1ff8004e2ca63523eaa1",
+      "root_substitution": "/owned-fixture",
+      "matrix_rows": 47,
+      "input": "engine-rust/tests/fixtures/native-storage-characterization/pooled_proxy_integer_and_whitespace_normalization_matches_original.inputs.json",
+      "input_sha256": "2b97586cdb4d870d7bc3b33982c1d2062b89657bdf2d0a004bfefdc6267a64bf",
+      "captured_input_sha256": "79980e45fa8c6e3ba5335c1bee5a83f2ce944062a71bd3d9dfcff0d8965340d7"
+    },
+    {
+      "rust_test": "relative_activity_http_matches_original_without_rewriting_storage",
+      "rust_file": "engine-rust/tests/profile_read_parity.rs",
+      "observer_sha256": "bc0bde0f0bcf4c2f3497e735c0aa89223c9cbe09cf8ef73d8faf0158ed285990",
+      "captured_stdout_sha256": "99e8ac7ffc04899059dd4550b0ce0dbbc5a2f78bb05d144aec5321c185f82e4f",
+      "output": "engine-rust/tests/fixtures/native-storage-characterization/relative_activity_http_matches_original_without_rewriting_storage.json",
+      "output_sha256": "df75d981a728815bedd28a4540bc8413ebe4b2cb0af04e3ed966937f23def247",
+      "root_substitution": "/owned-fixture",
+      "matrix_rows": 24,
+      "input": "engine-rust/tests/fixtures/native-storage-characterization/relative_activity_http_matches_original_without_rewriting_storage.inputs.json",
+      "input_sha256": "55b54efd200024c62b9a00b6dcb9c74b905f3568e10b172d733629bb55d0ea6c",
+      "captured_input_sha256": "b86e55f758f578166ecc1fa922c2e7ba4ed8efcf7816f18638de2f0aa49620ef"
+    },
+    {
+      "rust_test": "ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift",
+      "rust_file": "engine-rust/tests/repo_lookup_parity.rs",
+      "observer_sha256": "28a88db3e208bfe8a7991eae0f4024bf43678b24cdb3f1a4b5d5b229d8be8b09",
+      "captured_stdout_sha256": "e445be8fc4af5b03b9a88e8c5f12a64508b3eefa81243a10c885443dbbd9b293",
+      "output": "engine-rust/tests/fixtures/native-storage-characterization/ordinary_encrypted_reads_preserve_original_bytes_and_repair_only_real_drift.json",
+      "output_sha256": "4fe898944de592f4b1543e255b3130d837b2fb8c46bfc35cc5e73003f0c2350b",
+      "root_substitution": "/owned-fixture",
+      "matrix_rows": 26
+    },
+    {
+      "rust_test": "failed_delete_rollback_preserves_causes_and_actual_recovery_paths",
+      "rust_file": "engine-rust/src/storage/repo_delete_tests.rs",
+      "observer_sha256": "afabf4191b50f619d186a92a6a04e9df84e0d75000cc5f11269251f627c1da6e",
+      "captured_stdout_sha256": "8cd53b35113162c8aa10b2f36e3d9032c7403dc6fc4c58d7d6dd2c0e4b5807c1",
+      "output": "engine-rust/tests/fixtures/native-storage-characterization/failed_delete_rollback_preserves_causes_and_actual_recovery_paths.json",
+      "output_sha256": "a2b32ad38327dda81d9c6370f5bf228fa1aabe2fb07b7bf637e4a3f99ec74f2c",
+      "root_substitution": "/owned-fixture",
+      "matrix_rows": 4
+    }
+  ]
+}

@@ -1,0 +1,147 @@
+[
+  {
+    "name": "explicit",
+    "app": "/workspace/work/native-characterization-kid720n6/explicit/app",
+    "home": "/workspace/work/native-characterization-kid720n6/explicit/home",
+    "cwd": "/workspace/work/native-characterization-kid720n6/explicit/cwd",
+    "root": "/workspace/work/native-characterization-kid720n6/explicit/selected data",
+    "logs": "/workspace/work/native-characterization-kid720n6/explicit/selected data/logs",
+    "override": null,
+    "inherited": "/workspace/work/native-characterization-kid720n6/explicit/environment data",
+    "argv": [
+      "--data-dir",
+      "/workspace/work/native-characterization-kid720n6/explicit/selected data",
+      "list",
+      "--json"
+    ],
+    "record": "/workspace/work/native-characterization-kid720n6/explicit/case.json"
+  },
+  {
+    "name": "environment",
+    "app": "/workspace/work/native-characterization-kid720n6/environment/app",
+    "home": "/workspace/work/native-characterization-kid720n6/environment/home",
+    "cwd": "/workspace/work/native-characterization-kid720n6/environment/cwd",
+    "root": "/workspace/work/native-characterization-kid720n6/environment/environment data",
+    "logs": "/workspace/work/native-characterization-kid720n6/environment/environment data/logs",
+    "override": null,
+    "inherited": "/workspace/work/native-characterization-kid720n6/environment/environment data",
+    "argv": [
+      "list",
+      "--json"
+    ],
+    "record": "/workspace/work/native-characterization-kid720n6/environment/case.json"
+  },
+  {
+    "name": "portable",
+    "app": "/workspace/work/native-characterization-kid720n6/portable/app",
+    "home": "/workspace/work/native-characterization-kid720n6/portable/home",
+    "cwd": "/workspace/work/native-characterization-kid720n6/portable/cwd",
+    "root": "/workspace/work/native-characterization-kid720n6/portable/app/data",
+    "logs": "/workspace/work/native-characterization-kid720n6/portable/app/data/logs",
+    "override": null,
+    "inherited": null,
+    "argv": [
+      "list",
+      "--json"
+    ],
+    "record": "/workspace/work/native-characterization-kid720n6/portable/case.json"
+  },
+  {
+    "name": "home",
+    "app": "/workspace/work/native-characterization-kid720n6/home/app",
+    "home": "/workspace/work/native-characterization-kid720n6/home/home",
+    "cwd": "/workspace/work/native-characterization-kid720n6/home/cwd",
+    "root": "/workspace/work/native-characterization-kid720n6/home/home/.numera",
+    "logs": "/workspace/work/native-characterization-kid720n6/home/home/.numera/logs",
+    "override": null,
+    "inherited": null,
+    "argv": [
+      "list",
+      "--json"
+    ],
+    "record": "/workspace/work/native-characterization-kid720n6/home/case.json"
+  },
+  {
+    "name": "legacy",
+    "app": "/workspace/work/native-characterization-kid720n6/legacy/app",
+    "home": "/workspace/work/native-characterization-kid720n6/legacy/home",
+    "cwd": "/workspace/work/native-characterization-kid720n6/legacy/cwd",
+    "root": "/workspace/work/native-characterization-kid720n6/legacy/home/.persona",
+    "logs": "/workspace/work/native-characterization-kid720n6/legacy/home/.persona/logs",
+    "override": null,
+    "inherited": null,
+    "argv": [
+      "list",
+      "--json"
+    ],
+    "record": "/workspace/work/native-characterization-kid720n6/legacy/case.json"
+  },
+  {
+    "name": "override",
+    "app": "/workspace/work/native-characterization-kid720n6/override/app",
+    "home": "/workspace/work/native-characterization-kid720n6/override/home",
+    "cwd": "/workspace/work/native-characterization-kid720n6/override/cwd",
+    "root": "/workspace/work/native-characterization-kid720n6/override/selected data",
+    "logs": "/workspace/work/native-characterization-kid720n6/override/separate logs",
+    "override": "/workspace/work/native-characterization-kid720n6/override/separate logs",
+    "inherited": null,
+    "argv": [
+      "--data-dir",
+      "/workspace/work/native-characterization-kid720n6/override/selected data",
+      "list",
+      "--json"
+    ],
+    "record": "/workspace/work/native-characterization-kid720n6/override/case.json"
+  },
+  {
+    "name": "relative",
+    "app": "/workspace/work/native-characterization-kid720n6/relative/app",
+    "home": "/workspace/work/native-characterization-kid720n6/relative/home",
+    "cwd": "/workspace/work/native-characterization-kid720n6/relative/cwd",
+    "root": "/workspace/work/native-characterization-kid720n6/relative/selected data",
+    "logs": "/workspace/work/native-characterization-kid720n6/relative/cwd/relative logs",
+    "override": "relative logs",
+    "inherited": null,
+    "argv": [
+      "--data-dir",
+      "/workspace/work/native-characterization-kid720n6/relative/selected data",
+      "list",
+      "--json"
+    ],
+    "record": "/workspace/work/native-characterization-kid720n6/relative/case.json"
+  },
+  {
+    "name": "empty-override",
+    "app": "/workspace/work/native-characterization-kid720n6/empty-override/app",
+    "home": "/workspace/work/native-characterization-kid720n6/empty-override/home",
+    "cwd": "/workspace/work/native-characterization-kid720n6/empty-override/cwd",
+    "root": "/workspace/work/native-characterization-kid720n6/empty-override/selected data",
+    "logs": "/workspace/work/native-characterization-kid720n6/empty-override/cwd",
+    "override": "",
+    "inherited": null,
+    "argv": [
+      "--data-dir",
+      "/workspace/work/native-characterization-kid720n6/empty-override/selected data",
+      "list",
+      "--json"
+    ],
+    "record": "/workspace/work/native-characterization-kid720n6/empty-override/case.json"
+  },
+  {
+    "name": "unavailable",
+    "app": "/workspace/work/native-characterization-kid720n6/unavailable/app",
+    "home": "/workspace/work/native-characterization-kid720n6/unavailable/home",
+    "cwd": "/workspace/work/native-characterization-kid720n6/unavailable/cwd",
+    "root": "/workspace/work/native-characterization-kid720n6/unavailable/selected data",
+    "logs": "/workspace/work/native-characterization-kid720n6/unavailable/selected data/logs",
+    "override": null,
+    "inherited": null,
+    "argv": [
+      "--data-dir",
+      "/workspace/work/native-characterization-kid720n6/unavailable/selected data",
+      "list",
+      "--json"
+    ],
+    "record": "/workspace/work/native-characterization-kid720n6/unavailable/case.json"
+  }
+]

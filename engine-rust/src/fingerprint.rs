@@ -1,4 +1,7 @@
-use crate::{devices::catalog, models::Fingerprint, python_random::PythonRandom};
+use crate::{
+    devices::{self, SeededSampler, catalog},
+    models::Fingerprint,
+};
 use serde_json::{Value, json};
 use std::{error::Error, fmt};
 
@@ -12,8 +15,8 @@ impl fmt::Display for GenerationError {
 impl Error for GenerationError {}
 
 #[derive(Default)]
-pub struct GenerateOptions<'a> {
-    pub seed: i64,
+pub struct GenerateOptions<'a, S = i64> {
+    pub seed: S,
     pub os: Option<&'a str>,
     pub locale: Option<&'a str>,
     pub country: Option<&'a str>,
@@ -30,39 +33,84 @@ fn text(value: &Value) -> Result<&str, GenerationError> {
         .as_str()
         .ok_or(GenerationError("Device catalog text is invalid"))
 }
-fn pick(rng: &mut PythonRandom, values: &Value, weights: &Value) -> Result<Value, GenerationError> {
+fn pick(
+    rng: &mut SeededSampler,
+    values: &Value,
+    weights: &Value,
+) -> Result<Value, GenerationError> {
     let values = pool(values)?;
-    if values.is_empty() {
-        return Err(GenerationError("Device catalog pool is empty"));
-    }
-    let index = if let Some(weights) = weights
+    let weights = weights
         .as_array()
         .filter(|weights| !weights.is_empty() && weights.len() == values.len())
-    {
-        let numbers: Result<Vec<u64>, _> = weights
-            .iter()
-            .map(|w| {
-                w.as_u64()
-                    .ok_or(GenerationError("Device catalog weight is invalid"))
-            })
-            .collect();
-        let numbers = numbers?;
-        if numbers.iter().sum::<u64>() == 0 {
-            return Err(GenerationError("Device catalog weight is zero"));
-        }
-        rng.weighted(&numbers)
+        .map(|weights| {
+            weights
+                .iter()
+                .map(|weight| {
+                    weight
+                        .as_f64()
+                        .ok_or(GenerationError("Device catalog weight is invalid"))
+                })
+                .collect::<Result<Vec<_>, _>>()
+        })
+        .transpose()?;
+    devices::weighted(rng, values, weights.as_deref())
+        .cloned()
+        .map_err(|error| match error {
+            devices::SamplingError::EmptyPool => GenerationError("Device catalog pool is empty"),
+            devices::SamplingError::NonPositiveTotal => {
+                GenerationError("Device catalog weight is zero")
+            }
+            _ => GenerationError("Device catalog weight is invalid"),
+        })
+}
+
+pub fn user_agent(
+    os: &str,
+    chrome: &str,
+    version: &str,
+    model: &str,
+) -> Result<String, GenerationError> {
+    let data =
+        &catalog().map_err(|_| GenerationError("Cannot parse embedded device catalog"))?["catalog"];
+    let model = if model.is_empty() {
+        text(&data["ANDROID_MODELS"][0])?
     } else {
-        rng.below(values.len())
+        model
     };
-    Ok(values[index].clone())
+    let token = text(&data["OS_UA_TOKEN"][os])?
+        .replace("{v}", if version.is_empty() { "14" } else { version })
+        .replace(
+            "{v_}",
+            &if version.is_empty() {
+                "18.5".to_owned()
+            } else {
+                version.to_owned()
+            }
+            .replace('.', "_"),
+        )
+        .replace("{model}", model);
+    Ok(if os == "ios" {
+        format!(
+            "Mozilla/5.0 ({token}) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/{chrome} Mobile/15E148 Safari/604.1"
+        )
+    } else {
+        format!(
+            "Mozilla/5.0 ({token}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{chrome}{} Safari/537.36",
+            if os == "android" { " Mobile" } else { "" }
+        )
+    })
 }
 
 /// Explicit seed is required at this pure seam; entropy belongs at the CLI boundary.
-pub fn generate(options: GenerateOptions<'_>) -> Result<Fingerprint, GenerationError> {
+pub fn generate<S: Into<serde_json::Number>>(
+    options: GenerateOptions<'_, S>,
+) -> Result<Fingerprint, GenerationError> {
+    let seed = options.seed.into();
     let root = catalog().map_err(|_| GenerationError("Cannot parse embedded device catalog"))?;
     let d = &root["catalog"];
     let w = &d["WEIGHTS"];
-    let mut rng = PythonRandom::new(options.seed);
+    let mut rng = SeededSampler::from_number(&seed)
+        .map_err(|_| GenerationError("Fingerprint seed must be an integer"))?;
     let os = match options.os.filter(|v| !v.is_empty()) {
         Some(os) => os.to_lowercase(),
         None if options.mobile => {
@@ -124,20 +172,8 @@ pub fn generate(options: GenerateOptions<'_>) -> Result<Fingerprint, GenerationE
             .ok_or(GenerationError("Locale catalog is empty"))?
             .clone()
     };
-    let font_pool = pool(&d["FONTS"][&os])?;
-    let mut fonts: Vec<String> = if mobile {
-        font_pool
-            .iter()
-            .map(|v| text(v).map(str::to_owned))
-            .collect::<Result<_, _>>()?
-    } else {
-        let count = 6.max(font_pool.len() - rng.below(7));
-        rng.sample_indices(font_pool.len(), count)
-            .iter()
-            .map(|&i| text(&font_pool[i]).map(str::to_owned))
-            .collect::<Result<_, _>>()?
-    };
-    fonts.sort();
+    let fonts = devices::sample_fonts(&mut rng, &os)
+        .map_err(|_| GenerationError("Device catalog font is invalid"))?;
     let (cameras, microphones, speakers) = if mobile {
         (2, 1, 1)
     } else {
@@ -154,33 +190,11 @@ pub fn generate(options: GenerateOptions<'_>) -> Result<Fingerprint, GenerationE
         };
         (cameras, microphones, speakers)
     };
-    let token = text(&d["OS_UA_TOKEN"][&os])?
-        .replace("{v}", if version.is_empty() { "14" } else { version })
-        .replace(
-            "{v_}",
-            &if version.is_empty() {
-                "18.5".to_owned()
-            } else {
-                version.to_owned()
-            }
-            .replace('.', "_"),
-        )
-        .replace("{model}", &model);
-    let chrome_text = text(&chrome)?;
-    let ua = if os == "ios" {
-        format!(
-            "Mozilla/5.0 ({token}) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/{chrome_text} Mobile/15E148 Safari/604.1"
-        )
-    } else {
-        format!(
-            "Mozilla/5.0 ({token}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{chrome_text}{} Safari/537.36",
-            if os == "android" { " Mobile" } else { "" }
-        )
-    };
+    let ua = user_agent(&os, text(&chrome)?, version, &model)?;
     Fingerprint::from_record(&json!({"os":os,"user_agent":ua,"platform":d["NAV_PLATFORM"][&os],"ch_platform":d["CH_PLATFORM"][&os],
         "chrome_version":chrome,"screen_width":sw,"screen_height":sh,"viewport_width":vw,"viewport_height":vh,
         "hardware_concurrency":cores,"device_memory":memory,"webgl_vendor":gpu[0],"webgl_renderer":gpu[1],
-        "locale":locale,"timezone":locales[&locale][0],"languages":locales[&locale][1],"is_mobile":mobile,"seed":options.seed,
+        "locale":locale,"timezone":locales[&locale][0],"languages":locales[&locale][1],"is_mobile":mobile,"seed":seed,
         "fonts":fonts,"cameras":cameras,"microphones":microphones,"speakers":speakers,"os_version":version,"device_model":model,
         "max_touch_points":touch,"device_pixel_ratio":dpr})).map_err(|_| GenerationError("Generated identity is invalid"))
 }

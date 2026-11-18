@@ -10,6 +10,150 @@ use std::{
 };
 use tower::ServiceExt;
 mod common;
+#[path = "profile_read_parity/divergence.rs"]
+mod divergence;
+#[path = "profile_read_parity/read_view.rs"]
+mod read_view;
+
+#[test]
+fn relative_activity_http_matches_original_without_rewriting_storage()
+-> Result<(), Box<dyn std::error::Error>> {
+    use serde_json::json;
+
+    let temporary = common::TempDirectory::new("relative-activity")?;
+    let anchor = 1_800_000_000_u64;
+    let clock = || -> Result<f64, Box<dyn std::error::Error>> { Ok(anchor as f64) };
+    // Integer records retain exact JSON values across both serializers.
+    let wide = |number: f64| serde_json::from_str::<Value>(&format!("{number:.0}"));
+    let cases = [
+        ("true", json!(true)),
+        ("false", json!(false)),
+        ("null", Value::Null),
+        ("zero", json!(0)),
+        ("negative-zero", json!(-0.0)),
+        ("empty-text", json!("")),
+        ("empty-list", json!([])),
+        ("empty-object", json!({})),
+        ("numeric-text", json!("1")),
+        ("text", json!("invalid")),
+        ("list", json!([1])),
+        ("object", json!({"time": 1})),
+        ("future", json!(anchor + 3600)),
+        ("recent", json!(anchor - 15)),
+        ("minutes", json!(anchor - 150)),
+        ("hours", json!(anchor - 7500)),
+        ("days", json!(anchor - 180000)),
+        ("negative", json!(-1)),
+        ("fractional", json!(-0.5)),
+        ("wide-positive", wide(1e100)?),
+        ("wide-negative", wide(-1e100)?),
+        ("maximum-positive", wide(f64::MAX)?),
+        ("maximum-negative", wide(-f64::MAX)?),
+        (
+            "wide-integer",
+            serde_json::from_str("-1208925819614629174706177")?,
+        ),
+    ];
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_time()
+        .build()?;
+    let observed = runtime.block_on(async {
+        let mut observed = Vec::new();
+        for (index, (name, timestamp)) in cases.into_iter().enumerate() {
+            let root = temporary.path().join(format!("native-{index}"));
+            fs::create_dir_all(root.join("dashboard"))?;
+            let record = json!({"id":"a","name":"Activity α 日本語","notes":"Preserved",
+                                "_created":1.0,"_last_active":timestamp});
+            let stored = serde_json::to_vec_pretty(&record)?;
+            let path = root.join("dashboard/a.json");
+            fs::write(&path, &stored)?;
+            let app = numera_core::http::profile_routes::router_with_clock(
+                root,
+                "fixture-api",
+                "fixture-host",
+                anchor as f64,
+            )?;
+            let wall_started = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs_f64();
+            let started = clock()?;
+            let response = tokio::time::timeout(
+                Duration::from_secs(5),
+                app.oneshot(
+                    Request::get("/api/profiles")
+                        .header("authorization", "Bearer fixture-api")
+                        .body(Body::empty())?,
+                ),
+            )
+            .await??;
+            let status = response.status().as_u16();
+            let bytes =
+                tokio::time::timeout(Duration::from_secs(5), to_bytes(response.into_body(), 8192))
+                    .await??;
+            let ended = clock()?;
+            let wall_ended = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs_f64();
+            assert!(
+                wall_ended >= wall_started,
+                "Activity request wall clock moved backwards"
+            );
+            assert!(ended >= started, "Activity request clock moved backwards");
+            assert_eq!(
+                fs::read(&path)?,
+                stored,
+                "Activity read rewrote stored bytes: {name}"
+            );
+            let body = match serde_json::from_slice::<Value>(&bytes) {
+                Ok(body) => body,
+                Err(_) => Value::String(String::from_utf8(bytes.to_vec())?),
+            };
+            observed.push(json!({"name":name,"record":record,"started":started,
+                                 "ended":ended,"status":status,"body":body}));
+        }
+        Ok::<_, Box<dyn std::error::Error>>(observed)
+    })?;
+    let input = temporary.path().join("observations.json");
+    fs::write(&input, serde_json::to_vec(&observed)?)?;
+    // Immutable original observation; native operations and full assertions remain live.
+    let expected: Vec<Value> = serde_json::from_str(include_str!(
+        "fixtures/native-storage-characterization/relative_activity_http_matches_original_without_rewriting_storage.json"
+    ))?;
+    let original_inputs: Value = serde_json::from_str(include_str!(
+        "fixtures/native-storage-characterization/relative_activity_http_matches_original_without_rewriting_storage.inputs.json"
+    ))?;
+    let request_inputs = observed
+        .iter()
+        .map(|row| {
+            json!({
+                "name":row["name"], "record":row["record"],
+                "started":row["started"], "ended":row["ended"],
+            })
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(
+        json!(request_inputs),
+        original_inputs,
+        "Original activity matrix changed"
+    );
+    assert_eq!(
+        fs::read(&input)?,
+        serde_json::to_vec(&observed)?,
+        "Activity read changed inputs"
+    );
+    assert_eq!(expected.len(), 24, "Activity HTTP observations missing");
+    assert_eq!(observed.len(), expected.len());
+    for (actual, expected) in observed.iter().zip(expected) {
+        assert_eq!(
+            actual["status"], expected["status"],
+            "Relative activity HTTP status differs: {}",
+            actual["name"]
+        );
+        assert_eq!(
+            actual["body"], expected["body"],
+            "Relative activity HTTP result differs: {}",
+            actual["name"]
+        );
+    }
+    temporary.cleanup()?;
+    Ok(())
+}
 
 #[test]
 fn profile_http_read_repairs_only_view_and_reports_uncertain_claim_as_running()

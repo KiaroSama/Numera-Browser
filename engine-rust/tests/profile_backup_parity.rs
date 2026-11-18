@@ -2,6 +2,7 @@ use base64::{Engine, engine::general_purpose::STANDARD};
 use numera_core::storage::repo::ProfileRepo;
 use serde_json::{Map, Value};
 use std::{fs, io::Read, path::PathBuf};
+mod common;
 
 #[test]
 fn backup_carries_complete_profile_and_session_or_refuses_before_output()
@@ -57,7 +58,7 @@ fn backup_carries_complete_profile_and_session_or_refuses_before_output()
                 let mut members = Map::new();
                 for index in 0..zip.len() {
                     let mut file = zip.by_index(index)?;
-                    let name = file.name().to_owned();
+                    let name = file.name()?.into_owned();
                     let mut bytes = Vec::new();
                     file.read_to_end(&mut bytes)?;
                     let value = if name == "profile.json" {
@@ -81,9 +82,8 @@ fn backup_carries_complete_profile_and_session_or_refuses_before_output()
 fn backup_refuses_its_own_session_destination_without_changing_existing_output()
 -> Result<(), Box<dyn std::error::Error>> {
     let oracle: Value = serde_json::from_str(include_str!("fixtures/profile-backup.json"))?;
-    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("target/test-temp")
-        .join(format!("backup-placement-{}", std::process::id()));
+    let temporary = common::TempDirectory::new("backup-placement")?;
+    let root = temporary.path().to_owned();
     fs::create_dir_all(root.join("profiles"))?;
     let result = (|| -> Result<(), Box<dyn std::error::Error>> {
         fs::write(
@@ -102,7 +102,8 @@ fn backup_refuses_its_own_session_destination_without_changing_existing_output()
         assert_eq!(fs::read(&destination)?, b"existing archive must survive");
         assert_eq!(fs::read_dir(&session)?.count(), 1);
         // Relative paths retain caller-CWD semantics without mutating global CWD.
-        let relative_root = root.strip_prefix(std::env::current_dir()?)?;
+        let cwd = common::canonical_path(&std::env::current_dir()?)?;
+        let relative_root = root.strip_prefix(cwd)?;
         let relative = relative_root.join("outside.zip");
         assert_eq!(
             repo.backup("fixture-backup", &relative, "fixture-host")?,
@@ -111,6 +112,6 @@ fn backup_refuses_its_own_session_destination_without_changing_existing_output()
         assert!(root.join("outside.zip").is_file());
         Ok(())
     })();
-    fs::remove_dir_all(root)?;
+    temporary.cleanup()?;
     result
 }

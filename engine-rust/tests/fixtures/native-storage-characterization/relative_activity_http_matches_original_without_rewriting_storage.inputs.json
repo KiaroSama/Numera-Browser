@@ -1,0 +1,294 @@
+[
+  {
+    "name": "true",
+    "record": {
+      "id": "a",
+      "name": "Activity \u03b1 \u65e5\u672c\u8a9e",
+      "notes": "Preserved",
+      "_created": 1.0,
+      "_last_active": true
+    },
+    "started": 1800000000.0,
+    "ended": 1800000000.0
+  },
+  {
+    "name": "false",
+    "record": {
+      "id": "a",
+      "name": "Activity \u03b1 \u65e5\u672c\u8a9e",
+      "notes": "Preserved",
+      "_created": 1.0,
+      "_last_active": false
+    },
+    "started": 1800000000.0,
+    "ended": 1800000000.0
+  },
+  {
+    "name": "null",
+    "record": {
+      "id": "a",
+      "name": "Activity \u03b1 \u65e5\u672c\u8a9e",
+      "notes": "Preserved",
+      "_created": 1.0,
+      "_last_active": null
+    },
+    "started": 1800000000.0,
+    "ended": 1800000000.0
+  },
+  {
+    "name": "zero",
+    "record": {
+      "id": "a",
+      "name": "Activity \u03b1 \u65e5\u672c\u8a9e",
+      "notes": "Preserved",
+      "_created": 1.0,
+      "_last_active": 0
+    },
+    "started": 1800000000.0,
+    "ended": 1800000000.0
+  },
+  {
+    "name": "negative-zero",
+    "record": {
+      "id": "a",
+      "name": "Activity \u03b1 \u65e5\u672c\u8a9e",
+      "notes": "Preserved",
+      "_created": 1.0,
+      "_last_active": -0.0
+    },
+    "started": 1800000000.0,
+    "ended": 1800000000.0
+  },
+  {
+    "name": "empty-text",
+    "record": {
+      "id": "a",
+      "name": "Activity \u03b1 \u65e5\u672c\u8a9e",
+      "notes": "Preserved",
+      "_created": 1.0,
+      "_last_active": ""
+    },
+    "started": 1800000000.0,
+    "ended": 1800000000.0
+  },
+  {
+    "name": "empty-list",
+    "record": {
+      "id": "a",
+      "name": "Activity \u03b1 \u65e5\u672c\u8a9e",
+      "notes": "Preserved",
+      "_created": 1.0,
+      "_last_active": []
+    },
+    "started": 1800000000.0,
+    "ended": 1800000000.0
+  },
+  {
+    "name": "empty-object",
+    "record": {
+      "id": "a",
+      "name": "Activity \u03b1 \u65e5\u672c\u8a9e",
+      "notes": "Preserved",
+      "_created": 1.0,
+      "_last_active": {}
+    },
+    "started": 1800000000.0,
+    "ended": 1800000000.0
+  },
+  {
+    "name": "numeric-text",
+    "record": {
+      "id": "a",
+      "name": "Activity \u03b1 \u65e5\u672c\u8a9e",
+      "notes": "Preserved",
+      "_created": 1.0,
+      "_last_active": "1"
+    },
+    "started": 1800000000.0,
+    "ended": 1800000000.0
+  },
+  {
+    "name": "text",
+    "record": {
+      "id": "a",
+      "name": "Activity \u03b1 \u65e5\u672c\u8a9e",
+      "notes": "Preserved",
+      "_created": 1.0,
+      "_last_active": "invalid"
+    },
+    "started": 1800000000.0,
+    "ended": 1800000000.0
+  },
+  {
+    "name": "list",
+    "record": {
+      "id": "a",
+      "name": "Activity \u03b1 \u65e5\u672c\u8a9e",
+      "notes": "Preserved",
+      "_created": 1.0,
+      "_last_active": [
+        1
+      ]
+    },
+    "started": 1800000000.0,
+    "ended": 1800000000.0
+  },
+  {
+    "name": "object",
+    "record": {
+      "id": "a",
+      "name": "Activity \u03b1 \u65e5\u672c\u8a9e",
+      "notes": "Preserved",
+      "_created": 1.0,
+      "_last_active": {
+        "time": 1
+      }
+    },
+    "started": 1800000000.0,
+    "ended": 1800000000.0
+  },
+  {
+    "name": "future",
+    "record": {
+      "id": "a",
+      "name": "Activity \u03b1 \u65e5\u672c\u8a9e",
+      "notes": "Preserved",
+      "_created": 1.0,
+      "_last_active": 1800003600
+    },
+    "started": 1800000000.0,
+    "ended": 1800000000.0
+  },
+  {
+    "name": "recent",
+    "record": {
+      "id": "a",
+      "name": "Activity \u03b1 \u65e5\u672c\u8a9e",
+      "notes": "Preserved",
+      "_created": 1.0,
+      "_last_active": 1799999985
+    },
+    "started": 1800000000.0,
+    "ended": 1800000000.0
+  },
+  {
+    "name": "minutes",
+    "record": {
+      "id": "a",
+      "name": "Activity \u03b1 \u65e5\u672c\u8a9e",
+      "notes": "Preserved",
+      "_created": 1.0,
+      "_last_active": 1799999850
+    },
+    "started": 1800000000.0,
+    "ended": 1800000000.0
+  },
+  {
+    "name": "hours",
+    "record": {
+      "id": "a",
+      "name": "Activity \u03b1 \u65e5\u672c\u8a9e",
+      "notes": "Preserved",
+      "_created": 1.0,
+      "_last_active": 1799992500
+    },
+    "started": 1800000000.0,
+    "ended": 1800000000.0
+  },
+  {
+    "name": "days",
+    "record": {
+      "id": "a",
+      "name": "Activity \u03b1 \u65e5\u672c\u8a9e",
+      "notes": "Preserved",
+      "_created": 1.0,
+      "_last_active": 1799820000
+    },
+    "started": 1800000000.0,
+    "ended": 1800000000.0
+  },
+  {
+    "name": "negative",
+    "record": {
+      "id": "a",
+      "name": "Activity \u03b1 \u65e5\u672c\u8a9e",
+      "notes": "Preserved",
+      "_created": 1.0,
+      "_last_active": -1
+    },
+    "started": 1800000000.0,
+    "ended": 1800000000.0
+  },
+  {
+    "name": "fractional",
+    "record": {
+      "id": "a",
+      "name": "Activity \u03b1 \u65e5\u672c\u8a9e",
+      "notes": "Preserved",
+      "_created": 1.0,
+      "_last_active": -0.5
+    },
+    "started": 1800000000.0,
+    "ended": 1800000000.0
+  },
+  {
+    "name": "wide-positive",
+    "record": {
+      "id": "a",
+      "name": "Activity \u03b1 \u65e5\u672c\u8a9e",
+      "notes": "Preserved",
+      "_created": 1.0,
+      "_last_active": 10000000000000000159028911097599180468360808563945281389781327557747838772170381060813469985856815104
+    },
+    "started": 1800000000.0,
+    "ended": 1800000000.0
+  },
+  {
+    "name": "wide-negative",
+    "record": {
+      "id": "a",
+      "name": "Activity \u03b1 \u65e5\u672c\u8a9e",
+      "notes": "Preserved",
+      "_created": 1.0,
+      "_last_active": -10000000000000000159028911097599180468360808563945281389781327557747838772170381060813469985856815104
+    },
+    "started": 1800000000.0,
+    "ended": 1800000000.0
+  },
+  {
+    "name": "maximum-positive",
+    "record": {
+      "id": "a",
+      "name": "Activity \u03b1 \u65e5\u672c\u8a9e",
+      "notes": "Preserved",
+      "_created": 1.0,
+      "_last_active": 179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368
+    },
+    "started": 1800000000.0,
+    "ended": 1800000000.0
+  },
+  {
+    "name": "maximum-negative",
+    "record": {
+      "id": "a",
+      "name": "Activity \u03b1 \u65e5\u672c\u8a9e",
+      "notes": "Preserved",
+      "_created": 1.0,
+      "_last_active": -179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368
+    },
+    "started": 1800000000.0,
+    "ended": 1800000000.0
+  },
+  {
+    "name": "wide-integer",
+    "record": {
+      "id": "a",
+      "name": "Activity \u03b1 \u65e5\u672c\u8a9e",
+      "notes": "Preserved",
+      "_created": 1.0,
+      "_last_active": -1208925819614629174706177
+    },
+    "started": 1800000000.0,
+    "ended": 1800000000.0
+  }
+]

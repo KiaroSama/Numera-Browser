@@ -1,5 +1,14 @@
-# Parity-gated Rust engine migration
+# Rust migration boundary
 
-Accepted2026-10-07: migrate the application engine, CLI/API/MCP, storage/vault and process ownership to Rust, retain Tauri, and type the existing React UI with TypeScript. Browser SDK-specific adapters may temporarily use Python/Node because official Playwright has no Rust binding and stable Camoufox compatibility is not established by its prerelease TypeScript SDK.
+Status: superseded in November 2026 by the owner's complete Rust rewrite request.
 
-Keep the original implementation deployable until explicit owner approval to remove it. Do not change default execution until every required capability is implemented and parity, real Windows/Linux four-engine behavior, source-fixture drift, representative replay, no measurable time/memory regression and rollback are verified. This deliberately costs a temporary second implementation; a whole-engine Python forwarding facade, partial port or successful static build is not a completed Rust migration.
+The original October 7 decision retained the Python application during migration
+and proposed a React/TypeScript UI. The owner subsequently selected Rust for the
+application, dashboard, browser preparation, tests and build tooling, authorized
+retiring the previous implementation, and required one unmerged pull request.
+
+The current architecture is documented in [architecture](../architecture.md) and
+[rewrite verification](../rust-rewrite.md). Rust source owns application behavior;
+compiler-generated browser bindings and independently licensed vendor browser/SDK
+resources remain explicit distribution artifacts. Required behavioral, security,
+process-ownership and platform checks still apply to the current source revision.

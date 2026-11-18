@@ -1,0 +1,268 @@
+{
+  "schema": 1,
+  "reviewed_on": "2026-11-14",
+  "subject_head": "63b09f46a65071ca4bbb25862525151c866c0169",
+  "actual_hosted_checkout": "cb0fcc3239cd52ba21283516dbc9b9834db885cd",
+  "hosted_functional_observations": {
+    "linux": {
+      "job": 132300405387,
+      "artifact": 14094972366,
+      "zip_sha256": "b95014a0e8b9413cd5a6638f42b7e7eb13c91f64af9ade0ec050328c3c743253",
+      "transcript": "/workspace/work/functional-ci-63-linux/build/native-phase-test.log",
+      "transcript_sha256": "59c90cb68ebc84441391e9d4e8b7a48082a371c75b0167790bca7e69fd6a8609",
+      "named_passes": 2940,
+      "successful_summaries": 132,
+      "failed": 0,
+      "ignored": 0,
+      "filtered": 0,
+      "job_verdict": "failed",
+      "failure": "Outer ownership settlement: Captured nested ownership remains incomplete; owner Cloak/Tools.",
+      "scope": "Engine native applicable core cases; not a claim of successful outer settlement or all-platform/full-CI success."
+    },
+    "windows": {
+      "job": 132300405374,
+      "artifact": 14095513247,
+      "zip_sha256": "96d7cce889d5d2a9060693b3013965becc3f8c497d0757263499e8d1f6d686a9",
+      "phase": "native-phase test",
+      "job_verdict": "failed",
+      "inner_wall_ms": 900000,
+      "inner_idle_bound_ms": 300000,
+      "last_actual_io_idle_ms": 28711,
+      "stdout_bytes": 597713,
+      "stderr_bytes": 22632,
+      "leader_exited": false,
+      "stdout_eof": false,
+      "stderr_eof": false,
+      "outer_wall_ms": 1800000,
+      "last_active_target_or_test": "Unavailable: capture error returned before partial transcript persistence; no test-phase partial file or inner receipt is in the authenticated artifact.",
+      "conclusion": "Observed wall refusal with recent actual I/O; no evidence proves an idle hang or identifies an individual failing source case. Do not infer last case from byte offsets.",
+      "diagnostic_fix": "tools/xtask/src/ci/{mod.rs,scope.rs} now retain complete bounded in-memory stdout/stderr through existing whole-message redaction on capture success/error before propagating refusal. Limits unchanged.",
+      "verification": "PASS: real success/nonzero/silent-timeout/split-write redaction/producer settlement controls are folded into the existing partition_report_good source ID, included in the coherent643/643 Tools pass54.96s. Final restored-source verification is recorded separately."
+    },
+    "macos": {
+      "job": 132300405451,
+      "status": "completed",
+      "conclusion": "failure",
+      "named_passes": 2919,
+      "failed": 15,
+      "ignored": 0,
+      "filtered": 0,
+      "scope": "Actual earlier63b head / cb0 PR merge; not the upcoming corrected revision."
+    }
+  },
+  "mac_fixture_corrections": {
+    "schema": 1,
+    "run": 43546474618,
+    "mac_job": 132300405451,
+    "mac_artifact": 14096980978,
+    "head": "63b09f46a65071ca4bbb25862525151c866c0169",
+    "mac_zip_sha256": "76836855a98a2b7cb69257ab5730bee236de86c1377b11c2509b6f28f1e0da90",
+    "mac_transcript_sha256": "f4241b70252c98f5aea6815b11f2911311970429e96fc8e9a622fbc9268abb7f",
+    "mac_observed_failures": {
+      "native_input_owned_by_webgl_cloak": 2,
+      "apfs_fixture_corrected": 2,
+      "contract_accepted_socket_corrected": 11
+    },
+    "production_changes": false,
+    "test_names_added": 0,
+    "test_names_removed": 0,
+    "deadline_changes": false,
+    "assertion_changes": "APFS post-EILSEQ lookup must still fail, restricted to native ENOENT or EILSEQ. All original byte/FIFO/copy/retry assertions preserved. Wire protocol explicitly clears inherited O_NONBLOCK before reading;15s read and200ms quiet deadlines preserved. Original storage/transaction predicates preserved. Existing batch rollback case additionally verifies actual F_GETFL before/after flag clearing.",
+    "source_hashes": {
+      "engine-rust/tests/config_parity/extension_admission.rs": "01e13a7c4089f8c9b6eec5a56748b6371a016d09cc511583a5a308c9f35b0653",
+      "engine-rust/tests/first_run_failure/copytree_errors.rs": "60532c87cd2253322b56c3438a503e986aa33f0e6e326e84bf129a63ff11e3d0",
+      "engine-rust/tests/source_contracts/processes.rs": "647a8ed001ff2bd293c41916108de280cea5bdc41c38428ba0037da717136a39"
+    },
+    "linux_verification": {
+      "executions": [
+        {
+          "crate": "engine-rust",
+          "target": "config_parity",
+          "test": "direct_settings_and_current_thread_replacement_match_original",
+          "result": "passed"
+        },
+        {
+          "crate": "engine-rust",
+          "target": "config_parity",
+          "test": "extension_admission::extension_setter_preserves_original_stored_set_admission_and_cache",
+          "result": "passed"
+        },
+        {
+          "crate": "engine-rust",
+          "target": "config_parity",
+          "test": "fallible_settings_reads_preserve_original_utf8_refusal_and_cache",
+          "result": "passed"
+        },
+        {
+          "crate": "engine-rust",
+          "target": "config_parity",
+          "test": "malformed_settings_text_refuses_without_replacing_source_bytes",
+          "result": "passed"
+        },
+        {
+          "crate": "engine-rust",
+          "target": "config_parity",
+          "test": "settings_instance_cache_matches_original_file_identity_and_detached_results",
+          "result": "passed"
+        },
+        {
+          "crate": "engine-rust",
+          "target": "config_parity",
+          "test": "settings_read_merge_and_refusal_match_source_without_losing_unknown_keys",
+          "result": "passed"
+        },
+        {
+          "crate": "engine-rust",
+          "target": "config_parity",
+          "test": "strict_reads::settings_getters_match_original_strict_text_admission_and_values",
+          "result": "passed"
+        },
+        {
+          "crate": "engine-rust",
+          "target": "first_run_failure",
+          "test": "copytree_errors::new_subtree_errors_match_original_continuation_summaries_and_retry",
+          "result": "passed"
+        },
+        {
+          "crate": "engine-rust",
+          "target": "first_run_failure",
+          "test": "failed_first_run_remains_retryable_and_never_overwrites_the_obstruction",
+          "result": "passed"
+        },
+        {
+          "crate": "engine-rust",
+          "target": "first_run_failure",
+          "test": "fifo_import_matches_original_refusal_continuation_and_retry",
+          "result": "passed"
+        },
+        {
+          "crate": "engine-rust",
+          "target": "first_run_failure",
+          "test": "profile_count::advisory_profile_count_matches_original_when_destination_scan_is_denied",
+          "result": "passed"
+        },
+        {
+          "crate": "engine-rust",
+          "target": "source_contracts",
+          "test": "profile_transactions::c000_a_failing_batch_rollback_does_not_erase_a_concurrent_save",
+          "result": "passed"
+        },
+        {
+          "crate": "engine-rust",
+          "target": "source_contracts",
+          "test": "profile_transactions::c000_a_folder_rename_and_a_new_profile_in_it_cannot_split",
+          "result": "passed"
+        },
+        {
+          "crate": "engine-rust",
+          "target": "source_contracts",
+          "test": "public_boundaries::c000_a_settings_change_waits_for_the_transaction",
+          "result": "passed"
+        },
+        {
+          "crate": "engine-rust",
+          "target": "source_contracts",
+          "test": "public_boundaries::c000_deleting_a_session_waits_for_the_browser_that_has_it",
+          "result": "passed"
+        },
+        {
+          "crate": "engine-rust",
+          "target": "source_contracts",
+          "test": "public_boundaries::c000_two_acknowledged_config_changes_both_survive",
+          "result": "passed"
+        },
+        {
+          "crate": "engine-rust",
+          "target": "source_contracts",
+          "test": "revision_and_patch::c000_a_bulk_edit_and_a_single_patch_both_survive",
+          "result": "passed"
+        },
+        {
+          "crate": "engine-rust",
+          "target": "source_contracts",
+          "test": "revision_and_patch::c000_a_delete_is_not_undone_by_a_concurrent_listing",
+          "result": "passed"
+        },
+        {
+          "crate": "engine-rust",
+          "target": "source_contracts",
+          "test": "revision_and_patch::c000_a_notes_patch_and_a_tags_patch_both_survive",
+          "result": "passed"
+        },
+        {
+          "crate": "engine-rust",
+          "target": "source_contracts",
+          "test": "transaction_atomicity::c000_a_rolled_back_transaction_cannot_undo_a_committed_settings_change",
+          "result": "passed"
+        },
+        {
+          "crate": "engine-rust",
+          "target": "source_contracts",
+          "test": "transaction_atomicity::c000_a_profile_transaction_and_a_settings_change_both_survive",
+          "result": "passed"
+        },
+        {
+          "crate": "engine-rust",
+          "target": "source_contracts",
+          "test": "transaction_atomicity::c000_two_processes_cannot_create_the_same_token_name",
+          "result": "passed"
+        },
+        {
+          "crate": "engine-rust",
+          "target": "lib",
+          "test": "ownership::unit_report::tests::header_pending_and_truncated_receipts_never_claim_empty",
+          "result": "passed"
+        }
+      ],
+      "log": "/tmp/mac63-fixture-focused.log",
+      "log_sha256": "e4a6a739964227a078825dc3b31615739fb188442c34b662dd9f1bca6c596e1d",
+      "strict_lint": "/tmp/mac63-fixture-clippy.log",
+      "strict_lint_sha256": "84faf73d5290dc02438f68af252a5f361e4aeafd5a807fcd814ebd17dbd84a72",
+      "status": "passed23existingcases_and_strictlint9.58s"
+    },
+    "hosted_macos_corrections": "pending next CI; prior Mac13 failures are not relabeled as passes",
+    "windows_retention": "Three Tools helper/control files already passed coherent643/123/6 and strictlint; limits remain900/300/8MiB. Last active Windows compiler/test remains unavailable from original partial-free artifact.",
+    "cargo_target": "geo-target released to Tools; no pending work from this agent"
+  },
+  "acceptance": "Local focused corrections and retained diagnostic controls do not establish fresh hosted macOS/Windows success or complete CI acceptance. No source test IDs/types/counts or verification deadlines were removed.",
+  "current_local_checks": {
+    "source_scope": "Final checkpoint source with experimental converter excluded and exact HEAD63 converter restored; other source frozen.",
+    "binary_tests": {
+      "passed": 6,
+      "failed": 0,
+      "ignored": 0,
+      "filtered": 0,
+      "seconds": 0.25
+    },
+    "source_ci": {
+      "passed": 643,
+      "failed": 0,
+      "ignored": 0,
+      "filtered": 0,
+      "seconds": 56.81,
+      "report_sha256": "e27de45dfff84cebeea7c95a46c357a12d1c27ae2bd3c48c90fa5571d8437a82"
+    },
+    "source_acceptance": {
+      "passed": 123,
+      "failed": 0,
+      "ignored": 0,
+      "filtered": 0,
+      "seconds": 6.95
+    },
+    "strict_tools_clippy": "PASS10.74s",
+    "actual_tools_build": "PASS41.93s",
+    "source_map": "PASS643; SHA38119eb2eff6297239937ced76373b924645bdb7eeba87b7b9fec448dc479b97",
+    "coverage": "PASS native hosted topology and tracked UTF8 scope",
+    "windows_production_modules": "MSVC strict typecheck PASS0.45s; not Windows runtime execution",
+    "lifecycle": "13/13 native module harness PASS; not a local GTK/full Tauri build",
+    "receipt_parser": "Existing pending/resolved/truncated/sanitized diagnostic unit PASS; no completeness policy change"
+  },
+  "remaining_mac_teardown_diagnostics": {
+    "production_change": false,
+    "source_test_ids_added": 0,
+    "source_test_ids_removed": 0,
+    "behavior": "Passive birth/signal/group callbacks return None, so actual kernel operations, cached birth identity, payload assertions and original2s/5s cleanup bounds are preserved. Only failed teardowns emit bounded counters/elapsed/rawerrno/cached numeric evidence.",
+    "local_proof": "Existing arrival1 PASS0.60s, fixed-input1 PASS0.70s; scoped strict lint PASS18.20s including build-lock wait.",
+    "hosted_status": "Next Mac run must identify actual failing kernel stage; no cleanup-policy fix is claimed."
+  }
+}

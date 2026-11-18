@@ -1,0 +1,3885 @@
+{
+  "schema": 1,
+  "family": "network",
+  "source_inventory": "docs/migration-coverage.json",
+  "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+  "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+  "native_checkpoint": "fe9b2f940b6b8501f382d34145c633136afa8188",
+  "reviewed_worktree": "2026-11-13 after checked relay API and complete authored Rust browser-page cutover, based on398a548 plus uncommitted integration. Final-SHA hosted CI is a separate gate.",
+  "scope": [
+    "engine/numera/field_policy.py",
+    "engine/numera/write_contract.py",
+    "engine/numera/probe/align.py",
+    "engine/numera/probe/dns.py",
+    "engine/numera/probe/network.py",
+    "engine/numera/probe/shared.py",
+    "engine/numera/probe/trust.py",
+    "engine/numera/relay.py",
+    "engine/numera/scheduler.py",
+    "engine/numera/webstore.py"
+  ],
+  "count": 105,
+  "scope_counts": {
+    "engine/numera/field_policy.py": 7,
+    "engine/numera/probe/align.py": 6,
+    "engine/numera/probe/dns.py": 3,
+    "engine/numera/probe/network.py": 7,
+    "engine/numera/probe/shared.py": 2,
+    "engine/numera/probe/trust.py": 3,
+    "engine/numera/relay.py": 23,
+    "engine/numera/scheduler.py": 16,
+    "engine/numera/webstore.py": 15,
+    "engine/numera/write_contract.py": 23
+  },
+  "source_sha256": {
+    "engine/numera/field_policy.py": "571937d224a1ce3c43a65c65d5f976cc77d52ad451c8843b028d839fbe3f67c8",
+    "engine/numera/write_contract.py": "29d47edb5e22ea3790ee75e4fbae447026eef98629928c7811b204e07556e88e",
+    "engine/numera/probe/align.py": "ce457b60ba5850cc23ab97c08be79b5535c58abc46d46eacddf63117c15fb699",
+    "engine/numera/probe/dns.py": "60ddee82ca40e7449a343a2a3853af5f7ae64c6ec977f105c303e3b74102459a",
+    "engine/numera/probe/network.py": "ebb1879b05c5e83242cc70344c50ada62306424daa91d5eaefbc411ead5fce2e",
+    "engine/numera/probe/shared.py": "a7836a1043e1d96ba9c367578833ad2d896457c834d9e22d425b46e03e6f07df",
+    "engine/numera/probe/trust.py": "d66e24cbe3d22f7aee1da53073534e3831166ac3f1cbf926110ec71f660882bb",
+    "engine/numera/relay.py": "4a0d31cbaefa9711dd3d360d02f4553a548153b3e1d1f740556368e5a301e18a",
+    "engine/numera/scheduler.py": "cac9303d0de9bd058930544b3d55a5faf2076da0d6c7dba20e2c3fc80a05bea8",
+    "engine/numera/webstore.py": "0a93d5504eec200d031f370123516481e2d142bca3c6f971ea72045dcc6da5d3"
+  },
+  "dispositions": {
+    "fused_or_typed_adaptation": 61,
+    "direct_native_behavior": 44
+  },
+  "review_method": [
+    "Read all ten pinned original modules and compared their public and private capability contracts with the referenced Rust implementations.",
+    "Read the actual test assertions used for each behavioral group; native/source names below identify executable cases rather than merely mentioning a matching filename.",
+    "Private callbacks, source classes and context-manager plumbing are mapped to their real typed/recursive/owned native equivalents with a per-capability adaptation reason.",
+    "Validated exact105 old-ID set equality, native definition locations and named test references against the current worktree; did not execute the full test matrix again for this documentation-only review."
+  ],
+  "review_limits": [
+    "Capability references establish concrete implementation and assertion coverage, not proof that every possible input or network service has been exercised.",
+    "Source-case test IDs retain the immutable inventory; related original cases may assert several fused helpers together. They are references to existing cases, not newly authored tests.",
+    "Existing tests often compare actual Rust operations against immutable original observations. No Python interpreter or hidden Python program is required by those native tests.",
+    "Authored application behavior now resides in browser-page-rust. Generated JavaScript is a transparent Rust compiler artifact with fixed tool/source/output attribution; original script text remains only in immutable characterization observations, not in product execution."
+  ],
+  "unverified_or_adapted_edges": [
+    {
+      "ids": [
+        "engine/numera/field_policy.py::unpoliced",
+        "engine/numera/field_policy.py::phantom",
+        "engine/numera/field_policy.py::unexplained"
+      ],
+      "kind": "test_guard_adaptation",
+      "detail": "Source dataclass-reflection audit helpers are native test-time set comparisons against actual serialized Profile/Fingerprint/Proxy values and checked policy data. They are not exposed as a new production reflection API. Mutation assertions cover new, removed and unexplained fields."
+    },
+    {
+      "ids": [
+        "engine/numera/relay.py::ProxyRelay.port",
+        "engine/numera/relay.py::ProxyRelay.start",
+        "engine/numera/relay.py::ProxyRelay.__enter__"
+      ],
+      "kind": "typed_lifecycle_adaptation",
+      "detail": "An unstarted native Relay cannot be constructed. Relay::start returns only after readiness; stable URL access and idempotent close replace a repeated start call/property-before-start exception."
+    },
+    {
+      "ids": [
+        "engine/numera/relay.py::_Handler",
+        "engine/numera/relay.py::_Handler.handle"
+      ],
+      "kind": "sanitized_diagnostic_adaptation",
+      "detail": "Malformed relay requests preserve400status and cleanup but use a static native detail instead of the source parser-specific body suffix. Exact suffix equivalence is not established."
+    },
+    {
+      "ids": [
+        "engine/numera/relay.py::ProxyRelay.__exit__"
+      ],
+      "kind": "assertion_limit",
+      "detail": "Existing tests fault explicit bounded close/retry, and normal scope ownership is exercised. No separately faulted Drop-only stderr assertion is claimed."
+    },
+    {
+      "ids": [
+        "engine/numera/relay.py::ProxyRelay._open_upstream"
+      ],
+      "kind": "preserved_source_transport",
+      "detail": "The original source explicitly uses a plain TCP first hop for an https-labeled proxy. Native Upstream::connect preserves that behavior; this is not evidence of TLS encryption to an upstream HTTPS proxy."
+    }
+  ],
+  "source_language_boundary": {
+    "status": "authored_browser_logic_retired_to_rust_with_transparent_compiler_output",
+    "retired_original_payload_count": 7,
+    "retired_original_payload_lines": 836,
+    "historical_payloads": [
+      {
+        "path": "engine-rust/src/identity_page.js",
+        "lines": 638,
+        "sha256": "41b1ba1378c53e5b20fd9aa9685301149c957ba6b98d26b55a168ac6454d2d7a",
+        "purpose": "Install the per-profile identity/init-script hooks before page scripts run.",
+        "status": "retired_original_native_javascript_file",
+        "historical_consumer": {
+          "path": "engine-rust/src/identity_script.rs",
+          "symbol": "build",
+          "line": 109
+        },
+        "replacement": {
+          "path": "browser-page-rust/src/identity.rs",
+          "symbol": "apply_identity",
+          "line": 227
+        }
+      },
+      {
+        "path": "engine-rust/src/browser/trust_probe.js",
+        "lines": 91,
+        "sha256": "0ef01b26a6f42049df137484f9ae9221768ae0c31df91651c28f1b8c2e078ecd",
+        "purpose": "Observe navigator, canvas, permissions, WebGL, fonts and media APIs.",
+        "status": "retired_original_native_javascript_file",
+        "historical_consumer": {
+          "path": "engine-rust/src/browser/trust_probe.rs",
+          "symbol": "observe_fonts",
+          "line": 41
+        },
+        "replacement": {
+          "path": "browser-page-rust/src/probes.rs",
+          "symbol": "trust_probe",
+          "line": 297
+        }
+      },
+      {
+        "path": "engine-rust/src/browser/dns_probe.js",
+        "lines": 19,
+        "sha256": "c2f271e31407fcd9eafcb7583157a74d37efac4474d75f66265b6bf0c0a70147",
+        "purpose": "Issue the browser-side DNS test ID, subdomain fetches and result request.",
+        "status": "retired_original_native_javascript_file",
+        "historical_consumer": {
+          "path": "engine-rust/src/browser/probes.rs",
+          "symbol": "dns",
+          "line": 75
+        },
+        "replacement": {
+          "path": "browser-page-rust/src/probes.rs",
+          "symbol": "dns_probe",
+          "line": 480
+        }
+      },
+      {
+        "path": "engine-rust/src/browser/font_probe.js",
+        "lines": 20,
+        "sha256": "08f6b68f1f6e7c2c85be0208bc4a164d2570eb2594de197e0708bea6ab7226c8",
+        "purpose": "Measure which candidate fonts actually render in the admitted browser.",
+        "status": "retired_original_native_javascript_file",
+        "historical_consumer": {
+          "path": "engine-rust/src/browser/trust_probe.rs",
+          "symbol": "observe_fonts",
+          "line": 45
+        },
+        "replacement": {
+          "path": "browser-page-rust/src/probes.rs",
+          "symbol": "font_probe",
+          "line": 270
+        }
+      },
+      {
+        "path": "engine-rust/src/browser/ip_probe.js",
+        "lines": 21,
+        "sha256": "462b653cc614f3876e0485a77285f2be99a6a8b0fe3ef31713a14eda99b5e9db",
+        "purpose": "Try public IP endpoints through the browser context and normalize returned fields.",
+        "status": "retired_original_native_javascript_file",
+        "historical_consumer": {
+          "path": "engine-rust/src/browser/network_probe.rs",
+          "symbol": "read",
+          "line": 9
+        },
+        "replacement": {
+          "path": "browser-page-rust/src/probes.rs",
+          "symbol": "ip_probe",
+          "line": 532
+        }
+      },
+      {
+        "path": "engine-rust/src/browser/tls_probe.js",
+        "lines": 31,
+        "sha256": "79f7445b6b31bb5a80b95a59b5a33cfaa1128e2aeca18f54c7dabc50035fcce2",
+        "purpose": "Read/normalize TLS echo content from the current browser page.",
+        "status": "retired_original_native_javascript_file",
+        "historical_consumer": {
+          "path": "engine-rust/src/browser/probes.rs",
+          "symbol": "tls",
+          "line": 65
+        },
+        "replacement": {
+          "path": "browser-page-rust/src/probes.rs",
+          "symbol": "tls_probe",
+          "line": 703
+        }
+      },
+      {
+        "path": "engine-rust/src/browser/webrtc_probe.js",
+        "lines": 16,
+        "sha256": "863f28e8f7e902414e9aa2c7f5404ce1b521d9ae94584b951604f831a4cb8b92",
+        "purpose": "Create a real RTCPeerConnection and collect ICE candidates under a finite timer.",
+        "status": "retired_original_native_javascript_file",
+        "historical_consumer": {
+          "path": "engine-rust/src/browser/network_probe.rs",
+          "symbol": "read",
+          "line": 19
+        },
+        "replacement": {
+          "path": "browser-page-rust/src/probes.rs",
+          "symbol": "webrtc_probe",
+          "line": 588
+        }
+      }
+    ],
+    "rust_sources": [
+      "browser-page-rust/src/identity.rs",
+      "browser-page-rust/src/probes.rs",
+      "browser-page-rust/src/webrtc_rules.rs"
+    ],
+    "native_transport": {
+      "path": "engine-rust/src/page_runtime.rs",
+      "symbol": "expression",
+      "line": 47
+    },
+    "compiler": {
+      "path": "browser-page-rust/src/bin/browser-page-build.rs",
+      "symbol": "factory",
+      "line": 112
+    },
+    "generated_artifact": "browser-page-rust/generated/runtime.js",
+    "receipt": "browser-page-rust/generated/receipt.json",
+    "artifact_sha256": "17f41961f6762e06978cd04fd8e2feccb05f145be18c7b81bbcf38d8978b639f",
+    "artifact_bytes": 827882,
+    "compiler_javascript_bytes_before_minification": 798883,
+    "archived_browser_execution_artifact_sha256": "3acc835a955ce8291263fdb3902a2802e91ac41cf66a1a71d12177d37e177cf3",
+    "reproducibility_review": "docs/verification/browser-page-reproducibility-20261114.json",
+    "verification_freshness": "Current compiler/receipt reproducibility,480 full-frame controls and44 production-validator refusals passed. Existing selected live case with the current artifact passed36.03s for five Playwright profiles, strict CSP and memory growth; protocol8 cases passed7.42s. Exact worker/log receipts are in the linked reproducibility review. Prior differential observations below retain their archived artifact identity.",
+    "minified": false,
+    "method": "Locked Rust1.99.1 wasm32 build, wasm-bindgen0.2.129 bindings and reviewed Binaryen133 wasm2js compile to a classic synchronous factory. The deterministic Rust bridge joins generated imports/exports and refreshes generated views after non-detaching ArrayBuffer growth. No runtime WebAssembly compilation, eval, Function constructor, or global CSP relaxation is used.",
+    "extra_audited_rust_exports": [
+      {
+        "rust": {
+          "path": "browser-page-rust/src/probes.rs",
+          "symbol": "location_host",
+          "line": 100
+        },
+        "consumer": {
+          "path": "engine-rust/src/browser/warmup.rs",
+          "symbol": "follow",
+          "line": 113
+        },
+        "actual_browser_cases": [
+          "location_host/native"
+        ]
+      },
+      {
+        "rust": {
+          "path": "browser-page-rust/src/probes.rs",
+          "symbol": "internal_links",
+          "line": 149
+        },
+        "consumer": {
+          "path": "engine-rust/src/browser/warmup.rs",
+          "symbol": "follow",
+          "line": 113
+        },
+        "actual_browser_cases": [
+          "internal_links/normal",
+          "internal_links/typed-host",
+          "internal_links/ordered-limit",
+          "internal_links/invalid-after-limit",
+          "internal_links/href-failure"
+        ]
+      },
+      {
+        "rust": {
+          "path": "browser-page-rust/src/probes.rs",
+          "symbol": "inspect_identity",
+          "line": 170
+        },
+        "consumer": {
+          "path": "engine-rust/src/browser/sdk/mod.rs",
+          "symbol": "Worker::execute",
+          "line": 205
+        },
+        "actual_browser_cases": [
+          "inspect_identity/native",
+          "inspect_identity/custom-ua-data",
+          "inspect_identity/no-ua-data",
+          "inspect_identity/ua-query-failure",
+          "inspect_identity/array-like-languages"
+        ]
+      },
+      {
+        "rust": {
+          "path": "browser-page-rust/src/probes.rs",
+          "symbol": "host_environment",
+          "line": 107
+        },
+        "consumer": {
+          "path": "engine-rust/src/browser/sdk/camoufox.rs",
+          "symbol": "Prepared::prepare",
+          "line": 259
+        },
+        "actual_browser_cases": [
+          "host_environment/native",
+          "host_environment/no-context",
+          "host_environment/context-failure"
+        ]
+      },
+      {
+        "rust": {
+          "path": "browser-page-rust/src/probes.rs",
+          "symbol": "smoke_value",
+          "line": 142
+        },
+        "consumer": {
+          "path": "engine-rust/src/browser/sdk/container_smoke.rs",
+          "symbol": "Native::perform",
+          "line": 74
+        },
+        "actual_browser_cases": [
+          "smoke_value/browser-execution"
+        ],
+        "limit": "The compiled browser program returns42 in the actual browser. This utility observation is not a claim that an actual Docker image/engine matrix ran; the33existing container-smoke source cases separately assert the typed phase machine with owned fixture controls."
+      }
+    ],
+    "verification": [
+      "The existing native init_script_parity case checks ten canonical configurations, source/tool/output mutations, and480complete serialized SDKrequest frames.",
+      "The existing browser_adapter_live case asserts five complete native profiles and same-instance memory growth: warm TLS, grow two pages, observe150000Unicode characters, and compare exact returned Unicode fields.",
+      "Actual strict-CSP Chromium differential observations cover the ten frozen configs plus five mode/seed controls, including ECMAScript BOM/NELfont whitespace, callback/SDP/native-function metadata.",
+      "Actual34source-observation probe cases match in Chromium and Camoufox under strict CSP.",
+      "Mandatory Linux browser-page-build --check recompiles the actual Rust and compares both artifact and receipt exactly; a genuine source mutation was refused. A different absolute checkout root reproduced identical compiler output/receipt."
+    ],
+    "boundary": "The dashboard Rust/WASM rewrite is separate. These browser APIs are now also authored in Rust; the remaining .js file is explicitly marked compiler-generated and retains a source/tool/hash receipt.",
+    "rust_source_sha256": {
+      "browser-page-rust/Cargo.lock": "317576e2b9c4ff958dc35e79b1e53e2f05943b1208767bcfc9b87253ce623d92",
+      "browser-page-rust/Cargo.toml": "ba9d580cd5e9242f7375365f9651785e36cc7620d442569fbc7fbf607b4fbf11",
+      "browser-page-rust/src/artifact.rs": "e4b093442182a541c993d73fd2588a9d472b8e4ec8cfa7f554ff1ad831f68ab8",
+      "browser-page-rust/src/bin/browser-page-build.rs": "fc494d758c807ee5bcaecdf7fb0d55bc6df62e53381a890c8883ff7a7303eb70",
+      "browser-page-rust/src/identity.rs": "13439ae3f2ccc78baf5eb782fe7151f91f0997b5866ab76fcc02230c8e4bc642",
+      "browser-page-rust/src/lib.rs": "a42627399aa3e828715990768383a5cff739af0c4c813471537cb8bccef82d8b",
+      "browser-page-rust/src/probes.rs": "05e28abdc49f7f3902369207003d192e248fc4da1d6d8ee4980123623c9d311e",
+      "browser-page-rust/src/webrtc_rules.rs": "170b820fd26e3fc5a9b0ef17777e64ac173bde92fb0f61cb18a231aa3bf4932a",
+      "rust-toolchain.toml": "df1b1f239d5b1df10f115021f4cefb60076919c5646693c9e77bb70a00aff615"
+    },
+    "additional_utility_proof": {
+      "cases_per_browser": 15,
+      "browsers": [
+        "Chromium",
+        "Camoufox"
+      ],
+      "strict_csp": true,
+      "original_reference": "Exact original Rust inline program literals at398a548, extracted by a development-only external differential harness. No original inline application programs remain in the product.",
+      "logs": [
+        "/workspace/work/browser-page-utility-chromium-parity.log",
+        "/workspace/work/browser-page-utility-camoufox-parity.log"
+      ]
+    },
+    "existing_test_refs": [
+      {
+        "rust_file": "engine-rust/tests/init_script_parity.rs",
+        "rust_test": "native_script_and_config_match_original_generator"
+      },
+      {
+        "rust_file": "engine-rust/tests/browser_adapter_live.rs",
+        "rust_test": "selected_sdk_opens_real_persistent_context_in_native_owned_tree"
+      },
+      {
+        "rust_file": "engine-rust/src/browser/warmup_tests.rs",
+        "rust_test": "browser::warmup::tests::original_warmup_validation_presets_and_native_control_match_without_real_waits"
+      },
+      {
+        "rust_file": "engine-rust/tests/cli_cookie_parity.rs",
+        "rust_test": "cookie_cli_services_preserve_source_refusals_output_and_owned_sdk_policy"
+      },
+      {
+        "rust_file": "engine-rust/tests/cookie_http_parity.rs",
+        "rust_test": "cookie_http_uses_native_format_policy_and_owned_sdk"
+      }
+    ]
+  },
+  "capabilities": [
+    {
+      "id": "engine/numera/field_policy.py::NORMALIZED",
+      "native": [
+        {
+          "path": "engine-rust/src/validation.rs",
+          "symbol": "table_problems",
+          "line": 269
+        }
+      ],
+      "asserted_behavior": "Owned and normalized fields deliberately skip caller-side validation only where the checked policy includes an explanation; model serialization excludes proxy-intent metadata.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/model_parity.rs",
+          "rust_test": "serialized_model_fields_have_exact_explained_source_policies",
+          "line": 137
+        },
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/model_parity.rs",
+          "rust_test": "policy_coverage_guard_detects_new_removed_and_unexplained_fields",
+          "line": 174
+        }
+      ],
+      "adaptation_reason": "Python table-construction factories become explicit kind/why policy entries. Their explanation is audited against actual serialized native models.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/field_policy.py::OWNED",
+      "native": [
+        {
+          "path": "engine-rust/src/validation.rs",
+          "symbol": "table_problems",
+          "line": 269
+        }
+      ],
+      "asserted_behavior": "Owned and normalized fields deliberately skip caller-side validation only where the checked policy includes an explanation; model serialization excludes proxy-intent metadata.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/model_parity.rs",
+          "rust_test": "serialized_model_fields_have_exact_explained_source_policies",
+          "line": 137
+        },
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/model_parity.rs",
+          "rust_test": "policy_coverage_guard_detects_new_removed_and_unexplained_fields",
+          "line": 174
+        }
+      ],
+      "adaptation_reason": "Python table-construction factories become explicit kind/why policy entries. Their explanation is audited against actual serialized native models.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/field_policy.py::Rule",
+      "native": [
+        {
+          "path": "engine-rust/src/validation.rs",
+          "symbol": "policy",
+          "line": 6
+        },
+        {
+          "path": "engine-rust/src/validation.rs",
+          "symbol": "table_problems",
+          "line": 269
+        }
+      ],
+      "asserted_behavior": "The checked field_policy.json supplies kind, optionality, bounds, fractions and exemption reasons; the real validator consumes those rules in source field order.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/validation_parity.rs",
+          "rust_test": "uncoerced_write_validation_matches_source",
+          "line": 184
+        },
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/model_parity.rs",
+          "rust_test": "serialized_model_fields_have_exact_explained_source_policies",
+          "line": 137
+        }
+      ],
+      "adaptation_reason": "A frozen Python Rule object becomes immutable policy data consumed by the Rust validator; constructing arbitrary runtime Rule objects is not a product capability.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/field_policy.py::Rule.bounds",
+      "native": [
+        {
+          "path": "engine-rust/src/validation.rs",
+          "symbol": "number_problem",
+          "line": 161
+        },
+        {
+          "path": "engine-rust/src/validation.rs",
+          "symbol": "flat_number_problems",
+          "line": 329
+        }
+      ],
+      "asserted_behavior": "Nested and dashboard numeric admission use the same resolved source bounds and explicitly allowed memory fractions.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/validation_parity.rs",
+          "rust_test": "finite_numbers_match_original_validation_and_mcp_representation",
+          "line": 95
+        },
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/validation_parity.rs",
+          "rust_test": "permitted_fraction_spellings_match_original_numeric_admission",
+          "line": 145
+        }
+      ],
+      "adaptation_reason": "Rule.bounds is resolved in checked policy data; both native validation paths consume the stored bounds rather than a Python instance method.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/field_policy.py::phantom",
+      "native": [
+        {
+          "path": "engine-rust/tests/model_parity.rs",
+          "symbol": "policy_gaps",
+          "line": 109
+        }
+      ],
+      "asserted_behavior": "Audit exact serialized Profile/Fingerprint/Proxy field sets, identify uncovered and phantom fields, and reject blank Unicode/control-whitespace exemption explanations.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/model_parity.rs",
+          "rust_test": "serialized_model_fields_have_exact_explained_source_policies",
+          "line": 137
+        },
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/model_parity.rs",
+          "rust_test": "policy_coverage_guard_detects_new_removed_and_unexplained_fields",
+          "line": 174
+        }
+      ],
+      "adaptation_reason": "These were source coverage-test utilities, not request APIs. The native test-time policy_gaps set comparison is the corresponding guard; it includes mutations proving each refusal. No production reflection API is claimed.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/field_policy.py::unexplained",
+      "native": [
+        {
+          "path": "engine-rust/tests/model_parity.rs",
+          "symbol": "policy_gaps",
+          "line": 109
+        }
+      ],
+      "asserted_behavior": "Audit exact serialized Profile/Fingerprint/Proxy field sets, identify uncovered and phantom fields, and reject blank Unicode/control-whitespace exemption explanations.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/model_parity.rs",
+          "rust_test": "serialized_model_fields_have_exact_explained_source_policies",
+          "line": 137
+        },
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/model_parity.rs",
+          "rust_test": "policy_coverage_guard_detects_new_removed_and_unexplained_fields",
+          "line": 174
+        }
+      ],
+      "adaptation_reason": "These were source coverage-test utilities, not request APIs. The native test-time policy_gaps set comparison is the corresponding guard; it includes mutations proving each refusal. No production reflection API is claimed.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/field_policy.py::unpoliced",
+      "native": [
+        {
+          "path": "engine-rust/tests/model_parity.rs",
+          "symbol": "policy_gaps",
+          "line": 109
+        }
+      ],
+      "asserted_behavior": "Audit exact serialized Profile/Fingerprint/Proxy field sets, identify uncovered and phantom fields, and reject blank Unicode/control-whitespace exemption explanations.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/model_parity.rs",
+          "rust_test": "serialized_model_fields_have_exact_explained_source_policies",
+          "line": 137
+        },
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/model_parity.rs",
+          "rust_test": "policy_coverage_guard_detects_new_removed_and_unexplained_fields",
+          "line": 174
+        }
+      ],
+      "adaptation_reason": "These were source coverage-test utilities, not request APIs. The native test-time policy_gaps set comparison is the corresponding guard; it includes mutations proving each refusal. No production reflection API is claimed.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/probe/align.py::_chrome_from_ua",
+      "native": [
+        {
+          "path": "engine-rust/src/browser/alignment.rs",
+          "symbol": "chrome",
+          "line": 51
+        }
+      ],
+      "asserted_behavior": "Capture the first valid four-component Chrome version, including decimal-script grammar, and leave the version unchanged without a match.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/support/alignment_versions.rs",
+          "rust_test": "alignment_versions::alignment_versions_match_original_decimal_captures",
+          "line": 5
+        }
+      ],
+      "adaptation_reason": null,
+      "remaining": [],
+      "disposition": "direct_native_behavior"
+    },
+    {
+      "id": "engine/numera/probe/align.py::_os_from_platform",
+      "native": [
+        {
+          "path": "engine-rust/src/browser/alignment.rs",
+          "symbol": "os",
+          "line": 37
+        }
+      ],
+      "asserted_behavior": "Infer source OS family from observed platform, retaining fallback when no token matches.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/cli_cookie_parity.rs",
+          "rust_test": "cookie_cli_services_preserve_source_refusals_output_and_owned_sdk_policy",
+          "line": 26
+        }
+      ],
+      "adaptation_reason": "Private helper remains under the pure alignment rewrite; Linux/Windows/mobile observation cases assert the resulting fingerprint.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/probe/align.py::_vendor_from_renderer",
+      "native": [
+        {
+          "path": "engine-rust/src/browser/alignment.rs",
+          "symbol": "vendor",
+          "line": 77
+        }
+      ],
+      "asserted_behavior": "Derive the source browser WebGL vendor label for NVIDIA/AMD/Intel/Apple/Qualcomm/ARM renderer tokens.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/cli_cookie_parity.rs",
+          "rust_test": "cookie_cli_services_preserve_source_refusals_output_and_owned_sdk_policy",
+          "line": 26
+        }
+      ],
+      "adaptation_reason": null,
+      "remaining": [],
+      "disposition": "direct_native_behavior"
+    },
+    {
+      "id": "engine/numera/probe/align.py::align_to_reality",
+      "native": [
+        {
+          "path": "engine-rust/src/cli/align_commands.rs",
+          "symbol": "Align::run_started",
+          "line": 37
+        },
+        {
+          "path": "browser-page-rust/src/probes.rs",
+          "symbol": "trust_probe",
+          "line": 297
+        },
+        {
+          "path": "browser-page-rust/src/probes.rs",
+          "symbol": "font_probe",
+          "line": 270
+        },
+        {
+          "path": "engine-rust/src/page_runtime.rs",
+          "symbol": "expression",
+          "line": 47
+        }
+      ],
+      "asserted_behavior": "Run one admitted headless context without startup URLs, observe trust/fonts, report before/after grades, and preserve concurrent notes while committing aligned fields.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/cli_cookie_parity.rs",
+          "rust_test": "cookie_cli_services_preserve_source_refusals_output_and_owned_sdk_policy",
+          "line": 26
+        }
+      ],
+      "adaptation_reason": "The source callable is a typed CLI service sharing the same native finite browser owner as HTTP.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/probe/align.py::align_to_reality.apply",
+      "native": [
+        {
+          "path": "engine-rust/src/browser/alignment.rs",
+          "symbol": "apply",
+          "line": 31
+        },
+        {
+          "path": "engine-rust/src/browser/alignment.rs",
+          "symbol": "rewrite",
+          "line": 115
+        }
+      ],
+      "asserted_behavior": "Apply observed non-null changed values only, keep OS/version/catalog/font/language/timezone/screen relationships coherent, and report sorted changed labels.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/cli_cookie_parity.rs",
+          "rust_test": "cookie_cli_services_preserve_source_refusals_output_and_owned_sdk_policy",
+          "line": 26
+        }
+      ],
+      "adaptation_reason": "The nested callback is a private pure rewrite helper operating on a cloned fingerprint.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/probe/align.py::align_to_reality.commit",
+      "native": [
+        {
+          "path": "engine-rust/src/cli/align_commands.rs",
+          "symbol": "Align::run_started",
+          "line": 37
+        }
+      ],
+      "asserted_behavior": "Reread the current stored profile at commit and patch only aligned fingerprint fields, retaining a real concurrent notes edit.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/cli_cookie_parity.rs",
+          "rust_test": "cookie_cli_services_preserve_source_refusals_output_and_owned_sdk_policy",
+          "line": 26
+        }
+      ],
+      "adaptation_reason": "The Python store callback becomes ProfileRepo::patch_many with alignment::patch; the assertion checks both the saved fingerprint and independent notes.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/probe/dns.py::_grade_dns",
+      "native": [
+        {
+          "path": "engine-rust/src/browser/probe_grades.rs",
+          "symbol": "dns",
+          "line": 8
+        }
+      ],
+      "asserted_behavior": "Grade only resolver rows; deduplicate/sort countries and ASNs, flag country escapes, preserve the no-country baseline and unreachable/no-resolver failures.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/cli_cookie_parity.rs",
+          "rust_test": "cookie_cli_services_preserve_source_refusals_output_and_owned_sdk_policy",
+          "line": 26
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_dns.py::test_resolver_outside_proxy_country_is_a_leak",
+          "suite": "source_network",
+          "rust_file": "engine-rust/tests/source_network/dns.rs",
+          "rust_test": "dns::c000_resolver_outside_proxy_country_is_a_leak",
+          "map": "docs/source-network-test-map.json"
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_dns.py::test_ignores_non_resolver_rows",
+          "suite": "source_network",
+          "rust_file": "engine-rust/tests/source_network/dns.rs",
+          "rust_test": "dns::c000_ignores_non_resolver_rows",
+          "map": "docs/source-network-test-map.json"
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_dns.py::test_no_resolvers_observed_fails_the_first_check",
+          "suite": "source_network",
+          "rust_file": "engine-rust/tests/source_network/dns.rs",
+          "rust_test": "dns::c000_no_resolvers_observed_fails_the_first_check",
+          "map": "docs/source-network-test-map.json"
+        }
+      ],
+      "adaptation_reason": null,
+      "remaining": [],
+      "disposition": "direct_native_behavior"
+    },
+    {
+      "id": "engine/numera/probe/dns.py::check_dns",
+      "native": [
+        {
+          "path": "engine-rust/src/cli/probe_commands.rs",
+          "symbol": "Probes::run_started",
+          "line": 43
+        },
+        {
+          "path": "browser-page-rust/src/probes.rs",
+          "symbol": "dns_probe",
+          "line": 480
+        },
+        {
+          "path": "engine-rust/src/page_runtime.rs",
+          "symbol": "expression",
+          "line": 47
+        }
+      ],
+      "asserted_behavior": "Resolve/admit the latest profile, clear startup URLs, choose the requested engine and grade DNS inside one finite context that is closed on completion.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/cli_cookie_parity.rs",
+          "rust_test": "cookie_cli_services_preserve_source_refusals_output_and_owned_sdk_policy",
+          "line": 26
+        }
+      ],
+      "adaptation_reason": "Native CLI/HTTP entrypoints own context lifetime; callers already holding Adapter use probes::dns directly.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/probe/dns.py::check_dns.run",
+      "native": [
+        {
+          "path": "engine-rust/src/browser/probes.rs",
+          "symbol": "dns",
+          "line": 77
+        },
+        {
+          "path": "engine-rust/src/browser/probes.rs",
+          "symbol": "observation",
+          "line": 11
+        },
+        {
+          "path": "browser-page-rust/src/probes.rs",
+          "symbol": "dns_probe",
+          "line": 480
+        },
+        {
+          "path": "engine-rust/src/page_runtime.rs",
+          "symbol": "expression",
+          "line": 47
+        }
+      ],
+      "asserted_behavior": "Evaluate the DNS browser operation with bash.ws ID/subdomain/result templates and eight lookups, tolerating evaluation failure before grading.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/cli_cookie_parity.rs",
+          "rust_test": "cookie_cli_services_preserve_source_refusals_output_and_owned_sdk_policy",
+          "line": 26
+        }
+      ],
+      "adaptation_reason": "The nested callback becomes probes::dns on the supplied admitted Adapter.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/probe/network.py::_is_private",
+      "native": [
+        {
+          "path": "engine-rust/src/browser/network_grades.rs",
+          "symbol": "private",
+          "line": 12
+        }
+      ],
+      "asserted_behavior": "Classify original IPv4 private/link-local ranges, IPv6 local prefixes and malformed forms without exposing them as public leaks.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/cli_cookie_parity.rs",
+          "rust_test": "cookie_cli_services_preserve_source_refusals_output_and_owned_sdk_policy",
+          "line": 26
+        }
+      ],
+      "adaptation_reason": "The private predicate is exercised through leaks against 20 original address cases.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/probe/network.py::_read_tls",
+      "native": [
+        {
+          "path": "engine-rust/src/browser/probes.rs",
+          "symbol": "tls",
+          "line": 48
+        },
+        {
+          "path": "browser-page-rust/src/probes.rs",
+          "symbol": "tls_probe",
+          "line": 703
+        },
+        {
+          "path": "engine-rust/src/page_runtime.rs",
+          "symbol": "expression",
+          "line": 47
+        }
+      ],
+      "asserted_behavior": "Try source TLS echo endpoints in order, enforce navigation/evaluation budgets, and grade the first usable JA3/JA4 observation or the no-service result.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/cli_cookie_parity.rs",
+          "rust_test": "cookie_cli_services_preserve_source_refusals_output_and_owned_sdk_policy",
+          "line": 26
+        }
+      ],
+      "adaptation_reason": "The source page helper is folded into probes::tls; original retry navigation order and timeouts are asserted.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/probe/network.py::check_leaks",
+      "native": [
+        {
+          "path": "engine-rust/src/browser/network_grades.rs",
+          "symbol": "leaks",
+          "line": 45
+        }
+      ],
+      "asserted_behavior": "Exclude private addresses and the actual exit address from exposed candidates, preserving the original report fields/check detail.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/cli_cookie_parity.rs",
+          "rust_test": "cookie_cli_services_preserve_source_refusals_output_and_owned_sdk_policy",
+          "line": 26
+        }
+      ],
+      "adaptation_reason": null,
+      "remaining": [],
+      "disposition": "direct_native_behavior"
+    },
+    {
+      "id": "engine/numera/probe/network.py::check_leaks.run",
+      "native": [
+        {
+          "path": "engine-rust/src/browser/network_probe.rs",
+          "symbol": "read",
+          "line": 7
+        },
+        {
+          "path": "browser-page-rust/src/probes.rs",
+          "symbol": "webrtc_probe",
+          "line": 588
+        },
+        {
+          "path": "engine-rust/src/page_runtime.rs",
+          "symbol": "expression",
+          "line": 47
+        }
+      ],
+      "asserted_behavior": "Evaluate WebRTC inside the same admitted context as the IP lookup, passing its real exit address into leak grading.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/cli_cookie_parity.rs",
+          "rust_test": "cookie_cli_services_preserve_source_refusals_output_and_owned_sdk_policy",
+          "line": 26
+        }
+      ],
+      "adaptation_reason": "The former context callback becomes the shared network observation sequence.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/probe/network.py::check_proxy",
+      "native": [
+        {
+          "path": "engine-rust/src/cli/probe_commands.rs",
+          "symbol": "Probes::run_started",
+          "line": 43
+        },
+        {
+          "path": "browser-page-rust/src/probes.rs",
+          "symbol": "ip_probe",
+          "line": 532
+        },
+        {
+          "path": "browser-page-rust/src/probes.rs",
+          "symbol": "webrtc_probe",
+          "line": 588
+        },
+        {
+          "path": "browser-page-rust/src/probes.rs",
+          "symbol": "dns_probe",
+          "line": 480
+        },
+        {
+          "path": "browser-page-rust/src/probes.rs",
+          "symbol": "tls_probe",
+          "line": 703
+        },
+        {
+          "path": "engine-rust/src/page_runtime.rs",
+          "symbol": "expression",
+          "line": 47
+        }
+      ],
+      "asserted_behavior": "Own one browser context for IP, WebRTC, DNS and TLS, compute elapsed latency, compare proxy country/timezone and aggregate source checks and output fields.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/cli_cookie_parity.rs",
+          "rust_test": "cookie_cli_services_preserve_source_refusals_output_and_owned_sdk_policy",
+          "line": 26
+        }
+      ],
+      "adaptation_reason": "The service delegates observation to network_probe::read and grading to network_grades::proxy; adapter lifetime/claim release are asserted.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/probe/network.py::check_tls",
+      "native": [
+        {
+          "path": "engine-rust/src/cli/probe_commands.rs",
+          "symbol": "Probes::run_started",
+          "line": 43
+        },
+        {
+          "path": "browser-page-rust/src/probes.rs",
+          "symbol": "tls_probe",
+          "line": 703
+        },
+        {
+          "path": "engine-rust/src/page_runtime.rs",
+          "symbol": "expression",
+          "line": 47
+        }
+      ],
+      "asserted_behavior": "Expose TLS grading as a finite admitted operation with source result/exit behavior and guaranteed close.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/cli_cookie_parity.rs",
+          "rust_test": "cookie_cli_services_preserve_source_refusals_output_and_owned_sdk_policy",
+          "line": 26
+        }
+      ],
+      "adaptation_reason": "An existing Adapter is accepted by probes::tls; the CLI service owns creation when no context exists.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/probe/network.py::check_tls.run",
+      "native": [
+        {
+          "path": "engine-rust/src/browser/probes.rs",
+          "symbol": "tls",
+          "line": 48
+        },
+        {
+          "path": "engine-rust/src/browser/probes.rs",
+          "symbol": "evaluate",
+          "line": 41
+        },
+        {
+          "path": "browser-page-rust/src/probes.rs",
+          "symbol": "tls_probe",
+          "line": 703
+        },
+        {
+          "path": "engine-rust/src/page_runtime.rs",
+          "symbol": "expression",
+          "line": 47
+        }
+      ],
+      "asserted_behavior": "Read TLS data from the supplied page/context, then return the shared TLS1.3/HTTP2/GREASE/cipher-count checks.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/cli_cookie_parity.rs",
+          "rust_test": "cookie_cli_services_preserve_source_refusals_output_and_owned_sdk_policy",
+          "line": 26
+        }
+      ],
+      "adaptation_reason": "The nested context callback is fused into probes::tls and probe_grades::tls.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/probe/shared.py::_check",
+      "native": [
+        {
+          "path": "engine-rust/src/browser/trust_grades.rs",
+          "symbol": "check",
+          "line": 10
+        }
+      ],
+      "asserted_behavior": "Build the common name/ok/detail check record; callers preserve check order, pass totals, grades and exact detail text.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/cli_cookie_parity.rs",
+          "rust_test": "cookie_cli_services_preserve_source_refusals_output_and_owned_sdk_policy",
+          "line": 26
+        }
+      ],
+      "adaptation_reason": "Small check constructors are private to each native grading module; they produce the same record shape and are asserted as complete reports.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/probe/shared.py::_serve_probe_page",
+      "native": [
+        {
+          "path": "engine-rust/src/browser/trust_probe.rs",
+          "symbol": "observe_fonts",
+          "line": 10
+        }
+      ],
+      "asserted_behavior": "Route all requests to the in-memory source probe HTML and navigate the secure probe URL before observing browser APIs.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/cli_cookie_parity.rs",
+          "rust_test": "cookie_cli_services_preserve_source_refusals_output_and_owned_sdk_policy",
+          "line": 26
+        }
+      ],
+      "adaptation_reason": "The Python page helper becomes the route/navigate stage of the admitted Adapter operation.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/probe/trust.py::_grade",
+      "native": [
+        {
+          "path": "engine-rust/src/browser/trust_grades.rs",
+          "symbol": "grade",
+          "line": 13
+        }
+      ],
+      "asserted_behavior": "Preserve full source trust checks, engine-specific Camoufox exclusions, font and media rules, ties-to-even score and A/B/C/D thresholds.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/cli_cookie_parity.rs",
+          "rust_test": "cookie_cli_services_preserve_source_refusals_output_and_owned_sdk_policy",
+          "line": 26
+        }
+      ],
+      "adaptation_reason": null,
+      "remaining": [],
+      "disposition": "direct_native_behavior"
+    },
+    {
+      "id": "engine/numera/probe/trust.py::_observe",
+      "native": [
+        {
+          "path": "engine-rust/src/browser/trust_probe.rs",
+          "symbol": "observe",
+          "line": 7
+        },
+        {
+          "path": "engine-rust/src/browser/trust_probe.rs",
+          "symbol": "observe_fonts",
+          "line": 10
+        },
+        {
+          "path": "browser-page-rust/src/probes.rs",
+          "symbol": "trust_probe",
+          "line": 297
+        },
+        {
+          "path": "browser-page-rust/src/probes.rs",
+          "symbol": "font_probe",
+          "line": 270
+        },
+        {
+          "path": "engine-rust/src/page_runtime.rs",
+          "symbol": "expression",
+          "line": 47
+        }
+      ],
+      "asserted_behavior": "Observe navigator, canvas, permission, WebGL, fonts and media properties after the secure in-memory page is ready.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/cli_cookie_parity.rs",
+          "rust_test": "cookie_cli_services_preserve_source_refusals_output_and_owned_sdk_policy",
+          "line": 26
+        }
+      ],
+      "adaptation_reason": "The observation callback accepts an actual native Adapter; Browser observation is authored Rust and executes as transparent compiler-generated JavaScript under the existing browser evaluation API.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/probe/trust.py::trust_report",
+      "native": [
+        {
+          "path": "engine-rust/src/cli/probe_commands.rs",
+          "symbol": "Probes::run_started",
+          "line": 43
+        },
+        {
+          "path": "browser-page-rust/src/probes.rs",
+          "symbol": "trust_probe",
+          "line": 297
+        },
+        {
+          "path": "engine-rust/src/page_runtime.rs",
+          "symbol": "expression",
+          "line": 47
+        }
+      ],
+      "asserted_behavior": "Admit/observe the current profile in one finite context, grade with its requested engine, and retain human-versus-JSON exit/output behavior.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/cli_cookie_parity.rs",
+          "rust_test": "cookie_cli_services_preserve_source_refusals_output_and_owned_sdk_policy",
+          "line": 26
+        }
+      ],
+      "adaptation_reason": "Native Probes owns launch/close and delegates grading to trust_grades::grade.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/relay.py::ProxyRelay",
+      "native": [
+        {
+          "path": "engine-rust/src/network/relay.rs",
+          "symbol": "Relay",
+          "line": 81
+        }
+      ],
+      "asserted_behavior": "Own loopback address, stop channel, completion proof, worker handle and bounded upstream diagnostic for one proxy transport.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/src/network/tests.rs",
+          "rust_test": "network::tests::native_http_relay_owns_auth_connections_and_closes_idle_clients",
+          "line": 346
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_relay.py::test_only_a_credentialed_proxy_gets_a_relay",
+          "suite": "source_network",
+          "rust_file": "engine-rust/tests/source_network/relay.rs",
+          "rust_test": "relay::c000_only_a_credentialed_proxy_gets_a_relay",
+          "map": "docs/source-network-test-map.json"
+        }
+      ],
+      "adaptation_reason": "The started native Relay value combines the source configuration/server/thread/socket lifetime; there is no externally visible unstarted Relay.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/relay.py::ProxyRelay.__enter__",
+      "native": [
+        {
+          "path": "engine-rust/src/network/relay.rs",
+          "symbol": "Relay::start",
+          "line": 107
+        }
+      ],
+      "asserted_behavior": "Enter by constructing a ready owned relay; publish the URL only after the listener acknowledges readiness.",
+      "tests": [
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_relay.py::test_port_is_unavailable_before_start",
+          "suite": "source_network",
+          "rust_file": "engine-rust/tests/source_network/relay.rs",
+          "rust_test": "relay::c000_port_is_unavailable_before_start",
+          "map": "docs/source-network-test-map.json"
+        }
+      ],
+      "adaptation_reason": "Rust lexical ownership replaces the Python context-manager enter protocol; unstarted relay/port access cannot be represented.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/relay.py::ProxyRelay.__exit__",
+      "native": [
+        {
+          "path": "engine-rust/src/network/relay.rs",
+          "symbol": "Drop::drop",
+          "line": 296
+        },
+        {
+          "path": "engine-rust/src/network/relay.rs",
+          "symbol": "Relay::close",
+          "line": 268
+        }
+      ],
+      "asserted_behavior": "Attempt bounded close on lexical scope exit, with explicit close supporting retry and idempotence when shutdown needs caller-visible proof.",
+      "tests": [
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_relay.py::test_start_and_close_are_idempotent",
+          "suite": "source_network",
+          "rust_file": "engine-rust/tests/source_network/relay.rs",
+          "rust_test": "relay::c000_start_and_close_are_idempotent",
+          "map": "docs/source-network-test-map.json"
+        },
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/src/network/relay.rs",
+          "rust_test": "network::relay::tests::failed_shutdown_retains_worker_until_a_bounded_retry_joins_it",
+          "line": 344
+        }
+      ],
+      "adaptation_reason": "Drop replaces __exit__; automatic Drop cannot return a cleanup error, so production Adapter completion uses explicit close and retains uncertain shutdown.",
+      "remaining": [
+        "Existing named tests directly exercise explicit close/retry and normal lexical lifetimes. They do not independently plant a failed Drop-only shutdown and assert its stderr diagnostic."
+      ],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/relay.py::ProxyRelay._open_upstream",
+      "native": [
+        {
+          "path": "engine-rust/src/network/relay.rs",
+          "symbol": "Upstream::connect",
+          "line": 45
+        },
+        {
+          "path": "engine-rust/src/network/relay.rs",
+          "symbol": "Upstream::open",
+          "line": 59
+        }
+      ],
+      "asserted_behavior": "Connect to the configured upstream endpoint and perform the matching SOCKS4/5 handshake while keeping destination DNS at the proxy.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/relay_request_parity/handshake.rs",
+          "rust_test": "handshake::socks_handshake_failures_preserve_original_diagnostics_and_wire",
+          "line": 120
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_relay_socks4.py::test_the_destination_is_resolved_by_the_proxy_not_by_us",
+          "suite": "source_network",
+          "rust_file": "engine-rust/tests/source_network/relay_socks4.rs",
+          "rust_test": "relay_socks4::c000_the_destination_is_resolved_by_the_proxy_not_by_us",
+          "map": "docs/source-network-test-map.json"
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_relay.py::test_relay_supplies_the_upstream_credentials",
+          "suite": "source_network",
+          "rust_file": "engine-rust/tests/source_network/relay.rs",
+          "rust_test": "relay::c000_relay_supplies_the_upstream_credentials",
+          "map": "docs/source-network-test-map.json"
+        }
+      ],
+      "adaptation_reason": "HTTP and https-labeled upstreams retain the original plain-TCP first hop; the source explicitly does not wrap https proxy hops in TLS. No new TLS-proxy capability is claimed.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/relay.py::ProxyRelay._track",
+      "native": [
+        {
+          "path": "engine-rust/src/network/relay.rs",
+          "symbol": "Relay::start_with_dns",
+          "line": 110
+        },
+        {
+          "path": "engine-rust/src/network/relay.rs",
+          "symbol": "Relay::close",
+          "line": 268
+        }
+      ],
+      "asserted_behavior": "Retain every accepted connection in the JoinSet, reap finished tasks, and cancel/join live idle/tunnel tasks before worker completion.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/src/network/tests.rs",
+          "rust_test": "network::tests::native_http_relay_owns_auth_connections_and_closes_idle_clients",
+          "line": 346
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_relay.py::test_close_does_not_hang_on_an_open_tunnel",
+          "suite": "source_network",
+          "rust_file": "engine-rust/tests/source_network/relay.rs",
+          "rust_test": "relay::c000_close_does_not_hang_on_an_open_tunnel",
+          "map": "docs/source-network-test-map.json"
+        }
+      ],
+      "adaptation_reason": "Private mutable socket bookkeeping is replaced by structured ownership of connection tasks and RAII TcpStreams; the actual idle-client/port cleanup is asserted.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/relay.py::ProxyRelay._untrack",
+      "native": [
+        {
+          "path": "engine-rust/src/network/relay.rs",
+          "symbol": "Relay::start_with_dns",
+          "line": 110
+        },
+        {
+          "path": "engine-rust/src/network/relay.rs",
+          "symbol": "Relay::close",
+          "line": 268
+        }
+      ],
+      "asserted_behavior": "Retain every accepted connection in the JoinSet, reap finished tasks, and cancel/join live idle/tunnel tasks before worker completion.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/src/network/tests.rs",
+          "rust_test": "network::tests::native_http_relay_owns_auth_connections_and_closes_idle_clients",
+          "line": 346
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_relay.py::test_close_does_not_hang_on_an_open_tunnel",
+          "suite": "source_network",
+          "rust_file": "engine-rust/tests/source_network/relay.rs",
+          "rust_test": "relay::c000_close_does_not_hang_on_an_open_tunnel",
+          "map": "docs/source-network-test-map.json"
+        }
+      ],
+      "adaptation_reason": "Private mutable socket bookkeeping is replaced by structured ownership of connection tasks and RAII TcpStreams; the actual idle-client/port cleanup is asserted.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/relay.py::ProxyRelay.close",
+      "native": [
+        {
+          "path": "engine-rust/src/network/relay.rs",
+          "symbol": "Relay::close",
+          "line": 268
+        }
+      ],
+      "asserted_behavior": "Stop accepting, abort/join owned connections, await shutdown acknowledgement and join the runtime worker; retain its handle when a finite close budget expires.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/src/network/tests.rs",
+          "rust_test": "network::tests::native_http_relay_owns_auth_connections_and_closes_idle_clients",
+          "line": 346
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_relay.py::test_close_releases_the_port_and_every_thread",
+          "suite": "source_network",
+          "rust_file": "engine-rust/tests/source_network/relay.rs",
+          "rust_test": "relay::c000_close_releases_the_port_and_every_thread",
+          "map": "docs/source-network-test-map.json"
+        },
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/src/network/relay.rs",
+          "rust_test": "network::relay::tests::failed_shutdown_retains_worker_until_a_bounded_retry_joins_it",
+          "line": 344
+        }
+      ],
+      "adaptation_reason": null,
+      "remaining": [],
+      "disposition": "direct_native_behavior"
+    },
+    {
+      "id": "engine/numera/relay.py::ProxyRelay.port",
+      "native": [
+        {
+          "path": "engine-rust/src/network/relay.rs",
+          "symbol": "Relay::port",
+          "line": 255
+        }
+      ],
+      "asserted_behavior": "Return the actual ephemeral loopback port only while the relay is running; after close begins return NotConnected with the original the relay is not running message, including retained failed cleanup.",
+      "tests": [
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_relay.py::test_two_relays_take_different_ephemeral_ports",
+          "suite": "source_network",
+          "rust_file": "engine-rust/tests/source_network/relay.rs",
+          "rust_test": "relay::c000_two_relays_take_different_ephemeral_ports",
+          "map": "docs/source-network-test-map.json"
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_relay.py::test_port_is_unavailable_before_start",
+          "suite": "source_network",
+          "rust_file": "engine-rust/tests/source_network/relay.rs",
+          "rust_test": "relay::c000_port_is_unavailable_before_start",
+          "map": "docs/source-network-test-map.json"
+        },
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/src/network/relay.rs",
+          "rust_test": "network::relay::tests::failed_shutdown_retains_worker_until_a_bounded_retry_joins_it",
+          "line": 344
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_relay.py::test_start_and_close_are_idempotent",
+          "suite": "source_network",
+          "rust_file": "engine-rust/tests/source_network/relay.rs",
+          "rust_test": "relay::c000_start_and_close_are_idempotent",
+          "map": "docs/source-network-test-map.json"
+        }
+      ],
+      "adaptation_reason": "The native ready constructor eliminates an unstarted value. The actual port and URL APIs return typed io::Result and preserve closed-state refusal.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/relay.py::ProxyRelay.start",
+      "native": [
+        {
+          "path": "engine-rust/src/network/relay.rs",
+          "symbol": "Relay::start",
+          "line": 107
+        },
+        {
+          "path": "engine-rust/src/network/relay.rs",
+          "symbol": "Relay::start_with_dns",
+          "line": 110
+        }
+      ],
+      "asserted_behavior": "Validate protocol/host/explicit port and SOCKS4 credential policy before publishing a ready loopback listener; initialize DNS before worker birth.",
+      "tests": [
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_relay.py::test_a_proxy_without_a_port_is_refused",
+          "suite": "source_network",
+          "rust_file": "engine-rust/tests/source_network/relay.rs",
+          "rust_test": "relay::c000_a_proxy_without_a_port_is_refused",
+          "map": "docs/source-network-test-map.json"
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_relay.py::test_start_and_close_are_idempotent",
+          "suite": "source_network",
+          "rust_file": "engine-rust/tests/source_network/relay.rs",
+          "rust_test": "relay::c000_start_and_close_are_idempotent",
+          "map": "docs/source-network-test-map.json"
+        },
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/src/network/relay.rs",
+          "rust_test": "network::relay::tests::initialization_failure_on_entered_runtime_returns_error_before_worker_birth",
+          "line": 307
+        }
+      ],
+      "adaptation_reason": "Construction returns a ready Relay once; repeated source start on an existing object becomes repeated stable url access, while close remains explicitly idempotent.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/relay.py::ProxyRelay.url",
+      "native": [
+        {
+          "path": "engine-rust/src/network/relay.rs",
+          "symbol": "Relay::url",
+          "line": 264
+        }
+      ],
+      "asserted_behavior": "Publish exactly http://127.0.0.1:<bound-port> while live; refuse URL access after close begins with the same source message even if a worker remains retained for cleanup.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/src/network/tests.rs",
+          "rust_test": "network::tests::native_http_relay_owns_auth_connections_and_closes_idle_clients",
+          "line": 346
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_relay.py::test_two_relays_take_different_ephemeral_ports",
+          "suite": "source_network",
+          "rust_file": "engine-rust/tests/source_network/relay.rs",
+          "rust_test": "relay::c000_two_relays_take_different_ephemeral_ports",
+          "map": "docs/source-network-test-map.json"
+        },
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/src/network/relay.rs",
+          "rust_test": "network::relay::tests::failed_shutdown_retains_worker_until_a_bounded_retry_joins_it",
+          "line": 344
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_relay.py::test_start_and_close_are_idempotent",
+          "suite": "source_network",
+          "rust_file": "engine-rust/tests/source_network/relay.rs",
+          "rust_test": "relay::c000_start_and_close_are_idempotent",
+          "map": "docs/source-network-test-map.json"
+        }
+      ],
+      "adaptation_reason": null,
+      "remaining": [],
+      "disposition": "direct_native_behavior"
+    },
+    {
+      "id": "engine/numera/relay.py::ProxyRelayError",
+      "native": [
+        {
+          "path": "engine-rust/src/network/relay_protocol.rs",
+          "symbol": "failure",
+          "line": 7
+        }
+      ],
+      "asserted_behavior": "Return explicit SOCKS handshake/version/authentication/destination refusals rather than hanging or swallowing upstream diagnostics.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/relay_request_parity/handshake.rs",
+          "rust_test": "handshake::socks_handshake_failures_preserve_original_diagnostics_and_wire",
+          "line": 120
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_relay.py::test_socks5_wrong_password_is_reported_not_swallowed",
+          "suite": "source_network",
+          "rust_file": "engine-rust/tests/source_network/relay.rs",
+          "rust_test": "relay::c000_socks5_wrong_password_is_reported_not_swallowed",
+          "map": "docs/source-network-test-map.json"
+        }
+      ],
+      "adaptation_reason": "The Python RuntimeError subclass is an io::Error carried through the actual relay; handler failures preserve 400/502 distinctions.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/relay.py::_Handler",
+      "native": [
+        {
+          "path": "engine-rust/src/network/relay_http.rs",
+          "symbol": "serve",
+          "line": 129
+        }
+      ],
+      "asserted_behavior": "Parse an actual browser connection, choose HTTP/SOCKS CONNECT or forwarding behavior, preserve buffered request bodies, and answer malformed/unreachable requests.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/relay_request_parity.rs",
+          "rust_test": "socks_origin_requests_preserve_original_target_bytes",
+          "line": 124
+        },
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/src/network/tests.rs",
+          "rust_test": "network::tests::native_http_relay_owns_auth_connections_and_closes_idle_clients",
+          "line": 346
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_relay.py::test_connect_tunnel_reaches_the_origin",
+          "suite": "source_network",
+          "rust_file": "engine-rust/tests/source_network/relay.rs",
+          "rust_test": "relay::c000_connect_tunnel_reaches_the_origin",
+          "map": "docs/source-network-test-map.json"
+        }
+      ],
+      "adaptation_reason": "The Python socketserver handler class and callback become one async function invoked only by the owning relay runtime.",
+      "remaining": [
+        "Malformed requests preserve400status and plain-text response shape, but native serve uses a static sanitized detail instead of the source parser-specific suffix. Existing source/native relay cases assert the status/cleanup; exact malformed-response suffix equivalence is not established."
+      ],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/relay.py::_Handler.handle",
+      "native": [
+        {
+          "path": "engine-rust/src/network/relay_http.rs",
+          "symbol": "serve",
+          "line": 129
+        }
+      ],
+      "asserted_behavior": "Parse an actual browser connection, choose HTTP/SOCKS CONNECT or forwarding behavior, preserve buffered request bodies, and answer malformed/unreachable requests.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/relay_request_parity.rs",
+          "rust_test": "socks_origin_requests_preserve_original_target_bytes",
+          "line": 124
+        },
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/src/network/tests.rs",
+          "rust_test": "network::tests::native_http_relay_owns_auth_connections_and_closes_idle_clients",
+          "line": 346
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_relay.py::test_connect_tunnel_reaches_the_origin",
+          "suite": "source_network",
+          "rust_file": "engine-rust/tests/source_network/relay.rs",
+          "rust_test": "relay::c000_connect_tunnel_reaches_the_origin",
+          "map": "docs/source-network-test-map.json"
+        }
+      ],
+      "adaptation_reason": "The Python socketserver handler class and callback become one async function invoked only by the owning relay runtime.",
+      "remaining": [
+        "Malformed requests preserve400status and plain-text response shape, but native serve uses a static sanitized detail instead of the source parser-specific suffix. Existing source/native relay cases assert the status/cleanup; exact malformed-response suffix equivalence is not established."
+      ],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/relay.py::_RelayServer",
+      "native": [
+        {
+          "path": "engine-rust/src/network/relay.rs",
+          "symbol": "Relay::start_with_dns",
+          "line": 110
+        }
+      ],
+      "asserted_behavior": "Bind loopback only, acknowledge readiness before publication, cap concurrent tasks, and shut down/join every connection task on stop.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/src/network/tests.rs",
+          "rust_test": "network::tests::native_http_relay_owns_auth_connections_and_closes_idle_clients",
+          "line": 346
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_relay.py::test_the_relay_is_not_reachable_off_the_machine",
+          "suite": "source_network",
+          "rust_file": "engine-rust/tests/source_network/relay.rs",
+          "rust_test": "relay::c000_the_relay_is_not_reachable_off_the_machine",
+          "map": "docs/source-network-test-map.json"
+        }
+      ],
+      "adaptation_reason": "socketserver/daemon threads become a single owned Rust runtime and JoinSet; accepted sockets cannot escape the owner task set.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/relay.py::_origin_request_line",
+      "native": [
+        {
+          "path": "engine-rust/src/network/relay_http.rs",
+          "symbol": "target",
+          "line": 30
+        },
+        {
+          "path": "engine-rust/src/network/relay_http.rs",
+          "symbol": "serve",
+          "line": 129
+        }
+      ],
+      "asserted_behavior": "Rewrite absolute requests to original origin-form bytes only for SOCKS upstreams, removing fragments without normalizing escaped/dot path segments.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/relay_request_parity.rs",
+          "rust_test": "socks_origin_requests_preserve_original_target_bytes",
+          "line": 124
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_relay.py::test_socks5_upstream_rewrites_an_absolute_request",
+          "suite": "source_network",
+          "rust_file": "engine-rust/tests/source_network/relay.rs",
+          "rust_test": "relay::c000_socks5_upstream_rewrites_an_absolute_request",
+          "map": "docs/source-network-test-map.json"
+        }
+      ],
+      "adaptation_reason": "The source standalone first-line helper is fused into target plus the SOCKS branch in serve.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/relay.py::_read_head",
+      "native": [
+        {
+          "path": "engine-rust/src/network/relay_http.rs",
+          "symbol": "head",
+          "line": 9
+        }
+      ],
+      "asserted_behavior": "Read a bounded CRLF-terminated request header while preserving already-read body bytes and refusing premature EOF/oversize input.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/relay_request_parity.rs",
+          "rust_test": "socks_origin_requests_preserve_original_target_bytes",
+          "line": 124
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_relay.py::test_socks5_upstream_forwards_a_request_body",
+          "suite": "source_network",
+          "rust_file": "engine-rust/tests/source_network/relay.rs",
+          "rust_test": "relay::c000_socks5_upstream_forwards_a_request_body",
+          "map": "docs/source-network-test-map.json"
+        }
+      ],
+      "adaptation_reason": null,
+      "remaining": [],
+      "disposition": "direct_native_behavior"
+    },
+    {
+      "id": "engine/numera/relay.py::_rebuild_head",
+      "native": [
+        {
+          "path": "engine-rust/src/network/relay_http.rs",
+          "symbol": "rebuilt",
+          "line": 78
+        }
+      ],
+      "asserted_behavior": "Remove browser hop-by-hop/proxy authorization headers, inject only configured upstream credentials, and force close for non-CONNECT forwarding.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/src/network/tests.rs",
+          "rust_test": "network::tests::native_http_relay_owns_auth_connections_and_closes_idle_clients",
+          "line": 346
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_relay.py::test_the_browsers_own_proxy_authorization_is_replaced",
+          "suite": "source_network",
+          "rust_file": "engine-rust/tests/source_network/relay.rs",
+          "rust_test": "relay::c000_the_browsers_own_proxy_authorization_is_replaced",
+          "map": "docs/source-network-test-map.json"
+        }
+      ],
+      "adaptation_reason": null,
+      "remaining": [],
+      "disposition": "direct_native_behavior"
+    },
+    {
+      "id": "engine/numera/relay.py::_recv_exact",
+      "native": [
+        {
+          "path": "engine-rust/src/network/relay_protocol.rs",
+          "symbol": "exact",
+          "line": 10
+        }
+      ],
+      "asserted_behavior": "Read exact fixed-size SOCKS handshake sections and report premature upstream close with the original diagnostic.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/relay_request_parity/handshake.rs",
+          "rust_test": "handshake::socks_handshake_failures_preserve_original_diagnostics_and_wire",
+          "line": 120
+        }
+      ],
+      "adaptation_reason": "Const-generic exact buffers replace a variable-length Python allocation; protocol lengths still consume the same wire fields.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/relay.py::_reply",
+      "native": [
+        {
+          "path": "engine-rust/src/network/relay_http.rs",
+          "symbol": "reply",
+          "line": 117
+        }
+      ],
+      "asserted_behavior": "Send source-compatible bounded 400/502 plain-text responses with content length and connection-close behavior.",
+      "tests": [
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_relay.py::test_a_dead_upstream_answers_502_rather_than_hanging",
+          "suite": "source_network",
+          "rust_file": "engine-rust/tests/source_network/relay.rs",
+          "rust_test": "relay::c000_a_dead_upstream_answers_502_rather_than_hanging",
+          "map": "docs/source-network-test-map.json"
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_relay.py::test_a_malformed_request_gets_400_not_a_crash",
+          "suite": "source_network",
+          "rust_file": "engine-rust/tests/source_network/relay.rs",
+          "rust_test": "relay::c000_a_malformed_request_gets_400_not_a_crash",
+          "map": "docs/source-network-test-map.json"
+        }
+      ],
+      "adaptation_reason": null,
+      "remaining": [],
+      "disposition": "direct_native_behavior"
+    },
+    {
+      "id": "engine/numera/relay.py::_socks4_connect",
+      "native": [
+        {
+          "path": "engine-rust/src/network/relay_protocol.rs",
+          "symbol": "socks4",
+          "line": 18
+        }
+      ],
+      "asserted_behavior": "Send SOCKS4a user/remote-host bytes, retain Unicode-host conversion and validate reply codes; refuse passwords before worker creation.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/relay_request_parity/handshake.rs",
+          "rust_test": "handshake::socks_handshake_failures_preserve_original_diagnostics_and_wire",
+          "line": 120
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_relay_socks4.py::test_the_destination_is_resolved_by_the_proxy_not_by_us",
+          "suite": "source_network",
+          "rust_file": "engine-rust/tests/source_network/relay_socks4.rs",
+          "rust_test": "relay_socks4::c000_the_destination_is_resolved_by_the_proxy_not_by_us",
+          "map": "docs/source-network-test-map.json"
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_relay_socks4.py::test_the_user_id_goes_in_the_ident_field",
+          "suite": "source_network",
+          "rust_file": "engine-rust/tests/source_network/relay_socks4.rs",
+          "rust_test": "relay_socks4::c000_the_user_id_goes_in_the_ident_field",
+          "map": "docs/source-network-test-map.json"
+        }
+      ],
+      "adaptation_reason": null,
+      "remaining": [],
+      "disposition": "direct_native_behavior"
+    },
+    {
+      "id": "engine/numera/relay.py::_socks5_connect",
+      "native": [
+        {
+          "path": "engine-rust/src/network/relay_protocol.rs",
+          "symbol": "socks5",
+          "line": 75
+        }
+      ],
+      "asserted_behavior": "Preserve greeting/auth bytes, credentials length/refusal policy, domain destination encoding and every response-address form.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/relay_request_parity/handshake.rs",
+          "rust_test": "handshake::socks_handshake_failures_preserve_original_diagnostics_and_wire",
+          "line": 120
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_relay.py::test_socks5_upstream_carries_a_connect_tunnel",
+          "suite": "source_network",
+          "rust_file": "engine-rust/tests/source_network/relay.rs",
+          "rust_test": "relay::c000_socks5_upstream_carries_a_connect_tunnel",
+          "map": "docs/source-network-test-map.json"
+        }
+      ],
+      "adaptation_reason": null,
+      "remaining": [],
+      "disposition": "direct_native_behavior"
+    },
+    {
+      "id": "engine/numera/relay.py::_target_host_port",
+      "native": [
+        {
+          "path": "engine-rust/src/network/relay_http.rs",
+          "symbol": "target",
+          "line": 30
+        }
+      ],
+      "asserted_behavior": "Resolve CONNECT host/port and absolute-URL destinations including IPv6 while preserving unnormalized path/query bytes.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/relay_request_parity.rs",
+          "rust_test": "socks_origin_requests_preserve_original_target_bytes",
+          "line": 124
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_relay.py::test_a_malformed_request_gets_400_not_a_crash",
+          "suite": "source_network",
+          "rust_file": "engine-rust/tests/source_network/relay.rs",
+          "rust_test": "relay::c000_a_malformed_request_gets_400_not_a_crash",
+          "map": "docs/source-network-test-map.json"
+        }
+      ],
+      "adaptation_reason": null,
+      "remaining": [],
+      "disposition": "direct_native_behavior"
+    },
+    {
+      "id": "engine/numera/relay.py::_tunnel",
+      "native": [
+        {
+          "path": "engine-rust/src/network/relay_http.rs",
+          "symbol": "serve",
+          "line": 129
+        }
+      ],
+      "asserted_behavior": "Relay arbitrary binary data in both directions and terminate owned connections when either peer closes or the relay shuts down.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/relay_request_parity.rs",
+          "rust_test": "socks_origin_requests_preserve_original_target_bytes",
+          "line": 124
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_relay.py::test_the_tunnel_thread_ends_when_its_sockets_are_pulled",
+          "suite": "source_network",
+          "rust_file": "engine-rust/tests/source_network/relay.rs",
+          "rust_test": "relay::c000_the_tunnel_thread_ends_when_its_sockets_are_pulled",
+          "map": "docs/source-network-test-map.json"
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_relay.py::test_close_does_not_hang_on_an_open_tunnel",
+          "suite": "source_network",
+          "rust_file": "engine-rust/tests/source_network/relay.rs",
+          "rust_test": "relay::c000_close_does_not_hang_on_an_open_tunnel",
+          "map": "docs/source-network-test-map.json"
+        }
+      ],
+      "adaptation_reason": "tokio::io::copy_bidirectional replaces two select/thread pumps, under the relay-owned task set.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/scheduler.py::ScheduleStore",
+      "native": [
+        {
+          "path": "engine-rust/src/storage/schedules.rs",
+          "symbol": "ScheduleStore",
+          "line": 16
+        },
+        {
+          "path": "engine-rust/src/storage/schedules.rs",
+          "symbol": "ScheduleStore::new",
+          "line": 20
+        }
+      ],
+      "asserted_behavior": "Locate schedules.json under the data root and expose persisted schedule operations with no browser creation.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/schedule_store_parity.rs",
+          "rust_test": "schedule_text_admission_matches_original_without_replacing_bytes",
+          "line": 7
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_scheduler.py::test_add_and_list_round_trip",
+          "suite": "source_storage",
+          "rust_file": "engine-rust/tests/source_storage/scheduler.rs",
+          "rust_test": "scheduler::add_and_list_round_trip",
+          "map": "docs/source-storage-test-map.json"
+        }
+      ],
+      "adaptation_reason": "The Python store constructor becomes a typed PathBuf owner.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/scheduler.py::ScheduleStore._apply",
+      "native": [
+        {
+          "path": "engine-rust/src/storage/schedules.rs",
+          "symbol": "ScheduleStore::apply",
+          "line": 148
+        }
+      ],
+      "asserted_behavior": "Reread/merge under the schedule lock, update matching rows only and avoid writes for a missing identity.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/schedule_store_parity.rs",
+          "rust_test": "schedule_text_admission_matches_original_without_replacing_bytes",
+          "line": 7
+        },
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/schedule_store_parity.rs",
+          "rust_test": "schedule_claim_is_single_occurrence_and_record_clears_only_its_claim",
+          "line": 183
+        }
+      ],
+      "adaptation_reason": "The private source mutation callback becomes a private native patch-map operation shared by user updates and scheduler outcomes.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/scheduler.py::ScheduleStore._lock",
+      "native": [
+        {
+          "path": "engine-rust/src/storage/locks.rs",
+          "symbol": "DataLock::for_file",
+          "line": 158
+        },
+        {
+          "path": "engine-rust/src/storage/locks.rs",
+          "symbol": "DataLock::acquire_configured",
+          "line": 135
+        }
+      ],
+      "asserted_behavior": "Serialize schedule read-modify-write using the canonical per-file lock and configured bounded acquisition.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/schedule_store_parity.rs",
+          "rust_test": "schedule_claim_is_single_occurrence_and_record_clears_only_its_claim",
+          "line": 183
+        },
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/schedule_store_parity.rs",
+          "rust_test": "schedule_text_admission_matches_original_without_replacing_bytes",
+          "line": 7
+        }
+      ],
+      "adaptation_reason": "The Python cached lock property becomes a DataLock guard acquired in each native operation; scope exit releases it.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/scheduler.py::ScheduleStore._save",
+      "native": [
+        {
+          "path": "engine-rust/src/storage/atomic.rs",
+          "symbol": "write_json",
+          "line": 135
+        },
+        {
+          "path": "engine-rust/src/storage/atomic.rs",
+          "symbol": "write_bytes",
+          "line": 60
+        }
+      ],
+      "asserted_behavior": "Persist complete schedule lists by an atomic sibling-file replacement under the schedule lock; refusals preserve original bytes.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/schedule_store_parity.rs",
+          "rust_test": "schedule_text_admission_matches_original_without_replacing_bytes",
+          "line": 7
+        },
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/schedule_write_parity.rs",
+          "rust_test": "schedule_user_writes_validate_and_cannot_forge_scheduler_outcomes",
+          "line": 7
+        }
+      ],
+      "adaptation_reason": "The private store save helper delegates to the shared native atomic writer consumed by every mutator.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/scheduler.py::ScheduleStore.add",
+      "native": [
+        {
+          "path": "engine-rust/src/storage/schedules.rs",
+          "symbol": "ScheduleStore::add",
+          "line": 47
+        }
+      ],
+      "asserted_behavior": "Validate defaults/interval/minutes/preset/enabled, mint a 12-hex identity, stamp source initial fields and append once under lock.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/schedule_write_parity.rs",
+          "rust_test": "schedule_user_writes_validate_and_cannot_forge_scheduler_outcomes",
+          "line": 7
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_scheduler.py::test_add_and_list_round_trip",
+          "suite": "source_storage",
+          "rust_file": "engine-rust/tests/source_storage/scheduler.rs",
+          "rust_test": "scheduler::add_and_list_round_trip",
+          "map": "docs/source-storage-test-map.json"
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_scheduler.py::test_interval_is_floored",
+          "suite": "source_storage",
+          "rust_file": "engine-rust/tests/source_storage/scheduler.rs",
+          "rust_test": "scheduler::interval_is_floored",
+          "map": "docs/source-storage-test-map.json"
+        }
+      ],
+      "adaptation_reason": null,
+      "remaining": [],
+      "disposition": "direct_native_behavior"
+    },
+    {
+      "id": "engine/numera/scheduler.py::ScheduleStore.claim_due",
+      "native": [
+        {
+          "path": "engine-rust/src/storage/schedules.rs",
+          "symbol": "ScheduleStore::claim_due",
+          "line": 80
+        }
+      ],
+      "asserted_behavior": "Claim only an enabled due occurrence under lock, refuse a recent live claim, and persist the owner/time once.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/schedule_store_parity.rs",
+          "rust_test": "schedule_claim_is_single_occurrence_and_record_clears_only_its_claim",
+          "line": 183
+        },
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/schedule_store_parity.rs",
+          "rust_test": "schedule_text_admission_matches_original_without_replacing_bytes",
+          "line": 7
+        }
+      ],
+      "adaptation_reason": null,
+      "remaining": [],
+      "disposition": "direct_native_behavior"
+    },
+    {
+      "id": "engine/numera/scheduler.py::ScheduleStore.delete",
+      "native": [
+        {
+          "path": "engine-rust/src/storage/schedules.rs",
+          "symbol": "ScheduleStore::delete",
+          "line": 170
+        }
+      ],
+      "asserted_behavior": "Remove matching schedule rows atomically, return false and leave bytes alone for a missing identity.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/schedule_store_parity.rs",
+          "rust_test": "schedule_text_admission_matches_original_without_replacing_bytes",
+          "line": 7
+        },
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/schedule_store_parity.rs",
+          "rust_test": "schedule_claim_is_single_occurrence_and_record_clears_only_its_claim",
+          "line": 183
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_scheduler.py::test_delete",
+          "suite": "source_storage",
+          "rust_file": "engine-rust/tests/source_storage/scheduler.rs",
+          "rust_test": "scheduler::delete",
+          "map": "docs/source-storage-test-map.json"
+        }
+      ],
+      "adaptation_reason": null,
+      "remaining": [],
+      "disposition": "direct_native_behavior"
+    },
+    {
+      "id": "engine/numera/scheduler.py::ScheduleStore.get",
+      "native": [
+        {
+          "path": "engine-rust/src/storage/schedules.rs",
+          "symbol": "ScheduleStore::get",
+          "line": 77
+        }
+      ],
+      "asserted_behavior": "Return the first matching schedule or absent, with the same read-admission failures and no write.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/schedule_store_parity.rs",
+          "rust_test": "schedule_text_admission_matches_original_without_replacing_bytes",
+          "line": 7
+        },
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/schedule_store_parity.rs",
+          "rust_test": "schedule_claim_is_single_occurrence_and_record_clears_only_its_claim",
+          "line": 183
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_scheduler.py::test_add_and_list_round_trip",
+          "suite": "source_storage",
+          "rust_file": "engine-rust/tests/source_storage/scheduler.rs",
+          "rust_test": "scheduler::add_and_list_round_trip",
+          "map": "docs/source-storage-test-map.json"
+        }
+      ],
+      "adaptation_reason": null,
+      "remaining": [],
+      "disposition": "direct_native_behavior"
+    },
+    {
+      "id": "engine/numera/scheduler.py::ScheduleStore.list",
+      "native": [
+        {
+          "path": "engine-rust/src/storage/schedules.rs",
+          "symbol": "ScheduleStore::list",
+          "line": 25
+        }
+      ],
+      "asserted_behavior": "Read schedules without rewriting bytes; preserve missing/malformed JSON behavior and refuse invalid UTF-8/non-array storage.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/schedule_store_parity.rs",
+          "rust_test": "schedule_text_admission_matches_original_without_replacing_bytes",
+          "line": 7
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_scheduler.py::test_add_and_list_round_trip",
+          "suite": "source_storage",
+          "rust_file": "engine-rust/tests/source_storage/scheduler.rs",
+          "rust_test": "scheduler::add_and_list_round_trip",
+          "map": "docs/source-storage-test-map.json"
+        }
+      ],
+      "adaptation_reason": null,
+      "remaining": [],
+      "disposition": "direct_native_behavior"
+    },
+    {
+      "id": "engine/numera/scheduler.py::ScheduleStore.mark_run",
+      "native": [
+        {
+          "path": "engine-rust/src/storage/schedules.rs",
+          "symbol": "ScheduleStore::mark_run",
+          "line": 139
+        }
+      ],
+      "asserted_behavior": "Set lastRun through the owned-outcome path, clearing its claim and advancing next due; non-finite native timestamps cannot become null.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/schedule_store_parity.rs",
+          "rust_test": "mark_run_matches_original_result_claim_clearing_and_exact_bytes",
+          "line": 109
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_scheduler.py::test_mark_run_moves_next_due",
+          "suite": "source_storage",
+          "rust_file": "engine-rust/tests/source_storage/scheduler.rs",
+          "rust_test": "scheduler::mark_run_moves_next_due",
+          "map": "docs/source-storage-test-map.json"
+        }
+      ],
+      "adaptation_reason": null,
+      "remaining": [],
+      "disposition": "direct_native_behavior"
+    },
+    {
+      "id": "engine/numera/scheduler.py::ScheduleStore.record",
+      "native": [
+        {
+          "path": "engine-rust/src/storage/schedules.rs",
+          "symbol": "ScheduleStore::record",
+          "line": 116
+        }
+      ],
+      "asserted_behavior": "Accept only scheduler-owned outcome fields, clear claim metadata when recording lastRun and refuse arbitrary user-field outcomes.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/schedule_store_parity.rs",
+          "rust_test": "schedule_claim_is_single_occurrence_and_record_clears_only_its_claim",
+          "line": 183
+        },
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/schedule_write_parity.rs",
+          "rust_test": "schedule_user_writes_validate_and_cannot_forge_scheduler_outcomes",
+          "line": 7
+        }
+      ],
+      "adaptation_reason": null,
+      "remaining": [],
+      "disposition": "direct_native_behavior"
+    },
+    {
+      "id": "engine/numera/scheduler.py::ScheduleStore.release",
+      "native": [
+        {
+          "path": "engine-rust/src/storage/schedules.rs",
+          "symbol": "ScheduleStore::release",
+          "line": 106
+        }
+      ],
+      "asserted_behavior": "Clear claim owner/time for the selected persisted schedule and preserve other schedule fields.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/schedule_store_parity.rs",
+          "rust_test": "schedule_claim_is_single_occurrence_and_record_clears_only_its_claim",
+          "line": 183
+        },
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/schedule_store_parity.rs",
+          "rust_test": "schedule_text_admission_matches_original_without_replacing_bytes",
+          "line": 7
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_scheduler.py::test_a_failed_materialisation_releases_the_claim",
+          "suite": "source_storage",
+          "rust_file": "engine-rust/tests/source_storage/scheduler.rs",
+          "rust_test": "scheduler::a_failed_materialisation_releases_the_claim",
+          "map": "docs/source-storage-test-map.json"
+        }
+      ],
+      "adaptation_reason": null,
+      "remaining": [],
+      "disposition": "direct_native_behavior"
+    },
+    {
+      "id": "engine/numera/scheduler.py::ScheduleStore.update",
+      "native": [
+        {
+          "path": "engine-rust/src/storage/schedules.rs",
+          "symbol": "ScheduleStore::update",
+          "line": 74
+        }
+      ],
+      "asserted_behavior": "Validate partial user edits before merging, reject forged scheduler/identity fields and preserve untouched fields/bytes on refusal.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/schedule_write_parity.rs",
+          "rust_test": "schedule_user_writes_validate_and_cannot_forge_scheduler_outcomes",
+          "line": 7
+        },
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/schedule_store_parity.rs",
+          "rust_test": "schedule_text_admission_matches_original_without_replacing_bytes",
+          "line": 7
+        }
+      ],
+      "adaptation_reason": null,
+      "remaining": [],
+      "disposition": "direct_native_behavior"
+    },
+    {
+      "id": "engine/numera/scheduler.py::due_schedules",
+      "native": [
+        {
+          "path": "engine-rust/src/storage/schedules.rs",
+          "symbol": "due_schedules",
+          "line": 299
+        }
+      ],
+      "asserted_behavior": "Return enabled due schedules in input order using the supplied clock and shared next-run computation.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/schedule_store_parity.rs",
+          "rust_test": "schedule_claim_is_single_occurrence_and_record_clears_only_its_claim",
+          "line": 183
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_scheduler.py::test_disabled_never_due",
+          "suite": "source_storage",
+          "rust_file": "engine-rust/tests/source_storage/scheduler.rs",
+          "rust_test": "scheduler::disabled_never_due",
+          "map": "docs/source-storage-test-map.json"
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_scheduler.py::test_never_run_is_due_at_creation",
+          "suite": "source_storage",
+          "rust_file": "engine-rust/tests/source_storage/scheduler.rs",
+          "rust_test": "scheduler::never_run_is_due_at_creation",
+          "map": "docs/source-storage-test-map.json"
+        }
+      ],
+      "adaptation_reason": null,
+      "remaining": [],
+      "disposition": "direct_native_behavior"
+    },
+    {
+      "id": "engine/numera/scheduler.py::next_run_at",
+      "native": [
+        {
+          "path": "engine-rust/src/storage/schedules.rs",
+          "symbol": "next_run_at",
+          "line": 283
+        },
+        {
+          "path": "engine-rust/src/storage/schedules.rs",
+          "symbol": "number",
+          "line": 247
+        }
+      ],
+      "asserted_behavior": "Use creation time for never-run schedules; otherwise lastRun plus at least 15minutes, preserving readable legacy numeric forms.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/schedule_store_parity.rs",
+          "rust_test": "schedule_claim_is_single_occurrence_and_record_clears_only_its_claim",
+          "line": 183
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_scheduler.py::test_never_run_is_due_at_creation",
+          "suite": "source_storage",
+          "rust_file": "engine-rust/tests/source_storage/scheduler.rs",
+          "rust_test": "scheduler::never_run_is_due_at_creation",
+          "map": "docs/source-storage-test-map.json"
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_scheduler.py::test_next_run_is_last_plus_interval",
+          "suite": "source_storage",
+          "rust_file": "engine-rust/tests/source_storage/scheduler.rs",
+          "rust_test": "scheduler::next_run_is_last_plus_interval",
+          "map": "docs/source-storage-test-map.json"
+        }
+      ],
+      "adaptation_reason": null,
+      "remaining": [],
+      "disposition": "direct_native_behavior"
+    },
+    {
+      "id": "engine/numera/scheduler.py::validate_schedule",
+      "native": [
+        {
+          "path": "engine-rust/src/storage/schedules.rs",
+          "symbol": "validate_schedule",
+          "line": 183
+        },
+        {
+          "path": "engine-rust/src/storage/schedules.rs",
+          "symbol": "number",
+          "line": 247
+        }
+      ],
+      "asserted_behavior": "Preserve field-validation order, source numeric string grammar, interval floor/maximum, shared warmup duration/preset policy and scheduler-owned field refusals.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/schedule_write_parity.rs",
+          "rust_test": "schedule_user_writes_validate_and_cannot_forge_scheduler_outcomes",
+          "line": 7
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_scheduler.py::test_a_malformed_schedule_is_refused_not_stored[bad0]",
+          "suite": "source_storage",
+          "rust_file": "engine-rust/tests/source_storage/scheduler.rs",
+          "rust_test": "scheduler::a_malformed_schedule_is_refused_not_stored_case_015",
+          "map": "docs/source-storage-test-map.json"
+        }
+      ],
+      "adaptation_reason": null,
+      "remaining": [],
+      "disposition": "direct_native_behavior"
+    },
+    {
+      "id": "engine/numera/webstore.py::WebStoreError",
+      "native": [
+        {
+          "path": "engine-rust/src/storage/extensions.rs",
+          "symbol": "extension_id",
+          "line": 183
+        }
+      ],
+      "asserted_behavior": "Preserve explicit extension-ID and package/resource refusals at the native boundary rather than returning a half-installation.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/extension_ids_parity.rs",
+          "rust_test": "extension_ids_keep_source_refusals_and_url_recognition",
+          "line": 5
+        },
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/extension_packages_parity.rs",
+          "rust_test": "extension_packages_validate_all_paths_before_extracting_any_member",
+          "line": 27
+        }
+      ],
+      "adaptation_reason": "The Python exception class is replaced by io::Error; concrete APIs carry diagnostic text into unchanged HTTP/CLI error dispositions.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/webstore.py::_download",
+      "native": [
+        {
+          "path": "engine-rust/src/network/extension_download.rs",
+          "symbol": "url",
+          "line": 12
+        },
+        {
+          "path": "engine-rust/src/network/extension_download.rs",
+          "symbol": "download",
+          "line": 26
+        },
+        {
+          "path": "engine-rust/src/network/extension_download.rs",
+          "symbol": "download_from",
+          "line": 31
+        },
+        {
+          "path": "engine-rust/src/network/extension_download.rs",
+          "symbol": "download_sync",
+          "line": 52
+        }
+      ],
+      "asserted_behavior": "Validate the ID before constructing the Google update request, preserve endpoint/User-Agent, follow redirects and require CRX magic under finite byte/time bounds.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/src/network/tests.rs",
+          "rust_test": "network::tests::native_download_streams_redirects_and_refuses_size_magic_or_stalls",
+          "line": 453
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_webstore.py::test_download_refuses_invalid_ids_before_constructing_a_request[../outside]",
+          "suite": "source_network",
+          "rust_file": "engine-rust/tests/source_network/webstore.rs",
+          "rust_test": "webstore::c000_download_refuses_invalid_ids_before_constructing_a_request",
+          "map": "docs/source-network-test-map.json"
+        }
+      ],
+      "adaptation_reason": "urllib becomes the native TLS client; added bounded streaming is exercised with actual loopback redirect/oversize/wrong-magic/stalled peers, without Google availability being assumed.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/webstore.py::_extract_safely",
+      "native": [
+        {
+          "path": "engine-rust/src/storage/extension_package.rs",
+          "symbol": "contained_target",
+          "line": 50
+        },
+        {
+          "path": "engine-rust/src/storage/extension_package.rs",
+          "symbol": "unpack",
+          "line": 62
+        }
+      ],
+      "asserted_behavior": "Validate every archive member before the first write, refuse traversal/absolute/symlink escape, and extract only inside the owned destination.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/extension_packages_parity.rs",
+          "rust_test": "extension_packages_validate_all_paths_before_extracting_any_member",
+          "line": 27
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_webstore.py::test_unpack_refuses_to_escape_the_folder",
+          "suite": "source_network",
+          "rust_file": "engine-rust/tests/source_network/webstore.rs",
+          "rust_test": "webstore::c000_unpack_refuses_to_escape_the_folder",
+          "map": "docs/source-network-test-map.json"
+        }
+      ],
+      "adaptation_reason": "The source safety pass is the native target-plan pass; all target validation completes before extraction starts.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/webstore.py::_icon_path",
+      "native": [
+        {
+          "path": "engine-rust/src/storage/extensions.rs",
+          "symbol": "contained_file",
+          "line": 39
+        },
+        {
+          "path": "engine-rust/src/storage/extensions.rs",
+          "symbol": "select_icon",
+          "line": 109
+        }
+      ],
+      "asserted_behavior": "Resolve only a real contained icon file, skip missing/escaping paths and preserve action/manifest precedence.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/extension_resources_parity.rs",
+          "rust_test": "installed_extensions_preserve_localized_name_and_contained_icon_selection",
+          "line": 178
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_webstore.py::test_icon_refuses_a_path_that_escapes_the_folder",
+          "suite": "source_network",
+          "rust_file": "engine-rust/tests/source_network/webstore.rs",
+          "rust_test": "webstore::c000_icon_refuses_a_path_that_escapes_the_folder",
+          "map": "docs/source-network-test-map.json"
+        }
+      ],
+      "adaptation_reason": "The private path helper is split into shared contained_file admission and select_icon precedence.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/webstore.py::_name",
+      "native": [
+        {
+          "path": "engine-rust/src/storage/extensions.rs",
+          "symbol": "display_name",
+          "line": 49
+        }
+      ],
+      "asserted_behavior": "Resolve manifest names and English/regional/default locale catalogs in source priority order, falling back for broken/missing names while refusing catalog escape.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/extension_resources_parity.rs",
+          "rust_test": "installed_extensions_preserve_localized_name_and_contained_icon_selection",
+          "line": 178
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_webstore.py::test_name_falls_back_to_the_locale_file[english-first]",
+          "suite": "source_network",
+          "rust_file": "engine-rust/tests/source_network/webstore.rs",
+          "rust_test": "webstore::c000_name_falls_back_to_the_locale_file",
+          "map": "docs/source-network-test-map.json"
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_webstore.py::test_name_survives_a_broken_manifest",
+          "suite": "source_network",
+          "rust_file": "engine-rust/tests/source_network/webstore.rs",
+          "rust_test": "webstore::c000_name_survives_a_broken_manifest",
+          "map": "docs/source-network-test-map.json"
+        }
+      ],
+      "adaptation_reason": null,
+      "remaining": [],
+      "disposition": "direct_native_behavior"
+    },
+    {
+      "id": "engine/numera/webstore.py::_unpack",
+      "native": [
+        {
+          "path": "engine-rust/src/storage/extension_package.rs",
+          "symbol": "zip_bytes",
+          "line": 28
+        },
+        {
+          "path": "engine-rust/src/storage/extension_package.rs",
+          "symbol": "unpack",
+          "line": 62
+        },
+        {
+          "path": "engine-rust/src/storage/extension_package.rs",
+          "symbol": "word",
+          "line": 20
+        }
+      ],
+      "asserted_behavior": "Strip supported CRX2/CRX3 headers with checked offsets, refuse unknown/truncated headers and extract the enclosed ZIP through the same safe plan.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/extension_packages_parity.rs",
+          "rust_test": "extension_packages_validate_all_paths_before_extracting_any_member",
+          "line": 27
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_webstore.py::test_unpack_strips_the_header",
+          "suite": "source_network",
+          "rust_file": "engine-rust/tests/source_network/webstore.rs",
+          "rust_test": "webstore::c000_unpack_strips_the_header",
+          "map": "docs/source-network-test-map.json"
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_webstore.py::test_unpack_rejects_an_unknown_crx_version",
+          "suite": "source_network",
+          "rust_file": "engine-rust/tests/source_network/webstore.rs",
+          "rust_test": "webstore::c000_unpack_rejects_an_unknown_crx_version",
+          "map": "docs/source-network-test-map.json"
+        }
+      ],
+      "adaptation_reason": null,
+      "remaining": [],
+      "disposition": "direct_native_behavior"
+    },
+    {
+      "id": "engine/numera/webstore.py::_unpack_zip",
+      "native": [
+        {
+          "path": "engine-rust/src/storage/extension_package.rs",
+          "symbol": "unpack",
+          "line": 62
+        },
+        {
+          "path": "engine-rust/src/storage/extension_package.rs",
+          "symbol": "invalid_zip",
+          "line": 9
+        }
+      ],
+      "asserted_behavior": "Open a real ZIP, retain invalid-package refusals and exact extracted bytes, and route all members through containment validation.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/extension_packages_parity.rs",
+          "rust_test": "extension_packages_validate_all_paths_before_extracting_any_member",
+          "line": 27
+        }
+      ],
+      "adaptation_reason": "ZIP and CRX extraction share one unpack entry with an explicit crx format flag.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/webstore.py::describe",
+      "native": [
+        {
+          "path": "engine-rust/src/storage/extensions.rs",
+          "symbol": "describe",
+          "line": 164
+        },
+        {
+          "path": "engine-rust/src/storage/extensions.rs",
+          "symbol": "Description",
+          "line": 11
+        }
+      ],
+      "asserted_behavior": "Return the extension path, localized display name and admitted optional icon as a typed serializable description.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/extension_resources_parity.rs",
+          "rust_test": "installed_extensions_preserve_localized_name_and_contained_icon_selection",
+          "line": 178
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_webstore.py::test_describe_carries_name_and_icon",
+          "suite": "source_network",
+          "rust_file": "engine-rust/tests/source_network/webstore.rs",
+          "rust_test": "webstore::c000_describe_carries_name_and_icon",
+          "map": "docs/source-network-test-map.json"
+        }
+      ],
+      "adaptation_reason": null,
+      "remaining": [],
+      "disposition": "direct_native_behavior"
+    },
+    {
+      "id": "engine/numera/webstore.py::extension_id",
+      "native": [
+        {
+          "path": "engine-rust/src/storage/extensions.rs",
+          "symbol": "extension_id",
+          "line": 183
+        },
+        {
+          "path": "engine-rust/src/storage/extensions.rs",
+          "symbol": "word",
+          "line": 179
+        }
+      ],
+      "asserted_behavior": "Extract valid 32letter a-p IDs from source link shapes and produce specific empty/truncated/invalid-alphabet refusals.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/extension_ids_parity.rs",
+          "rust_test": "extension_ids_keep_source_refusals_and_url_recognition",
+          "line": 5
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_webstore.py::test_a_truncated_id_says_so",
+          "suite": "source_network",
+          "rust_file": "engine-rust/tests/source_network/webstore.rs",
+          "rust_test": "webstore::c000_a_truncated_id_says_so",
+          "map": "docs/source-network-test-map.json"
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_webstore.py::test_a_letter_past_p_says_which_one",
+          "suite": "source_network",
+          "rust_file": "engine-rust/tests/source_network/webstore.rs",
+          "rust_test": "webstore::c000_a_letter_past_p_says_which_one",
+          "map": "docs/source-network-test-map.json"
+        }
+      ],
+      "adaptation_reason": null,
+      "remaining": [],
+      "disposition": "direct_native_behavior"
+    },
+    {
+      "id": "engine/numera/webstore.py::icon",
+      "native": [
+        {
+          "path": "engine-rust/src/storage/extensions.rs",
+          "symbol": "icon",
+          "line": 155
+        },
+        {
+          "path": "engine-rust/src/storage/extensions.rs",
+          "symbol": "select_icon",
+          "line": 109
+        }
+      ],
+      "asserted_behavior": "Choose the largest existing contained icon, falling back to browser/action string or dictionary icons and returning absent when undeclared.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/extension_resources_parity.rs",
+          "rust_test": "installed_extensions_preserve_localized_name_and_contained_icon_selection",
+          "line": 178
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_webstore.py::test_icon_skips_a_size_whose_file_is_missing",
+          "suite": "source_network",
+          "rust_file": "engine-rust/tests/source_network/webstore.rs",
+          "rust_test": "webstore::c000_icon_skips_a_size_whose_file_is_missing",
+          "map": "docs/source-network-test-map.json"
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_webstore.py::test_icon_accepts_a_plain_string_action_icon",
+          "suite": "source_network",
+          "rust_file": "engine-rust/tests/source_network/webstore.rs",
+          "rust_test": "webstore::c000_icon_accepts_a_plain_string_action_icon",
+          "map": "docs/source-network-test-map.json"
+        }
+      ],
+      "adaptation_reason": null,
+      "remaining": [],
+      "disposition": "direct_native_behavior"
+    },
+    {
+      "id": "engine/numera/webstore.py::icon.size",
+      "native": [
+        {
+          "path": "engine-rust/src/storage/extensions.rs",
+          "symbol": "icon_size",
+          "line": 96
+        }
+      ],
+      "asserted_behavior": "Rank integer icon sizes with source sign/Unicode-decimal/underscore/large-integer behavior, preserving insertion order for equal sizes.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/extension_resources_parity.rs",
+          "rust_test": "extension_icon_integer_ranking_matches_original_selection",
+          "line": 126
+        }
+      ],
+      "adaptation_reason": "The nested source sort-key callable becomes a private integer-magnitude comparison key; it avoids lossy float conversion.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/webstore.py::install",
+      "native": [
+        {
+          "path": "engine-rust/src/storage/extension_install.rs",
+          "symbol": "install",
+          "line": 60
+        },
+        {
+          "path": "engine-rust/src/storage/extension_install.rs",
+          "symbol": "regular_directory",
+          "line": 22
+        },
+        {
+          "path": "engine-rust/src/storage/extension_install.rs",
+          "symbol": "outcome",
+          "line": 48
+        }
+      ],
+      "asserted_behavior": "Reuse existing manifests unless forced, refuse linked targets before network, stage/validate the whole package, replace under lock and keep the old extension on refused installation.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/extension_install_parity.rs",
+          "rust_test": "extension_install_reuses_or_replaces_and_uninstall_reports_actual_removal",
+          "line": 30
+        },
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/extension_install_parity.rs",
+          "rust_test": "refused_forced_install_keeps_previous_extension_and_cleans_staging",
+          "line": 94
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_webstore.py::test_install_refuses_linked_extension_before_network_or_replacement",
+          "suite": "source_network",
+          "rust_file": "engine-rust/tests/source_network/webstore.rs",
+          "rust_test": "webstore::c000_install_refuses_linked_extension_before_network_or_replacement",
+          "map": "docs/source-network-test-map.json"
+        }
+      ],
+      "adaptation_reason": null,
+      "remaining": [],
+      "disposition": "direct_native_behavior"
+    },
+    {
+      "id": "engine/numera/webstore.py::installed",
+      "native": [
+        {
+          "path": "engine-rust/src/storage/extensions.rs",
+          "symbol": "installed",
+          "line": 298
+        },
+        {
+          "path": "engine-rust/src/storage/extensions.rs",
+          "symbol": "Installed",
+          "line": 17
+        }
+      ],
+      "asserted_behavior": "List sorted managed directories containing a real contained manifest, retaining localized names/icons and excluding nonextensions.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/extension_resources_parity.rs",
+          "rust_test": "installed_extensions_preserve_localized_name_and_contained_icon_selection",
+          "line": 178
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_webstore.py::test_installed_lists_only_real_extensions",
+          "suite": "source_network",
+          "rust_file": "engine-rust/tests/source_network/webstore.rs",
+          "rust_test": "webstore::c000_installed_lists_only_real_extensions",
+          "map": "docs/source-network-test-map.json"
+        }
+      ],
+      "adaptation_reason": null,
+      "remaining": [],
+      "disposition": "direct_native_behavior"
+    },
+    {
+      "id": "engine/numera/webstore.py::is_store_url",
+      "native": [
+        {
+          "path": "engine-rust/src/storage/extensions.rs",
+          "symbol": "is_store_url",
+          "line": 174
+        }
+      ],
+      "asserted_behavior": "Recognize both source Chrome store host/path spellings with original case/whitespace handling.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/extension_ids_parity.rs",
+          "rust_test": "extension_ids_keep_source_refusals_and_url_recognition",
+          "line": 5
+        }
+      ],
+      "adaptation_reason": null,
+      "remaining": [],
+      "disposition": "direct_native_behavior"
+    },
+    {
+      "id": "engine/numera/webstore.py::uninstall",
+      "native": [
+        {
+          "path": "engine-rust/src/storage/extension_install.rs",
+          "symbol": "uninstall",
+          "line": 141
+        }
+      ],
+      "asserted_behavior": "Remove the admitted extension directory under transaction ownership, report actual removal and leave a missing extension unchanged.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/extension_install_parity.rs",
+          "rust_test": "extension_install_reuses_or_replaces_and_uninstall_reports_actual_removal",
+          "line": 30
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_webstore.py::test_uninstall_removes_the_folder",
+          "suite": "source_network",
+          "rust_file": "engine-rust/tests/source_network/webstore.rs",
+          "rust_test": "webstore::c000_uninstall_removes_the_folder",
+          "map": "docs/source-network-test-map.json"
+        }
+      ],
+      "adaptation_reason": null,
+      "remaining": [],
+      "disposition": "direct_native_behavior"
+    },
+    {
+      "id": "engine/numera/write_contract.py::WriteRefused",
+      "native": [
+        {
+          "path": "engine-rust/src/write_contract.rs",
+          "symbol": "Error",
+          "line": 17
+        }
+      ],
+      "asserted_behavior": "Carry the full ordered refusal collection and render it as the same joined public message without mutating storage.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/validation_parity.rs",
+          "rust_test": "uncoerced_write_validation_matches_source",
+          "line": 184
+        },
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/repo_batch_parity.rs",
+          "rust_test": "complete_batch_refusals_match_original_index_order_and_preserved_bytes",
+          "line": 7
+        },
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/validation_parity/contract.rs",
+          "rust_test": "contract::public_write_contract_shapes_contexts_and_refusals_match_original",
+          "line": 8
+        }
+      ],
+      "adaptation_reason": "The Python ValueError subclass becomes Error::Refused(Vec<String>); route/CLI layers translate it into their existing external dispositions.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/write_contract.py::_dashboard_problems",
+      "native": [
+        {
+          "path": "engine-rust/src/validation.rs",
+          "symbol": "profile_problems",
+          "line": 355
+        }
+      ],
+      "asserted_behavior": "Validate only stated patch fields, numeric aliases, packed screen and proxy text; absence continues to mean no change.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/validation_parity.rs",
+          "rust_test": "uncoerced_write_validation_matches_source",
+          "line": 184
+        },
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/http_fields_parity.rs",
+          "rust_test": "http_write_fields_preserve_original_order_and_refusal_vocabulary",
+          "line": 5
+        }
+      ],
+      "adaptation_reason": "The private dashboard callback is the explicit dashboard-patch branch of the shared validator.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/write_contract.py::_display",
+      "native": [
+        {
+          "path": "engine-rust/src/validation.rs",
+          "symbol": "short",
+          "line": 111
+        },
+        {
+          "path": "engine-rust/src/validation.rs",
+          "symbol": "repr",
+          "line": 67
+        },
+        {
+          "path": "engine-rust/src/validation.rs",
+          "symbol": "number_text",
+          "line": 45
+        }
+      ],
+      "asserted_behavior": "Bound quoted values, preserve Python-compatible control/Unicode/numeric representation, and suppress secret values in refusals.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/validation_parity.rs",
+          "rust_test": "ascii_refusal_representation_matches_original_without_exposing_secret_values",
+          "line": 33
+        },
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/validation_parity.rs",
+          "rust_test": "unicode_representation_matches_original_public_validation_and_argv",
+          "line": 54
+        },
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/validation_parity.rs",
+          "rust_test": "finite_numbers_match_original_validation_and_mcp_representation",
+          "line": 95
+        }
+      ],
+      "adaptation_reason": "Python str/repr callbacks become private fixed-format native helpers, including large-integer size descriptions.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/write_contract.py::_name",
+      "native": [
+        {
+          "path": "engine-rust/src/validation.rs",
+          "symbol": "kind",
+          "line": 16
+        }
+      ],
+      "asserted_behavior": "Name uncoerced JSON kinds in public refusals; distinguish bool/number/null/text/container instead of coercing them.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/validation_parity.rs",
+          "rust_test": "uncoerced_write_validation_matches_source",
+          "line": 184
+        },
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/validation_parity.rs",
+          "rust_test": "ascii_refusal_representation_matches_original_without_exposing_secret_values",
+          "line": 33
+        }
+      ],
+      "adaptation_reason": "Python type introspection becomes exhaustive serde_json::Value matching; arbitrary Python object classes are outside the native typed/JSON boundary.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/write_contract.py::_nested",
+      "native": [
+        {
+          "path": "engine-rust/src/validation.rs",
+          "symbol": "table_problems",
+          "line": 269
+        }
+      ],
+      "asserted_behavior": "Visit every policy field in source order, dispatch scalar rules, recurse through fingerprint/proxy maps, and report missing or wrong-shaped nested blocks before any write.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/validation_parity.rs",
+          "rust_test": "uncoerced_write_validation_matches_source",
+          "line": 184
+        },
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/repo_batch_parity.rs",
+          "rust_test": "complete_batch_refusals_match_original_index_order_and_preserved_bytes",
+          "line": 7
+        }
+      ],
+      "adaptation_reason": "Private source dispatch/reader/flatten helpers form one recursive native table walker, consumed by all complete-profile writes.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/write_contract.py::_reader",
+      "native": [
+        {
+          "path": "engine-rust/src/write_contract.rs",
+          "symbol": "Input",
+          "line": 11
+        },
+        {
+          "path": "engine-rust/src/write_contract.rs",
+          "symbol": "profile_problems",
+          "line": 87
+        }
+      ],
+      "asserted_behavior": "Read typed Profile inputs through serialization and uncoerced JSON maps through direct table lookup; malformed nested scalar/list blocks yield named refusals.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/validation_parity.rs",
+          "rust_test": "uncoerced_write_validation_matches_source",
+          "line": 184
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_write_contract_context.py::test_a_malformed_engine_record_stays_a_complete_record[record1-a numeric fingerprint]",
+          "suite": "source_domain",
+          "rust_file": "engine-rust/tests/source_domain/context.rs",
+          "rust_test": "context_cases::a_malformed_engine_record_stays_a_complete_record_case_001",
+          "map": "docs/source-domain-test-map.json"
+        },
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/validation_parity/contract.rs",
+          "rust_test": "contract::public_write_contract_shapes_contexts_and_refusals_match_original",
+          "line": 8
+        }
+      ],
+      "adaptation_reason": "Rust accepts the explicit Profile/JSON sum type instead of Python duck-typed attribute readers. Arbitrary attribute stand-ins are intentionally replaced by those typed boundaries.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/write_contract.py::_rule_problem",
+      "native": [
+        {
+          "path": "engine-rust/src/validation.rs",
+          "symbol": "table_problems",
+          "line": 269
+        }
+      ],
+      "asserted_behavior": "Visit every policy field in source order, dispatch scalar rules, recurse through fingerprint/proxy maps, and report missing or wrong-shaped nested blocks before any write.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/validation_parity.rs",
+          "rust_test": "uncoerced_write_validation_matches_source",
+          "line": 184
+        },
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/repo_batch_parity.rs",
+          "rust_test": "complete_batch_refusals_match_original_index_order_and_preserved_bytes",
+          "line": 7
+        }
+      ],
+      "adaptation_reason": "Private source dispatch/reader/flatten helpers form one recursive native table walker, consumed by all complete-profile writes.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/write_contract.py::_table_problems",
+      "native": [
+        {
+          "path": "engine-rust/src/validation.rs",
+          "symbol": "table_problems",
+          "line": 269
+        }
+      ],
+      "asserted_behavior": "Visit every policy field in source order, dispatch scalar rules, recurse through fingerprint/proxy maps, and report missing or wrong-shaped nested blocks before any write.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/validation_parity.rs",
+          "rust_test": "uncoerced_write_validation_matches_source",
+          "line": 184
+        },
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/repo_batch_parity.rs",
+          "rust_test": "complete_batch_refusals_match_original_index_order_and_preserved_bytes",
+          "line": 7
+        }
+      ],
+      "adaptation_reason": "Private source dispatch/reader/flatten helpers form one recursive native table walker, consumed by all complete-profile writes.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/write_contract.py::bookmarks_problem",
+      "native": [
+        {
+          "path": "engine-rust/src/validation.rs",
+          "symbol": "bookmarks",
+          "line": 245
+        }
+      ],
+      "asserted_behavior": "Require bookmark objects with a required text URL and optional text name; preserve first offending nested-field refusal.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/validation_parity.rs",
+          "rust_test": "uncoerced_write_validation_matches_source",
+          "line": 184
+        },
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/repo_batch_parity.rs",
+          "rust_test": "complete_batch_refusals_match_original_index_order_and_preserved_bytes",
+          "line": 7
+        }
+      ],
+      "adaptation_reason": null,
+      "remaining": [],
+      "disposition": "direct_native_behavior"
+    },
+    {
+      "id": "engine/numera/write_contract.py::bool_problem",
+      "native": [
+        {
+          "path": "engine-rust/src/validation.rs",
+          "symbol": "table_problems",
+          "line": 269
+        }
+      ],
+      "asserted_behavior": "Boolean rules accept only true/false; numeric truthiness cannot write a flag.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/validation_parity.rs",
+          "rust_test": "uncoerced_write_validation_matches_source",
+          "line": 184
+        }
+      ],
+      "adaptation_reason": "The private scalar bool helper is an explicit branch of the real rule dispatcher.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/write_contract.py::flat_number_problem",
+      "native": [
+        {
+          "path": "engine-rust/src/validation.rs",
+          "symbol": "flat_number_problems",
+          "line": 329
+        },
+        {
+          "path": "engine-rust/src/validation.rs",
+          "symbol": "number_problem",
+          "line": 161
+        }
+      ],
+      "asserted_behavior": "Use engine field bounds for dashboard numeric vocabulary without imposing unrelated full-patch checks.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/http_fields_parity.rs",
+          "rust_test": "http_write_fields_preserve_original_order_and_refusal_vocabulary",
+          "line": 5
+        },
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/validation_parity.rs",
+          "rust_test": "permitted_fraction_spellings_match_original_numeric_admission",
+          "line": 145
+        }
+      ],
+      "adaptation_reason": "The one-field helper is folded into the ordered dashboard numeric pass; rule lookup uses the dash alias in the shared policy.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/write_contract.py::list_problem",
+      "native": [
+        {
+          "path": "engine-rust/src/validation.rs",
+          "symbol": "list_problem",
+          "line": 144
+        }
+      ],
+      "asserted_behavior": "Refuse non-list or non-text elements and preserve optional-null/required-list refusal vocabulary.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/validation_parity.rs",
+          "rust_test": "uncoerced_write_validation_matches_source",
+          "line": 184
+        },
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/repo_batch_parity.rs",
+          "rust_test": "complete_batch_refusals_match_original_index_order_and_preserved_bytes",
+          "line": 7
+        }
+      ],
+      "adaptation_reason": null,
+      "remaining": [],
+      "disposition": "direct_native_behavior"
+    },
+    {
+      "id": "engine/numera/write_contract.py::number_problem",
+      "native": [
+        {
+          "path": "engine-rust/src/validation.rs",
+          "symbol": "number_problem",
+          "line": 161
+        }
+      ],
+      "asserted_behavior": "Admit only finite in-range numeric values, reject booleans and fractional counts, retain explicitly reported device-memory fractions.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/validation_parity.rs",
+          "rust_test": "uncoerced_write_validation_matches_source",
+          "line": 184
+        },
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/validation_parity.rs",
+          "rust_test": "finite_numbers_match_original_validation_and_mcp_representation",
+          "line": 95
+        },
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/validation_parity.rs",
+          "rust_test": "permitted_fraction_spellings_match_original_numeric_admission",
+          "line": 145
+        }
+      ],
+      "adaptation_reason": null,
+      "remaining": [],
+      "disposition": "direct_native_behavior"
+    },
+    {
+      "id": "engine/numera/write_contract.py::packed_problems",
+      "native": [
+        {
+          "path": "engine-rust/src/validation.rs",
+          "symbol": "profile_problems",
+          "line": 355
+        }
+      ],
+      "asserted_behavior": "Validate packed screen text as exactly two whole dimensions in range; preserve signed, Unicode-decimal and underscore grammar and original refusals.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/validation_parity.rs",
+          "rust_test": "packed_screen_integer_grammar_matches_original",
+          "line": 7
+        }
+      ],
+      "adaptation_reason": "The source one-key packed-field dispatcher and screen helper are fused into the dashboard branch. Unknown keys remain the HTTP schema boundary.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/write_contract.py::profile_problems",
+      "native": [
+        {
+          "path": "engine-rust/src/write_contract.rs",
+          "symbol": "profile_problems",
+          "line": 87
+        },
+        {
+          "path": "engine-rust/src/write_contract.rs",
+          "symbol": "contextual",
+          "line": 77
+        }
+      ],
+      "asserted_behavior": "Return ordered problems for typed complete objects, complete records and partial patches with the caller context rather than a generic profile prefix.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/validation_parity.rs",
+          "rust_test": "uncoerced_write_validation_matches_source",
+          "line": 184
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_write_contract_context.py::test_an_entry_point_may_declare_the_shape_outright",
+          "suite": "source_domain",
+          "rust_file": "engine-rust/tests/source_domain/context.rs",
+          "rust_test": "context_cases::an_entry_point_may_declare_the_shape_outright",
+          "map": "docs/source-domain-test-map.json"
+        },
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/validation_parity/contract.rs",
+          "rust_test": "contract::public_write_contract_shapes_contexts_and_refusals_match_original",
+          "line": 8
+        }
+      ],
+      "adaptation_reason": null,
+      "remaining": [],
+      "disposition": "direct_native_behavior"
+    },
+    {
+      "id": "engine/numera/write_contract.py::readable",
+      "native": [
+        {
+          "path": "engine-rust/src/read_view.rs",
+          "symbol": "readable",
+          "line": 79
+        },
+        {
+          "path": "engine-rust/src/read_view.rs",
+          "symbol": "readable_with",
+          "line": 66
+        }
+      ],
+      "asserted_behavior": "Clone and repair a readable projection using engine or dashboard field vocabulary; ensure the displayed name exists and preserve stored bytes.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/profile_read_parity.rs",
+          "rust_test": "profile_http_read_repairs_only_view_and_reports_uncertain_claim_as_running",
+          "line": 159
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_write_contract_core.py::test_the_read_view_never_touches_the_stored_record",
+          "suite": "source_domain",
+          "rust_file": "engine-rust/tests/source_domain/core.rs",
+          "rust_test": "core_cases::the_read_view_never_touches_the_stored_record",
+          "map": "docs/source-domain-test-map.json"
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_write_contract_core.py::test_the_dashboard_view_uses_its_own_field_names",
+          "suite": "source_domain",
+          "rust_file": "engine-rust/tests/source_domain/core.rs",
+          "rust_test": "core_cases::the_dashboard_view_uses_its_own_field_names",
+          "map": "docs/source-domain-test-map.json"
+        },
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/profile_read_parity/read_view.rs",
+          "rust_test": "read_view::legacy_read_views_match_original_core_http_and_name_admission",
+          "line": 14
+        }
+      ],
+      "adaptation_reason": null,
+      "remaining": [],
+      "disposition": "direct_native_behavior"
+    },
+    {
+      "id": "engine/numera/write_contract.py::readable_names",
+      "native": [
+        {
+          "path": "engine-rust/src/read_view.rs",
+          "symbol": "readable_names",
+          "line": 59
+        }
+      ],
+      "asserted_behavior": "Apply the tolerant name projection to name/value pairs without changing their identity or stored record.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/profile_read_parity.rs",
+          "rust_test": "profile_http_read_repairs_only_view_and_reports_uncertain_claim_as_running",
+          "line": 159
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_write_contract_core.py::test_a_legacy_name_renders_as_text[123-123]",
+          "suite": "source_domain",
+          "rust_file": "engine-rust/tests/source_domain/core.rs",
+          "rust_test": "core_cases::a_legacy_name_renders_as_text_case_025",
+          "map": "docs/source-domain-test-map.json"
+        },
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/profile_read_parity/read_view.rs",
+          "rust_test": "read_view::legacy_read_views_match_original_core_http_and_name_admission",
+          "line": 14
+        }
+      ],
+      "adaptation_reason": null,
+      "remaining": [],
+      "disposition": "direct_native_behavior"
+    },
+    {
+      "id": "engine/numera/write_contract.py::readable_value",
+      "native": [
+        {
+          "path": "engine-rust/src/read_view.rs",
+          "symbol": "readable_value",
+          "line": 55
+        },
+        {
+          "path": "engine-rust/src/read_view.rs",
+          "symbol": "value_with",
+          "line": 15
+        }
+      ],
+      "asserted_behavior": "Repair legacy text scalars and lists for display, retain valid values and avoid writing the repaired view back.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/profile_read_parity.rs",
+          "rust_test": "profile_http_read_repairs_only_view_and_reports_uncertain_claim_as_running",
+          "line": 159
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_write_contract_core.py::test_a_legacy_name_renders_as_text[True-true]",
+          "suite": "source_domain",
+          "rust_file": "engine-rust/tests/source_domain/core.rs",
+          "rust_test": "core_cases::a_legacy_name_renders_as_text_case_028",
+          "map": "docs/source-domain-test-map.json"
+        },
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/profile_read_parity/read_view.rs",
+          "rust_test": "read_view::legacy_read_views_match_original_core_http_and_name_admission",
+          "line": 14
+        }
+      ],
+      "adaptation_reason": "The default scalar helper is public; custom field vocabularies are supplied through readable_with for whole records rather than Python keyword arguments on a scalar helper. The custom-record projection is asserted alongside default scalar behavior.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/write_contract.py::require",
+      "native": [
+        {
+          "path": "engine-rust/src/write_contract.rs",
+          "symbol": "require",
+          "line": 132
+        },
+        {
+          "path": "engine-rust/src/write_contract.rs",
+          "symbol": "require_problems",
+          "line": 124
+        }
+      ],
+      "asserted_behavior": "Reject a complete profile before persistence, preserving batch entry context/order and leaving both stored copies unchanged.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/repo_batch_parity.rs",
+          "rust_test": "complete_batch_refusals_match_original_index_order_and_preserved_bytes",
+          "line": 7
+        },
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/validation_parity/contract.rs",
+          "rust_test": "contract::public_write_contract_shapes_contexts_and_refusals_match_original",
+          "line": 8
+        }
+      ],
+      "adaptation_reason": null,
+      "remaining": [],
+      "disposition": "direct_native_behavior"
+    },
+    {
+      "id": "engine/numera/write_contract.py::require_flat_numbers",
+      "native": [
+        {
+          "path": "engine-rust/src/write_contract.rs",
+          "symbol": "require_flat_numbers",
+          "line": 136
+        }
+      ],
+      "asserted_behavior": "Refuse invalid flat numeric fields at converter boundaries while allowing converter-specific text shapes.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/validation_parity.rs",
+          "rust_test": "uncoerced_write_validation_matches_source",
+          "line": 184
+        },
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/validation_parity.rs",
+          "rust_test": "permitted_fraction_spellings_match_original_numeric_admission",
+          "line": 145
+        },
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/validation_parity/contract.rs",
+          "rust_test": "contract::public_write_contract_shapes_contexts_and_refusals_match_original",
+          "line": 8
+        }
+      ],
+      "adaptation_reason": null,
+      "remaining": [],
+      "disposition": "direct_native_behavior"
+    },
+    {
+      "id": "engine/numera/write_contract.py::screen_problem",
+      "native": [
+        {
+          "path": "engine-rust/src/validation.rs",
+          "symbol": "profile_problems",
+          "line": 355
+        }
+      ],
+      "asserted_behavior": "Validate packed screen text as exactly two whole dimensions in range; preserve signed, Unicode-decimal and underscore grammar and original refusals.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/validation_parity.rs",
+          "rust_test": "packed_screen_integer_grammar_matches_original",
+          "line": 7
+        }
+      ],
+      "adaptation_reason": "The source one-key packed-field dispatcher and screen helper are fused into the dashboard branch. Unknown keys remain the HTTP schema boundary.",
+      "remaining": [],
+      "disposition": "fused_or_typed_adaptation"
+    },
+    {
+      "id": "engine/numera/write_contract.py::shape",
+      "native": [
+        {
+          "path": "engine-rust/src/write_contract.rs",
+          "symbol": "shape",
+          "line": 50
+        },
+        {
+          "path": "engine-rust/src/write_contract.rs",
+          "symbol": "Input",
+          "line": 11
+        }
+      ],
+      "asserted_behavior": "Respect an explicit declared shape, distinguish typed Profile from JSON, and classify any fingerprint-key JSON record as complete even when its value is malformed.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/validation_parity.rs",
+          "rust_test": "uncoerced_write_validation_matches_source",
+          "line": 184
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_write_contract_context.py::test_an_unknown_declared_shape_is_refused_not_guessed",
+          "suite": "source_domain",
+          "rust_file": "engine-rust/tests/source_domain/context.rs",
+          "rust_test": "context_cases::an_unknown_declared_shape_is_refused_not_guessed",
+          "map": "docs/source-domain-test-map.json"
+        },
+        {
+          "kind": "source",
+          "source_case_id": "tests/test_write_contract_context.py::test_an_ordinary_patch_is_still_a_patch",
+          "suite": "source_domain",
+          "rust_file": "engine-rust/tests/source_domain/context.rs",
+          "rust_test": "context_cases::an_ordinary_patch_is_still_a_patch",
+          "map": "docs/source-domain-test-map.json"
+        },
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/validation_parity/contract.rs",
+          "rust_test": "contract::public_write_contract_shapes_contexts_and_refusals_match_original",
+          "line": 8
+        }
+      ],
+      "adaptation_reason": null,
+      "remaining": [],
+      "disposition": "direct_native_behavior"
+    },
+    {
+      "id": "engine/numera/write_contract.py::text_problem",
+      "native": [
+        {
+          "path": "engine-rust/src/validation.rs",
+          "symbol": "text_problem",
+          "line": 130
+        }
+      ],
+      "asserted_behavior": "Refuse non-text values with required/optional behavior and never quote password/pass values.",
+      "tests": [
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/validation_parity.rs",
+          "rust_test": "uncoerced_write_validation_matches_source",
+          "line": 184
+        },
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/validation_parity.rs",
+          "rust_test": "ascii_refusal_representation_matches_original_without_exposing_secret_values",
+          "line": 33
+        },
+        {
+          "kind": "native",
+          "rust_file": "engine-rust/tests/validation_parity.rs",
+          "rust_test": "unicode_representation_matches_original_public_validation_and_argv",
+          "line": 54
+        }
+      ],
+      "adaptation_reason": null,
+      "remaining": [],
+      "disposition": "direct_native_behavior"
+    }
+  ],
+  "local_verification": {
+    "source_network": {
+      "reported": 150,
+      "missing": 0,
+      "extra": 0,
+      "duplicates": 0,
+      "failed": 0,
+      "ignored": 0,
+      "inventory": "docs/source-network-test-map.json"
+    },
+    "existing_selected_cases": {
+      "relay_units": 2,
+      "old_relay_wire_and_proxy_assignment": 3,
+      "vault_credential_propagation": 1,
+      "init_script_parity": 1,
+      "new_test_functions": 0,
+      "cli_cookie_and_alignment": 2,
+      "cookie_http": 1
+    },
+    "strict_clippy": "Passed browser-page host builder plus core library/source_network/relay_request_parity/proxy_assignment_parity/source_vault targets.",
+    "scope": "This is local concrete verification; final-SHA hosted Linux/macOS/Windows status is tracked separately by the parent migration review.",
+    "post_retirement_core_clippy": "All targets strict Clippy passed after all seven original JavaScript files were deleted; log page-post-retirement-all-targets-clippy.log."
+  }
+}

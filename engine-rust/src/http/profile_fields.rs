@@ -13,6 +13,20 @@ fn schema() -> Result<&'static Value, serde_json::Error> {
         .get()
         .expect("immutable parsed HTTP field schema installed"))
 }
+/// The client-visible profile vocabulary used by the actual write checker.
+pub fn client_fields() -> Result<Vec<String>, serde_json::Error> {
+    Ok(schema()?["client_fields"]
+        .as_array()
+        .expect("Compiled client fields are an array")
+        .iter()
+        .map(|field| {
+            field
+                .as_str()
+                .expect("Compiled client field is text")
+                .to_owned()
+        })
+        .collect())
+}
 pub fn strip_server_owned(
     record: &mut Map<String, Value>,
 ) -> Result<Vec<String>, serde_json::Error> {
@@ -63,9 +77,7 @@ pub fn check(
     let fields = schema["fields"]
         .as_object()
         .expect("source schema fields are an object");
-    let client = schema["client_fields"]
-        .as_array()
-        .expect("source client fields are an array");
+    let client = client_fields()?;
     let mut unknown = record
         .keys()
         .filter(|key| {

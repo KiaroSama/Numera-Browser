@@ -16,9 +16,9 @@ use axum::{
 use serde_json::{Map, Value, json};
 use std::{collections::HashMap, path::PathBuf, sync::Arc};
 
-struct Proxies {
-    pool: ProxyPool,
-    dashboard: DashboardStore,
+pub(super) struct Proxies {
+    pub(super) pool: ProxyPool,
+    pub(super) dashboard: DashboardStore,
 }
 pub fn router(root: PathBuf, environment: &str) -> Router {
     let auth = Arc::new(RequestAuth::new(TokenStore::new(root.clone()), environment));
@@ -39,10 +39,25 @@ pub(crate) fn routes(root: PathBuf, password: Option<String>) -> Router {
         .route("/api/proxies/{id}", put(edit).delete(delete_one))
         .route("/api/proxies/delete", post(delete))
         .route("/api/proxies/export", post(export))
+        .route(
+            "/api/proxies/archive",
+            post(super::proxy_assignment::archive),
+        )
+        .route("/api/proxies/assign", post(super::proxy_assignment::assign))
+        .route("/api/proxies/test", post(super::proxy_test::test))
+        .route("/api/proxies/{id}/test", post(super::proxy_test::test_one))
+        .route(
+            "/api/proxies/{id}/rotate",
+            post(super::proxy_rotate::rotate_one),
+        )
+        .route(
+            "/api/proxies/rotate",
+            post(super::proxy_rotate::rotate_many),
+        )
         .with_state(state)
 }
 async fn list(State(state): State<Arc<Proxies>>) -> Response {
-    match tokio::task::spawn_blocking(move || {
+    match super::admission::blocking(move || {
         let mut usage = HashMap::<String, usize>::new();
         for profile in state.dashboard.list()? {
             let proxy = &profile["proxy"];
@@ -84,7 +99,7 @@ async fn edit(
     Path(id): Path<String>,
     ObjectBody(body): ObjectBody,
 ) -> Response {
-    match tokio::task::spawn_blocking(move || edit_row(&state, &id, body)).await {
+    match super::admission::blocking(move || edit_row(&state, &id, body)).await {
         Ok(Ok(response)) => response,
         Ok(Err(RepoError::VaultLocked(message))) => error(StatusCode::LOCKED, &message),
         _ => failure(),
@@ -139,7 +154,7 @@ async fn delete(State(state): State<Arc<Proxies>>, ObjectBody(body): ObjectBody)
             "give a list of proxy ids to delete",
         );
     };
-    match tokio::task::spawn_blocking(move || {
+    match super::admission::blocking(move || {
         let mut removed = Vec::new();
         for id in ids {
             if let Some(id) = id.as_str()
@@ -159,7 +174,7 @@ async fn delete(State(state): State<Arc<Proxies>>, ObjectBody(body): ObjectBody)
     }
 }
 async fn delete_one(State(state): State<Arc<Proxies>>, Path(id): Path<String>) -> Response {
-    match tokio::task::spawn_blocking(move || state.pool.delete(&id)).await {
+    match super::admission::blocking(move || state.pool.delete(&id)).await {
         Ok(Ok(true)) => Json(json!({"ok":true})).into_response(),
         Ok(Ok(false)) => error(StatusCode::NOT_FOUND, "proxy not found"),
         Ok(Err(RepoError::VaultLocked(message))) => error(StatusCode::LOCKED, &message),
@@ -167,7 +182,7 @@ async fn delete_one(State(state): State<Arc<Proxies>>, Path(id): Path<String>) -
     }
 }
 async fn add(State(state): State<Arc<Proxies>>, ObjectBody(body): ObjectBody) -> Response {
-    match tokio::task::spawn_blocking(move || {
+    match super::admission::blocking(move || {
         let incoming = match body.get("proxies").filter(|value| !value.is_null()) {
             Some(incoming) => incoming.clone(),
             None => match body.get("text").filter(|value| truth(value)) {
@@ -200,30 +215,55 @@ async fn add(State(state): State<Arc<Proxies>>, ObjectBody(body): ObjectBody) ->
     }
 }
 async fn export(State(state): State<Arc<Proxies>>, ObjectBody(body): ObjectBody) -> Response {
-    match tokio::task::spawn_blocking(move || {
+    match super::admission::blocking(move || {
         let mut rows = state.pool.list()?;
         if let Some(ids) = body.get("ids").filter(|value| truth(value)) {
             let keep = match ids {
                 Value::Array(ids) => ids.clone(),
                 Value::String(text) => text.chars().map(|c| Value::String(c.to_string())).collect(),
                 Value::Object(object) => object.keys().cloned().map(Value::String).collect(),
-                _ => return Err(RepoError::InvalidRecord("Proxy selection is not iterable".into())),
+                _ => {
+                    return Err(RepoError::InvalidRecord(
+                        "Proxy selection is not iterable".into(),
+                    ));
+                }
             };
-            if keep.iter().any(|id| id.is_array() || id.is_object()) { return Err(RepoError::InvalidRecord("Proxy selection contains unhashable IDs".into())); }
+            if keep.iter().any(|id| id.is_array() || id.is_object()) {
+                return Err(RepoError::InvalidRecord(
+                    "Proxy selection contains unhashable IDs".into(),
+                ));
+            }
             rows.retain(|row| keep.contains(&row["id"]));
         }
         let mut withheld = 0;
         for row in &rows {
-            let id = row["id"].as_str().ok_or_else(|| RepoError::InvalidRecord("Proxy ID is not text".into()))?;
+            let id = row["id"]
+                .as_str()
+                .ok_or_else(|| RepoError::InvalidRecord("Proxy ID is not text".into()))?;
             withheld += usize::from(state.pool.secret_withheld(id)?);
         }
         if withheld > 0 {
-            return Ok(error(StatusCode::CONFLICT, &format!("{withheld} of these proxies have a password that cannot be read: the vault is locked, so this needs the master password - set NUMERA_PASSWORD or pass --password")));
+            return Ok(error(
+                StatusCode::CONFLICT,
+                &format!(
+                    "{withheld} of these proxies have a password that cannot be read: {}",
+                    crate::vault::policy::LOCKED_MESSAGE
+                ),
+            ));
         }
-        let lines = rows.iter().map(crate::pool::to_line).collect::<Result<Vec<_>, _>>()?;
-        let text = if lines.is_empty() { String::new() } else { format!("{}\n", lines.join("\n")) };
+        let lines = rows
+            .iter()
+            .map(crate::pool::to_line)
+            .collect::<Result<Vec<_>, _>>()?;
+        let text = if lines.is_empty() {
+            String::new()
+        } else {
+            format!("{}\n", lines.join("\n"))
+        };
         Ok::<_, RepoError>(Json(json!({"count":lines.len(),"text":text})).into_response())
-    }).await {
+    })
+    .await
+    {
         Ok(Ok(response)) => response,
         _ => failure(),
     }
@@ -231,6 +271,6 @@ async fn export(State(state): State<Arc<Proxies>>, ObjectBody(body): ObjectBody)
 fn error(status: StatusCode, detail: &str) -> Response {
     (status, Json(json!({"detail":detail}))).into_response()
 }
-fn failure() -> Response {
+pub(super) fn failure() -> Response {
     (StatusCode::INTERNAL_SERVER_ERROR, "Internal Server Error").into_response()
 }

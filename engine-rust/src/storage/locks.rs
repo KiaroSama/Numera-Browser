@@ -84,6 +84,9 @@ pub(crate) fn resolved(path: &Path) -> io::Result<PathBuf> {
     } else {
         std::env::current_dir()?.join(path)
     };
+    // Python normalizes verbatim Windows dot components before filesystem resolution.
+    #[cfg(windows)]
+    let absolute: PathBuf = absolute.components().collect();
     let canonical = match absolute.canonicalize() {
         Ok(path) => path,
         Err(error) if error.kind() == io::ErrorKind::NotFound => {
@@ -114,9 +117,34 @@ pub(crate) fn resolved(path: &Path) -> io::Result<PathBuf> {
     Ok(canonical)
 }
 
+/// Source-compatible environment policy; explicit acquisition budgets stay separate.
+pub fn configured_timeout(value: Option<&str>) -> Duration {
+    let maximum = if cfg!(windows) {
+        4_294_967.0
+    } else {
+        9_223_372_036.0
+    };
+    let seconds = value
+        .and_then(crate::browser::cookie_expiry::numeric_text)
+        .filter(|seconds| seconds.is_finite() && *seconds >= 0.0 && *seconds <= maximum)
+        .unwrap_or(30.0);
+    Duration::from_secs_f64(seconds)
+}
+
 impl DataLock {
+    pub fn acquire_configured(&self) -> io::Result<LockGuard<'_>> {
+        self.acquire(configured_timeout(
+            std::env::var("NUMERA_LOCK_TIMEOUT").ok().as_deref(),
+        ))
+    }
+
     pub fn path(&self) -> &Path {
         &self.path
+    }
+
+    pub fn owned_by_current_thread(&self) -> io::Result<bool> {
+        let state = self.shared.state.lock().map_err(|_| poisoned())?;
+        Ok(state.depth > 0 && state.owner == Some(thread::current().id()))
     }
 
     pub fn transaction(root: &Path) -> io::Result<Self> {
@@ -187,6 +215,10 @@ impl DataLock {
             state.owner = Some(owner);
             drop(state);
             let acquired = (|| {
+                #[cfg(feature = "test-support")]
+                if let Some(result) = crate::ownership::test_support::before_os_lock(&self.path) {
+                    result?;
+                }
                 let file = open_lock(&self.path)?;
                 loop {
                     match file.try_lock() {
@@ -274,5 +306,14 @@ impl SessionLease {
             TryLockError::Error(error) => error,
         })?;
         Ok(Self { _file: file })
+    }
+}
+
+impl Drop for SessionLease {
+    fn drop(&mut self) {
+        // Release this owner's flock before closing its descriptor. A concurrent
+        // fork can briefly hold a CLOEXEC copy until exec; close alone would
+        // leave that unrelated child holding the old open-file description.
+        let _ = self._file.unlock();
     }
 }

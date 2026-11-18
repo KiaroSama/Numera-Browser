@@ -10,7 +10,6 @@ use std::{
     fs,
     io::{self, Read},
     path::{Path, PathBuf},
-    time::Duration,
 };
 use zip::{ZipArchive, result::ZipError};
 
@@ -51,10 +50,11 @@ fn read_profile(archive: &mut ZipArchive<fs::File>, source: &Path) -> Result<Pro
 fn unpack(archive: &mut ZipArchive<fs::File>, staging: &Path) -> Result<(), RepoError> {
     for index in 0..archive.len() {
         let mut file = archive.by_index(index).map_err(zip_error)?;
-        let Some(member) = file.name().strip_prefix("user-data/") else {
+        let name = file.name().map_err(zip_error)?;
+        let Some(member) = name.strip_prefix("user-data/") else {
             continue;
         };
-        if file.is_dir() || file.name().ends_with('/') {
+        if file.is_dir() || name.ends_with('/') {
             continue;
         }
         // ZIP link metadata is never honored; only regular bytes enter staging.
@@ -108,6 +108,28 @@ fn ordinary_directory(path: &Path) -> io::Result<bool> {
     Ok(true)
 }
 
+fn restore_previous(aside: &Path, session: &Path) -> io::Result<()> {
+    #[cfg(feature = "test-support")]
+    crate::vault::testing::event("before-restore-session-rollback", aside)?;
+    fs::rename(aside, session)
+}
+fn transfer_session(staging: &mut Staging, session: &Path) -> io::Result<()> {
+    #[cfg(feature = "test-support")]
+    crate::vault::testing::event("before-restore-transfer", session)?;
+    staging.transfer(session)
+}
+fn reclaim_previous(aside: &Path) -> io::Result<()> {
+    #[cfg(feature = "test-support")]
+    if crate::vault::testing::event("before-restore-reclaim", aside)?
+        == crate::vault::testing::Action::Skip
+    {
+        return Err(io::Error::other(
+            "Previous session cleanup did not remove its directory",
+        ));
+    }
+    fs::remove_dir_all(aside)
+}
+
 fn undo_session(
     session: &Path,
     aside: Option<&Path>,
@@ -121,13 +143,15 @@ fn undo_session(
         ));
     }
     if let Some(aside) = aside
-        && let Err(error) = fs::rename(aside, session)
+        && let Err(error) = restore_previous(aside, session)
     {
-        return RepoError::Message(format!(
-            "the restore failed ({failure}) and the previous session could not be put back: it is still on disk as {}. Move that directory to {} to finish recovering. ({error})",
-            aside.display(),
-            session.display()
-        ));
+        return io::Error::other(super::paths::SessionStranded {
+            retained: aside.to_owned(),
+            destination: session.to_owned(),
+            cause: error,
+            primary: Some(failure.to_string()),
+        })
+        .into();
     }
     failure
 }
@@ -145,14 +169,17 @@ impl ProfileRepo {
         if new_id {
             profile.id = random_hex(6)?;
         }
+        fs::create_dir_all(&self.root)?;
         let mut staging = Staging::new(&self.root, "numera-restore-")?;
         let result = (|| -> Result<(Profile, Option<PathBuf>), RepoError> {
             unpack(&mut archive, staging.path()?)?;
+            #[cfg(feature = "test-support")]
+            crate::vault::testing::event("before-restore-lease", &self.root)?;
             let _lease = SessionLease::acquire(&SessionLease::path_for(&self.root, &profile.id)?)?;
             claims::refuse_if_busy(&self.root, &profile.id, host)
                 .map_err(|error| RepoError::Message(error.to_string()))?;
             let lock = DataLock::transaction(&self.root)?;
-            let _root = lock.acquire(Duration::from_secs(30))?;
+            let _root = lock.acquire_configured()?;
             self.require_settled()?;
             if new_id
                 && (self.path(&profile.id, "profiles")?.try_exists()?
@@ -164,15 +191,16 @@ impl ProfileRepo {
             }
             let held = self.held_names()?;
             if let Some(name) = profile.name.as_str().filter(|name| !name.is_empty()) {
-                let own = held
-                    .get(&profile.id)
-                    .is_some_and(|names| names.iter().any(|held| held == name));
-                let taken = |candidate: &str| {
-                    held.iter().any(|(id, names)| {
-                        id != &profile.id && names.iter().any(|name| name == candidate)
-                    })
+                // An existing name is not a new claim, including copy candidates
+                // shared by legacy records. Match the ordinary write policy.
+                let available = |candidate: &str| {
+                    held.get(&profile.id)
+                        .is_some_and(|names| names.iter().any(|name| name == candidate))
+                        || !held.iter().any(|(id, names)| {
+                            id != &profile.id && names.iter().any(|name| name == candidate)
+                        })
                 };
-                if !own && taken(name) {
+                if !available(name) {
                     let original = name.to_owned();
                     let selected = (1..=held.values().map(Vec::len).sum::<usize>() + 1)
                         .map(|count| {
@@ -182,7 +210,7 @@ impl ProfileRepo {
                                 format!("{original} (copy {count})")
                             }
                         })
-                        .find(|candidate| !taken(candidate))
+                        .find(|candidate| available(candidate))
                         .ok_or_else(|| {
                             RepoError::Message("No unclaimed restore name found".into())
                         })?;
@@ -209,7 +237,8 @@ impl ProfileRepo {
             } else {
                 None
             };
-            if let Err(error) = staging.transfer(&session) {
+            let transfer = transfer_session(&mut staging, &session);
+            if let Err(error) = transfer {
                 return Err(undo_session(
                     &session,
                     aside.as_deref(),
@@ -238,7 +267,7 @@ impl ProfileRepo {
             }
         };
         if let Some(aside) = aside
-            && let Err(error) = fs::remove_dir_all(&aside)
+            && let Err(error) = reclaim_previous(&aside)
         {
             eprintln!(
                 "WARNING: {} was restored, but its previous session remains at {}: {error}",

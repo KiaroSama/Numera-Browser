@@ -1,0 +1,71 @@
+[
+  {
+    "variant": "new",
+    "result": {
+      "source": "/workspace/work/native-characterization-fgg59iwt/cases/new/source",
+      "destination": "/workspace/work/native-characterization-fgg59iwt/cases/new/destination",
+      "copied": [
+        "profiles (1)"
+      ],
+      "skipped": [],
+      "failed": [],
+      "profiles": 0
+    },
+    "metadata": {
+      "profiles/a": {
+        "modified": 1600000000000000000,
+        "mode": 488
+      },
+      "profiles/a/nested": {
+        "modified": 1600000001000000000,
+        "mode": 488
+      }
+    }
+  },
+  {
+    "variant": "existing",
+    "result": {
+      "source": "/workspace/work/native-characterization-fgg59iwt/cases/existing/source",
+      "destination": "/workspace/work/native-characterization-fgg59iwt/cases/existing/destination",
+      "copied": [
+        "profiles (2)"
+      ],
+      "skipped": [],
+      "failed": [],
+      "profiles": 0
+    },
+    "metadata": {
+      "profiles/a": {
+        "modified": 1794353409301393815,
+        "mode": 448
+      },
+      "profiles/a/nested": {
+        "modified": 1794353409301393815,
+        "mode": 448
+      }
+    }
+  },
+  {
+    "variant": "mixed",
+    "result": {
+      "source": "/workspace/work/native-characterization-fgg59iwt/cases/mixed/source",
+      "destination": "/workspace/work/native-characterization-fgg59iwt/cases/mixed/destination",
+      "copied": [
+        "profiles (2)"
+      ],
+      "skipped": [],
+      "failed": [],
+      "profiles": 0
+    },
+    "metadata": {
+      "profiles/a": {
+        "modified": 1794353409302423130,
+        "mode": 448
+      },
+      "profiles/a/nested": {
+        "modified": 1600000001000000000,
+        "mode": 488
+      }
+    }
+  }
+]

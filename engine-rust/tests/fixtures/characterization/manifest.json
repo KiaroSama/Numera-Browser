@@ -1,0 +1,958 @@
+{
+  "schema": 1,
+  "scope": "historical native characterization; current source cases have separate exact-ID maps",
+  "cases": [
+    {
+      "test": "shared_identity_helpers_match_original_versions_platforms_and_consumers",
+      "rust_file": "identity_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "9056d755ce82956c420d47087c2c99a09ceced813815475a804bd14ed7e93248",
+      "fixture": "shared_identity_helpers_match_original_versions_platforms_and_consumers.json",
+      "fixture_sha256": "8784d9466cc6abe57ecbaec95acbc8eb4b365f62a1ed3b3669b56300c252e540",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 123
+    },
+    {
+      "test": "complete_integer_seed_identities_and_commands_match_original",
+      "rust_file": "integer_seed_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "7d131b4f2f6f58233b021237bb514e622fb9b0c0e6b56dbf85aa6ac5a4403004",
+      "fixture": "complete_integer_seed_identities_and_commands_match_original.json",
+      "fixture_sha256": "8ee7891996f30a826b4922a24d009e8d09734952773881935c468c7bc46dcf80",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": {
+        "identities": 14,
+        "commands": 26
+      }
+    },
+    {
+      "test": "packed_screen_integer_grammar_matches_original",
+      "rust_file": "validation_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "f3d7523f256c48e4b7182507d67eb43ca67950b7f24d9493f6de04851e63267d",
+      "fixture": "packed_screen_integer_grammar_matches_original.json",
+      "fixture_sha256": "e28ab3f40dee366c5f33a5e08ca3ab5c9ab94fb1f4dbad71c7bbed19ca202d68",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 46
+    },
+    {
+      "test": "ascii_refusal_representation_matches_original_without_exposing_secret_values",
+      "rust_file": "validation_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "72de669fe4aae200dd6b095f3898705192537e3cd2b275b396f5cb8153333df4",
+      "fixture": "ascii_refusal_representation_matches_original_without_exposing_secret_values.json",
+      "fixture_sha256": "034a959e6433097e26b0b11b7205d021a3b9fa3d562df90861a4cd8edf6f3e63",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 268
+    },
+    {
+      "test": "unicode_representation_matches_original_public_validation_and_argv",
+      "rust_file": "validation_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "2950df23d97272ebd6f53d92b7b86fe76a72da62d573ee46cdb581e803ebbfbe",
+      "fixture": "unicode_representation_matches_original_public_validation_and_argv.json",
+      "fixture_sha256": "bcc7b6995e7d79d64967d8deb1ccb6300fcd5f24c3e6e6e1fc8c02a31d08abcc",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 315
+    },
+    {
+      "test": "finite_numbers_match_original_validation_and_mcp_representation",
+      "rust_file": "validation_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "80597095c0171b33416dd8fdcbb15f95647e23f19ace2f77b571d4ed11328b15",
+      "fixture": "finite_numbers_match_original_validation_and_mcp_representation.json",
+      "fixture_sha256": "6e8379e848e4d64ef7bfd4775873bcf845b0d993b93f1824d66bd4258a761ea2",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 651
+    },
+    {
+      "test": "permitted_fraction_spellings_match_original_numeric_admission",
+      "rust_file": "validation_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "929f971b02d6e9499fce229dad7560067499eda36c3c23083455b6f9aa169b3d",
+      "fixture": "permitted_fraction_spellings_match_original_numeric_admission.json",
+      "fixture_sha256": "7b35cfdca905dc420234545ea014a11112204f883cd7415857161d948e3ac92b",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 47
+    },
+    {
+      "test": "dns_options_match_original_whitespace_and_refusals",
+      "rust_file": "browser_options_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "f661623249c2d1c9505aa626b77d8bc2df6ef6ce268105f4de3d2cd7c16cc331",
+      "fixture": "dns_options_match_original_whitespace_and_refusals.json",
+      "fixture_sha256": "f1aad16166c856c40ce738434dc1148684c5cbedba5c1c67ae727bf315fd2e97",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 126
+    },
+    {
+      "test": "alignment_versions_match_original_decimal_captures",
+      "rust_file": "support/alignment_versions.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "967f84213df9b70a8473a1aa7e55fbc1a1be543b7c8593494f0fefffd4e5d673",
+      "fixture": "alignment_versions_match_original_decimal_captures.json",
+      "fixture_sha256": "ec2cd0898d08eabfe9cda6f8fec4f20e0bd7e3b54f42353df768ec2e81406aa9",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": {
+        "rows": 92
+      }
+    },
+    {
+      "test": "integer_options_preserve_original_digit_bound_before_zero_normalization",
+      "rust_file": "cli_registry_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "17456979a39c080918078f3ab70dfa21a599d9ba50c6a3c00462bc02a3367680",
+      "fixture": "integer_options_preserve_original_digit_bound_before_zero_normalization.json",
+      "fixture_sha256": "b75d5b87d7798104b65714701745ea9b0af55d8899cf047e08953a4dfeba88a8",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 96
+    },
+    {
+      "test": "separate_option_values_match_original_token_classification",
+      "rust_file": "cli_registry_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "0a9af35a749ecbe47373a8083ebc55fe22380e401f88d473a6a8d231f0f66cd8",
+      "fixture": "separate_option_values_match_original_token_classification.json",
+      "fixture_sha256": "a1daa2880cb73f313bb8d22211fef7fa5b5c1b1d2700617a435e4d8695cabb82",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 584
+    },
+    {
+      "test": "positional_values_preserve_original_admission_and_option_boundaries",
+      "rust_file": "cli_registry_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "981eeb97e6f6cbb31c95fa2d8e09a9cdd9bfe4c43949580890b0d5f695e2f646",
+      "fixture": "positional_values_preserve_original_admission_and_option_boundaries.json",
+      "fixture_sha256": "56d87d34cd98dfb5a3c56554c97fd88b102bf862572b0f86fa189a6ca91463be",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": {
+        "rows": 3675
+      }
+    },
+    {
+      "test": "short_help_preserves_original_explicit_tail_admission",
+      "rust_file": "cli_registry_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "90dbeba0df9730379138a06fdae8b0f4e341a2bfdb89da5cd00e25d27252111a",
+      "fixture": "short_help_preserves_original_explicit_tail_admission.json",
+      "fixture_sha256": "13e8679e031dc06bb6701b877b5095138dbb3231b8e10c98e6c82fa02449c9d8",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": {
+        "rows": 993
+      }
+    },
+    {
+      "test": "variadic_positionals_preserve_original_option_separated_runs",
+      "rust_file": "cli_registry_parity/variadic.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "c348c85c4824c7ad73a437ab7e6c7981a97f66b049f5943474c691294013e2d6",
+      "fixture": "variadic_positionals_preserve_original_option_separated_runs.json",
+      "fixture_sha256": "da67d84de40884892776802bc439f9da5587a2ce1db6aba03aa9a4e4bb0126d7",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": {
+        "rows": 176
+      }
+    },
+    {
+      "test": "version_flag_matches_original_root_scope_and_value_admission",
+      "rust_file": "cli_registry_parity/version.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "ef6125e228cd3189bd3e489e8038babd3a7bdd89fca64e5b66dc71cc69a8885b",
+      "fixture": "version_flag_matches_original_root_scope_and_value_admission.json",
+      "fixture_sha256": "1aabd42aa6218e01dc9266120d9276a3ed8eb0b47e7c590f18219032ce8a82cf",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 117
+    },
+    {
+      "test": "command_registry_matches_original_schemas_arguments_and_parse_views",
+      "rust_file": "cli_registry_parity.rs",
+      "source_commit": "3bf1d839fd33e42a10b982bd8607a7052ea7c4cd",
+      "source_tree": "8178ab9d3f04613462afcf52a2bf565e361d1d2e",
+      "observer_sha256": "dfd3987b933fd7dd834612c258b1f6086c1e94602e2506c07f6b7f12d1c35a1c",
+      "fixture": "command_registry_matches_original_schemas_arguments_and_parse_views.json",
+      "fixture_sha256": "00e9a7550eecd5b8594274577f70bbaed0fe9c9e220e61d2e4ee852d95bbc8b3",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": {
+        "tools": 69,
+        "parse": 94,
+        "argv": 69,
+        "output": 39
+      },
+      "source_update": "Exact-offer acquisition flags and parser defaults from the chosen migration checkpoint; historical source had no consent flags."
+    },
+    {
+      "test": "public_write_contract_shapes_contexts_and_refusals_match_original",
+      "rust_file": "validation_parity/contract.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "b9ecce78b55574b54d2a08ce9904ae957771035ec3a21935cc609f6f25eee8ac",
+      "fixture": "public_write_contract_shapes_contexts_and_refusals_match_original.json",
+      "fixture_sha256": "feda46c47422804eae594a44bd763c2dbf84f69aeb7c51afb41780a6dc45df1f",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 270
+    },
+    {
+      "test": "selection_matches_original_complete_profile_membership",
+      "rust_file": "bulk_parity/selection.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "0f4edd97dadf3f91477ac1ad87ecca98c4d9ed06d502961964e9c6edede73612",
+      "fixture": "selection_matches_original_complete_profile_membership.json",
+      "fixture_sha256": "9a34598d4955437b7726a201c454d090300f34f472f558fa07ed5c5801d6fd4c",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 83
+    },
+    {
+      "test": "claim_diagnostics_match_original_truth_and_display_without_changing_records",
+      "rust_file": "claim_parity/diagnostics.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "66c60c9ea705daef17df0276f661de9e6cde4987076801794a067ad65b4d1202",
+      "fixture": "claim_diagnostics_match_original_truth_and_display_without_changing_records.json",
+      "fixture_sha256": "2135ae8fbc39a2990f00aea759bbe79988a633db85d91fb791a7000a783876ff",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 1011
+    },
+    {
+      "test": "settings_commands_preserve_original_decoding_refusals_and_early_errors",
+      "rust_file": "cli_settings_parity/strict_settings.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "420d063b9a9f1d18f96ce79d49179f2309fc18e96f29699ac5582d684b68aaf1",
+      "fixture": "settings_commands_preserve_original_decoding_refusals_and_early_errors.json",
+      "fixture_sha256": "5a6b0553acdf6a207b4b53829b4e5dd155ea32161edef6201c094fe870aa8f27",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 56
+    },
+    {
+      "test": "completion_diagnostics_match_original_distinct_paths_and_readable_holders",
+      "rust_file": "completion_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "1443a864498250e3ee503483cc03754c4ca49ad4e4b7815f71338b1710f4590e",
+      "fixture": "completion_diagnostics_match_original_distinct_paths_and_readable_holders.json",
+      "fixture_sha256": "d8dfac848214d6ea895e6a49e8e6bca6bb2b0c0611d36bce94235ae78d232340",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 36
+    },
+    {
+      "test": "extension_setter_preserves_original_stored_set_admission_and_cache",
+      "rust_file": "config_parity/extension_admission.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "b27de91e820302ab27a8c3b7bb87557f90704e8bd02d1c18bdafac9ca2dcaf75",
+      "fixture": "extension_setter_preserves_original_stored_set_admission_and_cache.json",
+      "fixture_sha256": "f22d6b70b387b50ca1e610bd01052a1864e92df6de31678a93c5bc31f9b30f4f",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 60
+    },
+    {
+      "test": "settings_getters_match_original_strict_text_admission_and_values",
+      "rust_file": "config_parity/strict_reads.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "2557fe999c2bbb6d07bba9911ee895309005d5b7ce525e2a84a8c6130fe64b3d",
+      "fixture": "settings_getters_match_original_strict_text_admission_and_values.json",
+      "fixture_sha256": "a2255a604e60fce4a16c2504fd705395c52b434a98b86abd7caa214cda999ac1",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 33
+    },
+    {
+      "test": "fallible_settings_reads_preserve_original_utf8_refusal_and_cache",
+      "rust_file": "config_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "2d65a1efb5ad444320257200fb62cc451f18fac9855f5a76c781bd2377b4a418",
+      "fixture": "fallible_settings_reads_preserve_original_utf8_refusal_and_cache.json",
+      "fixture_sha256": "191da144ab5b11ddafd18806a70a91ec876b738dc3fd7b110429d21a87aa1806",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 20
+    },
+    {
+      "test": "malformed_settings_text_refuses_without_replacing_source_bytes",
+      "rust_file": "config_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "c002270169635ffff7b7e6aab808b18ac95916020e8c560af324e79b7086d255",
+      "fixture": "malformed_settings_text_refuses_without_replacing_source_bytes.json",
+      "fixture_sha256": "a03bc0f02b80275b41f664c4688181b6934abd3721ba182c3a3205faf9c790fe",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 18
+    },
+    {
+      "test": "settings_http_preserves_original_text_refusals_and_short_circuits",
+      "rust_file": "config_routes_parity/strict_settings.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "b1541735599e52ae7a2bd367c68d81876875901071626108a2a261e9a620a7c4",
+      "fixture": "settings_http_preserves_original_text_refusals_and_short_circuits.json",
+      "fixture_sha256": "7738e1c76e8c6382258f153fb376ffb1ea0446d8ed635bdb1a8d2091c6ba77a7",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 42
+    },
+    {
+      "test": "conversion_text_boundaries_match_original_profiles_and_roundtrips",
+      "rust_file": "conversion_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "88dbc4cec62d3975d457deda9a91c32b94824981eea9a8c6ab46d8fb208d7f07",
+      "fixture": "conversion_text_boundaries_match_original_profiles_and_roundtrips.json",
+      "fixture_sha256": "0d62ec6874b24f57e0afeabf80acfb290531fab10278ae515553280772dd42bf",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 69
+    },
+    {
+      "test": "container_text_conversion_matches_original_profiles_and_roundtrips",
+      "rust_file": "conversion_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "473d3ad92744cd986f4ea85dbde41e2278c7eaa25654072eeee2bd84b9e0e485",
+      "fixture": "container_text_conversion_matches_original_profiles_and_roundtrips.json",
+      "fixture_sha256": "43e65353049f05372e31f761d99da208bb324b5ed8a42ab60be88ce1d104ab92",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": {
+        "cases": 54
+      }
+    },
+    {
+      "test": "reverse_proxy_conversion_matches_original_without_canonicalizing_records",
+      "rust_file": "conversion_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "c47add3ae7a9dd9fcfaa36682ddefb52264c5e911af510bd7843ff088dc97408",
+      "fixture": "reverse_proxy_conversion_matches_original_without_canonicalizing_records.json",
+      "fixture_sha256": "06272143440697ecc8b20d5a9b40c18c73bd311f1386da47e23feb570495f60e",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": {
+        "cases": 112
+      }
+    },
+    {
+      "test": "integer_conversion_matches_original_grammar_defaults_and_seed_magnitude",
+      "rust_file": "conversion_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "a822202d28e5d2cb4c8571727a79b9f5bdfb8b5eaf498ac0c6e8f378a233cdf0",
+      "fixture": "integer_conversion_matches_original_grammar_defaults_and_seed_magnitude.json",
+      "fixture_sha256": "e07e6dc292d0c606e218e6103b0f121e573e35107f087244f5770f5ddacc1be8",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": {
+        "cases": 80
+      }
+    },
+    {
+      "test": "fractional_conversion_matches_original_numeric_values_and_defaults",
+      "rust_file": "conversion_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "9e6bc7780b1d7e1206c4d26a00556effb03628a2bbedba591ffc341481ee7b4e",
+      "fixture": "fractional_conversion_matches_original_numeric_values_and_defaults.json",
+      "fixture_sha256": "47ee8610dbef028dccea17339f494891dd59098b07b33490d3d8d0ad940dd9f1",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": {
+        "cases": 82
+      }
+    },
+    {
+      "test": "dashboard_readers_preserve_strict_text_admission_and_original_fallbacks",
+      "rust_file": "dashboard_store_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "3b0b157afb7d88aa6c6bd2152a0184654743dca5031a35cfbee20cc49515b39c",
+      "fixture": "dashboard_readers_preserve_strict_text_admission_and_original_fallbacks.json",
+      "fixture_sha256": "1c01252485cfc08f5fc613dcba9e33f29311d40a697a0f82004d31f7646f935e",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 18
+    },
+    {
+      "test": "public_dashboard_coherence_matches_original_ordered_issues_and_http",
+      "rust_file": "fingerprint_routes_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "1f84fe0cb239c654531ca386a9f9643b02943fba3a36cd699442319b514b1f99",
+      "fixture": "public_dashboard_coherence_matches_original_ordered_issues_and_http.json",
+      "fixture_sha256": "a34c1a834a130b3ae6cc7d65d2278b903cc2ee2d74d3406912aa241bdc3c7fdc",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 30
+    },
+    {
+      "test": "new_subtree_errors_match_original_continuation_summaries_and_retry",
+      "rust_file": "first_run_failure/copytree_errors.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "d7c3ed1aef5c95dd9800f9cb2545f158b38823c8863154ee578ff2fca50e60db",
+      "fixture": "new_subtree_errors_match_original_continuation_summaries_and_retry.json",
+      "fixture_sha256": "47fc3ba87e4ecf1ce49a39eaaa759696a94f8c2527bb6c83db01f8e915696771",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 6
+    },
+    {
+      "test": "advisory_profile_count_matches_original_when_destination_scan_is_denied",
+      "rust_file": "first_run_failure/profile_count.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "1be098d45dbb0554bf11cb0a9f3da4f2af35d559811fd80c3e593994f4bab12b",
+      "fixture": "advisory_profile_count_matches_original_when_destination_scan_is_denied.json",
+      "fixture_sha256": "6d3c4c1cd8ef602e6cbee4223a81f5d710b09f0331ee44070ca6f3121a9a1039",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 4
+    },
+    {
+      "test": "fifo_import_matches_original_refusal_continuation_and_retry",
+      "rust_file": "first_run_failure.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "7fac448f28d16f444424933091b2f7fcd6bd225fce76e72cd46fe98292ce5c89",
+      "fixture": "fifo_import_matches_original_refusal_continuation_and_retry.json",
+      "fixture_sha256": "1297cc7ccbd905718cfeea6e5b10a2c7501cda0e526fca28357f609bd437bbd7",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 4
+    },
+    {
+      "test": "new_subtrees_preserve_original_nested_lock_entries",
+      "rust_file": "first_run_parity/nested_copy.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "9b359143c95d93be383cc4c9121f35d7a72e2141166d1a70e486e32afa1efccc",
+      "fixture": "new_subtrees_preserve_original_nested_lock_entries.json",
+      "fixture_sha256": "e46e50ef0840637f15f753036a93e1fac2d52e283796d879d87c3814267b4771",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 3
+    },
+    {
+      "test": "complete_first_run_summaries_match_original_paths_and_copy_results",
+      "rust_file": "first_run_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "abc624a76bcdbc7d14141a0795a64b9501256a67e1301873bf0333508e9cb75f",
+      "fixture": "complete_first_run_summaries_match_original_paths_and_copy_results.json",
+      "fixture_sha256": "d4f5f5911fd0f0d3d40c7982dad4b17c396af35e6dec4b480a80cce0ed2c1e90",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 8
+    },
+    {
+      "test": "legacy_discovery_preserves_original_order_and_never_marks_denied_sources_complete",
+      "rust_file": "first_run_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "15e66d7d60fc85eb1ca4176d3318566ffaec153b0577ed82b375086869845e0d",
+      "fixture": "legacy_discovery_preserves_original_order_and_never_marks_denied_sources_complete.json",
+      "fixture_sha256": "eebacc475825293ded7393b4af3726576c30ce9590e882e07c38095ae3950df5",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 8
+    },
+    {
+      "test": "imported_new_directories_preserve_original_metadata_without_replacing_existing_modes",
+      "rust_file": "first_run_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "28503ec4ac7fc516c1dc549b083f577dfa09edc24af1b6ab117f787ae06dbf05",
+      "fixture": "imported_new_directories_preserve_original_metadata_without_replacing_existing_modes.json",
+      "fixture_sha256": "6dece528adae2db5304616e8cc24c2f7686d4811da04c1acf02c1e78e44b3336",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 3
+    },
+    {
+      "test": "json_filename_selection_matches_original_storage_consumers",
+      "rust_file": "folder_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "a22deeb5555aa85d1d0dec3598575560b978054f66bff7edef933b9c5b3523bc",
+      "fixture": "json_filename_selection_matches_original_storage_consumers.json",
+      "fixture_sha256": "edc4c3ae661a2efb579e2fc42ac3e35b6015280172265d7084ccf42aba8daa24",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": {
+        "cases": 50
+      }
+    },
+    {
+      "test": "malformed_folder_text_refuses_without_replacing_source_bytes",
+      "rust_file": "folder_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "3b5009b7f7a9d65883a64e17a8822c4c95ea7d8a2fafb54c3d78a3eaecb67e39",
+      "fixture": "malformed_folder_text_refuses_without_replacing_source_bytes.json",
+      "fixture_sha256": "df7fcae59d008981293f9043901c048d634165e82cf95a5c22239567faec534b",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 40
+    },
+    {
+      "test": "folder_name_whitespace_matches_original_operations",
+      "rust_file": "folder_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "e2f2839923ce9782cfbc88e02ff65744a7b965779d63d7d052e7dca1a7908e6c",
+      "fixture": "folder_name_whitespace_matches_original_operations.json",
+      "fixture_sha256": "49fc8ee11de0378001df1ee2ab4403e051afe47a7b9f40de90f95c043f9b76d7",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 96
+    },
+    {
+      "test": "job_text_admission_matches_original_without_replacing_identity_or_outcome",
+      "rust_file": "job_parity/text.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "019ae178369daea2b9e016d07f0eee8e54bd6e2f004f6134129b7208453c7bab",
+      "fixture": "job_text_admission_matches_original_without_replacing_identity_or_outcome.json",
+      "fixture_sha256": "5ebf3fafa9f2436394b4e9dfeacc600308625db4101b47fbb2c031797aebfa01",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 54
+    },
+    {
+      "test": "journal_descriptor_boundaries_match_original_without_repairing_evidence",
+      "rust_file": "journal_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "1b3b3080b3bf1cf4cfcbb0d24caeceb81025f3f18ad5047fe20f2226b263d69a",
+      "fixture": "journal_descriptor_boundaries_match_original_without_repairing_evidence.json",
+      "fixture_sha256": "84692dadcb625fe94f52f07aefc5d92d3bce1961098ec9e440809fc534cfee07",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 145
+    },
+    {
+      "test": "skipped_malformed_schedule_ids_do_not_abort_later_occurrences",
+      "rust_file": "launch_http_parity/scheduler_rows.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "bc5a238fb834df183f84908aea69aea164f4b9b2db6bb9f9a4c084b990f663f7",
+      "fixture": "skipped_malformed_schedule_ids_do_not_abort_later_occurrences.json",
+      "fixture_sha256": "d75f6d04dcd2047409067989b0b9fbf3e84f67568015e28eb5f473823c116a95",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 7
+    },
+    {
+      "test": "configured_lock_timeout_values_match_original_policy",
+      "rust_file": "lock_interop_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "e18b468b8e941222ff077ba3727519e6588af542babfb57ab906413e7bd345fe",
+      "fixture": "configured_lock_timeout_values_match_original_policy.json",
+      "fixture_sha256": "c865a8a709ada4d355791015dd059a918ebf4848c1c90c3aa63ff392c6e9d3c2",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 20
+    },
+    {
+      "test": "runtime_messages_match_original_redaction_at_file_and_fallback_sinks",
+      "rust_file": "logging_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "1e6c203a96c734ab766246d909c1af5adc92e20a84bd7b5ae6a7a660439254e0",
+      "fixture": "runtime_messages_match_original_redaction_at_file_and_fallback_sinks.json",
+      "fixture_sha256": "07029bc7e3055a0906f625eacc0d40270d300aa4439ff9c5be05256bd380f7ed",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 7418
+    },
+    {
+      "test": "stdio_text_boundaries_match_original_responses",
+      "rust_file": "mcp_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "a47bbfc2d2fe2fb6b3c67d992ed5baba5e24b333be4b178157f50749855423f9",
+      "fixture": "stdio_text_boundaries_match_original_responses.json",
+      "fixture_sha256": "9dab63e7b45b8c77c1dd9e7903a91baa7d7083514af11e6269e2b559eacbb311",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 99
+    },
+    {
+      "test": "captured_command_errors_match_original_stream_selection",
+      "rust_file": "mcp_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "921e4e046e56474edc6155835ae642ecc9728f4ca8ef9761e3e6a67151edb721",
+      "fixture": "captured_command_errors_match_original_stream_selection.json",
+      "fixture_sha256": "596aa2dd9a5c82cbff42f86c27945b5a0b45f2cb7979a014bedce8b32b6f966d",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 44
+    },
+    {
+      "test": "entry_logs_follow_original_data_root_and_preserve_explicit_override",
+      "rust_file": "native_entry.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "715ebc6102aa6f64e313f329fb1de6c330a348a8441878189472daca9c1b9a8c",
+      "fixture": "entry_logs_follow_original_data_root_and_preserve_explicit_override.json",
+      "fixture_sha256": "c229e0b04b7a8810805c201302ca2d130455c7a8d0a6351a02dcf918c3a87488",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 9
+    },
+    {
+      "test": "malformed_pool_text_refuses_without_replacing_original_bytes",
+      "rust_file": "pool_store_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "e5a1a9aa63b38a4a29f7dc729274a2e91faa8caedb54dd1a0ddfb37dc9f233db",
+      "fixture": "malformed_pool_text_refuses_without_replacing_original_bytes.json",
+      "fixture_sha256": "91c256b2ae28edf4086a659bea8e80f55b2dd1a9aece7acbdb223e5145152978",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 100
+    },
+    {
+      "test": "withheld_text_admission_matches_original_without_replacing_bytes",
+      "rust_file": "profile_export_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "76856e8f676d1e54b2db8013fdbed0f3dc4b49b02246d5fde939b47d70a6164b",
+      "fixture": "withheld_text_admission_matches_original_without_replacing_bytes.json",
+      "fixture_sha256": "f48116b27aa9d10a379278c4f0aee4263fd4b1b4773a728077e9815bd55b3fe5",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 14
+    },
+    {
+      "test": "exported_profile_bytes_match_original_text_format_and_preserve_refusals",
+      "rust_file": "profile_export_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "ff8562ee090517f4e8a509277d9b480d3809f7ee487a6fe8e7d63813e6ece174",
+      "fixture": "exported_profile_bytes_match_original_text_format_and_preserve_refusals.json",
+      "fixture_sha256": "1cd0eeec15a78530366da36cc1e60d15a85d27583fc664b22f064573afe56781",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 13
+    },
+    {
+      "test": "importer_lexical_profiles_match_original_without_changing_inputs",
+      "rust_file": "profile_http_import_parity/lexical.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "d3891139aef0c84815d7e7f1fdbb37831d6cfc87fdd06f07f78d3eea7080cf8a",
+      "fixture": "importer_lexical_profiles_match_original_without_changing_inputs.json",
+      "fixture_sha256": "bbfb105b669128796a8cea56d2057398c4d6eb3d297f3545e6d0a877908de19b",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 89
+    },
+    {
+      "test": "native_envelope_versions_match_original_exact_numeric_guidance",
+      "rust_file": "profile_http_import_parity/lexical.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "08f9cb7df8ee8ae58ad4f7d95cbbbe2ef4295613fa10ae0c2cfe840aeaaafbf3",
+      "fixture": "native_envelope_versions_match_original_exact_numeric_guidance.json",
+      "fixture_sha256": "607dbac7f79314b13704114d9867a1343b9f700dfa55270c734bd523b5922823",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 17
+    },
+    {
+      "test": "collision_groups_and_summary_match_original_occurrences",
+      "rust_file": "profile_overview_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "bb1c03f53ced6f3cb62548bb9abb537a520d9bd1d66842f9efa2076c7fb38887",
+      "fixture": "collision_groups_and_summary_match_original_occurrences.json",
+      "fixture_sha256": "3f307622c03adeb2b6bc553f417842ee733893d693b1fb18e410bb1eb48c1cde",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 10
+    },
+    {
+      "test": "divergent_profile_http_matches_original_refusal_kind_without_mutation",
+      "rust_file": "profile_read_parity/divergence.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "4317b92e831f23a9b7395789fe8f90ea4b0bfeae8b2e7a26d72e736df41cf7dd",
+      "fixture": "divergent_profile_http_matches_original_refusal_kind_without_mutation.json",
+      "fixture_sha256": "18d347d280617852281aea60d717a47228356b8c6cf004042a6a8f0b9c7e5ed3",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 2
+    },
+    {
+      "test": "legacy_read_views_match_original_core_http_and_name_admission",
+      "rust_file": "profile_read_parity/read_view.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "8583ede19694f1fbb7bed26dcc92e79e6d331640713b41f5a3c691b5d9139c48",
+      "fixture": "legacy_read_views_match_original_core_http_and_name_admission.json",
+      "fixture_sha256": "392dbe4bac473027d41f714a467e85b5828b832ee924110b0ad5b59c03105ec3",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": {
+        "views": 24,
+        "names": 16
+      }
+    },
+    {
+      "test": "restore_copy_candidates_match_original_existing_name_ownership",
+      "rust_file": "profile_restore_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "43687c82fa6af50362e0f4382fa6a05b2c6fdda8d12c45b00c74569a0c73afa5",
+      "fixture": "restore_copy_candidates_match_original_existing_name_ownership.json",
+      "fixture_sha256": "df9b54a316ab0622a7282b3e44316a841a0093d7c9ce829a8f5b28f6e74a5400",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": {
+        "cases": 12
+      }
+    },
+    {
+      "test": "unreadable_active_config_preserves_original_recovery_causes_and_bytes",
+      "rust_file": "recovery_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "f0d4b2ecd2112b24798335d8e70192b51605c9f000e502cb7697ff60ca66cac0",
+      "fixture": "unreadable_active_config_preserves_original_recovery_causes_and_bytes.json",
+      "fixture_sha256": "df9fb0d7b199aa85522fab7361d16dd601c4c902c3857113380a56b9169fbada",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 5
+    },
+    {
+      "test": "complete_batch_refusals_match_original_index_order_and_preserved_bytes",
+      "rust_file": "repo_batch_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "8da733a72380d23903d650f521b65e6672672df6177a9de0a643cadd3015ba29",
+      "fixture": "complete_batch_refusals_match_original_index_order_and_preserved_bytes.json",
+      "fixture_sha256": "f957f84ce5b44d7f4b3a3e85192b456a939e6f46694329f3fb5d6a42c4108110",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 10
+    },
+    {
+      "test": "direct_session_paths_and_deletion_match_original_without_touching_profiles",
+      "rust_file": "repo_delete_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "fd48a34a0bcf340743df19320f843c889954de09f854e8b6a9a956b1c2f6657c",
+      "fixture": "direct_session_paths_and_deletion_match_original_without_touching_profiles.json",
+      "fixture_sha256": "dfa4f28bc9573a4c6b0a65d89e06fde73e874ffcc09a3627cb2ff34af3ebc163",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 19
+    },
+    {
+      "test": "read_repair_warnings_match_original_without_changing_read_results",
+      "rust_file": "repo_lookup_parity/read_warnings.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "fadaf9f62fda7ef9877c7e26649758147e48cea821f17b01717c0ae4227fb840",
+      "fixture": "read_repair_warnings_match_original_without_changing_read_results.json",
+      "fixture_sha256": "f17a18217687ba221584ee0dec492a03a89f18892346927591184b9192ca3c5c",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 20
+    },
+    {
+      "test": "direct_name_lookup_matches_original_without_id_precedence",
+      "rust_file": "repo_lookup_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "fc408ab554ecfb36f2942a354d5f11260ef8b89135e4dbc88842022ef2c9b903",
+      "fixture": "direct_name_lookup_matches_original_without_id_precedence.json",
+      "fixture_sha256": "87da6f8d4c90596946056c5b18c22d39a44f0423d61d2414a301a04e3a1f5c39",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 14
+    },
+    {
+      "test": "damaged_profile_text_refuses_before_repair_or_replacement",
+      "rust_file": "repo_lookup_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "b9380891ba074226477dd3d48e93ab1af9e8e4e7f033986d25e0365b0067c91e",
+      "fixture": "damaged_profile_text_refuses_before_repair_or_replacement.json",
+      "fixture_sha256": "d2af4eb0c1e6ee613e860f3b7efdcead266a69db0ddb25080c0e95b95f146850",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": {
+        "cases": 52
+      }
+    },
+    {
+      "test": "storage_settings_errors_match_original_lazy_reads_and_preserve_bytes",
+      "rust_file": "repo_parity/settings_errors.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "da494f4ee29e0f0ff40abf29b79dca6519c182c921955e6a22833f7e2d07f087",
+      "fixture": "storage_settings_errors_match_original_lazy_reads_and_preserve_bytes.json",
+      "fixture_sha256": "4ba7eb6b38cd4857711ba6f4b9e5512b3bc8d550f03b6b308f3358166b4f327d",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 189
+    },
+    {
+      "test": "repository_settings_cache_matches_original_across_secret_reads",
+      "rust_file": "repo_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "284ec9daf224220ec95fd1f4ea31d0279571615d6f1b76b211e381abce9f150e",
+      "fixture": "repository_settings_cache_matches_original_across_secret_reads.json",
+      "fixture_sha256": "6b82449503942b7c6412439898887fff2f3ead91524f31ac86e0c386ddc8e535",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": {
+        "cases": 48
+      }
+    },
+    {
+      "test": "public_divergence_reports_all_ordered_fields_without_mutation",
+      "rust_file": "repo_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "43952eef25bb6720e07bbf279e9d39970267073de7505012ba89832676fa25cb",
+      "fixture": "public_divergence_reports_all_ordered_fields_without_mutation.json",
+      "fixture_sha256": "eb151010f26aa73a8b0081812c95cc676a8d04fd68da12419b6157cb03fe3000",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 47
+    },
+    {
+      "test": "single_edit_preserves_callback_results_and_atomic_store_decisions",
+      "rust_file": "repo_write_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "73c2b55bd7304fe38c89b77791723385ee96e1792907d62e29c764da0984b117",
+      "fixture": "single_edit_preserves_callback_results_and_atomic_store_decisions.json",
+      "fixture_sha256": "68296608019d6b75879f328bba2ccc6c16fa999e6b3c4b7c67db8121354f3b7a",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 28
+    },
+    {
+      "test": "public_credential_conflict_guards_match_original_without_writes",
+      "rust_file": "repo_write_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "f214d9de53a8924386d3ad66d353a6aa4bb5046e7b786212de5be5293baa4797",
+      "fixture": "public_credential_conflict_guards_match_original_without_writes.json",
+      "fixture_sha256": "edd2adc7b58d53649be1773fb28f930d322a8430f7c3e3114cd98879b0b4f8d7",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 101
+    },
+    {
+      "test": "public_resume_returns_the_authenticated_store_or_preserves_recovery_evidence",
+      "rust_file": "rotation_recovery_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "a1543b99f202a2d59b3d98a086e53542236c8285b3c65ee3f5e522b415929c94",
+      "fixture": "public_resume_returns_the_authenticated_store_or_preserves_recovery_evidence.json",
+      "fixture_sha256": "ed587dbfc1b8fbcf31ac64244c148f1eeb902e985b8cfa1c9499400c18a3efbf",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 10
+    },
+    {
+      "test": "committed_rotation_metadata_matches_original_without_rewriting_generation",
+      "rust_file": "rotation_recovery_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "1c1151bd8de9dcce508d854a200267abd9074ec703fae0859bc2e9ee2220db95",
+      "fixture": "committed_rotation_metadata_matches_original_without_rewriting_generation.json",
+      "fixture_sha256": "8454f05828b57a6ceb9248ece9e1e69bdfba4b8a6381b819c831c3f6e0552c4d",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 10
+    },
+    {
+      "test": "schedule_text_admission_matches_original_without_replacing_bytes",
+      "rust_file": "schedule_store_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "10189dc312fc8af33b856aa20587ca18ec154567e697a9e038265ffba9b9aa3f",
+      "fixture": "schedule_text_admission_matches_original_without_replacing_bytes.json",
+      "fixture_sha256": "4894ac8494347bd2a39a1cc5e025d95ff94391efe52cc3da480d3d3ad8d31909",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 59
+    },
+    {
+      "test": "mark_run_matches_original_result_claim_clearing_and_exact_bytes",
+      "rust_file": "schedule_store_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "a912f7ea8ca0523f5ca272bdfaa1fa2b4274b72438051a0acd44e47432ad01b0",
+      "fixture": "mark_run_matches_original_result_claim_clearing_and_exact_bytes.json",
+      "fixture_sha256": "b06fecccc9c63da2710499984f27e905ad9f741517e762a944e722f1c1d25301",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 36
+    },
+    {
+      "test": "persisted_json_text_matches_original_escaping_and_platform_newlines",
+      "rust_file": "storage_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "5c4799ef6801c6db9daf244a112e2b80df413d706e069c7ff99057fda226c232",
+      "fixture": "persisted_json_text_matches_original_escaping_and_platform_newlines.json",
+      "fixture_sha256": "8baf952dd10595bcf9f245cc704c01ea94a277a7892943c955ae1aae59be69da",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 12
+    },
+    {
+      "test": "denied_store_directories_match_original_actionable_errors_and_preserve_state",
+      "rust_file": "store_open_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "b7284d7b2ef0957ee48301ee1a5240098c6e7af41c16881a5ea2d27051ed87be",
+      "fixture": "denied_store_directories_match_original_actionable_errors_and_preserve_state.json",
+      "fixture_sha256": "b1a1630021a1251c8d4e57df55f73ffef8359e26b83716aafa21bc037c738ec5",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 2
+    },
+    {
+      "test": "recovery_error_data_matches_original_without_parsing_messages",
+      "rust_file": "vault_enable_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "b30e92b409ecb6151b21ea6d3ea279d3da986fbf981dc40f49f590ed7ecc2972",
+      "fixture": "recovery_error_data_matches_original_without_parsing_messages.json",
+      "fixture_sha256": "69f0ef995f9f9213bf4dc791fa4639b92f9fab8a55716b2e93ddd24098898445",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 15
+    },
+    {
+      "test": "public_vault_status_matches_original_without_mutating_settings",
+      "rust_file": "vault_enable_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "69d120ac35b8554a7b114707b3889d43ab24bb265383c04fdb03a139bc847266",
+      "fixture": "public_vault_status_matches_original_without_mutating_settings.json",
+      "fixture_sha256": "86967507747cc86dcacc466ee16a2bb01c7f83eac1c931a6ea1154435fc85312",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": {
+        "cases": 27,
+        "guards": 3
+      }
+    },
+    {
+      "test": "public_enable_preserves_instance_state_and_every_secret_site",
+      "rust_file": "vault_enable_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "13e42f1f642345c3e5a7154574f1493fb095c967ed644650789ca8ee660f698e",
+      "fixture": "public_enable_preserves_instance_state_and_every_secret_site.json",
+      "fixture_sha256": "199a3303b6bf7b2b9f0a0844331f954af6f30d87f307d292c39ca67b2527cd21",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 5
+    },
+    {
+      "test": "envelope_classification_matches_original_unicode_and_prefix_contracts",
+      "rust_file": "vault_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "2b9655e95a0af30f4b1e8be5966c367e90fea01d557fda3536db5e24bc1b1400",
+      "fixture": "envelope_classification_matches_original_unicode_and_prefix_contracts.json",
+      "fixture_sha256": "363a0e0f055b4309c3acd4f817dadef67eb781348583ed5523fe4e363e737980",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 832
+    },
+    {
+      "test": "crypto_text_admission_matches_original_and_new_tokens_reopen_there",
+      "rust_file": "vault_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "3d520e1c4e2240dce91e38eed743edfaca0760da0de232746720686666169824",
+      "fixture": "crypto_text_admission_matches_original_and_new_tokens_reopen_there.json",
+      "fixture_sha256": "322d7785663c8226e0298f717afd21ba0f9cfa7c1da00bf904343cbdb340eb30",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 185
+    },
+    {
+      "test": "public_password_change_updates_only_the_successful_store_instance",
+      "rust_file": "vault_rotate_parity.rs",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_sha256": "0b2ab6d4e4b42ae320fcbd07f4b3bcebfdda3657fa62cc2380afcda449149101",
+      "fixture": "public_password_change_updates_only_the_successful_store_instance.json",
+      "fixture_sha256": "379a29699b70f9b4634f9271daa162caefec24ac3073734ab6d32caeec26e530",
+      "runtime": "CPython 3.13.15 / Unicode 15.1.0",
+      "observations": 5
+    }
+  ]
+}

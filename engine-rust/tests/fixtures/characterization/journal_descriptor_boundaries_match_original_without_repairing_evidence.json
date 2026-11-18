@@ -1,0 +1,3638 @@
+[
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": null,
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "opaque-verifier"
+    },
+    "new": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "opaque-verifier"
+    },
+    "old": null,
+    "usable": true,
+    "state": "valid",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": null,
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "opaque-verifier"
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {},
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "opaque-verifier"
+    },
+    "new": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "opaque-verifier"
+    },
+    "old": null,
+    "usable": true,
+    "state": "valid",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {},
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "opaque-verifier"
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": false,
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "opaque-verifier"
+    },
+    "new": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "opaque-verifier"
+    },
+    "old": null,
+    "usable": true,
+    "state": "valid",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": false,
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "opaque-verifier"
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": 0,
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "opaque-verifier"
+    },
+    "new": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "opaque-verifier"
+    },
+    "old": null,
+    "usable": true,
+    "state": "valid",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": 0,
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "opaque-verifier"
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": "",
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "opaque-verifier"
+    },
+    "new": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "opaque-verifier"
+    },
+    "old": null,
+    "usable": true,
+    "state": "valid",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": "",
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "opaque-verifier"
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": [],
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "opaque-verifier"
+    },
+    "new": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "opaque-verifier"
+    },
+    "old": null,
+    "usable": true,
+    "state": "valid",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": [],
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "opaque-verifier"
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": true,
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "opaque-verifier"
+    },
+    "new": true,
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": true,
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "opaque-verifier"
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": 1,
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "opaque-verifier"
+    },
+    "new": 1,
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": 1,
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "opaque-verifier"
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": "bad",
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "opaque-verifier"
+    },
+    "new": "bad",
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": "bad",
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "opaque-verifier"
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": [
+        1
+      ],
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "opaque-verifier"
+    },
+    "new": [
+      1
+    ],
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": [
+        1
+      ],
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "opaque-verifier"
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw=="
+      },
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "opaque-verifier"
+    },
+    "new": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw=="
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw=="
+      },
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "opaque-verifier"
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": "opaque-verifier"
+      },
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "opaque-verifier"
+    },
+    "new": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "opaque-verifier"
+    },
+    "old": null,
+    "usable": true,
+    "state": "valid",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": "opaque-verifier"
+      },
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "opaque-verifier"
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": "opaque-verifier"
+      }
+    },
+    "new": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "opaque-verifier"
+    },
+    "old": null,
+    "usable": true,
+    "state": "valid",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": "opaque-verifier"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": " \t"
+      }
+    },
+    "new": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": " \t"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": " \t"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": "\u001c"
+      }
+    },
+    "new": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "\u001c"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": "\u001c"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": "\u001f"
+      }
+    },
+    "new": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "\u001f"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": "\u001f"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": "\u200b"
+      }
+    },
+    "new": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "\u200b"
+    },
+    "old": null,
+    "usable": true,
+    "state": "valid",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": "\u200b"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": ""
+      }
+    },
+    "new": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": ""
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": ""
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": null
+      }
+    },
+    "new": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": null
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": null
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODx==",
+        "verifier": "opaque-verifier"
+      }
+    },
+    "new": {
+      "salt": "AAECAwQFBgcICQoLDA0ODx==",
+      "verifier": "opaque-verifier"
+    },
+    "old": null,
+    "usable": true,
+    "state": "valid",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODx==",
+        "verifier": "opaque-verifier"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODx==",
+        "verifier": " \t"
+      }
+    },
+    "new": {
+      "salt": "AAECAwQFBgcICQoLDA0ODx==",
+      "verifier": " \t"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODx==",
+        "verifier": " \t"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODx==",
+        "verifier": "\u001c"
+      }
+    },
+    "new": {
+      "salt": "AAECAwQFBgcICQoLDA0ODx==",
+      "verifier": "\u001c"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODx==",
+        "verifier": "\u001c"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODx==",
+        "verifier": "\u001f"
+      }
+    },
+    "new": {
+      "salt": "AAECAwQFBgcICQoLDA0ODx==",
+      "verifier": "\u001f"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODx==",
+        "verifier": "\u001f"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODx==",
+        "verifier": "\u200b"
+      }
+    },
+    "new": {
+      "salt": "AAECAwQFBgcICQoLDA0ODx==",
+      "verifier": "\u200b"
+    },
+    "old": null,
+    "usable": true,
+    "state": "valid",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODx==",
+        "verifier": "\u200b"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODx==",
+        "verifier": ""
+      }
+    },
+    "new": {
+      "salt": "AAECAwQFBgcICQoLDA0ODx==",
+      "verifier": ""
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODx==",
+        "verifier": ""
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODx==",
+        "verifier": null
+      }
+    },
+    "new": {
+      "salt": "AAECAwQFBgcICQoLDA0ODx==",
+      "verifier": null
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODx==",
+        "verifier": null
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QQ==",
+        "verifier": "opaque-verifier"
+      }
+    },
+    "new": {
+      "salt": "QQ==",
+      "verifier": "opaque-verifier"
+    },
+    "old": null,
+    "usable": true,
+    "state": "valid",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QQ==",
+        "verifier": "opaque-verifier"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QQ==",
+        "verifier": " \t"
+      }
+    },
+    "new": {
+      "salt": "QQ==",
+      "verifier": " \t"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QQ==",
+        "verifier": " \t"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QQ==",
+        "verifier": "\u001c"
+      }
+    },
+    "new": {
+      "salt": "QQ==",
+      "verifier": "\u001c"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QQ==",
+        "verifier": "\u001c"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QQ==",
+        "verifier": "\u001f"
+      }
+    },
+    "new": {
+      "salt": "QQ==",
+      "verifier": "\u001f"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QQ==",
+        "verifier": "\u001f"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QQ==",
+        "verifier": "\u200b"
+      }
+    },
+    "new": {
+      "salt": "QQ==",
+      "verifier": "\u200b"
+    },
+    "old": null,
+    "usable": true,
+    "state": "valid",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QQ==",
+        "verifier": "\u200b"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QQ==",
+        "verifier": ""
+      }
+    },
+    "new": {
+      "salt": "QQ==",
+      "verifier": ""
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QQ==",
+        "verifier": ""
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QQ==",
+        "verifier": null
+      }
+    },
+    "new": {
+      "salt": "QQ==",
+      "verifier": null
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QQ==",
+        "verifier": null
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QR==",
+        "verifier": "opaque-verifier"
+      }
+    },
+    "new": {
+      "salt": "QR==",
+      "verifier": "opaque-verifier"
+    },
+    "old": null,
+    "usable": true,
+    "state": "valid",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QR==",
+        "verifier": "opaque-verifier"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QR==",
+        "verifier": " \t"
+      }
+    },
+    "new": {
+      "salt": "QR==",
+      "verifier": " \t"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QR==",
+        "verifier": " \t"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QR==",
+        "verifier": "\u001c"
+      }
+    },
+    "new": {
+      "salt": "QR==",
+      "verifier": "\u001c"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QR==",
+        "verifier": "\u001c"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QR==",
+        "verifier": "\u001f"
+      }
+    },
+    "new": {
+      "salt": "QR==",
+      "verifier": "\u001f"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QR==",
+        "verifier": "\u001f"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QR==",
+        "verifier": "\u200b"
+      }
+    },
+    "new": {
+      "salt": "QR==",
+      "verifier": "\u200b"
+    },
+    "old": null,
+    "usable": true,
+    "state": "valid",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QR==",
+        "verifier": "\u200b"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QR==",
+        "verifier": ""
+      }
+    },
+    "new": {
+      "salt": "QR==",
+      "verifier": ""
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QR==",
+        "verifier": ""
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QR==",
+        "verifier": null
+      }
+    },
+    "new": {
+      "salt": "QR==",
+      "verifier": null
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QR==",
+        "verifier": null
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QUI=",
+        "verifier": "opaque-verifier"
+      }
+    },
+    "new": {
+      "salt": "QUI=",
+      "verifier": "opaque-verifier"
+    },
+    "old": null,
+    "usable": true,
+    "state": "valid",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QUI=",
+        "verifier": "opaque-verifier"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QUI=",
+        "verifier": " \t"
+      }
+    },
+    "new": {
+      "salt": "QUI=",
+      "verifier": " \t"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QUI=",
+        "verifier": " \t"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QUI=",
+        "verifier": "\u001c"
+      }
+    },
+    "new": {
+      "salt": "QUI=",
+      "verifier": "\u001c"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QUI=",
+        "verifier": "\u001c"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QUI=",
+        "verifier": "\u001f"
+      }
+    },
+    "new": {
+      "salt": "QUI=",
+      "verifier": "\u001f"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QUI=",
+        "verifier": "\u001f"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QUI=",
+        "verifier": "\u200b"
+      }
+    },
+    "new": {
+      "salt": "QUI=",
+      "verifier": "\u200b"
+    },
+    "old": null,
+    "usable": true,
+    "state": "valid",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QUI=",
+        "verifier": "\u200b"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QUI=",
+        "verifier": ""
+      }
+    },
+    "new": {
+      "salt": "QUI=",
+      "verifier": ""
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QUI=",
+        "verifier": ""
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QUI=",
+        "verifier": null
+      }
+    },
+    "new": {
+      "salt": "QUI=",
+      "verifier": null
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QUI=",
+        "verifier": null
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QUJ=",
+        "verifier": "opaque-verifier"
+      }
+    },
+    "new": {
+      "salt": "QUJ=",
+      "verifier": "opaque-verifier"
+    },
+    "old": null,
+    "usable": true,
+    "state": "valid",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QUJ=",
+        "verifier": "opaque-verifier"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QUJ=",
+        "verifier": " \t"
+      }
+    },
+    "new": {
+      "salt": "QUJ=",
+      "verifier": " \t"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QUJ=",
+        "verifier": " \t"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QUJ=",
+        "verifier": "\u001c"
+      }
+    },
+    "new": {
+      "salt": "QUJ=",
+      "verifier": "\u001c"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QUJ=",
+        "verifier": "\u001c"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QUJ=",
+        "verifier": "\u001f"
+      }
+    },
+    "new": {
+      "salt": "QUJ=",
+      "verifier": "\u001f"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QUJ=",
+        "verifier": "\u001f"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QUJ=",
+        "verifier": "\u200b"
+      }
+    },
+    "new": {
+      "salt": "QUJ=",
+      "verifier": "\u200b"
+    },
+    "old": null,
+    "usable": true,
+    "state": "valid",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QUJ=",
+        "verifier": "\u200b"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QUJ=",
+        "verifier": ""
+      }
+    },
+    "new": {
+      "salt": "QUJ=",
+      "verifier": ""
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QUJ=",
+        "verifier": ""
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QUJ=",
+        "verifier": null
+      }
+    },
+    "new": {
+      "salt": "QUJ=",
+      "verifier": null
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QUJ=",
+        "verifier": null
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QUJD",
+        "verifier": "opaque-verifier"
+      }
+    },
+    "new": {
+      "salt": "QUJD",
+      "verifier": "opaque-verifier"
+    },
+    "old": null,
+    "usable": true,
+    "state": "valid",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QUJD",
+        "verifier": "opaque-verifier"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QUJD",
+        "verifier": " \t"
+      }
+    },
+    "new": {
+      "salt": "QUJD",
+      "verifier": " \t"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QUJD",
+        "verifier": " \t"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QUJD",
+        "verifier": "\u001c"
+      }
+    },
+    "new": {
+      "salt": "QUJD",
+      "verifier": "\u001c"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QUJD",
+        "verifier": "\u001c"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QUJD",
+        "verifier": "\u001f"
+      }
+    },
+    "new": {
+      "salt": "QUJD",
+      "verifier": "\u001f"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QUJD",
+        "verifier": "\u001f"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QUJD",
+        "verifier": "\u200b"
+      }
+    },
+    "new": {
+      "salt": "QUJD",
+      "verifier": "\u200b"
+    },
+    "old": null,
+    "usable": true,
+    "state": "valid",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QUJD",
+        "verifier": "\u200b"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QUJD",
+        "verifier": ""
+      }
+    },
+    "new": {
+      "salt": "QUJD",
+      "verifier": ""
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QUJD",
+        "verifier": ""
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QUJD",
+        "verifier": null
+      }
+    },
+    "new": {
+      "salt": "QUJD",
+      "verifier": null
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QUJD",
+        "verifier": null
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QUJD=",
+        "verifier": "opaque-verifier"
+      }
+    },
+    "new": {
+      "salt": "QUJD=",
+      "verifier": "opaque-verifier"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QUJD=",
+        "verifier": "opaque-verifier"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QUJD=",
+        "verifier": " \t"
+      }
+    },
+    "new": {
+      "salt": "QUJD=",
+      "verifier": " \t"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QUJD=",
+        "verifier": " \t"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QUJD=",
+        "verifier": "\u001c"
+      }
+    },
+    "new": {
+      "salt": "QUJD=",
+      "verifier": "\u001c"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QUJD=",
+        "verifier": "\u001c"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QUJD=",
+        "verifier": "\u001f"
+      }
+    },
+    "new": {
+      "salt": "QUJD=",
+      "verifier": "\u001f"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QUJD=",
+        "verifier": "\u001f"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QUJD=",
+        "verifier": "\u200b"
+      }
+    },
+    "new": {
+      "salt": "QUJD=",
+      "verifier": "\u200b"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QUJD=",
+        "verifier": "\u200b"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QUJD=",
+        "verifier": ""
+      }
+    },
+    "new": {
+      "salt": "QUJD=",
+      "verifier": ""
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QUJD=",
+        "verifier": ""
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QUJD=",
+        "verifier": null
+      }
+    },
+    "new": {
+      "salt": "QUJD=",
+      "verifier": null
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "QUJD=",
+        "verifier": null
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw===",
+        "verifier": "opaque-verifier"
+      }
+    },
+    "new": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw===",
+      "verifier": "opaque-verifier"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw===",
+        "verifier": "opaque-verifier"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw===",
+        "verifier": " \t"
+      }
+    },
+    "new": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw===",
+      "verifier": " \t"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw===",
+        "verifier": " \t"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw===",
+        "verifier": "\u001c"
+      }
+    },
+    "new": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw===",
+      "verifier": "\u001c"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw===",
+        "verifier": "\u001c"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw===",
+        "verifier": "\u001f"
+      }
+    },
+    "new": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw===",
+      "verifier": "\u001f"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw===",
+        "verifier": "\u001f"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw===",
+        "verifier": "\u200b"
+      }
+    },
+    "new": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw===",
+      "verifier": "\u200b"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw===",
+        "verifier": "\u200b"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw===",
+        "verifier": ""
+      }
+    },
+    "new": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw===",
+      "verifier": ""
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw===",
+        "verifier": ""
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw===",
+        "verifier": null
+      }
+    },
+    "new": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw===",
+      "verifier": null
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw===",
+        "verifier": null
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw",
+        "verifier": "opaque-verifier"
+      }
+    },
+    "new": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw",
+      "verifier": "opaque-verifier"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw",
+        "verifier": "opaque-verifier"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw",
+        "verifier": " \t"
+      }
+    },
+    "new": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw",
+      "verifier": " \t"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw",
+        "verifier": " \t"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw",
+        "verifier": "\u001c"
+      }
+    },
+    "new": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw",
+      "verifier": "\u001c"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw",
+        "verifier": "\u001c"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw",
+        "verifier": "\u001f"
+      }
+    },
+    "new": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw",
+      "verifier": "\u001f"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw",
+        "verifier": "\u001f"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw",
+        "verifier": "\u200b"
+      }
+    },
+    "new": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw",
+      "verifier": "\u200b"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw",
+        "verifier": "\u200b"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw",
+        "verifier": ""
+      }
+    },
+    "new": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw",
+      "verifier": ""
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw",
+        "verifier": ""
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw",
+        "verifier": null
+      }
+    },
+    "new": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw",
+      "verifier": null
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw",
+        "verifier": null
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "==AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": "opaque-verifier"
+      }
+    },
+    "new": {
+      "salt": "==AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "opaque-verifier"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "==AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": "opaque-verifier"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "==AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": " \t"
+      }
+    },
+    "new": {
+      "salt": "==AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": " \t"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "==AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": " \t"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "==AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": "\u001c"
+      }
+    },
+    "new": {
+      "salt": "==AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "\u001c"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "==AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": "\u001c"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "==AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": "\u001f"
+      }
+    },
+    "new": {
+      "salt": "==AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "\u001f"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "==AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": "\u001f"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "==AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": "\u200b"
+      }
+    },
+    "new": {
+      "salt": "==AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "\u200b"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "==AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": "\u200b"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "==AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": ""
+      }
+    },
+    "new": {
+      "salt": "==AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": ""
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "==AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": ""
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "==AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": null
+      }
+    },
+    "new": {
+      "salt": "==AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": null
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "==AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": null
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAEC=AwQFBgcICQoLDA0ODw==",
+        "verifier": "opaque-verifier"
+      }
+    },
+    "new": {
+      "salt": "AAEC=AwQFBgcICQoLDA0ODw==",
+      "verifier": "opaque-verifier"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAEC=AwQFBgcICQoLDA0ODw==",
+        "verifier": "opaque-verifier"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAEC=AwQFBgcICQoLDA0ODw==",
+        "verifier": " \t"
+      }
+    },
+    "new": {
+      "salt": "AAEC=AwQFBgcICQoLDA0ODw==",
+      "verifier": " \t"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAEC=AwQFBgcICQoLDA0ODw==",
+        "verifier": " \t"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAEC=AwQFBgcICQoLDA0ODw==",
+        "verifier": "\u001c"
+      }
+    },
+    "new": {
+      "salt": "AAEC=AwQFBgcICQoLDA0ODw==",
+      "verifier": "\u001c"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAEC=AwQFBgcICQoLDA0ODw==",
+        "verifier": "\u001c"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAEC=AwQFBgcICQoLDA0ODw==",
+        "verifier": "\u001f"
+      }
+    },
+    "new": {
+      "salt": "AAEC=AwQFBgcICQoLDA0ODw==",
+      "verifier": "\u001f"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAEC=AwQFBgcICQoLDA0ODw==",
+        "verifier": "\u001f"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAEC=AwQFBgcICQoLDA0ODw==",
+        "verifier": "\u200b"
+      }
+    },
+    "new": {
+      "salt": "AAEC=AwQFBgcICQoLDA0ODw==",
+      "verifier": "\u200b"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAEC=AwQFBgcICQoLDA0ODw==",
+        "verifier": "\u200b"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAEC=AwQFBgcICQoLDA0ODw==",
+        "verifier": ""
+      }
+    },
+    "new": {
+      "salt": "AAEC=AwQFBgcICQoLDA0ODw==",
+      "verifier": ""
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAEC=AwQFBgcICQoLDA0ODw==",
+        "verifier": ""
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAEC=AwQFBgcICQoLDA0ODw==",
+        "verifier": null
+      }
+    },
+    "new": {
+      "salt": "AAEC=AwQFBgcICQoLDA0ODw==",
+      "verifier": null
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAEC=AwQFBgcICQoLDA0ODw==",
+        "verifier": null
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": " AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": "opaque-verifier"
+      }
+    },
+    "new": {
+      "salt": " AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "opaque-verifier"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": " AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": "opaque-verifier"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": " AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": " \t"
+      }
+    },
+    "new": {
+      "salt": " AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": " \t"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": " AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": " \t"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": " AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": "\u001c"
+      }
+    },
+    "new": {
+      "salt": " AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "\u001c"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": " AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": "\u001c"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": " AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": "\u001f"
+      }
+    },
+    "new": {
+      "salt": " AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "\u001f"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": " AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": "\u001f"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": " AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": "\u200b"
+      }
+    },
+    "new": {
+      "salt": " AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "\u200b"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": " AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": "\u200b"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": " AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": ""
+      }
+    },
+    "new": {
+      "salt": " AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": ""
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": " AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": ""
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": " AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": null
+      }
+    },
+    "new": {
+      "salt": " AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": null
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": " AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": null
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw==\u00e9",
+        "verifier": "opaque-verifier"
+      }
+    },
+    "new": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==\u00e9",
+      "verifier": "opaque-verifier"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw==\u00e9",
+        "verifier": "opaque-verifier"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw==\u00e9",
+        "verifier": " \t"
+      }
+    },
+    "new": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==\u00e9",
+      "verifier": " \t"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw==\u00e9",
+        "verifier": " \t"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw==\u00e9",
+        "verifier": "\u001c"
+      }
+    },
+    "new": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==\u00e9",
+      "verifier": "\u001c"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw==\u00e9",
+        "verifier": "\u001c"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw==\u00e9",
+        "verifier": "\u001f"
+      }
+    },
+    "new": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==\u00e9",
+      "verifier": "\u001f"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw==\u00e9",
+        "verifier": "\u001f"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw==\u00e9",
+        "verifier": "\u200b"
+      }
+    },
+    "new": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==\u00e9",
+      "verifier": "\u200b"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw==\u00e9",
+        "verifier": "\u200b"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw==\u00e9",
+        "verifier": ""
+      }
+    },
+    "new": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==\u00e9",
+      "verifier": ""
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw==\u00e9",
+        "verifier": ""
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw==\u00e9",
+        "verifier": null
+      }
+    },
+    "new": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==\u00e9",
+      "verifier": null
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw==\u00e9",
+        "verifier": null
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "",
+        "verifier": "opaque-verifier"
+      }
+    },
+    "new": {
+      "salt": "",
+      "verifier": "opaque-verifier"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "",
+        "verifier": "opaque-verifier"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "",
+        "verifier": " \t"
+      }
+    },
+    "new": {
+      "salt": "",
+      "verifier": " \t"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "",
+        "verifier": " \t"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "",
+        "verifier": "\u001c"
+      }
+    },
+    "new": {
+      "salt": "",
+      "verifier": "\u001c"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "",
+        "verifier": "\u001c"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "",
+        "verifier": "\u001f"
+      }
+    },
+    "new": {
+      "salt": "",
+      "verifier": "\u001f"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "",
+        "verifier": "\u001f"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "",
+        "verifier": "\u200b"
+      }
+    },
+    "new": {
+      "salt": "",
+      "verifier": "\u200b"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "",
+        "verifier": "\u200b"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "",
+        "verifier": ""
+      }
+    },
+    "new": {
+      "salt": "",
+      "verifier": ""
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "",
+        "verifier": ""
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "",
+        "verifier": null
+      }
+    },
+    "new": {
+      "salt": "",
+      "verifier": null
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": "",
+        "verifier": null
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": null,
+        "verifier": "opaque-verifier"
+      }
+    },
+    "new": {
+      "salt": null,
+      "verifier": "opaque-verifier"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": null,
+        "verifier": "opaque-verifier"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": null,
+        "verifier": " \t"
+      }
+    },
+    "new": {
+      "salt": null,
+      "verifier": " \t"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": null,
+        "verifier": " \t"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": null,
+        "verifier": "\u001c"
+      }
+    },
+    "new": {
+      "salt": null,
+      "verifier": "\u001c"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": null,
+        "verifier": "\u001c"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": null,
+        "verifier": "\u001f"
+      }
+    },
+    "new": {
+      "salt": null,
+      "verifier": "\u001f"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": null,
+        "verifier": "\u001f"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": null,
+        "verifier": "\u200b"
+      }
+    },
+    "new": {
+      "salt": null,
+      "verifier": "\u200b"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": null,
+        "verifier": "\u200b"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": null,
+        "verifier": ""
+      }
+    },
+    "new": {
+      "salt": null,
+      "verifier": ""
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": null,
+        "verifier": ""
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": null,
+        "verifier": null
+      }
+    },
+    "new": {
+      "salt": null,
+      "verifier": null
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": null,
+        "verifier": null
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": false,
+        "verifier": "opaque-verifier"
+      }
+    },
+    "new": {
+      "salt": false,
+      "verifier": "opaque-verifier"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": false,
+        "verifier": "opaque-verifier"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": false,
+        "verifier": " \t"
+      }
+    },
+    "new": {
+      "salt": false,
+      "verifier": " \t"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": false,
+        "verifier": " \t"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": false,
+        "verifier": "\u001c"
+      }
+    },
+    "new": {
+      "salt": false,
+      "verifier": "\u001c"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": false,
+        "verifier": "\u001c"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": false,
+        "verifier": "\u001f"
+      }
+    },
+    "new": {
+      "salt": false,
+      "verifier": "\u001f"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": false,
+        "verifier": "\u001f"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": false,
+        "verifier": "\u200b"
+      }
+    },
+    "new": {
+      "salt": false,
+      "verifier": "\u200b"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": false,
+        "verifier": "\u200b"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": false,
+        "verifier": ""
+      }
+    },
+    "new": {
+      "salt": false,
+      "verifier": ""
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": false,
+        "verifier": ""
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": false,
+        "verifier": null
+      }
+    },
+    "new": {
+      "salt": false,
+      "verifier": null
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": false,
+        "verifier": null
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": 1,
+        "verifier": "opaque-verifier"
+      }
+    },
+    "new": {
+      "salt": 1,
+      "verifier": "opaque-verifier"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": 1,
+        "verifier": "opaque-verifier"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": 1,
+        "verifier": " \t"
+      }
+    },
+    "new": {
+      "salt": 1,
+      "verifier": " \t"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": 1,
+        "verifier": " \t"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": 1,
+        "verifier": "\u001c"
+      }
+    },
+    "new": {
+      "salt": 1,
+      "verifier": "\u001c"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": 1,
+        "verifier": "\u001c"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": 1,
+        "verifier": "\u001f"
+      }
+    },
+    "new": {
+      "salt": 1,
+      "verifier": "\u001f"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": 1,
+        "verifier": "\u001f"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": 1,
+        "verifier": "\u200b"
+      }
+    },
+    "new": {
+      "salt": 1,
+      "verifier": "\u200b"
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": 1,
+        "verifier": "\u200b"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": 1,
+        "verifier": ""
+      }
+    },
+    "new": {
+      "salt": 1,
+      "verifier": ""
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": 1,
+        "verifier": ""
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": 1,
+        "verifier": null
+      }
+    },
+    "new": {
+      "salt": 1,
+      "verifier": null
+    },
+    "old": null,
+    "usable": false,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "enable",
+      "new": {
+        "salt": 1,
+        "verifier": null
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "rotate",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": "opaque-verifier"
+      },
+      "old": null
+    },
+    "new": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "opaque-verifier"
+    },
+    "old": null,
+    "usable": true,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "rotate",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": "opaque-verifier"
+      },
+      "old": null
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "rotate",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": "opaque-verifier"
+      },
+      "old": {}
+    },
+    "new": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "opaque-verifier"
+    },
+    "old": {},
+    "usable": true,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "rotate",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": "opaque-verifier"
+      },
+      "old": {}
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "rotate",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": "opaque-verifier"
+      },
+      "old": false
+    },
+    "new": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "opaque-verifier"
+    },
+    "old": false,
+    "usable": true,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "rotate",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": "opaque-verifier"
+      },
+      "old": false
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "rotate",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": "opaque-verifier"
+      },
+      "old": 1
+    },
+    "new": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "opaque-verifier"
+    },
+    "old": 1,
+    "usable": true,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "rotate",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": "opaque-verifier"
+      },
+      "old": 1
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "rotate",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": "opaque-verifier"
+      },
+      "old": "bad"
+    },
+    "new": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "opaque-verifier"
+    },
+    "old": "bad",
+    "usable": true,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "rotate",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": "opaque-verifier"
+      },
+      "old": "bad"
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "rotate",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": "opaque-verifier"
+      },
+      "old": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": "opaque-verifier"
+      }
+    },
+    "new": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "opaque-verifier"
+    },
+    "old": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "opaque-verifier"
+    },
+    "usable": true,
+    "state": "valid",
+    "record": {
+      "version": 1,
+      "op": "rotate",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": "opaque-verifier"
+      },
+      "old": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": "opaque-verifier"
+      }
+    }
+  },
+  {
+    "input": {
+      "version": 1,
+      "op": "rotate",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": "opaque-verifier"
+      },
+      "old": {
+        "salt": "QR==",
+        "verifier": " "
+      }
+    },
+    "new": {
+      "salt": "AAECAwQFBgcICQoLDA0ODw==",
+      "verifier": "opaque-verifier"
+    },
+    "old": {
+      "salt": "QR==",
+      "verifier": " "
+    },
+    "usable": true,
+    "state": "unreadable",
+    "record": {
+      "version": 1,
+      "op": "rotate",
+      "new": {
+        "salt": "AAECAwQFBgcICQoLDA0ODw==",
+        "verifier": "opaque-verifier"
+      },
+      "old": {
+        "salt": "QR==",
+        "verifier": " "
+      }
+    }
+  }
+]

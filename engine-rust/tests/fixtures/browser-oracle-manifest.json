@@ -1,0 +1,79 @@
+{
+  "schema": 1,
+  "scope": "Historical Rust browser characterization only; source_browser235 retains separate exact-ID map. No runtime Python dependency.",
+  "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+  "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+  "source_trees": {
+    "engine/numera": "25cd7f34689e4a1688c426fdb7d4a6c4b898998e",
+    "engine/tests": "ec1a33ab13ca6ee1dd6e7c629de4118ab848c82a"
+  },
+  "runtime": "CPython 3.13.15",
+  "fixtures": [
+    {
+      "file": "engine-rust/tests/fixtures/browser-characterization/cookie-write.json",
+      "bytes": 2007,
+      "sha256": "ba3413dc7fd4ee3a69a86b2bcf154776dec08ccf4d08ae441527e937b350f2da",
+      "observer_source": "engine-rust/tests/browser_cookies_parity.rs",
+      "observer_sha256": "f15c5e1785ac26f4063d74fbfe4cded04cc38d1e59d24b1bd0db7afd0b875c85",
+      "observer_module": "scripts/migration/browser_cookie_cases.py",
+      "observer_module_sha256": "f8b40b4f5cdd7fa5662f479e99dd39f36cfc1662088d9d0a94a4ee1a47afce55",
+      "observation_keys": [
+        "cases"
+      ],
+      "path_normalization": "Original temporary root -> @ORACLE_ROOT@; existing $ROOT bundle templates retain platform-relative spelling."
+    },
+    {
+      "file": "engine-rust/tests/fixtures/browser-characterization/warmup.json",
+      "bytes": 9618,
+      "sha256": "b62e2a344c143f5e7b8ac537021b7b17c48f6332e143a8169706a31882aacca9",
+      "observer_source": "engine-rust/src/browser/warmup_tests.rs",
+      "observer_sha256": "7c57cb4b593d1c2f44513a8c4d398b2a174a3f3a621620218cb33e64405095e4",
+      "observer_module": "scripts/migration/warmup_cases.py",
+      "observer_module_sha256": "6e57c9816ae2ec99af33784d1a4aaae0e12dffdbcaa7a16b71d36dc473999e22",
+      "observation_keys": [
+        "policy",
+        "runs",
+        "schedules"
+      ],
+      "path_normalization": "Original temporary root -> @ORACLE_ROOT@; existing $ROOT bundle templates retain platform-relative spelling."
+    },
+    {
+      "file": "engine-rust/tests/fixtures/browser-characterization/launch-cli.json",
+      "bytes": 9625,
+      "sha256": "1e148239f8131f08ea2b0e33f91474bea6a5d026f4d1811878bb93808f184440",
+      "observer_source": "engine-rust/tests/cli_launch_parity.rs",
+      "observer_sha256": "20c72d27e904a0d8fe97bbdc9284911b76b76f5091432b0f2c9d7fe650d29967",
+      "observer_module": "scripts/migration/cli_launch_cases.py",
+      "observer_module_sha256": "e0ea9f17593cf758cb2ef9ebb781611fb690ba76abda35ebfde821b0b1d16bf5",
+      "observation_keys": [
+        "cases",
+        "attach",
+        "human",
+        "humanAttach"
+      ],
+      "path_normalization": "Original temporary root -> @ORACLE_ROOT@; existing $ROOT bundle templates retain platform-relative spelling."
+    },
+    {
+      "file": "engine-rust/tests/fixtures/browser-characterization/bundled.json",
+      "bytes": 2891,
+      "sha256": "7e07b2ced8ba5221164e2a8e5175ccf97cc82f2f9f1534646490f21676cd969f",
+      "observer_source": "engine-rust/tests/browser_extensions_parity.rs",
+      "observer_sha256": "52a2d0c74829574f7b2ec48a332dff5d16136ca110ef766d7b028eb0035a33d1",
+      "observer_module": "scripts/migration/bundled_cases.py",
+      "observer_module_sha256": "e2d957f3500b5f5512b9023e914dcec7948f65ac2970d417f63135f3bb803b57",
+      "observation_keys": [
+        "cases"
+      ],
+      "path_normalization": "Original temporary root -> @ORACLE_ROOT@; existing $ROOT bundle templates retain platform-relative spelling."
+    },
+    {
+      "file": "engine-rust/tests/fixtures/browser-characterization/extension-paths.json",
+      "bytes": 561,
+      "sha256": "403804dc07b0ef0ac3f7a49026df4cdbd721d2024e991cc2aaf9aa3b8977faeb",
+      "observer_source": "engine-rust/tests/browser_extensions_parity.rs",
+      "observer_sha256": "52a2d0c74829574f7b2ec48a332dff5d16136ca110ef766d7b028eb0035a33d1",
+      "path_normalization": "Owned root -> $ROOT. Windows adds the original same-drive-relative input, whose observed canonical directory is the first path again; native assertions retain cross-drive refusal and duplicate order.",
+      "platform": "POSIX observation; native platform path spelling and explicit original Windows duplicate input materialized in test."
+    }
+  ]
+}

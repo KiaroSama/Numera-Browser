@@ -1,0 +1,68 @@
+name: Desktop production contracts
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+env:
+  NUMERA_MAX_TEST_WORKERS: "2"
+  CARGO_BUILD_JOBS: "2"
+  CARGO_INCREMENTAL: "0"
+  CARGO_PROFILE_DEV_DEBUG: "0"
+  CARGO_PROFILE_TEST_DEBUG: "0"
+
+jobs:
+  contracts:
+    name: Shell contracts (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249 # stable
+        with:
+          toolchain: 1.100.0
+          components: rustfmt, clippy
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c # v2
+        with:
+          workspaces: |
+            desktop/src-tauri
+            engine-rust
+            dashboard
+            tools/xtask
+          save-if: ${{ runner.os != 'Windows' }}
+          cache-workspace-crates: false
+      - name: Tauri system dependencies (Linux)
+        if: runner.os == 'Linux'
+        timeout-minutes: 10
+        run: |
+          sudo apt-get -o Acquire::Retries=2 update
+          sudo apt-get -o Acquire::Retries=2 install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev \
+            librsvg2-dev libxdo-dev libssl-dev build-essential file
+      - name: Compile the native CI owner
+        run: cargo build --locked --manifest-path tools/xtask/Cargo.toml
+      - name: Install the pinned Rust WASM binding tool
+        run: cargo xtask ci owned --wall 600 --idle 180 -- cargo install wasm-bindgen-cli --version 0.2.129 --locked
+      - name: Build the real Rust dashboard assets
+        run: cargo xtask ci owned --wall 900 --idle 180 -- cargo run --locked --manifest-path dashboard/Cargo.toml --bin dashboard-build
+      - name: Verify Tauri shell formatting
+        run: cargo xtask ci owned --wall 60 --idle 30 -- cargo fmt --manifest-path desktop/src-tauri/Cargo.toml --all --check
+      - name: Compile and lint the Tauri shell
+        run: cargo xtask ci owned --wall 900 --idle 300 -- cargo clippy --manifest-path desktop/src-tauri/Cargo.toml --locked --all-targets --no-default-features -- -D warnings
+      - name: Prove previous updater recovery overwrite refusal
+        if: runner.os == 'Linux'
+        run: cargo xtask ci owned --wall 900 --idle 300 -- cargo xtask ci desktop-history
+      - name: Compile Tauri shell contract binaries
+        run: cargo xtask ci owned --wall 900 --idle 300 -- cargo test --manifest-path desktop/src-tauri/Cargo.toml --locked --no-default-features --no-run
+      - name: Verify Tauri shell contracts
+        run: cargo xtask ci owned --wall 600 --idle 120 -- cargo test --manifest-path desktop/src-tauri/Cargo.toml --locked --no-default-features -- --test-threads=2
