@@ -184,15 +184,13 @@ fn product_diagnostics(temp: &Temp) -> TestResult {
         "{}",
         String::from_utf8_lossy(&compiled.stderr)
     );
+    let launcher = super::compiler::console_free_fixture(temp)?;
+    let tool = || super::compiler::fixture_command(&binary, launcher.as_deref());
     let output = temp.0.join("failed-product");
     fs::create_dir_all(output.join(".desktop-build"))?;
     let log = output.join(".desktop-build/tauri-build.log");
-    let failure = numera_xtask::product_diagnostics::execute(
-        &root(),
-        std::process::Command::new(&binary).arg("fail"),
-        &log,
-    )
-    .expect_err("a real failed bundle tool must remain failed");
+    let failure = numera_xtask::product_diagnostics::execute(&root(), tool().arg("fail"), &log)
+        .expect_err("a real failed bundle tool must remain failed");
     let error = failure.to_string();
     assert!(error.contains("exit=7"), "{error}");
     assert!(
@@ -355,11 +353,7 @@ fn product_diagnostics(temp: &Temp) -> TestResult {
     assert_eq!(second.len(), 2);
     assert!(second.iter().all(|path| !retained_paths.contains(path)));
     assert_eq!(fs::read_dir(temp.0.join("build"))?.count(), 4);
-    numera_xtask::product_diagnostics::execute(
-        &root(),
-        &mut std::process::Command::new(&binary),
-        &temp.0.join("success.log"),
-    )?;
+    numera_xtask::product_diagnostics::execute(&root(), &mut tool(), &temp.0.join("success.log"))?;
     Ok(())
 }
 source_test!(
