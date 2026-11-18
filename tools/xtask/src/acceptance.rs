@@ -547,6 +547,58 @@ pub fn with_server<T>(
     }
     result
 }
+
+#[cfg(windows)]
+fn initialize_windows_stdio() -> io::Result<()> {
+    use numera_core::ownership::resources::snapshot;
+
+    // Rust caches its anonymous child-pipe filesystem handle on first use.
+    // Probe plain stdio with xtask's inert usage path, outside product capture.
+    let executable = std::env::current_exe()?;
+    let probe = || {
+        let mut child = Command::new(&executable)
+            .arg("--help")
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()?;
+        let deadline = Instant::now() + Duration::from_secs(3);
+        let status = loop {
+            match child.try_wait() {
+                Ok(Some(status)) => break status,
+                Ok(None) if Instant::now() < deadline => {
+                    std::thread::sleep(Duration::from_millis(5));
+                }
+                result => {
+                    let error = result.err().unwrap_or_else(|| {
+                        io::Error::new(io::ErrorKind::TimedOut, "Windows stdio probe timed out")
+                    });
+                    if let Err(kill_error) = child.kill()
+                        && child.try_wait()?.is_none()
+                    {
+                        return Err(kill_error);
+                    }
+                    child.wait()?;
+                    return Err(error);
+                }
+            }
+        };
+        drop(child);
+        if status.code() != Some(1) {
+            return Err(io::Error::other("Windows stdio usage probe failed"));
+        }
+        snapshot()
+    };
+    let first = probe()?;
+    let second = probe()?;
+    if first != second {
+        return Err(io::Error::other(format!(
+            "Windows stdio baseline did not stabilize: {first:?} to {second:?}"
+        )));
+    }
+    Ok(())
+}
+
 pub fn run(candidate: &Path, path: &Path) -> Result<Value> {
     use numera_core::ownership::resources::{ResourceFailure, ResourceGuard};
 
@@ -564,6 +616,7 @@ pub fn run(candidate: &Path, path: &Path) -> Result<Value> {
                 TcpStream::connect_timeout(&listener.local_addr()?, Duration::from_secs(2))?;
             let (accepted, _) = listener.accept()?;
             drop((client, accepted, listener));
+            initialize_windows_stdio()?;
         }
         let guard = ResourceGuard::new()?;
         let root = fixture.path().join("data");
