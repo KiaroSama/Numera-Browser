@@ -26,6 +26,9 @@ explicit consent for downloads. [Browser profiles](https://support.gologin.com/e
 | Browser executable | Render pages, execute web code and use the persistent directory assigned to that profile. Current builds use compatible third-party Chromium and Firefox binaries. |
 | Numera Core Browser | Planned browser executable with its own source, build and version. The manager can integrate a future release through a compatible adapter with verified resources, an assigned profile directory, and readiness and shutdown checks. |
 
+The `numera-core` Cargo package in this repository provides the manager's shared
+Rust library for the CLI, service and worker.
+
 ## Components
 
 | Component | Responsibility |
