@@ -2,6 +2,24 @@ use super::*;
 source_cases!("tests/test_camoufox_runtime.py::test_prepare_requires_real_camoufox_font_bundle_without_launch_or_mutation",fonts,[camo_fonts_none_grouped=>("None-grouped",("None","grouped")),camo_fonts_none_legacy=>("None-legacy",("None","legacy")),camo_fonts_none_flat=>("None-flat",("None","flat")),camo_fonts_config_grouped=>("config-grouped",("config","grouped")),camo_fonts_config_legacy=>("config-legacy",("config","legacy")),camo_fonts_config_flat=>("config-flat",("config","flat")),camo_fonts_empty_fonts_grouped=>("empty-fonts-grouped",("empty-fonts","grouped")),camo_fonts_empty_fonts_legacy=>("empty-fonts-legacy",("empty-fonts","legacy")),camo_fonts_empty_fonts_flat=>("empty-fonts-flat",("empty-fonts","flat")),camo_fonts_bad_groups_grouped=>("bad-groups-grouped",("bad-groups","grouped")),camo_fonts_bad_groups_legacy=>("bad-groups-legacy",("bad-groups","legacy")),camo_fonts_bad_groups_flat=>("bad-groups-flat",("bad-groups","flat")),camo_fonts_missing_group_grouped=>("missing-group-grouped",("missing-group","grouped")),camo_fonts_missing_group_legacy=>("missing-group-legacy",("missing-group","legacy")),camo_fonts_missing_group_flat=>("missing-group-flat",("missing-group","flat")),camo_fonts_wrong_binding_grouped=>("wrong-binding-grouped",("wrong-binding","grouped")),camo_fonts_wrong_binding_legacy=>("wrong-binding-legacy",("wrong-binding","legacy")),camo_fonts_wrong_binding_flat=>("wrong-binding-flat",("wrong-binding","flat")),camo_fonts_malformed_config_grouped=>("malformed-config-grouped",("malformed-config","grouped")),camo_fonts_malformed_config_legacy=>("malformed-config-legacy",("malformed-config","legacy")),camo_fonts_malformed_config_flat=>("malformed-config-flat",("malformed-config","flat")),camo_fonts_comment_marker_grouped=>("comment-marker-grouped",("comment-marker","grouped")),camo_fonts_comment_marker_legacy=>("comment-marker-legacy",("comment-marker","legacy")),camo_fonts_comment_marker_flat=>("comment-marker-flat",("comment-marker","flat")),camo_fonts_cdata_marker_grouped=>("cdata-marker-grouped",("cdata-marker","grouped")),camo_fonts_cdata_marker_legacy=>("cdata-marker-legacy",("cdata-marker","legacy")),camo_fonts_cdata_marker_flat=>("cdata-marker-flat",("cdata-marker","flat"))]);
 source_cases!("tests/test_camoufox_runtime.py::test_font_regression_rejects_the_previous_missing_guard",mutant,[camo_mutant_config=>("config","config"),camo_mutant_empty_fonts=>("empty-fonts","empty-fonts"),camo_mutant_wrong_binding=>("wrong-binding","wrong-binding"),camo_mutant_comment_marker=>("comment-marker","comment-marker"),camo_mutant_cdata_marker=>("cdata-marker","cdata-marker")]);
 use ci::camoufox_runtime::{self as runtime, Captured, Host, Invocation, PACKAGES, Runner};
+const APT_PREFIX: [&str; 16] = [
+    "sudo",
+    "-n",
+    "env",
+    "DEBIAN_FRONTEND=noninteractive",
+    "LC_ALL=C.UTF-8",
+    "LANGUAGE=C",
+    "/usr/bin/timeout",
+    "--kill-after=10s",
+    "230s",
+    "/usr/bin/apt-get",
+    "-o",
+    "Acquire::Retries=1",
+    "-o",
+    "Acquire::http::Timeout=15",
+    "-o",
+    "Acquire::https::Timeout=15",
+];
 fn host() -> Host {
     Host {
         actions: "true".into(),
@@ -38,22 +56,20 @@ impl Runner for Commands {
         assert_eq!(invocation.environment["LC_ALL"], "C.UTF-8");
         assert_eq!(invocation.environment["LANGUAGE"], "C");
         if invocation.argv[0] != "dpkg-query" {
+            assert_eq!(invocation.seconds, 270);
             assert_eq!(
-                &invocation.argv[..7],
-                &[
-                    "sudo",
-                    "-n",
-                    "env",
-                    "DEBIAN_FRONTEND=noninteractive",
-                    "LC_ALL=C.UTF-8",
-                    "LANGUAGE=C",
-                    "apt-get"
-                ]
+                invocation.argv.get(..APT_PREFIX.len()),
+                Some(APT_PREFIX.map(str::to_owned).as_slice()),
+                "The root-owned watchdog and APT connection bounds must precede either APT command"
             );
-            let failed = self.damage == "update-failed" && invocation.argv[7] == "update"
-                || self.damage == "install-failed" && invocation.argv[7] == "install";
+            let action = invocation.argv[APT_PREFIX.len()].as_str();
+            let exit = match (self.damage, action) {
+                ("update-failed", "update") => 124,
+                ("install-failed", "install") => 100,
+                _ => 0,
+            };
             return Ok(Captured {
-                exit: if failed { 100 } else { 0 },
+                exit,
                 stdout: Vec::new(),
             });
         }
@@ -117,7 +133,7 @@ fn installed(missing: Vec<&'static str>) -> TestResult {
     } else {
         assert_eq!(commands.calls.len(), 4);
         assert_eq!(commands.queries, 2);
-        assert_eq!(&commands.calls[1].argv[7..], &["update"]);
+        assert_eq!(&commands.calls[1].argv[APT_PREFIX.len()..], &["update"]);
         let mut tail = [
             "install",
             "-y",
@@ -128,7 +144,7 @@ fn installed(missing: Vec<&'static str>) -> TestResult {
         .map(str::to_owned)
         .to_vec();
         tail.extend(missing.into_iter().map(str::to_owned));
-        assert_eq!(commands.calls[2].argv[7..], tail);
+        assert_eq!(commands.calls[2].argv[APT_PREFIX.len()..], tail);
     }
     commands.missing.clear();
     assert_eq!(
@@ -235,22 +251,27 @@ source_test!(
         assert_eq!(job["strategy"]["max-parallel"], 2);
         assert_eq!(job["strategy"]["fail-fast"], false);
         assert_eq!(job["timeout-minutes"], 35);
-        let step = job["steps"]
-            .as_array()
-            .expect("steps")
-            .iter()
-            .find(|step| step["name"] == "Install Firefox system dependencies")
-            .expect("Camo runtime gate");
-        assert_eq!(
-            step["if"],
-            "runner.os == 'Linux' && matrix.engine == 'camoufox'"
-        );
-        assert!(
-            step["run"]
-                .as_str()
-                .expect("command")
-                .contains("ci owned --wall 300 --idle 120 -- cargo xtask ci camoufox-runtime")
-        );
+        let migration = workflow::parse(&fs::read_to_string(
+            root().join(".github/workflows/migration-browser.yml"),
+        )?)?;
+        for steps in [&job["steps"], &migration["jobs"]["live"]["steps"]] {
+            let step = steps
+                .as_array()
+                .expect("steps")
+                .iter()
+                .find(|step| step["name"] == "Install Firefox system dependencies")
+                .expect("Camo runtime gate");
+            assert_eq!(
+                step["if"],
+                "runner.os == 'Linux' && matrix.engine == 'camoufox'"
+            );
+            assert!(
+                step["run"]
+                    .as_str()
+                    .expect("command")
+                    .contains("ci owned --wall 600 --idle 570 -- cargo xtask ci camoufox-runtime")
+            );
+        }
         workflow::step_once(
             &job["steps"],
             "./.github/actions/native-candidate-acceptance",

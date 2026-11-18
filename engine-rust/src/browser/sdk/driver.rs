@@ -9,7 +9,7 @@ use playwright_rs::{BrowserContext, Playwright};
 use serde_json::{Value, json};
 use std::{
     io::{self, Read},
-    path::PathBuf,
+    path::{Component, Path, PathBuf},
     process::Stdio,
     sync::Arc,
     time::Duration,
@@ -47,8 +47,30 @@ impl DiagnosticBytes {
                 b"ERR_UNSUPPORTED_ESM_URL_SCHEME",
             ),
             ("node-invalid-argument-type", b"ERR_INVALID_ARG_TYPE"),
+            ("node-invalid-argument-value", b"ERR_INVALID_ARG_VALUE"),
+            ("node-invalid-url", b"ERR_INVALID_URL"),
+            ("node-invalid-file-url-host", b"ERR_INVALID_FILE_URL_HOST"),
+            ("node-invalid-file-url-path", b"ERR_INVALID_FILE_URL_PATH"),
+            (
+                "node-invalid-module-specifier",
+                b"ERR_INVALID_MODULE_SPECIFIER",
+            ),
+            ("node-native-module-loader", b"ERR_DLOPEN_FAILED"),
+            ("node-path-not-found", b"ENOENT:"),
+            ("node-path-not-directory", b"ENOTDIR:"),
+            ("node-access-denied", b"EACCES:"),
+            ("node-operation-not-permitted", b"EPERM:"),
             ("node-syntax-error", b"SyntaxError:"),
             ("node-reference-error", b"ReferenceError:"),
+            (
+                "windows-dll-not-found",
+                b"The specified module could not be found.",
+            ),
+            ("windows-invalid-image", b"is not a valid Win32 application"),
+            (
+                "windows-side-by-side-loader",
+                b"side-by-side configuration is incorrect",
+            ),
             (
                 "dynamic-library-loader",
                 b"error while loading shared libraries:",
@@ -73,6 +95,10 @@ impl DiagnosticBytes {
         })
     }
 }
+fn has_verbatim_prefix(path: &Path) -> bool {
+    matches!(path.components().next(), Some(Component::Prefix(prefix)) if prefix.kind().is_verbatim())
+}
+
 fn initialization_timeout_pattern(error: &playwright_rs::Error) -> Option<&'static str> {
     // This identifies a public message pattern only. A vendor TimeoutError can
     // mimic the same text; the opaque error cannot prove a typed timer branch.
@@ -93,11 +119,13 @@ fn report_initialization(
     error: Option<&playwright_rs::Error>,
     child: Value,
     stderr: Value,
+    (node_verbatim, cli_verbatim): (bool, bool),
 ) {
     let summary = json!({
         "boundary":boundary,
         "category":error.map(super::error_category),
         "timeout_pattern":error.and_then(initialization_timeout_pattern),
+        "verbatim_paths":{"node":node_verbatim,"cli":cli_verbatim},
         "child":child,
         "stderr":stderr
     });
@@ -214,6 +242,10 @@ impl Driver {
         installation: Installation,
         diagnostics: bool,
     ) -> playwright_rs::Result<Self> {
+        let verbatim_paths = (
+            has_verbatim_prefix(&installation.node),
+            has_verbatim_prefix(&installation.cli),
+        );
         let mut child = Command::new(installation.node)
             .arg(installation.cli)
             .arg("run-driver")
@@ -265,6 +297,7 @@ impl Driver {
                                 None,
                                 json!({"state":"unavailable","sampled":false}),
                                 summary,
+                                verbatim_paths,
                             );
                         }
                         break;
@@ -348,7 +381,13 @@ impl Driver {
                     .and_then(|output| output.bytes.lock().ok().map(|bytes| bytes.summary()))
                     .unwrap_or_else(|| json!({"read_state":"unavailable"}));
                 let _ = driver.stop().await;
-                report_initialization("initialization-failed", Some(&error), child, stderr);
+                report_initialization(
+                    "initialization-failed",
+                    Some(&error),
+                    child,
+                    stderr,
+                    verbatim_paths,
+                );
                 Err(error)
             }
         }
