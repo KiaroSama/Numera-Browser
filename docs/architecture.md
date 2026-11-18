@@ -1,20 +1,36 @@
 # Architecture
 
-Numera's application engine, browser preparation, web dashboard, desktop shell
-and build tools are implemented in Rust. The dashboard compiles to WebAssembly.
-Tauri supplies the native window and operating-system WebView. The HTTP server
-serves the same built dashboard in a server installation.
+Numera Browser is the local-first profile manager. Its manager service, browser
+preparation, web dashboard, desktop shell and build tools are implemented in
+Rust. The dashboard compiles to WebAssembly. Tauri supplies the native window and
+operating-system WebView for the manager. A server installation serves the same
+dashboard over HTTP.
 
 The rewrite continues checkpoint `3bf1d839fd33e42a10b982bd8607a7052ea7c4cd`
-in [PR #76](https://github.com/KiaroSama/Numera-Browser/pull/76). The PR remains
-unmerged while the remaining test ports, interpreter retirement and complete
-CI verification on x86-64 Linux and Windows are complete. See [verification status](rust-rewrite.md).
+in [PR #76](https://github.com/KiaroSama/Numera-Browser/pull/76). Its
+[verification record](rust-rewrite.md) tracks the Rust cutover and CI results for
+x86-64 Linux and Windows.
+
+## Product and runtime boundary
+
+GoLogin manages browser profiles and starts Orbita when the user runs a profile.
+Orbita is its Chromium-based browser. GoLogin records the browser version per
+profile and stores browser binaries separately from profile data. Numera uses
+the same division of responsibilities while retaining local ownership and
+explicit consent for downloads. [Browser profiles](https://support.gologin.com/en/articles/14853788-what-is-a-browser-profile) · [Orbita](https://support.gologin.com/en/articles/14853789-orbita-browser) · [App and browser updates](https://support.gologin.com/en/articles/15451176-gologin-app-and-orbita-browser-updates)
+
+| Part | Responsibility |
+|---|---|
+| Numera Browser and its `numera-engine` service | Store profile settings and select a backend. Own each session from admission through shutdown. Manage browser resources and compatible update offers. |
+| `numera-browser-runtime` | Worker launched by the manager. Translate admitted settings to the selected SDK, report readiness, and close the owned browser and driver. |
+| Browser executable | Render pages, execute web code and use the persistent directory assigned to that profile. Current builds use compatible third-party Chromium and Firefox binaries. |
+| Numera Core Browser | Planned browser executable with its own source, build and version. The manager can integrate a future release through a compatible adapter with verified resources, an assigned profile directory, and readiness and shutdown checks. |
 
 ## Components
 
 | Component | Responsibility |
 |---|---|
-| `engine-rust/src/bin/engine.rs` | Native CLI, HTTP server and MCP entry point. |
+| `engine-rust/src/bin/engine.rs` | Manager entry point for the native CLI, HTTP server and MCP. |
 | `engine-rust/src/http/` | Axum routes, authentication, request bounds, dashboard serving and session operations. |
 | `engine-rust/src/cli/` | Profile, proxy, settings, vault, job and import/export commands. |
 | `engine-rust/src/storage/` | Compatible persisted JSON, data-root selection, file locks, atomic replacement and archives. |

@@ -7,7 +7,7 @@ Choose one route: a portable desktop release, a source checkout, or a server/con
 1. Open [GitHub Releases](https://github.com/KiaroSama/Numera-Browser/releases). Select a completed build and its matching platform asset: Windows x64 or Linux x64.
 2. Download the archive and its published checksums/signature metadata. Verify before extraction; see [updates and verification](updates.md). If the release has no matching asset, it is not a supported ready-build route for that machine.
 3. Extract the **whole** `Numera Browser` folder into a writable location. Keep the engine, browser resources, notices and manifests beside the shell; copying only the executable does not install the application.
-4. Start `numera.exe` on Windows or `numera` on Linux. The shell starts its own engine on a free loopback port and opens the dashboard. Close the window to shut down its owned engine.
+4. Start `numera.exe` on Windows or `numera` on Linux. The shell starts the `numera-engine` manager service on a free loopback port and opens the dashboard. Launch a profile to start a compatible browser. Closing the window shuts down the owned manager and its sessions.
 
 Python and Node are not prerequisites for a completed portable bundle. The operating system still supplies the WebView and native libraries: WebView2 on Windows and WebKitGTK 4.1/GTK 3 on Linux. Browser binaries also need their platform's system libraries. The CI build platform does not guarantee every Linux distribution or older OS release is compatible.
 
@@ -17,8 +17,8 @@ Playwright, Patchright and Camoufox resources are bundled as compatible SDK/brow
 
 ### First profile
 
-1. Confirm the footer says **Engine online**. **Demo mode** contains sample data, not a connection to your real profiles.
-2. Open **Settings** and choose the default browser engine. Create a profile with a name and the settings required by your authorized test.
+1. Confirm the footer says **Engine online**. This reports the manager service connection. **Demo mode** shows sample profiles in memory.
+2. Open **Settings** and choose the default browser backend. Create a profile with a name and the settings required by your authorized test.
 3. Launch it from **Profiles**. Close or stop the session before editing resources that require exclusive profile ownership.
 4. Open **Settings → Software updates** to check, review a target, approve its download and separately approve installation/restart. See [update safety](updates.md).
 
@@ -67,11 +67,13 @@ silently invokes this acquisition command.
 
 For a source run, set `NUMERA_APP_DIR` to the absolute `build/vendor-resources`
 path, `NUMERA_BROWSER_DRIVERS` to its `drivers` directory and
-`NUMERA_BROWSER_RUNTIME` to the absolute native worker built under
-`engine-rust/target/debug/` (with `.exe` on Windows). Run the same engine command
-above. Keep resources under this checkout so dashboard discovery can locate
-`dashboard/dist`, or place the built dashboard in the selected application
-location's `web/` directory. Complete product bundles configure this layout.
+`NUMERA_BROWSER_RUNTIME` to the absolute path of the `numera-browser-runtime`
+worker under `engine-rust/target/debug/` (with `.exe` on Windows). For a desktop
+override, `NUMERA_ENGINE` points to the `numera-engine` manager executable. Set
+an external browser executable through its backend-specific path setting. Run
+the same manager command above. Keep resources under this checkout so dashboard
+discovery can locate `dashboard/dist`, or place the built dashboard in the selected
+application location's `web/` directory. Complete product bundles configure this layout.
 
 Driver pins are Playwright **1.65.1**, Patchright **1.64.3**, Camoufox's Playwright
 transport **1.62.0**, and Cloak's Playwright transport **1.65.1**. Camoufox uses

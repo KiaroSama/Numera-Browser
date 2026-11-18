@@ -1812,7 +1812,7 @@ fn folders(a: &App) -> String {
 }
 fn engines(a: &App) -> String {
     let mut o = String::from(
-        r#"<div class="ps-scroll"><div class="ps-eng-hero"><div class="ps-eng-hero-badge">Pluggable engines</div><h1 class="ps-eng-title">Numera manages the identity.<br><span class="grad">The engine renders it.</span></h1><p class="ps-eng-lead">Every profile carries a coherent fingerprint, a proxy and a session — that part is Numera's job. Plug in the stealth backend that matches your target. Install it, pick it per profile, launch.</p><div class="ps-eng-flow"><span class="ps-flow-node">Identity</span> → <span class="ps-flow-node">Engine</span> → <span class="ps-flow-node">Real browser</span></div></div>"#,
+        r#"<div class="ps-scroll"><div class="ps-eng-hero"><div class="ps-eng-hero-badge">Browser backends</div><h1 class="ps-eng-title">Manage profiles in Numera.<br><span class="grad">Launch them in a browser.</span></h1><p class="ps-eng-lead">Numera stores your profile settings and manages each session. The selected backend connects the manager to a compatible browser that opens your pages.</p><div class="ps-eng-flow"><span class="ps-flow-node">Profile manager</span> → <span class="ps-flow-node">Runtime adapter</span> → <span class="ps-flow-node">Browser</span></div></div>"#,
     );
     o.push_str(&update_panel(a));
     o.push_str(&cloak(a));
@@ -1826,34 +1826,32 @@ fn engines(a: &App) -> String {
             }
             let (kind, desc, docs) = match id {
                 "cloak" => (
-                    "Patched Chromium",
-                    "A real Chromium binary. Fingerprints patched at the C++ source level.",
+                    "Chromium browser",
+                    "Uses the separately licensed CloakBrowser executable.",
                     "https://github.com/CloakHQ/CloakBrowser",
                 ),
                 "camoufox" => (
-                    "Patched Firefox",
-                    "A patched Firefox that spoofs at the C++ level and generates its own consistent identity.",
+                    "Firefox browser",
+                    "Opens a Camoufox session through its compatible driver.",
                     "https://github.com/daijro/camoufox",
                 ),
                 "patchright" => (
-                    "Patched Playwright",
-                    "Closes navigator.webdriver and CDP leaks the stock engine leaves behind.",
+                    "Chromium SDK",
+                    "Opens a compatible Chromium session through the Patchright SDK.",
                     "https://github.com/Kaliiiiiiiiii-Vinyzu/patchright",
                 ),
                 _ => (
-                    "Stock Chromium",
-                    "Stock Chromium plus Numera's injected stealth script. Clears basic bot tests; not Cloudflare-grade.",
+                    "Chromium SDK",
+                    "Opens the matched Chromium build through the Playwright SDK.",
                     "",
                 ),
             };
-            let installed = if id == "playwright" {
-                "Built-in"
-            } else if a.engines[id] == true {
-                "Installed"
+            let installed = if a.engines[id] == true {
+                "SDK installed"
             } else if a.engines[id] == false {
-                "Not installed"
+                "SDK missing"
             } else {
-                "Available"
+                "SDK status unknown"
             };
             let _ = write!(
                 o,
@@ -1883,9 +1881,9 @@ fn engines(a: &App) -> String {
                 if id == "cloak" {
                     "Review the exact vendor download above."
                 } else if id == "playwright" {
-                    "Ships with Numera — nothing to install."
+                    "Portable packages include the matched SDK and Chromium."
                 } else {
-                    "Managed by the native Rust engine. Configure its browser path through the CLI."
+                    "The manager uses bundled browser resources or a compatible path configured through the CLI."
                 },
                 if docs.is_empty() {
                     String::new()
@@ -1906,7 +1904,7 @@ pub fn cloak(a: &App) -> String {
         r#"<section class="ps-set-card ps-update-panel" aria-label="Cloak browser acquisition"><h3 class="ps-set-h">Cloak browser download</h3><p class="ps-set-note">The proprietary browser is not bundled. Review the vendor target before approving its download; opening a profile does not grant download consent.</p>"#,
     );
     if !a.live() {
-        o.push_str("<p>Connect the engine to review locally installed SDK metadata.</p>");
+        o.push_str("<p>Connect the manager to review locally installed SDK metadata.</p>");
     } else {
         o.push_str(&button(
             "cloak-review",
@@ -2408,7 +2406,7 @@ fn settings(a: &App) -> String {
             format!("v{}", e(&a.config["version"]))
         },
         if a.live() {
-            "Engine connected."
+            "Manager connected."
         } else {
             "Running in demo mode — start numera serve to go live."
         }

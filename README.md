@@ -4,7 +4,7 @@
 
 # Numera Browser
 
-### Local-first browser profiles, persistent sessions and automation
+### Local-first browser profile manager
 
 Manage separate browser profiles, proxy settings and sessions from a desktop window,
 web dashboard or CLI. Choose Playwright, Patchright, Camoufox or CloakBrowser for
@@ -21,7 +21,7 @@ workflows you are authorized to run.
 [![Dashboard: Rust + WebAssembly](https://img.shields.io/badge/Dashboard-Rust%20%2B%20WebAssembly-654ff0)](dashboard/Cargo.toml)
 [![Tauri: 2](https://img.shields.io/badge/Tauri-2-24c8d8)](desktop/src-tauri/Cargo.toml)
 [![HTTP API: Axum](https://img.shields.io/badge/API-Axum-009688)](engine-rust/Cargo.toml)
-[![Browser: Playwright](https://img.shields.io/badge/Browser-Playwright-45ba4b)](Dockerfile)
+[![Browser SDK: Playwright](https://img.shields.io/badge/Browser%20SDK-Playwright-45ba4b)](#browser-backends)
 [![Support donations](https://img.shields.io/badge/Support-donations-d04a9a)](#donate)
 
 [Download releases](https://github.com/KiaroSama/Numera-Browser/releases) ·
@@ -32,10 +32,11 @@ workflows you are authorized to run.
 
 </div>
 
-The application engine, HTTP API, CLI, MCP, web dashboard, desktop integration
-and build tools are implemented in Rust. The dashboard runs as WebAssembly.
-Browser automation uses provisioned vendor Node drivers and Chromium/Firefox binaries;
-these third-party dependencies retain their own languages and licenses.
+The manager service, HTTP API, CLI, MCP, web dashboard, desktop integration and
+build tools are implemented in Rust. The dashboard runs as WebAssembly. The
+manager launches compatible third-party Chromium and Firefox binaries through an
+owned Rust worker and provisioned vendor drivers. Numera Core Browser is planned
+as a separate browser runtime. See [product and runtime architecture](docs/architecture.md#product-and-runtime-boundary).
 
 Browser identity and diagnostic logic is also authored in
 [Rust](browser-page-rust/README.md). Its checked compiler-generated browser
@@ -155,7 +156,7 @@ For command help, use `numera-engine --help`. See
 [docs/agents.md](docs/agents.md) for JSON/MCP workflows, and
 [dashboard/README.md](dashboard/README.md) for frontend development.
 
-## Browser engines
+## Browser backends
 
 | Backend | Browser and distribution boundary |
 |---|---|
