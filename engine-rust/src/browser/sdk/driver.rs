@@ -58,6 +58,7 @@ impl DiagnosticBytes {
             ("node-native-module-loader", b"ERR_DLOPEN_FAILED"),
             ("node-path-not-found", b"ENOENT:"),
             ("node-path-not-directory", b"ENOTDIR:"),
+            ("node-path-is-directory", b"EISDIR:"),
             ("node-access-denied", b"EACCES:"),
             ("node-operation-not-permitted", b"EPERM:"),
             ("node-syntax-error", b"SyntaxError:"),
@@ -242,12 +243,17 @@ impl Driver {
         installation: Installation,
         diagnostics: bool,
     ) -> playwright_rs::Result<Self> {
+        let cli = installation.cli.as_path();
+        // Older Node releases can read a verbatim script path as a directory.
+        // dunce preserves prefixes required for long paths and special names.
+        #[cfg(windows)]
+        let cli = dunce::simplified(cli);
         let verbatim_paths = (
             has_verbatim_prefix(&installation.node),
-            has_verbatim_prefix(&installation.cli),
+            has_verbatim_prefix(cli),
         );
         let mut child = Command::new(installation.node)
-            .arg(installation.cli)
+            .arg(cli)
             .arg("run-driver")
             .env("PW_LANG_NAME", "rust")
             .env("PW_LANG_NAME_VERSION", env!("CARGO_PKG_RUST_VERSION"))

@@ -15,7 +15,7 @@ default = ["native-product", "native-browser"]
 native-candidate = []
 native-product = []
 test-support = []
-native-browser = ["dep:playwright-rs", "dep:ruzstd", "dep:maxminddb", "dep:serde_yaml"]
+native-browser = ["dep:playwright-rs", "dep:ruzstd", "dep:maxminddb", "dep:serde_yaml", "dep:dunce"]
 
 [[bin]]
 name = "numera-native-candidate"
@@ -148,6 +148,7 @@ socket2 = "=0.6.5"
 serde_json = { version = "1.0.154", features = ["preserve_order", "arbitrary_precision"] }
 
 [target.'cfg(windows)'.dependencies]
+dunce = { version = "=1.0.5", optional = true }
 windows-sys = { version = "0.61.2", features = ["Win32_Foundation", "Win32_System_Threading", "Win32_System_JobObjects", "Win32_System_ProcessStatus", "Win32_System_Pipes", "Win32_Storage_FileSystem", "Win32_System_SystemInformation", "Win32_System_Console", "Win32_System_SystemServices", "Win32_System_Registry", "Win32_System_Diagnostics_ToolHelp", "Win32_Security", "Win32_Security_Cryptography", "Win32_Security_Cryptography_Sip", "Win32_Security_Cryptography_Catalog", "Win32_Security_WinTrust", "Wdk_Foundation"] }
 
 [target.'cfg(unix)'.dependencies]

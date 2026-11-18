@@ -170,56 +170,77 @@ pub fn missing(output: &Captured) -> Result<Vec<String>> {
         .map(str::to_owned)
         .collect())
 }
-pub fn prepare(host: &Host, runner: &mut impl Runner) -> Result<()> {
+fn prepare(host: &Host, runner: &mut impl Runner, log: &RuntimeLog) -> Result<()> {
     host.require()?;
     let absent = missing(&runner.command(&query())?)?;
     if !absent.is_empty() {
-        // APT runs under sudo. Its watchdog signals the privileged process
-        // group and finishes before the unprivileged capture deadline.
-        let prefix = [
-            "sudo",
-            "-n",
-            "env",
-            "DEBIAN_FRONTEND=noninteractive",
-            "LC_ALL=C.UTF-8",
-            "LANGUAGE=C",
-            "/usr/bin/timeout",
-            "--kill-after=10s",
-            "230s",
-            "/usr/bin/apt-get",
-            "-o",
-            "Acquire::Retries=1",
-            "-o",
-            "Acquire::http::Timeout=15",
-            "-o",
-            "Acquire::https::Timeout=15",
+        let update = ["--no-list-cleanup", "--error-on=any"]
+            .map(str::to_owned)
+            .to_vec();
+        let mut install = [
+            "-y",
+            "--no-install-recommends",
+            "--no-remove",
+            "--no-upgrade",
         ]
         .map(str::to_owned)
         .to_vec();
-        let mut update = prefix.clone();
-        update.push("update".into());
-        let mut install = prefix;
-        install.extend(
-            [
-                "install",
-                "-y",
-                "--no-install-recommends",
-                "--no-remove",
-                "--no-upgrade",
-            ]
-            .map(str::to_owned),
-        );
         install.extend(absent);
-        for argv in [update, install] {
-            if runner
-                .command(&Invocation {
-                    argv,
-                    seconds: 270,
-                    environment: environment(),
-                })?
-                .exit
-                != 0
-            {
+        for (phase, watchdog, seconds, options) in [
+            ("update", "230s", 270, update),
+            ("install", "315s", 355, install),
+        ] {
+            // The privileged watchdog can signal APT's process group before
+            // the unprivileged capture deadline. Keep the runner's signed Ubuntu sources.
+            let argv = [
+                "sudo",
+                "-n",
+                "env",
+                "DEBIAN_FRONTEND=noninteractive",
+                "LC_ALL=C.UTF-8",
+                "LANGUAGE=C",
+                "/usr/bin/timeout",
+                "--kill-after=10s",
+                watchdog,
+                "/usr/bin/apt-get",
+                "-o",
+                "Acquire::Retries=1",
+                "-o",
+                "Acquire::http::Timeout=15",
+                "-o",
+                "Acquire::https::Timeout=15",
+                "-o",
+                "Dir::Etc::sourcelist=/etc/apt/sources.list.d/ubuntu.sources",
+                "-o",
+                "Dir::Etc::sourceparts=-",
+                "-o",
+                "Acquire::Languages=none",
+                phase,
+            ]
+            .into_iter()
+            .map(str::to_owned)
+            .chain(options)
+            .collect();
+            log.message(
+                "INFO",
+                "numera.camoufox-runtime",
+                &format!("Runtime APT phase={phase} state=started"),
+            );
+            let result = runner.command(&Invocation {
+                argv,
+                seconds,
+                environment: environment(),
+            });
+            let outcome = result.as_ref().map_or_else(
+                |_| "state=capture-failed".into(),
+                |captured| format!("exit={}", captured.exit),
+            );
+            log.message(
+                "INFO",
+                "numera.camoufox-runtime",
+                &format!("Runtime APT phase={phase} {outcome}"),
+            );
+            if result?.exit != 0 {
                 return fail("Camoufox runtime package installation failed");
             }
         }
@@ -231,7 +252,7 @@ pub fn prepare(host: &Host, runner: &mut impl Runner) -> Result<()> {
 }
 pub fn logged(host: &Host, runner: &mut impl Runner, logs: &Path) -> i32 {
     let log = RuntimeLog::new(logs, "camoufox-runtime");
-    let code = if prepare(host, runner).is_ok() {
+    let code = if prepare(host, runner, &log).is_ok() {
         log.message(
             "INFO",
             "numera.camoufox-runtime",

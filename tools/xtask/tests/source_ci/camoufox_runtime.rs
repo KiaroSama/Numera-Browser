@@ -2,7 +2,7 @@ use super::*;
 source_cases!("tests/test_camoufox_runtime.py::test_prepare_requires_real_camoufox_font_bundle_without_launch_or_mutation",fonts,[camo_fonts_none_grouped=>("None-grouped",("None","grouped")),camo_fonts_none_legacy=>("None-legacy",("None","legacy")),camo_fonts_none_flat=>("None-flat",("None","flat")),camo_fonts_config_grouped=>("config-grouped",("config","grouped")),camo_fonts_config_legacy=>("config-legacy",("config","legacy")),camo_fonts_config_flat=>("config-flat",("config","flat")),camo_fonts_empty_fonts_grouped=>("empty-fonts-grouped",("empty-fonts","grouped")),camo_fonts_empty_fonts_legacy=>("empty-fonts-legacy",("empty-fonts","legacy")),camo_fonts_empty_fonts_flat=>("empty-fonts-flat",("empty-fonts","flat")),camo_fonts_bad_groups_grouped=>("bad-groups-grouped",("bad-groups","grouped")),camo_fonts_bad_groups_legacy=>("bad-groups-legacy",("bad-groups","legacy")),camo_fonts_bad_groups_flat=>("bad-groups-flat",("bad-groups","flat")),camo_fonts_missing_group_grouped=>("missing-group-grouped",("missing-group","grouped")),camo_fonts_missing_group_legacy=>("missing-group-legacy",("missing-group","legacy")),camo_fonts_missing_group_flat=>("missing-group-flat",("missing-group","flat")),camo_fonts_wrong_binding_grouped=>("wrong-binding-grouped",("wrong-binding","grouped")),camo_fonts_wrong_binding_legacy=>("wrong-binding-legacy",("wrong-binding","legacy")),camo_fonts_wrong_binding_flat=>("wrong-binding-flat",("wrong-binding","flat")),camo_fonts_malformed_config_grouped=>("malformed-config-grouped",("malformed-config","grouped")),camo_fonts_malformed_config_legacy=>("malformed-config-legacy",("malformed-config","legacy")),camo_fonts_malformed_config_flat=>("malformed-config-flat",("malformed-config","flat")),camo_fonts_comment_marker_grouped=>("comment-marker-grouped",("comment-marker","grouped")),camo_fonts_comment_marker_legacy=>("comment-marker-legacy",("comment-marker","legacy")),camo_fonts_comment_marker_flat=>("comment-marker-flat",("comment-marker","flat")),camo_fonts_cdata_marker_grouped=>("cdata-marker-grouped",("cdata-marker","grouped")),camo_fonts_cdata_marker_legacy=>("cdata-marker-legacy",("cdata-marker","legacy")),camo_fonts_cdata_marker_flat=>("cdata-marker-flat",("cdata-marker","flat"))]);
 source_cases!("tests/test_camoufox_runtime.py::test_font_regression_rejects_the_previous_missing_guard",mutant,[camo_mutant_config=>("config","config"),camo_mutant_empty_fonts=>("empty-fonts","empty-fonts"),camo_mutant_wrong_binding=>("wrong-binding","wrong-binding"),camo_mutant_comment_marker=>("comment-marker","comment-marker"),camo_mutant_cdata_marker=>("cdata-marker","cdata-marker")]);
 use ci::camoufox_runtime::{self as runtime, Captured, Host, Invocation, PACKAGES, Runner};
-const APT_PREFIX: [&str; 16] = [
+const APT_PREFIX: [&str; 22] = [
     "sudo",
     "-n",
     "env",
@@ -19,6 +19,12 @@ const APT_PREFIX: [&str; 16] = [
     "Acquire::http::Timeout=15",
     "-o",
     "Acquire::https::Timeout=15",
+    "-o",
+    "Dir::Etc::sourcelist=/etc/apt/sources.list.d/ubuntu.sources",
+    "-o",
+    "Dir::Etc::sourceparts=-",
+    "-o",
+    "Acquire::Languages=none",
 ];
 fn host() -> Host {
     Host {
@@ -56,13 +62,25 @@ impl Runner for Commands {
         assert_eq!(invocation.environment["LC_ALL"], "C.UTF-8");
         assert_eq!(invocation.environment["LANGUAGE"], "C");
         if invocation.argv[0] != "dpkg-query" {
-            assert_eq!(invocation.seconds, 270);
+            let action = invocation
+                .argv
+                .get(APT_PREFIX.len())
+                .expect("APT invocation must include its scoped prefix and phase")
+                .as_str();
+            let mut expected_prefix = APT_PREFIX;
+            match action {
+                "update" => assert_eq!(invocation.seconds, 270),
+                "install" => {
+                    assert_eq!(invocation.seconds, 355);
+                    expected_prefix[8] = "315s";
+                }
+                _ => panic!("Unexpected APT operation"),
+            }
             assert_eq!(
                 invocation.argv.get(..APT_PREFIX.len()),
-                Some(APT_PREFIX.map(str::to_owned).as_slice()),
+                Some(expected_prefix.map(str::to_owned).as_slice()),
                 "The root-owned watchdog and APT connection bounds must precede either APT command"
             );
-            let action = invocation.argv[APT_PREFIX.len()].as_str();
             let exit = match (self.damage, action) {
                 ("update-failed", "update") => 124,
                 ("install-failed", "install") => 100,
@@ -133,7 +151,10 @@ fn installed(missing: Vec<&'static str>) -> TestResult {
     } else {
         assert_eq!(commands.calls.len(), 4);
         assert_eq!(commands.queries, 2);
-        assert_eq!(&commands.calls[1].argv[APT_PREFIX.len()..], &["update"]);
+        assert_eq!(
+            &commands.calls[1].argv[APT_PREFIX.len()..],
+            &["update", "--no-list-cleanup", "--error-on=any"]
+        );
         let mut tail = [
             "install",
             "-y",
@@ -215,6 +236,13 @@ fn refusal(damage: &'static str) -> TestResult {
     let text = fs::read_to_string(files[0].path())?;
     assert!(text.contains("[ERROR]") && text.contains("exit=1"));
     assert!(!text.contains("private diagnostic"));
+    if damage == "update-failed" {
+        assert!(text.contains("Runtime APT phase=update exit=124"));
+        assert!(!text.contains("Runtime APT phase=install"));
+    } else if damage == "install-failed" {
+        assert!(text.contains("Runtime APT phase=update exit=0"));
+        assert!(text.contains("Runtime APT phase=install exit=100"));
+    }
     Ok(())
 }
 source_cases!("tests/test_camoufox_runtime.py::test_entrypoint_refuses_unproved_host_observation_or_install",refusal,[camo_foreign=>("foreign-repo","foreign-repo"),camo_local=>("local","local"),camo_engine=>("engine","engine"),camo_runner_arch=>("runner-arch","runner-arch"),camo_host_arch=>("host-arch","host-arch"),camo_distro=>("distro","distro"),camo_release=>("release","release"),camo_sdk=>("sdk","sdk"),camo_query_fatal=>("query-fatal","query-fatal"),camo_query_timeout=>("query-timeout","query-timeout"),camo_query_malformed=>("query-malformed","query-malformed"),camo_duplicate=>("duplicate","duplicate"),camo_foreign_package=>("foreign-package","foreign-package"),camo_foreign_arch=>("foreign-architecture","foreign-architecture"),camo_reinstall=>("reinst-required","reinst-required"),camo_half=>("half-configured","half-configured"),camo_empty=>("empty-success","empty-success"),camo_contradictory=>("contradictory-exit","contradictory-exit"),camo_update=>("update-failed","update-failed"),camo_install=>("install-failed","install-failed"),camo_postcondition=>("postcondition","postcondition")]);
