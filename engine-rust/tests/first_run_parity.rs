@@ -140,6 +140,7 @@ fn legacy_discovery_preserves_original_order_and_never_marks_denied_sources_comp
         &inputs,
     )?;
     assert_eq!(cases.len(), 8, "Legacy discovery observations missing");
+    let mut retry_markers = Vec::with_capacity(cases.len());
     for (index, case) in cases.iter().enumerate() {
         let root = inputs.join(index.to_string());
         if root.exists() {
@@ -242,6 +243,14 @@ fn legacy_discovery_preserves_original_order_and_never_marks_denied_sources_comp
             actual, case["result"],
             "Legacy discovery selected source differs"
         );
+        if denied {
+            let mut unchanged = Map::new();
+            file_bytes(&root, &root, &mut unchanged)?;
+            assert_eq!(
+                unchanged, source_before,
+                "Legacy discovery refusal differs: denied discovery changed fixture bytes, case={index}"
+            );
+        }
         let marker = destination.join(".imported");
         let marker_text = if marker.try_exists()? {
             serde_json::to_value(fs::read(&marker)?)?
@@ -256,25 +265,16 @@ fn legacy_discovery_preserves_original_order_and_never_marks_denied_sources_comp
             fs::read(destination.join("untouched.bin"))?,
             b"preserved destination"
         );
-        if denied {
-            let mut unchanged = Map::new();
-            file_bytes(&root, &root, &mut unchanged)?;
-            assert_eq!(
-                unchanged, source_before,
-                "Denied discovery changed fixture bytes"
-            );
-        }
         let retried = run_if_needed(&destination, &candidates)?;
         assert_eq!(
             serde_json::to_value(retried)?,
             case["retry"],
             "Discovery retry differs"
         );
-        assert_eq!(
-            fs::read(marker)?,
-            fixture_bytes(&case["retried_marker"])?,
-            "Discovery retry marker bytes differ"
-        );
+        // Keep the retry bytes from each observation. Check them after the
+        // refusal cases so an older writer's newline cannot obscure an
+        // attempted fallthrough to the next source.
+        retry_markers.push((fs::read(marker)?, fixture_bytes(&case["retried_marker"])?));
         for candidate in [&first, &second] {
             for name in ["profiles/a.json", "profiles/b.json", "proxies.json"] {
                 let path = candidate.join(name);
@@ -293,6 +293,9 @@ fn legacy_discovery_preserves_original_order_and_never_marks_denied_sources_comp
                 }
             }
         }
+    }
+    for (actual, expected) in retry_markers {
+        assert_eq!(actual, expected, "Discovery retry marker bytes differ");
     }
     temporary.cleanup()?;
     Ok(())
