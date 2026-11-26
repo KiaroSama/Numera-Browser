@@ -255,7 +255,7 @@ pub(super) fn run(
                 _ => return Err(invalid("Unknown update subcommand").into()),
             },
             "capabilities" => {
-                json!({"tools":reflection::tools(),"http_endpoint":"/api/mcp","http_tools":reflection::tools().into_iter().filter_map(|tool| tool["name"].as_str().filter(|name| crate::mcp::http_tool(name)).map(str::to_owned)).collect::<Vec<_>>() })
+                json!({"tools":reflection::tools(),"http_endpoint":"/api/mcp","http_tools":reflection::tools().into_iter().filter_map(|tool| tool["name"].as_str().filter(|name| crate::mcp_http::http_tool(name)).map(str::to_owned)).collect::<Vec<_>>() })
             }
             _ => return Err(invalid("Unknown QA command").into()),
         })

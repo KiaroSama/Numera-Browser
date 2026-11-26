@@ -268,7 +268,15 @@ fn pair(mode: &str) -> TestResult {
         value.bytes = 1234;
         Ok(value)
     });
-    if matches!(mode, "profile" | "sentinel" | "metadata" | "exit") {
+    if mode == "metadata" {
+        let error = result
+            .expect_err("Wrong export count must refuse")
+            .to_string();
+        assert_eq!(
+            error,
+            "Cross-runtime fixture differs: Browser benchmark export metadata expected_count=2 actual_count=1 ok_matches=true file_matches=true format_matches=true field_count_matches=true"
+        );
+    } else if matches!(mode, "profile" | "sentinel" | "exit") {
         assert!(result.is_err());
     } else {
         let (sample, payload) = result?;
@@ -334,6 +342,25 @@ fn pairs(mode: &str) -> TestResult {
         &baseline,
         mode.starts_with("hosted-"),
         |runtime, workspace, index, diagnostic| {
+            if mode == "hosted-noise" {
+                let hosted_parent =
+                    r"D:\a\example-browser\example-browser\.ci-work\browser-comparison";
+                let tail = workspace.strip_prefix(&parent)?;
+                let camoufox_probe = tail.join(
+                    "data with spaces/user-data/012345abcdef/.numera-camoufox-0123456789abcdef0123456789abcdef/probe",
+                );
+                let chromium_cookie_dir =
+                    tail.join("data with spaces/user-data/012345abcdef/Default/Network");
+                for browser_dir in [camoufox_probe, chromium_cookie_dir] {
+                    let units = hosted_parent.encode_utf16().count()
+                        + 1
+                        + browser_dir.to_string_lossy().encode_utf16().count();
+                    assert!(
+                        units < 248,
+                        "Windows browser directory has {units} UTF-16 units"
+                    );
+                }
+            }
             fs::write(workspace.join("input.json"), b"{\"synthetic\":true}")?;
             if diagnostic {
                 assert!(destination.is_file());

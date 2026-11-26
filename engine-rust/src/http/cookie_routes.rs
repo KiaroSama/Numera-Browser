@@ -1,8 +1,8 @@
 use super::{profile_errors, profile_routes::Profiles, request_body::ObjectBody};
 use crate::{
     browser::{cookie_normalize, cookies},
-    cli::cookie_commands::{CookieExport, CookieFormat},
     conversion::truth,
+    cookie_export::{CookieExport, CookieFormat},
     storage::repo::RepoError,
 };
 use axum::{

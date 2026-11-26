@@ -76,8 +76,7 @@ where
             let check = check.clone();
             tasks.spawn(super::admission::owned(async move {
                 let id = proxy["id"].clone();
-                let mut result =
-                    crate::network::proxy_check::with_country_metadata(check(proxy).await);
+                let mut result = crate::proxy_metadata::with_country_metadata(check(proxy).await);
                 result["status"] = if truth(&result["ok"]) {
                     "ok"
                 } else if result["ok"].is_null() {

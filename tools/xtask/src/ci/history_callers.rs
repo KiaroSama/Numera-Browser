@@ -353,7 +353,7 @@ pub fn additional(root: &Path, case: &Case) -> Result<Vec<(String, Replacement)>
         )?;
         let current = fs::read(root.join("engine-rust/src/mcp_command.rs"))?;
         if super::sha(&current)
-            != "699d733f77c4f91f3454c89d179c434115f9ab8d8b23f7a50da861de89cea103"
+            != "a983386b95f5ce5edd9cbad99841a96eaf3430c22263ff8544c3cd83ae027365"
         {
             return fail("Current finite child-command preparation changed");
         }
@@ -450,7 +450,7 @@ fn log_retention_callers(
         root,
         case,
         path,
-        "228a729a8112906bd0a8c6d14b06d7d175b53539a679256b9972de7d677eda57",
+        "491eae3f34700f27c81c67934254310b5e6a3f56db38df4f7e9084410736ae02",
     )?;
     let current = fs::read(root.join(RUNTIME_LOG))?;
     let current_sha = super::sha(&current);

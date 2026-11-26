@@ -1,72 +1,13 @@
 use super::profile_commands::Outcome;
+pub(crate) use crate::cookie_export::{CookieExport, CookieFormat};
 use crate::{
-    browser::{cookie_format, cookie_normalize, cookies, runtime::Runtime},
+    browser::{cookie_normalize, cookies, runtime::Runtime},
     conversion::value_text,
     ownership::registry::Registry,
     storage::repo::{ProfileRepo, RepoError},
 };
 use serde_json::{Value, json};
-use std::{io, path::Path};
-
-#[derive(Clone, Copy)]
-pub(crate) enum CookieFormat {
-    Json,
-    Netscape,
-}
-
-impl CookieFormat {
-    pub(crate) fn parse(format: Option<&str>, path: Option<&Path>) -> io::Result<Self> {
-        match format {
-            Some("json") => Ok(Self::Json),
-            Some("netscape") => Ok(Self::Netscape),
-            None if path
-                .and_then(Path::extension)
-                .is_some_and(|ext| ext.eq_ignore_ascii_case("txt")) =>
-            {
-                Ok(Self::Netscape)
-            }
-            None => Ok(Self::Json),
-            Some(_) => Err(io::Error::new(
-                io::ErrorKind::InvalidInput,
-                "Cookie export format must be json or netscape",
-            )),
-        }
-    }
-    fn label(self) -> &'static str {
-        match self {
-            Self::Json => "json",
-            Self::Netscape => "netscape",
-        }
-    }
-}
-
-pub(crate) struct CookieExport {
-    pub(crate) count: usize,
-    pub(crate) content: String,
-}
-impl CookieExport {
-    pub(crate) fn read(
-        adapter: &mut crate::browser::adapter::Adapter,
-        format: CookieFormat,
-    ) -> io::Result<Self> {
-        let rows = cookie_normalize::normalize_many(&cookies::read(adapter)?)?;
-        Self::from_rows(&rows, format)
-    }
-    fn from_rows(rows: &[Value], format: CookieFormat) -> io::Result<Self> {
-        Ok(Self {
-            count: rows.len(),
-            content: cookie_format::dumps(rows, format.label())?,
-        })
-    }
-    pub(crate) fn response(self, profile_id: &str, format: CookieFormat) -> Value {
-        let ext = match format {
-            CookieFormat::Json => "json",
-            CookieFormat::Netscape => "txt",
-        };
-        json!({"profile_id":profile_id,"format":format.label(),"count":self.count,
-            "filename":format!("{profile_id}-cookies.{ext}"),"content":self.content})
-    }
-}
+use std::path::Path;
 
 pub struct Cookies<'a> {
     pub repo: &'a ProfileRepo,
@@ -303,6 +244,8 @@ fn missing(reference: &str) -> Outcome {
 #[cfg(test)]
 mod export_tests {
     use super::*;
+    use crate::browser::cookie_format;
+    use std::io;
 
     #[test]
     fn shared_export_keeps_profile_and_format() -> io::Result<()> {

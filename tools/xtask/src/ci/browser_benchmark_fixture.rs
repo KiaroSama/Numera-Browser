@@ -97,6 +97,30 @@ pub fn require_cookie_persistence(observed: &Value, expected: &Value) -> Result<
         changes.join("; ")
     ))
 }
+pub(super) fn require_export_metadata(
+    exported: &Value,
+    destination: &Path,
+    label: &str,
+) -> Result<()> {
+    let expected = json!({"ok":true,"count":2,"file":destination,"format":"json"});
+    if let Err(error) = crate::acceptance::require_equal(exported, &expected, label) {
+        // Report only fixed comparisons and a bounded count, never output values or paths.
+        let count = match exported["count"].as_u64() {
+            Some(count @ 0..=2) => count.to_string(),
+            Some(_) => ">2".into(),
+            None => "non-unsigned-integer".into(),
+        };
+        return fail(format!(
+            "{error} expected_count=2 actual_count={count} ok_matches={} file_matches={} format_matches={} field_count_matches={}",
+            exported["ok"] == expected["ok"],
+            exported["file"] == expected["file"],
+            exported["format"] == expected["format"],
+            exported.as_object().is_some_and(|fields| fields.len() == 4),
+        ));
+    }
+    Ok(())
+}
+
 pub fn baseline(
     parent: &Path,
     engine: &str,
@@ -196,26 +220,7 @@ pub fn baseline(
         "json".into(),
         "--json".into(),
     ])?;
-    let expected_export = json!({"ok":true,"count":2,"file":destination,"format":"json"});
-    if let Err(error) = crate::acceptance::require_equal(
-        &exported,
-        &expected_export,
-        "Native checkpoint export metadata",
-    ) {
-        // Report only fixed comparisons and a bounded count, never output values or paths.
-        let count = match exported["count"].as_u64() {
-            Some(count @ 0..=2) => count.to_string(),
-            Some(_) => ">2".into(),
-            None => "non-unsigned-integer".into(),
-        };
-        return fail(format!(
-            "{error} expected_count=2 actual_count={count} ok_matches={} file_matches={} format_matches={} field_count_matches={}",
-            exported["ok"] == expected_export["ok"],
-            exported["file"] == expected_export["file"],
-            exported["format"] == expected_export["format"],
-            exported.as_object().is_some_and(|fields| fields.len() == 4),
-        ));
-    }
+    require_export_metadata(&exported, &destination, "Native checkpoint export metadata")?;
     let payload = super::super::decode(&fs::read(destination)?)?;
     let mut observed = payload["cookies"]
         .as_array()

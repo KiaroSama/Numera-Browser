@@ -111,7 +111,7 @@ impl Probes<'_> {
                     latency,
                 )?
             };
-            result = crate::network::proxy_check::with_country_metadata(result);
+            result = crate::proxy_metadata::with_country_metadata(result);
         }
         if operation == "trust" {
             let current = admitted.borrow();

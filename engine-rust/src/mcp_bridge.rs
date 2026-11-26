@@ -1,7 +1,7 @@
 //! Forward MCP stdio messages to a running service without replaying tool calls.
 use crate::mcp;
 use reqwest::{Client, Request, StatusCode, Url, header};
-use serde_json::Value;
+use serde_json::{Value, json};
 use std::{io, net::SocketAddr, time::Duration};
 
 pub(crate) struct Bridge {
@@ -115,6 +115,40 @@ impl Bridge {
             .map(Some)
             .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "Invalid MCP bridge response"))
     }
+}
+
+pub(crate) fn serve_bridge(
+    bridge: Bridge,
+    input: &mut impl io::BufRead,
+    output: &mut impl io::Write,
+    mut cancelled: impl FnMut() -> bool,
+) -> io::Result<()> {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?;
+    mcp::serve(input, output, |message| {
+        runtime.block_on(async {
+            let request = bridge.request(message);
+            tokio::pin!(request);
+            loop {
+                if cancelled() {
+                    return Err(io::Error::new(io::ErrorKind::Interrupted, "MCP bridge cancelled"));
+                }
+                tokio::select! {
+                    result = &mut request => {
+                        return match result {
+                            Ok(response) => Ok(response),
+                            Err(error) => Ok(message.get("id").filter(|id| !id.is_null()).map(|id| json!({
+                                "jsonrpc":"2.0","id":id,"error":{"code":-32000,"message":error.to_string(),
+                                    "data":{"hint":"Check the bridge URL and bearer token. The bridge did not replay this call."}}
+                            }))),
+                        };
+                    },
+                    () = tokio::time::sleep(Duration::from_millis(50)) => {}
+                }
+            }
+        })
+    })
 }
 
 fn invalid(message: &str) -> io::Error {

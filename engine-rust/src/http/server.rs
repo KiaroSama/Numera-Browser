@@ -21,68 +21,6 @@ use std::{
 };
 use tokio::sync::oneshot;
 
-pub(super) fn mcp_routes(profiles: Arc<super::profile_routes::Profiles>) -> axum::Router {
-    use axum::{extract::DefaultBodyLimit, routing::post};
-    axum::Router::new()
-        .route(
-            "/api/mcp",
-            post(mcp_http).layer(DefaultBodyLimit::max(crate::mcp::MAX_FRAME)),
-        )
-        .with_state(profiles)
-}
-
-async fn mcp_http(
-    axum::extract::State(profiles): axum::extract::State<Arc<super::profile_routes::Profiles>>,
-    message: Result<axum::Json<serde_json::Value>, axum::extract::rejection::JsonRejection>,
-) -> axum::response::Response {
-    use axum::{
-        Json,
-        http::{StatusCode, header},
-        response::IntoResponse,
-    };
-    let Json(message) = match message {
-        Ok(message) => message,
-        Err(error) if error.status() == StatusCode::BAD_REQUEST => {
-            return (StatusCode::BAD_REQUEST, Json(serde_json::json!({"jsonrpc":"2.0","id":null,"error":{"code":-32700,"message":"Parse error"}}))).into_response();
-        }
-        Err(error) => return error.into_response(),
-    };
-    if !message.is_object() {
-        return (StatusCode::BAD_REQUEST, Json(serde_json::json!({"jsonrpc":"2.0","id":null,"error":{"code":-32600,"message":"Invalid Request"}}))).into_response();
-    }
-    let result = super::admission::blocking(move || {
-        let application = crate::cli::application::Application {
-            root: &profiles.root,
-            home: &profiles.root,
-            repo: &profiles.engine,
-            installed: &profiles.installed,
-            host: &profiles.host,
-            password: profiles.engine.password.as_deref(),
-            environment_token: true,
-            sessions: &profiles.sessions,
-            browser: profiles.browser.as_ref(),
-        };
-        let now = crate::native_entry::now()?;
-        crate::mcp::handle_http(&message, |argv| {
-            crate::mcp::execute_native(&application, argv, now)
-        })
-    })
-    .await;
-    let mut response = match result {
-        Ok(Ok(Some(value))) => match crate::mcp::encode(&value) {
-            Ok(bytes) => ([(header::CONTENT_TYPE, "application/json")], bytes).into_response(),
-            Err(_) => StatusCode::PAYLOAD_TOO_LARGE.into_response(),
-        },
-        Ok(Ok(None)) => StatusCode::NO_CONTENT.into_response(),
-        _ => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
-    };
-    response.headers_mut().insert(
-        header::CACHE_CONTROL,
-        header::HeaderValue::from_static("no-store"),
-    );
-    response
-}
-
 #[cfg(test)]
 mod mcp_http_tests {
     use axum::{

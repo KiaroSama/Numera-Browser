@@ -123,7 +123,7 @@ fn execute(
         let signal = cancelled.clone();
         ctrlc::try_set_handler(move || signal.store(true, Ordering::Release))
             .map_err(io::Error::other)?;
-        let result = crate::mcp_command::serve_bridge(
+        let result = crate::mcp_bridge::serve_bridge(
             bridge,
             &mut io::BufReader::new(crate::native_input::Input::new(
                 io::stdin(),

@@ -225,9 +225,9 @@ pub fn observation(
         eprintln!("{event}");
     }
     let sample = result?;
-    crate::acceptance::require_equal(
+    browser_benchmark_fixture::require_export_metadata(
         &sample.payload,
-        &json!({"ok":true,"count":2,"file":destination,"format":"json"}),
+        &destination,
         "Browser benchmark export metadata",
     )?;
     if metadata(&data)? != before {
@@ -267,8 +267,9 @@ pub fn run_pairs_with_policy(
     mut observe: impl FnMut(&str, &Path, i32, bool) -> Result<(Sample, Value)>,
 ) -> Result<Value> {
     fs::create_dir_all(parent)?;
+    // Leave room for Chromium's database files and Camoufox's nested probe profile.
     let run = parent.join(format!(
-        "browser-benchmark-{}-{}",
+        "b-{}-{:.12}",
         std::process::id(),
         super::sha(format!("{:?}", Instant::now()).as_bytes())
     ));

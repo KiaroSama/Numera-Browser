@@ -57,7 +57,7 @@ pub fn call_controlled(
             return mcp::error_result(format!("no such tool '{name}'")).map_err(Failure::from);
         }
         Err(error) if reflection::strict_tool(name) => {
-            return mcp::input_error(error.to_string()).map_err(Failure::from);
+            return crate::mcp_http::input_error(error.to_string()).map_err(Failure::from);
         }
         Err(error) => return Err(error.into()),
     };
@@ -154,40 +154,6 @@ pub fn call_controlled(
             mcp::error_payload(json!({"error":if message.is_empty(){"command failed"}else{message},"exit":output.exit})).map_err(Failure::from)
         }
     }
-}
-
-pub(crate) fn serve_bridge(
-    bridge: crate::mcp_bridge::Bridge,
-    input: &mut impl io::BufRead,
-    output: &mut impl io::Write,
-    mut cancelled: impl FnMut() -> bool,
-) -> io::Result<()> {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()?;
-    mcp::serve(input, output, |message| {
-        runtime.block_on(async {
-            let request = bridge.request(message);
-            tokio::pin!(request);
-            loop {
-                if cancelled() {
-                    return Err(io::Error::new(io::ErrorKind::Interrupted, "MCP bridge cancelled"));
-                }
-                tokio::select! {
-                    result = &mut request => {
-                        return match result {
-                            Ok(response) => Ok(response),
-                            Err(error) => Ok(message.get("id").filter(|id| !id.is_null()).map(|id| json!({
-                                "jsonrpc":"2.0","id":id,"error":{"code":-32000,"message":error.to_string(),
-                                    "data":{"hint":"Check the bridge URL and bearer token. The bridge did not replay this call."}}
-                            }))),
-                        };
-                    },
-                    () = tokio::time::sleep(Duration::from_millis(50)) => {}
-                }
-            }
-        })
-    })
 }
 
 /// Use only with a complete native executable; no Python application fallback.

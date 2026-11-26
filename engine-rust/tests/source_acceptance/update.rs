@@ -334,11 +334,48 @@ original!(
     test_actual_session_claim_defers_then_proved_stop_allows_quiesce,
     "tests/test_update_admission.py::test_actual_session_claim_defers_then_proved_stop_allows_quiesce",
     {
+        use numera_core::ownership::capture::Pipe;
+        use std::{io::Write, process::Stdio, time::Instant};
+
         let t = fresh()?;
         let root = t.path();
         let mut command = base_command(root);
-        command.arg("mcp").stdin(std::process::Stdio::piped());
+        command
+            .arg("mcp")
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped());
         let mut tree = OwnedTree::spawn(&mut command)?;
+        // MCP answers only after releasing its startup reservation in this root.
+        let child = tree.child_mut();
+        child
+            .stdin
+            .as_mut()
+            .ok_or("MCP fixture stdin missing")?
+            .write_all(b"{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"ping\"}\n")?;
+        let mut output = Pipe::Out(child.stdout.take().ok_or("MCP fixture stdout missing")?);
+        output.prepare()?;
+        let deadline = Instant::now() + Duration::from_secs(5);
+        let mut reply = Vec::new();
+        while !reply.ends_with(b"\n") {
+            if Instant::now() >= deadline {
+                return Err("MCP fixture did not finish startup".into());
+            }
+            let mut buffer = [0; 256];
+            match output.available(&mut buffer)? {
+                Some(0) => return Err("MCP fixture exited before answering ping".into()),
+                Some(n) => {
+                    reply.extend_from_slice(&buffer[..n]);
+                    if reply.len() > numera_core::mcp::MAX_FRAME {
+                        return Err("MCP fixture exceeded its response frame bound".into());
+                    }
+                }
+                None => std::thread::sleep(Duration::from_millis(5)),
+            }
+        }
+        assert_eq!(
+            serde_json::from_slice::<Value>(&reply)?,
+            json!({"jsonrpc":"2.0","id":1,"result":{}})
+        );
         let session =
             numera_core::ownership::claims::take(root, "real-session", &tree, HOST, "fixture")?;
         let a = Admission::new(root, HOST)?;

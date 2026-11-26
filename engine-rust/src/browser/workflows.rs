@@ -380,7 +380,7 @@ pub(crate) fn profile_ip_check(repo: &ProfileRepo, id: &str, now: f64) -> Result
     let proxy = profile
         .proxy
         .as_ref()
-        .map(crate::network::proxy_check::profile_entry)
+        .map(crate::proxy_metadata::profile_entry)
         .transpose()?;
     let observed = match proxy {
         Some(proxy) => crate::network::proxy_check::check_sync(&proxy, Duration::from_secs(5))?,
