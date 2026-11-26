@@ -138,7 +138,7 @@ zeroize = "=1.9.1"
 zip = { version = "9.8.2", default-features = false, features = ["deflate-flate2-zlib-rs"] }
 playwright-rs = { version = "=0.21.1", default-features = false, features = ["aws-lc"], optional = true }
 ruzstd = { version = "=0.9.1", optional = true }
-maxminddb = { version = "0.27", optional = true }
+maxminddb = { version = "0.33", optional = true }
 serde_yaml = { version = "0.9.34", optional = true }
 num-bigint = "0.4"
 ed25519-dalek = "3.0.0"
