@@ -132,7 +132,7 @@ base64 = "0.23.1"
 pbkdf2 = { version = "0.13.0", features = ["sha2"] }
 fernet = { version = "0.2.2", default-features = false, features = ["rustcrypto"] }
 aes = "=0.8.4"
-cbc = { version = "=0.1.2", features = ["alloc"] }
+cbc = { version = "=0.2.1", features = ["alloc"] }
 hmac = "=0.13.0"
 zeroize = "=1.9.1"
 zip = { version = "9.8.2", default-features = false, features = ["deflate-flate2-zlib-rs"] }
