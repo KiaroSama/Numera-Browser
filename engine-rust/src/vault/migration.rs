@@ -26,7 +26,15 @@ impl fmt::Display for MigrationError {
         }
     }
 }
-impl Error for MigrationError {}
+impl Error for MigrationError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            Self::Io(error) => Some(error),
+            Self::Crypto(error) => Some(error),
+            Self::Unreadable(_) => None,
+        }
+    }
+}
 impl From<io::Error> for MigrationError {
     fn from(e: io::Error) -> Self {
         Self::Io(e)
@@ -104,7 +112,11 @@ impl Migration {
                 Ok(())
             })?;
             if count > 0 {
+                #[cfg(feature = "test-support")]
+                super::testing::event("before-secret-write", &site.path)?;
                 self.batch.write(&site.path, &data)?;
+                #[cfg(feature = "test-support")]
+                super::testing::event("after-secret-write", &site.path)?;
                 total += count;
             }
         }

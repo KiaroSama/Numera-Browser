@@ -1,0 +1,108 @@
+{
+  "schema": 1,
+  "review_date": "2026-11-14",
+  "status": "CI6 actual Windows execution passed the independent authenticated-CMS versus native SIP digest comparison, native malformed/error controls and strict BAD_DIGEST tamper controls. Full Windows product packaging and other CI gates remain separate.",
+  "ci6_native_success": {
+    "source_head": "68d3ef32d9d3b0718945bc6ed197cf4d1cbd52e6",
+    "actual_checkout_and_github_sha": "ec0eff8d3e655c3428ef74652eb68d7e479b1482",
+    "head_tree": "5912136069b70587970d3fee68d3e83361ef2671",
+    "checkout_tree": "5912136069b70587970d3fee68d3e83361ef2671",
+    "tree_equality_verified": true,
+    "run": 43553932142,
+    "job": 132322948497,
+    "step_started_at": "2026-11-14T04:08:04Z",
+    "step_completed_at": "2026-11-14T04:10:00Z",
+    "artifact_id": 14097766981,
+    "artifact_name": "windows-native-signing-ec0eff8d3e655c3428ef74652eb68d7e479b1482",
+    "artifact_zip_bytes": 958,
+    "artifact_zip_sha256": "9201f5c2fb5b7833670434681be6e4ead911bbef76ffdfaef7219539ff3940ab",
+    "downloaded_digest_verified": true,
+    "reported_result": "1 passed; 0 failed; 0 ignored; 642 filtered out; 1.22s",
+    "evidence_directory": "/workspace/work/ci6-windows-signing",
+    "stdout_sha256": "f45d004f95eac9c978c254db4790eb855aacf539150f3d1dcd210ff246f0201c",
+    "stderr_sha256": "70be727202ef2b24526260271b5845b628922a9ee51598bd11a4677511282cf1",
+    "coverage": "The existing single case executed actual Windows DER/provider/error controls, then signed and verified three staged PE files copied from the freshly compiled native engine/SDK worker. Each file passed pinned CMS/native-SIP/WinTrust positive verification, rejected a wrong pin, rejected byte64 tampering and required exact BAD_DIGEST for a checked executable-section mutation with unchanged certificate blob. The fixture does not stand for the later Tauri desktop/product signing operation.",
+    "limitations": "This is the actual native signer proof at the stated source/tree. The full Windows product job continued afterward; no full product, notarization, owner publication or complete-CI success is claimed."
+  },
+  "ci5_failure": {
+    "source_head": "63b09f46a65071ca4bbb25862525151c866c0169",
+    "actual_checkout": "cb0fcc3239cd52ba21283516dbc9b9834db885cd",
+    "run": 43546474618,
+    "job": 132299303797,
+    "artifact_id": 14094871197,
+    "artifact_sha256": "45b9f2e82f42873f1e61ddcc673d85c217ab4b04c5e15233795c61bc3c662112",
+    "executable_byte": 1024,
+    "result": "1 test; 1 failed; 0 ignored; 0.33s. The real validated executable-section byte was rejected as0x800b0100, failing the required0x80096010 category.",
+    "conclusion": "DOS-stub structure alone does not explain the generic WinTrust result. It is insufficient to claim an explicit image-digest comparison from that error. NOSIGNATURE is still not accepted as BAD_DIGEST evidence."
+  },
+  "observed_failure": {
+    "run": 43536453687,
+    "job": 132266996968,
+    "run_url": "https://github.com/KiaroSama/Numera-Browser/actions/runs/43536453687/job/132266996968",
+    "artifact_id": 14090846276,
+    "artifact_name": "windows-native-signing-0f7dd89a6f6ecb0bee1f4969af799148e62e7fee",
+    "test": "release_identity::c000_both_freezers_embed_identity_and_windows_uses_approved_icon",
+    "reported_tests": 1,
+    "failed_tests": 1,
+    "ignored_tests": 0,
+    "control_index": 0,
+    "mutated_byte": 64,
+    "pe_header_offset": 256,
+    "required_hresult": "0x80096010 (TRUST_E_BAD_DIGEST)",
+    "actual_hresult": "0x800b0100 (TRUST_E_NOSIGNATURE)",
+    "interpretation": "Windows rejected the altered DOS-stub image. The test incorrectly required this structural mutation to reach the image-digest comparison. This observation is not evidence that a changed signed image was accepted.",
+    "earlier_checks": "Signing, verification of the original file against the pinned certificate, and rejection of the wrong certificate pin completed before this control. The failure stopped the remaining file loop."
+  },
+  "change": {
+    "production_paths": [
+      "engine-rust/src/native_windows_sign.rs",
+      "engine-rust/src/native_windows_sign/platform.rs",
+      "engine-rust/src/native_windows_sign/pe.rs",
+      "engine-rust/src/native_windows_sign/sip.rs"
+    ],
+    "test_paths": [
+      "tools/xtask/tests/source_ci/build_identity.rs",
+      "tools/xtask/tests/source_ci/release_support.rs"
+    ],
+    "legacy_control": "The byte-64 mutation remains a separate categorical rejection check. It contributes no BAD_DIGEST evidence.",
+    "digest_control": "A read-only PE32/PE32+ selector validates DOS/PE/COFF headers, bounded optional header and data directories, complete section table, SizeOfHeaders, aligned bounded certificate table, and nonoverlapping bounded raw section ranges. It selects a byte inside a nonempty raw section having both code and executable characteristics, outside all headers and before the certificate table. The original and modified certificate blobs must remain identical.",
+    "strict_policy": "The selected executable-byte mutation must produce exactly TRUST_E_BAD_DIGEST. TRUST_E_NOSIGNATURE, another error, or successful verification still fails. Original-file verification, exact certificate pinning and wrong-pin rejection remain in the same signing loop. No trust-store or verification-policy bypass was added.",
+    "test_inventory": "No test names or counts were added. Portable parser controls are folded into the existing ReleaseIdentity case; its Windows branch still signs and verifies the real compiled executables."
+  },
+  "native_sip_comparison": {
+    "authentication_order": "The existing exact pinned certificate and CryptMsgControl CMS signature checks complete before expected content is read. After explicit image-digest comparison, unchanged WinVerifyTrust policy must still succeed for valid files.",
+    "expected_digest": "Require exact Authenticode inner-content OID, exact bounded DER envelope, PE-image data OID, SHA256 algorithm OID and32-byte digest. CryptDecodeObject uses default copying flags into aligned owned storage; all nested reads use checked offsets into that allocation.",
+    "actual_digest": "Windows CryptSIPRetrieveSubjectGuid and CryptSIPCreateIndirectData compute the actual PE image digest with an ephemeral RSA/AES CRYPT_VERIFYCONTEXT SHA256 provider. No custom Authenticode hash algorithm, persistent key container or trust-store mutation is introduced.",
+    "returned_algorithm": "Accept a returned SHA256 OID only as a checked string inside the owned output allocation or an exact alias of the still-live caller-owned SHA256+NUL input. Unknown/static/out-of-range pointers are refused safely without dereferencing them.",
+    "error_policy": "Only explicit inequality between authenticated expected and independently computed actual SHA256 bytes produces TrustFailure(BAD_DIGEST). Generic decoder, provider, parameter and pointer failures remain errors of their own category. NOSIGNATURE remains a failure.",
+    "controls": "The same existing Windows ReleaseIdentity case now includes actual native decode of independent literal DER, every truncated prefix, malformed/OID/hash-length/trailing/noncanonical framing controls, buffer-size/pointer/returned-algorithm checks, and actual missing/non-PE provider failures. Those controls precede the mandatory real three-PE signing and verification loop.",
+    "local_validation": "Actual platform.rs+pe.rs+sip.rs and featuretest-support controls passed MSVC-target strict Clippy in5.82s. Linux typechecking does not execute Windows cryptographic APIs.",
+    "log": "/workspace/work/windows-sip-typecheck-final.log"
+  },
+  "local_evidence": [
+    {
+      "check": "PE selector red control",
+      "result": "The existing literal offset assertion rejected a temporary selector returning byte 64.",
+      "log": "/tmp/numera-pe-control-red/output.log"
+    },
+    {
+      "check": "Actual selector and exact portable test helper on Linux",
+      "result": "PE32 and PE32+ selected literal raw executable offset 0x600; 50 malformed layouts were rejected; all input files remained unchanged.",
+      "log": "/tmp/numera-pe-control-red/green.log",
+      "limitation": "This proves parsing and file boundaries only, not Authenticode execution."
+    },
+    {
+      "check": "MSVC target strict Clippy over actual platform.rs and pe.rs in an isolated dependency harness",
+      "result": "Passed in 6.80 seconds including build-directory lock wait.",
+      "log": "/tmp/numera-signer-section-typecheck.log",
+      "limitation": "The Linux host typechecked the actual Windows FFI implementation without executing Windows APIs."
+    },
+    {
+      "check": "Existing maintained ReleaseIdentity case on Linux",
+      "result": "Passed: 1 test, 0 failed, 0 ignored, 642 filtered out. Tools all-targets strict Clippy also passed in 9.96 seconds.",
+      "log": "/workspace/work/windows-signer-portable-release-identity.log",
+      "limitation": "The Linux case executes the actual portable PE parser controls. Real signing remains mandatory only in its Windows branch and is not established by this run."
+    }
+  ],
+  "pending_evidence": "The required actual Windows signer case passed at CI6 as recorded above. Later source/tool changes and the complete product installer/signing paths still require their own fresh mandatory native-host checks."
+}

@@ -1,464 +1,215 @@
-<div align="center">
-
-<img src="docs/brand/logo-256.png" alt="Numera Browser" width="128" height="128">
+<p align="center">
+  <img src="docs/brand/Logo.png" width="240" alt="Numera Browser logo" />
+</p>
 
 # Numera Browser
 
-### Self-hosted anti-detect browser & profile manager
+<div align="center">
 
-Create browser profiles that each look like a real, separate device — a
-*coherent* fingerprint, its own proxy, and a persistent session — then manage
-and launch them from a clean web console or CLI.
-
-A self-hosted alternative to GoLogin, Multilogin and AdsPower.
-
-[![License: proprietary](https://img.shields.io/badge/License-proprietary-lightgrey)](LICENSE)
-[![Version: 0.36.0](https://img.shields.io/badge/Version-0.36.0-blue)](CHANGELOG.md)
-[![Python: 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776ab)](engine/pyproject.toml)
-[![Node: 22.22.2+ supported branches](https://img.shields.io/badge/Node-22.22.2%2B-339933)](dashboard/package.json)
-[![Rust: 1.90+](https://img.shields.io/badge/Rust-1.90%2B-dea584)](desktop/src-tauri/Cargo.toml)
-[![Platforms: Windows Linux macOS](https://img.shields.io/badge/Platforms-Windows%20%7C%20Linux%20%7C%20macOS-555)](#build-it)
-
-[![Documentation](https://img.shields.io/badge/Docs-project%20guides-4c9a2a)](docs/architecture.md)
-[![React: 19](https://img.shields.io/badge/React-19-61dafb)](dashboard/package.json)
-[![Tauri: 2](https://img.shields.io/badge/Tauri-2-24c8d8)](desktop/src-tauri/Cargo.toml)
-[![FastAPI](https://img.shields.io/badge/API-FastAPI-009688)](engine/pyproject.toml)
-[![Browser: Playwright](https://img.shields.io/badge/Browser-Playwright-45ba4b)](Dockerfile)
+[![Native CI](https://img.shields.io/github/actions/workflow/status/KiaroSama/Numera-Browser/native-ci.yml?style=flat-square&color=2563eb)](https://github.com/KiaroSama/Numera-Browser/actions/workflows/native-ci.yml)
+[![License: noncommercial](https://img.shields.io/badge/License-noncommercial-64748b)](LICENSE)
+[![Latest tag](https://img.shields.io/github/v/tag/KiaroSama/Numera-Browser?style=flat-square&color=16a34a)](https://github.com/KiaroSama/Numera-Browser/tags)
+[![Latest release](https://img.shields.io/github/v/release/KiaroSama/Numera-Browser?style=flat-square&color=a21caf)](https://github.com/KiaroSama/Numera-Browser/releases)
+[![Native tests](https://img.shields.io/github/actions/workflow/status/KiaroSama/Numera-Browser/rust-candidate.yml?style=flat-square&color=65a30d)](#development-and-verification)
+[![Rust 1.100.0](https://img.shields.io/badge/Rust-1.100.0-8b5cf6)](rust-toolchain.toml)
+[![Windows and Linux: x64 and arm64](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%28x64%20%26%20arm64%29-0891b2)](#install)
+[![MSI, AppImage, DEB and CLI-only](https://img.shields.io/badge/Installer-MSI%20%7C%20AppImage%20%7C%20DEB%20%7C%20CLI--only-ea580c)](#install)
+[![Documentation](https://img.shields.io/badge/Docs-setup-0d9488)](docs/setup.md)
+[![Repository size](https://img.shields.io/github/repo-size/KiaroSama/Numera-Browser?style=flat-square&color=ca8a04)](#development-and-verification)
+[![Architecture](https://img.shields.io/badge/Architecture-native-475569)](docs/architecture.md)
+[![Built with Tauri and Rust/WASM](https://img.shields.io/badge/Built%20with-Tauri%20%7C%20Rust%2FWASM-c2410c)](dashboard/README.md)
+[![MCP: stdio and HTTP](https://img.shields.io/badge/MCP-stdio%20%7C%20HTTP-1d4ed8)](#ai-agent--mcp-integration)
 [![Support donations](https://img.shields.io/badge/Support-donations-d04a9a)](#donate)
-
-<br>
-
-![Numera Browser dashboard](docs/screenshot-dashboard.png)
 
 </div>
 
----
+Numera Browser is a local browser profile manager. It keeps sessions, cookies,
+proxy settings and browser identity settings separate per profile. The core,
+CLI, HTTP API and MCP server use Rust 1.100.0. Tauri hosts the Rust/WASM dashboard,
+which uses the Glimm transition when switching between light and dark themes.
+For reduced motion, the dashboard switches themes without the sweep.
 
-## Why Numera Browser?
+## Install
 
-Most fingerprint tools randomise each value on its own — and that's exactly what
-gets them caught. Anti-bot systems don't read values in isolation; they
-**cross-check** them. A macOS user-agent with an NVIDIA GPU, or a 4-core phone
-claiming a 1440p screen, is an instant tell.
+Download only assets listed under [Releases & Tags](#releases-and-tags). Pick the
+asset that matches the operating system and CPU. Verify it before running or
+extracting it. A CI artifact is not a signed release.
 
-Numera Browser's core idea is **coherence**. It picks a realistic device archetype
-first, then draws *every* value (OS, user-agent, GPU, screen, CPU, RAM, timezone,
-language) from that archetype's real-world pool. The result is an identity whose
-parts all agree — and a live coherence check that proves it, both in the engine
-(`validate()`) and in the dashboard's real-time meter.
+| Target | Desktop packages | Headless server |
+| --- | --- | --- |
+| Windows x64 (`windows-x64`) | MSI or portable ZIP | CLI-only ZIP |
+| Windows arm64 (`windows-arm64`) | MSI or portable ZIP | CLI-only ZIP |
+| Linux x64 (`linux-x64`) | AppImage, DEB or portable ZIP | CLI-only tar.gz |
+| Linux arm64 (`linux-arm64`) | AppImage, DEB or portable ZIP | CLI-only tar.gz |
 
-That coherence-first design is the thing commercial tools don't surface, and it's
-what makes Numera Browser distinctive.
+Windows desktop builds need WebView2. Linux desktop builds need WebKitGTK 4.1
+and GTK 3. For portable installs, extract the whole `Numera Browser` directory
+and run `numera.exe` on Windows or `numera` on Linux. Keep the adjacent engine
+files in place. The Windows publisher certificate is self-signed; do not disable
+platform security or install an unknown root to get around a warning.
 
-## Numera Browser vs the commercial tools
+### Headless Server (CLI-Only) Installation
 
-|  | **Numera Browser** | Multilogin | GoLogin | AdsPower |
-|---|:---:|:---:|:---:|:---:|
-| **Price** | **Free** | from ~$99/mo | from ~$49/mo | free tier + paid |
-| **Self-hosted** — data never leaves your machine | ✅ | ❌ cloud | ❌ cloud | ❌ cloud |
-| **Live coherence meter** (proves the fingerprint agrees with itself) | ✅ | ❌ | ❌ | ❌ |
-| **Trust checker** — grades the *real* browser, not the config | ✅ | ❌ | ❌ | ❌ |
-| **Patched-binary stealth engine** | ✅ Camoufox / Cloak\* | ✅ | ⚠️ | ✅ |
-| **Proxy pool + leak/DNS/TLS tests** | ✅ | partial | partial | partial |
-| **CLI + Python API** | ✅ | ❌ | limited | limited |
-| **Headless parity, tested** | ✅ 44/44 | ❌ | ❌ | ❌ |
-| **Cloud team sync** | ❌ *(local-first by design)* | ✅ | ✅ | ✅ |
+Download `numera-browser-cli-<version>-<target>.zip` on Windows or
+`numera-browser-cli-<version>-<target>.tar.gz` on Linux. Verify and extract the
+archive, then add the extracted directory to your `PATH`. Keep `numera-engine` and
+`numera-browser-runtime` together. The CLI needs no Tauri shell, WebView or
+windowing session. Launching a browser still requires that browser's SDK, binary
+and platform libraries; the headless package does not bundle them.
 
-<sub>Pricing and feature comparison are approximate and based on each vendor's public plans at the time of writing — check their sites for current details. Numera Browser doesn't do hosted team sync on purpose (see the roadmap); everything else is local and free.</sub>
-
-## What's in the box
-
-Numera Browser is a monorepo whose parts work together. A
-[parity-gated Rust migration](docs/migration.md) is in progress: `engine-rust`
-is a non-default native library, not yet a replacement CLI/server. The Python
-application remains selected; the React dashboard now uses strict TypeScript.
-Current CI checkpoints run manually on GitHub-hosted Windows/Linux, not local
-runners. Full migration, cutover and retirement acceptance remain pending.
-
-```
-Numera/
-├── engine/        Python core — fingerprints, storage, launcher, CLI, HTTP API
-├── engine-rust/   Non-default native library — migration and acceptance in progress
-├── dashboard/     React/TypeScript console — served by the engine itself
-├── desktop/       Tauri shell — the standalone windowed app
-├── scripts/       build-desktop.ps1 (portable app) and build-server.ps1 (wheel)
-└── build/         every artifact, one directory per platform — git-ignored,
-                   published through GitHub Releases, never edited by hand
-```
-
-| | |
-|---|---|
-| 🧬 **Coherent fingerprints** | OS, UA, GPU, screen, hardware, timezone & language always agree |
-| 🛡️ **Live coherence meter** | Real-time consistency score as you edit — nobody else shows this |
-| 👤 **Per-profile avatar** | A shape derived from the profile id — fifty rows stay scannable without reading every name |
-| 🌐 **Proxy-aware** | Locale/timezone follow the proxy's country — or its real exit IP, resolved at launch |
-| 🎛️ **Rich editor** | Canvas, WebRTC, audio, fonts, client rects, WebGL image, geolocation, media devices, DNT, bookmarks, extra Chromium flags |
-| 💾 **Persistent sessions** | Cookies & localStorage survive between launches — and each store can be told not to |
-| 🍪 **Cookie import/export** | Move a logged-in session in or out — Cookie-Editor JSON, Playwright state, or `cookies.txt` |
-| 🔎 **Trust checker** | Grades the *real* browser against the checks a fingerprinter runs |
-| ✨ **Auto-adjust** | One click aligns a profile to what its browser actually presents — grade jumps to A |
-| 📡 **Proxy & leak test** | Exit IP, country and timezone match + WebRTC leak detection |
-| 🌐 **DNS leak check** | Confirms name lookups exit through the proxy, not your real ISP's resolver |
-| 🐳 **Runs in Docker** | One `docker compose up`, on Playwright's own browser image so Chromium's system libraries are already there. Data lives in a named volume; the port is published to loopback, not to every interface |
-| 🌐 **Proxy pool** | Import, edit, health-check, export and assign proxies round-robin across profiles. Multi-select for bulk test, rotate, archive and delete; split into **All / Errors / Archive** so a dead proxy is not sitting between two live ones while you assign. **SOCKS5 is health-checked through the same loopback relay the browser uses**, so the result is the real exit IP rather than a shrug |
-| 🔁 **Rotating proxies** | Store a provider's change-IP URL and rotate from the row or in bulk. Numera Browser fetches it, **re-tests, and compares the exit IP** - a provider that answers 200 and does nothing is reported as not moved, because the alternative is a button that lies |
-| 🔐 **TLS/JA3 check** | Reads the handshake fingerprint — the one layer JS injection can't reach |
-| ❤️ **Health overview** | One page: coherence, proxy, trust grade and warm-up schedule per profile |
-| 🔑 **Encrypted vault** | Proxy passwords encrypted at rest behind a master password |
-| 🧩 **Extensions** | Paste a Chrome Web Store link and it's fetched, unpacked and loaded — per profile, isolated from every other one |
-| ✨ **Warm-up + schedule** | Human-paced browsing (per-vertical presets) so a fresh profile isn't obviously fresh — and a recurring schedule so it never goes cold |
-| 🤖 **Automation attach** | Drive a live profile from Selenium, Puppeteer or Playwright over CDP |
-| 🔁 **Bulk edit** | One change applied to hundreds of profiles, coherently |
-| 📥 **Migrate in** | Import profiles from GoLogin, AdsPower or Multilogin exports — and re-import Numera's own export field for field, fingerprint seed and all |
-| 📦 **Bulk create at scale** | Generate thousands of coherent profiles — mixed OS, country, browser, per-profile hardware |
-| 🗂️ **Folders, tags, search** | Organize hundreds of accounts |
-| 🖥️ **Real browser** | Launches a real browser, per-profile isolation |
-| 🔌 **Pluggable engines** | Swap the stealth backend: CloakBrowser, Camoufox, Patchright, Playwright |
-| 🔗 **Startup URLs** | Each profile opens the pages you want, in its own tabs |
-| 🖱️ **Portable desktop app** | A folder you copy and double-click, with all four backends and bundled Playwright, Patchright and Camoufox browsers. Local/internal builds can also include the Cloak binary. No Python or Node installation on the target machine. |
-| ⌨️ **CLI + Python API** | Script it or drive it by hand |
-| 🤖 **Built for agents** | `--json` on every command an agent would drive, `--detach` for long jobs with pollable handles, and an MCP surface. A parity test asserts the GUI has no capability the CLI lacks, and it currently passes at 44/44 — see [docs/agents.md](docs/agents.md) |
-
-## What Numera Browser adds
-
-The gaps that show up running an anti-detect manager unattended on a server:
-
-| | |
-|---|---|
-| 🧩 **Extensions work headless** | Playwright's default headless binary is the *headless shell*, which cannot load extensions at all and announces itself as `HeadlessChrome` over CDP. Numera Browser now launches the full Chromium in `--headless=new`, so extensions load and the browser stops advertising that it is headless. |
-| 🛒 **Web Store links** | Chromium refuses to install from the store once automation is on, and `--load-extension` only takes an unpacked folder — so pasting a store link fetches the `.crx` from Google's own update endpoint, unpacks it into the data directory and hands the browser the folder. `numera ext install <url>`, or the **Install** button on the Extensions page. A mistyped id is named as such (ids are exactly 32 letters, `a`–`p`) rather than reported as "not found". The Extensions page then lists each one by **its own name and logo**, read straight out of the unpacked manifest — not the 32-character folder id. |
-| 🌍 **Global extension set** | An **Extensions** page in the sidebar manages the default set, and every profile created afterwards starts with it — from the CLI, the dashboard or `bulk-create`. **Apply to all** pushes it onto profiles that already exist, merging so each keeps whatever it already carried. CLI equivalents: `numera ext default-add <folder>` and `numera apply --all --extension <folder>`. |
-| 🖥️ **Headless launching** | `numera launch --headless` now keeps the session up instead of closing the moment it opens, and `POST /api/profiles/{id}/launch` takes `{"headless": true}` — so the dashboard's ▶ button works on a box with no display. |
-| 🔐 **Optional API auth** | Set `NUMERA_API_TOKEN`, or mint named tokens (`numera token create "CI runner"`, or the Settings page) that can be revoked one at a time. Only the hash is stored. Off by default, so a localhost setup is unchanged. |
-| 🔐 **Any proxy authenticates** | Chromium refuses SOCKS authentication outright and fingerprint-chromium has no password support on `--proxy-server` at all. Numera Browser puts a small loopback relay in front, which terminates the authentication and forwards upstream — so every engine can use a credentialed proxy of any type. |
-| 🛡️ **WebRTC no longer leaks the real IP** | Chromium's `--force-webrtc-ip-handling-policy` does not reliably stop ICE from offering a public address that isn't the proxy's — verified: exit IP `95.x` while WebRTC handed out a different public IP. The dashboard's WebRTC picker was cosmetic (the engine had no such field), so the choice never reached the browser. Now it does: **Altered** drops public candidates from both the ICE events and the SDP while leaving private/mDNS ones alone, **Disabled** removes `RTCPeerConnection`, **Real** leaves it untouched. |
-| 🗺️ **Italian and Belgian locales** | `it-IT` and `nl-BE`, with timezones, languages and coordinates — proxies exiting in Italy or Belgium previously had no locale to align to and always failed the timezone check. |
-| 🔁 **Sticky-session proxy import** | The pool used to dedupe on `host:port`, which collapsed a 16-line sticky-session list — one gateway, credentials picking the exit node — into a single proxy. Credentials are part of the identity now. |
-
-Details for each are in [engine/README.md](engine/README.md).
-
-## Quick start
-
-**Prerequisites:** [Python 3.10+](https://www.python.org/downloads/) and (for the
-dashboard) [Node.js](https://nodejs.org/) **22.22.2+, 24.15+, or 26+** — the
-DOM test runtime requires these supported branches. CI uses current Node 26 and
-Python 3.14, with Python 3.10/3.12 compatibility checks. Desktop compilation needs
-**Rust 1.90+** for Tauri 2.12. Check with
-`python --version` and `node --version`.
+Run `numera-engine --help` or start the loopback HTTP service:
 
 ```bash
-git clone https://github.com/KiaroSama/Numera-Browser.git
-cd Numera-Browser
+numera-engine --data-dir ./numera-data serve --host 127.0.0.1 --port 8787
 ```
 
-### Build it
+Source builds and browser resource setup are in [docs/setup.md](docs/setup.md).
 
-Two artifacts, two scripts. Pick the one that matches how you will run it.
+### Source installation
 
-**Desktop app — a portable folder you double-click.**
-
-```powershell
-pwsh -File scripts/build-desktop.ps1
-```
-
-Produces `build/windows/Numera Browser/`: a native window, the frozen engine,
-the dashboard, and built-in Playwright, Patchright, Camoufox and CloakBrowser
-Python backends. Playwright and Patchright each have their own Chromium binary;
-Camoufox includes its Firefox binary and default addons. GeoIP data is included.
-Copy the folder and run `numera.exe`; Python and Node are not required on the
-target machine. Windows 11 supplies WebView2. The app picks a free port and
-shuts the engine down with the window.
-
-The distributable build lets CloakBrowser download its browser directly from
-the vendor on first use. For a local/internal folder containing that binary too:
-
-```powershell
-pwsh -File scripts/build-desktop.ps1 -IncludeCloakBinary
-```
-
-That option requires no separate Python installation for the resulting app,
-but its output must not be distributed to third parties without the separate
-rights required by [CloakBrowser's binary license](https://github.com/CloakHQ/CloakBrowser/blob/main/BINARY-LICENSE.md).
-
-Because it is portable it keeps its profiles, sessions, proxies and logs in
-`data/` **beside the executable**. Rebuilding on top of an existing folder
-therefore preserves that directory and replaces everything else.
-
-Windows only from a Windows machine: a Tauri binary links against the host's web
-view (WebKitGTK on Linux, WKWebView on macOS) and cannot be cross-compiled.
-**Linux and macOS builds run in CI** — `.github/workflows/build-desktop.yml`
-builds both and attaches every platform to the GitHub Release for a `v*` tag.
-
-**Server / CLI — headless, any OS.**
-
-```powershell
-pwsh -File scripts/build-server.ps1
-```
-
-Produces a **platform-independent** wheel (`py3-none-any`) in `build/server/`.
-The same file installs on Linux, macOS or Windows:
+Install Rust **1.100.0**, the WASM target and the pinned binding tool to build
+and serve the dashboard with the native engine:
 
 ```bash
-python -m pip install numera_engine-<version>-py3-none-any.whl[api,launch]
-numera serve --host 0.0.0.0 --port 8787
+rustup target add wasm32-unknown-unknown
+cargo install wasm-bindgen-cli --version 0.2.129 --locked
+cargo run --manifest-path dashboard/Cargo.toml --locked --bin dashboard-build
+cargo build --manifest-path engine-rust/Cargo.toml --locked --features native-product,native-browser --bins
+cargo run --manifest-path engine-rust/Cargo.toml --locked --features native-product,native-browser --bin numera-engine -- serve --port 8787
 ```
 
-No desktop shell, no bundled browser — browser engines stay opt-in, and a server
-that only drives an already-running browser over CDP needs none of them.
+Open <http://127.0.0.1:8787>. Browser launching additionally needs its matching
+vendor resources; [setup](docs/setup.md#from-source) describes explicit acquisition.
+For frontend development, keep the engine running and start
+`cargo run --manifest-path dashboard/Cargo.toml --locked --bin dashboard-dev`
+in a second terminal. The Rust development server proxies `/api` to port 8787.
 
-Prefer to work from source? Follow the manual steps below.
+Detailed platform prerequisites, alternative browser setup, Docker, headless
+configuration and troubleshooting are in [docs/setup.md](docs/setup.md).
 
-### 1. Engine (backend)
+## AI Agent & MCP Integration
+
+Start `numera-engine mcp` for newline-delimited JSON-RPC over stdio. If your agent
+runs beside an existing Numera service, use the HTTP bridge:
 
 ```bash
-cd engine
-pip install -e ".[launch]"      # omit [launch] to skip Playwright
-playwright install chromium     # downloads the browser (needed for `launch`)
-
-numera create acct-01 --os windows --locale en-US
-numera launch acct-01          # opens a Chromium window; close it to exit
+numera-engine mcp --bridge http://127.0.0.1:8787
 ```
 
-> **Windows / PowerShell:** keep the quotes around `".[launch]"` exactly as
-> shown — without them the shell mis-reads the brackets.
->
-> **`numera` not recognized?** The install worked but its Scripts folder isn't
-> on your PATH. Either reopen your terminal, or run it as a module instead:
-> `python -m numera create acct-01 --os windows --locale en-US`.
+The bridge forwards calls to `POST /api/mcp` on the configured service. Add
+`--token <bearer>` when the service requires it. Keep management and CDP ports
+private, and leave the bridge on loopback unless you have explicitly configured
+remote authenticated access. For direct CLI calls, use `--json` to receive a
+machine-readable result and check the process exit code. Some commands expose
+profile data or secrets, so keep raw output out of shared logs.
 
-### 2. Dashboard (frontend)
+### CLI / MCP / GUI Feature Parity
 
-```bash
-cd dashboard
-npm install
-npm run dev                      # then open http://localhost:5173
-```
+The GUI calls the same Rust manager as the CLI and MCP. That keeps profile edits,
+proxy checks, cookie exports and workflow actions on the same validation and
+storage paths. See [the agent command guide](docs/agents.md) and the installed
+binary's `--help` for exact commands.
 
-> The dashboard runs on its own with in-memory **sample data**, so you can
-> explore it without the engine (the footer shows *Demo mode*).
+| Feature | What you can do |
+| --- | --- |
+| Browser automation | Navigate, fill forms, take a snapshot or screenshot, and read console or network results through the Rust Playwright/CDP layer. |
+| Profile identity | Set a Dolphin-style MAC address and device name for a profile. This changes browser-visible profile metadata, never the host network interface. |
+| Proxy checks | Review the apparent exit IP, country name and flag when a country match is available. |
+| Cookie export | Export a profile's cookies in JSON or Netscape format. Treat both files as credentials. |
+| Local workflows | Save and run local steps. Use multi-window sync to send the same supported action to selected profile sessions. |
 
-### 3. Connect them (launch real browsers from the dashboard)
+## Browser backends
 
-Start the engine's API, then reload the dashboard — its footer flips to
-*Engine online* and the launch (▶) button now opens a **real Chromium window**,
-with profiles saved to disk.
+| Backend | Resources |
+| --- | --- |
+| `playwright` | Playwright SDK and its matched Chromium. |
+| `patchright` | Its own SDK and matched Chromium. |
+| `camoufox` | Firefox build, add-ons and data. Camoufox generates parts of its own identity. |
+| `cloak` | Native preparation plus a separately licensed vendor browser. Public packages exclude the proprietary binary. |
 
-```bash
-cd engine
-pip install -e ".[api,launch]"
-playwright install chromium
-numera serve                    # HTTP API on http://localhost:8787
-```
+Full x64 desktop packages include reviewed browser resources; ARM64 desktop packages and CLI-only archives do not. Use the
+[setup guide](docs/setup.md) for platform-specific prerequisites. Cloak requires
+explicit consent, a license and access to the selected vendor generation.
 
-Leave `numera serve` running and start the dashboard (`npm run dev`) in a second
-terminal. That's it — clicking ▶ launches the profile for real.
+`BrowserEngineProvider` is the interface for plugging in browser engines and
+update behavior. Numera Core Browser is a planned provider. It is not included
+in this release workflow.
 
-Full details live in each part's README:
-[engine/README.md](engine/README.md) · [dashboard/README.md](dashboard/README.md).
+## Data and updates
 
-### With Docker
+Use **Settings → Storage** to find the actual data directory. Back up that
+entire directory before upgrading; a profile export is not a backup of browser
+sessions. `--data-dir` and `NUMERA_DATA_DIR` take precedence over the default.
 
-Chromium needs about ninety system libraries, and assembling them onto a plain
-Python image is the part that breaks on every base-image bump. The image builds
-on Playwright's own, which already carries the browser matched to the client.
+The portable updater handles application and browser-core updates. Its settings
+control what can update automatically. The updater verifies signed metadata,
+defers while owned work is active or uncertain, and leaves the `data/` directory
+alone. See [updates and signature verification](docs/updates.md) for supported
+feeds, manual approval, recovery and the distinction between a release download
+and an updater-compatible generation.
 
-```bash
-# 1. a token. The engine refuses a non-loopback bind without one, and inside a
-#    container 0.0.0.0 is the only address that is reachable at all.
-echo "NUMERA_API_TOKEN=$(openssl rand -base64 32)" > .env
+## Releases & Tags
 
-# 2. build and start
-docker compose up -d --build
-```
+<a id="releases-and-tags"></a>
 
-The dashboard is then on <http://127.0.0.1:8787> and asks for that token once.
+- [Releases](https://github.com/KiaroSama/Numera-Browser/releases): signed downloads, detached signatures and checksums once a run publishes them.
+- [Tags](https://github.com/KiaroSama/Numera-Browser/tags): version references, including tags without published assets.
+- [Changelog](CHANGELOG.md): current changes and links to older versions.
 
-Worth knowing before you run it:
+Before extracting or running a package, verify `SHA256SUMS.sig` and the matching
+asset's `.sig` using a separately trusted copy of the publisher certificate.
+[Release verification commands](docs/updates.md#verify-a-versioned-download) show
+how to verify the signatures and compare the package hash.
 
-* **The port is published to `127.0.0.1`, not to every interface.** `8787:8787`
-  would expose an API that creates profiles, launches browsers and exports
-  cookies. Reach a remote host over an SSH tunnel or a reverse proxy you
-  control.
-* **`/data` is the whole product.** Profiles, browser sessions, the proxy pool
-  and tokens live in the `numera-data` volume. Losing it is losing every
-  logged-in session; back it up like a database.
-* **`shm_size: 1gb` is not optional.** Chromium in a container with the default
-  64 MB `/dev/shm` dies with an opaque crash rather than an error.
-* Launches are headless by definition here — there is no display. Turn that on
-  once with the `PUT /api/config` call shown below.
+## Logs
 
-```bash
-docker compose logs -f          # what the engine is doing
-docker compose exec numera numera list --json
-```
+The native engine writes UTF-8 logs under the actual data root's `logs/`, one
+`numera_YYYY-MM-DD_HH-mm-ss_UTC.log` per run, with a collision suffix when needed.
+Entries use `[YYYY-MM-DD HH:mm:ss UTC] [LEVEL] [COMPONENT] Message`. Verbose mode adds
+diagnostics; redaction is applied before file output. The engine retains a bounded
+set of run logs; see [engine-rust/README.md](engine-rust/README.md) for its controls.
 
-### On a headless Linux server
+Desktop/update and build tooling keep their own lifecycle diagnostics. The native
+runtime records fixed vault-enable phases in `logs/native-vault-enable_*_UTC.log`
+(with collision suffixes); these diagnostic-only logs never fall back to console
+output or extend command-capture idle deadlines. On creating a log, the native
+runtime prunes the oldest matching runs per component toward a 20-file limit,
+ordered by modification time. Active or linked files are preserved; pruning
+failures can leave extra logs. Missing logs mean unavailable evidence, not completion.
+Other logging initialization failures produce a safe console fallback rather than
+pretending a log exists. Review logs before sharing them: redaction is a safety measure, not
+permission to publish raw cookies, tokens or profile data.
 
-No display, so every launch has to be headless and the API is the interface:
+## Development and verification
 
-```bash
-python3 -m venv .venv && . .venv/bin/activate
-pip install -e "engine[api,launch]"
-playwright install --with-deps chromium
+| Directory | Contains |
+| --- | --- |
+| [`engine-rust/`](engine-rust/) | Profile storage, CLI, Axum HTTP API, MCP, browser worker |
+| [`dashboard/`](dashboard/) | Rust/WASM dashboard and tests |
+| [`desktop/`](desktop/) | Tauri shell, engine lifecycle and updater |
+| [`tools/xtask/`](tools/xtask/) | CI, resource provisioning, package and signature tools |
 
-export NUMERA_API_TOKEN="$(python3 -c 'import secrets;print(secrets.token_urlsafe(32))')"
-numera serve                       # stays on 127.0.0.1; reach it over an SSH tunnel
-```
+[Native CI](.github/workflows/native-ci.yml) builds the desktop and CLI-only
+packages on all four 64-bit targets. Its required checks cover the maintained
+suite inventory, CLI/MCP/dashboard contracts, real browser behavior, relocation,
+process ownership, dependencies and CodeQL (`actions` and `rust`). Live Cloak
+needs the vendor license; its offline and contract tests do not. Hosted timing
+and memory comparisons are published in the `browser-benchmark` artifact for
+diagnosis. A functional, ownership or cleanup failure still fails CI.
 
-Then turn on headless launching once, and the dashboard's ▶ button works from
-there on:
+## Responsible use
 
-```bash
-curl -X PUT http://127.0.0.1:8787/api/config   -H "Authorization: Bearer $NUMERA_API_TOKEN"   -H "Content-Type: application/json"   -d '{"headless_launch": true}'
-```
+Use Numera only on systems and accounts you are authorized to test, and within
+the terms of its [license](LICENSE). Do not use it for fraud, credential abuse,
+spam or bypassing access controls.
 
-**Keep the API on localhost.** It creates profiles, launches browsers and
-exports cookies; `NUMERA_API_TOKEN` is a second lock, not a licence to bind it
-to `0.0.0.0` on the open internet. Put it behind an SSH tunnel or a reverse
-proxy you control. CORS is same-origin by default; `NUMERA_ALLOWED_ORIGINS` opens it when a browser has to
-reach it.
+## Author
 
-To drive a profile from your own automation, attach instead of launching — the
-browser stays up and hands you a CDP endpoint:
+[KiaroSama](https://github.com/KiaroSama) · [Kiaro.Sama.Dev@gmail.com](mailto:Kiaro.Sama.Dev@gmail.com)
 
-```bash
-numera attach acct-01 --port 9222 --headless
-```
+## License
 
-## How it works
-
-```
-             ┌──────────────┐
-   pick OS → │  archetype   │   curated real-world combos (engine/numera/devices.py)
-             └──────┬───────┘
-                    │  every value drawn from this archetype's pool
-                    ▼
-             ┌──────────────┐        ┌──────────────┐
-             │ Fingerprint  │───────▶│  validate()  │   coherence gate
-             └──────┬───────┘        └──────────────┘
-                    │
-        ┌───────────┴────────────┐
-        ▼                        ▼
-  context options          stealth.js init script
-  (UA, viewport, locale,   (navigator.platform, WebGL,
-   timezone, proxy, CH)     hardwareConcurrency, webdriver, canvas noise)
-        └───────────┬────────────┘
-                    ▼
-          Chromium (persistent context per profile)
-```
-
-See [docs/architecture.md](docs/architecture.md) for the full walkthrough,
-including how to connect the dashboard to the engine.
-
-## Manager + pluggable engines
-
-Numera Browser's job is to be the **manager** — coherent identities, proxies, sessions,
-folders, and a dashboard. The actual stealth browser is a **pluggable engine** you
-choose per profile:
-
-| Engine | Strength | Notes |
-|---|---|---|
-| `cloak` | Patched Chromium binary | Built-in desktop backend. Distributable builds obtain the binary directly from the vendor; local/internal builds can include it explicitly. The latest major binary requires a subscription; third-party redistribution requires separate rights. |
-| `camoufox` ⭐ | Patched Firefox (C++-level) | **Recommended** — the strongest engine that is actually free and open. Brings its own coherent fingerprint. |
-| `patchright` | Runtime-patched Playwright | Drop-in; fixes `webdriver`/CDP leaks the stock engine can't. |
-| `playwright` | Built-in, always available | Stock Chromium + injected stealth script. Passes basic bot tests (BrowserScan, sannysoft); can't beat TLS/CDP-level detection. |
-
-```bash
-numera engines                          # see what's installed + which is default
-numera create acct-01 --engine camoufox # pick a backend per profile
-numera default-engine camoufox          # set the default for new profiles
-```
-
-`playwright` is the initial default. The last engine you choose becomes the
-default for the next profile you create.
-
-\* CloakBrowser's wrapper and its proprietary browser binary have different
-licenses. See the desktop build options above.
-
-Being honest about limits: pure JavaScript injection (the `playwright` engine)
-has a ceiling — for Cloudflare / DataDome / reCAPTCHA-v3-grade evasion, pair a
-runtime-patched engine with a residential proxy and a warmed-up session. Numera Browser
-stays the same manager over all of them.
-
-## Roadmap
-
-**Built**
-
-- [x] Coherent fingerprint engine + `validate()`
-- [x] Profile storage, import/export, persistent sessions
-- [x] Playwright launcher with proxy support
-- [x] Full CLI
-- [x] Web dashboard: profile grid, fingerprint editor, coherence meter, bulk create, proxies
-- [x] HTTP API (`numera serve`) connecting the dashboard to the engine — launch real browsers from the UI
-- [x] Pluggable launch engines (CloakBrowser, Camoufox, Patchright, Playwright)
-- [x] Persisted default engine + a portable desktop app (Tauri shell, frozen engine)
-- [x] Per-profile startup URLs
-- [x] Cookie import/export (CLI, API, dashboard) — Cookie-Editor JSON,
-      Playwright storage state, Netscape `cookies.txt`
-
-- [x] Account warm-up — human-paced browsing that ages a fresh profile
-- [x] Local automation API — `numera attach` opens CDP for Selenium/Puppeteer/Playwright,
-      plus a dashboard **Automation** page (one-click attach + copy-paste connect snippets)
-- [x] Multi-profile synchronizer — `numera apply`, plus "Edit all" in the dashboard
-- [x] Proxy tester + WebRTC leak checker (`numera proxy test`)
-- [x] Fingerprint trust checker (`numera trust`) — grades the real browser, not the config
-- [x] Extensions manager, plus fonts, media devices, ClientRects & audio noise
-
-- [x] TLS/JA3 handshake checker (`numera tls`) — the pre-JS network layer
-- [x] Encrypted secrets at rest (`numera vault`) — proxy passwords, master-password
-- [x] Geolocation aligned to the proxy country + WebRTC IP-handling enforced at launch
-
-- [x] Import from GoLogin / AdsPower / Multilogin (`numera import-from`)
-
-- [x] Auto-adjust (`numera align`) — align a profile to what its browser really
-      shows so a low trust grade jumps to A
-- [x] Bulk create at scale (`numera bulk-create`, dashboard) — thousands of
-      coherent profiles across OS / country / browser, with a paginated grid
-- [x] Proxy pool — import a list, health-check it, and assign round-robin across
-      profiles (aligning each profile's locale to its proxy country)
-- [x] Dashboard-side import (GoLogin / AdsPower / Multilogin) — an Import button
-      that maps each export to a coherent profile
-- [x] Native re-import — a Numera export carries a format version and comes back
-      field for field, so a profile survives a move between installs. The vendor
-      importers refuse it by name rather than guessing at it. Configuration
-      only: the browser session (cookies, logins, local storage) is `numera
-      backup`, not this
-
-- [x] DNS leak checker (`numera dns`) — reads which resolvers actually saw the
-      lookups and fails if any escaped the proxy's country
-- [x] Warm-up presets per vertical (`--preset ads|ecommerce|crypto|social|news`)
-- [x] Scheduled warm-up (`numera schedule`) — recurring, unattended; the server
-      fires due runs from a background thread, or drive it from cron with
-      `schedule run-due`
-- [x] Profile health overview — one page grading coherence, proxy, cached trust
-      and warm-up schedule across every profile, with one-click fix
-- [x] Fingerprint collision detector (`numera collisions`, Health page) —
-      catches profiles that share a fingerprint before a site links the accounts
-- [x] Backup & restore (`numera backup` / `restore`) — a profile **and its
-      session** zipped into one portable file, movable to another machine
-- [x] Bulk grid actions (warm up / export the selection) + tag filtering
-- [x] Folders manager (dashboard) — create / rename / delete folders with live
-      counts; renaming or deleting one moves its profiles instead of dropping them
-- [x] Settings page (dashboard) — theme, default launch engine, storage location
-      and data summary, backed by `GET`/`PUT /api/config`
-
-**Next**
-
-- [ ] Cloud sync + team roles — deliberately unbuilt: it needs a hosted backend,
-      accounts and a threat model of its own. Numera Browser stays local-first
-      that's designed properly rather than bolted on.
-
-
-## Legitimate use & responsibility
-
-Numera Browser is a tool for **legitimate multi-account management**: marketing agencies
-handling many client ad accounts, QA and ad-verification testing, web-automation
-development, and privacy research — the same use cases served openly by
-commercial anti-detect browsers.
-
-Do **not** use it for fraud, credential stuffing, spam, evading bans you've
-earned, or anything that violates a site's terms of service or the law. You are
-responsible for how you use it.
+Copyright (c) 2026 KiaroSama. Numera Browser is licensed under the [Noncommercial Network Share-Alike License 1.0](LICENSE).
 
 ## Donate
 
@@ -474,8 +225,3 @@ If this project helps you, donations are appreciated.
 | Litecoin (LTC) | LTC | `ltc1qntqnnrunadurnw4cshv3qgspywrueyyeyngwuy` |
 | Solana (SOL) | Solana | `7B2wkczUjmkDhETwQuknBL8sUsbuV7nErxc317TmQuwR` |
 | Polygon (POL) | Polygon | `0x0Bd0BA443a8B9cf15922bf7f0Bb0a4b495fD06Ef` |
-
-## License
-
-Proprietary. **All rights reserved.** See [LICENSE](LICENSE). This repository is not open
-source: no permission is granted to use, copy, modify or distribute it.

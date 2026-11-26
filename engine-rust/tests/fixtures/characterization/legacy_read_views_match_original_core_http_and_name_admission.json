@@ -1,0 +1,3016 @@
+{
+  "views": [
+    {
+      "input": {
+        "name": null,
+        "notes": null,
+        "tags": null,
+        "future": {
+          "retained": [
+            null
+          ]
+        }
+      },
+      "default": {
+        "name": "",
+        "notes": "",
+        "tags": [],
+        "future": {
+          "retained": [
+            null
+          ]
+        }
+      },
+      "dashboard": {
+        "name": "",
+        "notes": "",
+        "tags": [],
+        "future": {
+          "retained": [
+            null
+          ]
+        }
+      },
+      "custom": {
+        "name": null,
+        "notes": "",
+        "tags": null,
+        "future": []
+      },
+      "name": "",
+      "tags": [],
+      "names": [
+        [
+          "a",
+          ""
+        ],
+        [
+          "b",
+          "unchanged"
+        ]
+      ]
+    },
+    {
+      "input": {
+        "name": false,
+        "notes": false,
+        "tags": false,
+        "future": {
+          "retained": [
+            false
+          ]
+        }
+      },
+      "default": {
+        "name": "false",
+        "notes": "false",
+        "tags": [],
+        "future": {
+          "retained": [
+            false
+          ]
+        }
+      },
+      "dashboard": {
+        "name": "false",
+        "notes": "false",
+        "tags": [],
+        "future": {
+          "retained": [
+            false
+          ]
+        }
+      },
+      "custom": {
+        "name": false,
+        "notes": "false",
+        "tags": false,
+        "future": []
+      },
+      "name": "false",
+      "tags": [],
+      "names": [
+        [
+          "a",
+          "false"
+        ],
+        [
+          "b",
+          "unchanged"
+        ]
+      ]
+    },
+    {
+      "input": {
+        "name": true,
+        "notes": true,
+        "tags": true,
+        "future": {
+          "retained": [
+            true
+          ]
+        }
+      },
+      "default": {
+        "name": "true",
+        "notes": "true",
+        "tags": [],
+        "future": {
+          "retained": [
+            true
+          ]
+        }
+      },
+      "dashboard": {
+        "name": "true",
+        "notes": "true",
+        "tags": [],
+        "future": {
+          "retained": [
+            true
+          ]
+        }
+      },
+      "custom": {
+        "name": true,
+        "notes": "true",
+        "tags": true,
+        "future": []
+      },
+      "name": "true",
+      "tags": [],
+      "names": [
+        [
+          "a",
+          "true"
+        ],
+        [
+          "b",
+          "unchanged"
+        ]
+      ]
+    },
+    {
+      "input": {
+        "name": "",
+        "notes": "",
+        "tags": "",
+        "future": {
+          "retained": [
+            ""
+          ]
+        }
+      },
+      "default": {
+        "name": "",
+        "notes": "",
+        "tags": [],
+        "future": {
+          "retained": [
+            ""
+          ]
+        }
+      },
+      "dashboard": {
+        "name": "",
+        "notes": "",
+        "tags": [],
+        "future": {
+          "retained": [
+            ""
+          ]
+        }
+      },
+      "custom": {
+        "name": "",
+        "notes": "",
+        "tags": "",
+        "future": []
+      },
+      "name": "",
+      "tags": [],
+      "names": [
+        [
+          "a",
+          ""
+        ],
+        [
+          "b",
+          "unchanged"
+        ]
+      ]
+    },
+    {
+      "input": {
+        "name": "plain \u03b1 \u65e5\u672c\u8a9e",
+        "notes": "plain \u03b1 \u65e5\u672c\u8a9e",
+        "tags": "plain \u03b1 \u65e5\u672c\u8a9e",
+        "future": {
+          "retained": [
+            "plain \u03b1 \u65e5\u672c\u8a9e"
+          ]
+        }
+      },
+      "default": {
+        "name": "plain \u03b1 \u65e5\u672c\u8a9e",
+        "notes": "plain \u03b1 \u65e5\u672c\u8a9e",
+        "tags": [],
+        "future": {
+          "retained": [
+            "plain \u03b1 \u65e5\u672c\u8a9e"
+          ]
+        }
+      },
+      "dashboard": {
+        "name": "plain \u03b1 \u65e5\u672c\u8a9e",
+        "notes": "plain \u03b1 \u65e5\u672c\u8a9e",
+        "tags": [],
+        "future": {
+          "retained": [
+            "plain \u03b1 \u65e5\u672c\u8a9e"
+          ]
+        }
+      },
+      "custom": {
+        "name": "plain \u03b1 \u65e5\u672c\u8a9e",
+        "notes": "plain \u03b1 \u65e5\u672c\u8a9e",
+        "tags": "plain \u03b1 \u65e5\u672c\u8a9e",
+        "future": []
+      },
+      "name": "plain \u03b1 \u65e5\u672c\u8a9e",
+      "tags": [],
+      "names": [
+        [
+          "a",
+          "plain \u03b1 \u65e5\u672c\u8a9e"
+        ],
+        [
+          "b",
+          "unchanged"
+        ]
+      ]
+    },
+    {
+      "input": {
+        "name": 17,
+        "notes": 17,
+        "tags": 17,
+        "future": {
+          "retained": [
+            17
+          ]
+        }
+      },
+      "default": {
+        "name": "17",
+        "notes": "17",
+        "tags": [],
+        "future": {
+          "retained": [
+            17
+          ]
+        }
+      },
+      "dashboard": {
+        "name": "17",
+        "notes": "17",
+        "tags": [],
+        "future": {
+          "retained": [
+            17
+          ]
+        }
+      },
+      "custom": {
+        "name": 17,
+        "notes": "17",
+        "tags": 17,
+        "future": []
+      },
+      "name": "17",
+      "tags": [],
+      "names": [
+        [
+          "a",
+          "17"
+        ],
+        [
+          "b",
+          "unchanged"
+        ]
+      ]
+    },
+    {
+      "input": {
+        "name": -17,
+        "notes": -17,
+        "tags": -17,
+        "future": {
+          "retained": [
+            -17
+          ]
+        }
+      },
+      "default": {
+        "name": "-17",
+        "notes": "-17",
+        "tags": [],
+        "future": {
+          "retained": [
+            -17
+          ]
+        }
+      },
+      "dashboard": {
+        "name": "-17",
+        "notes": "-17",
+        "tags": [],
+        "future": {
+          "retained": [
+            -17
+          ]
+        }
+      },
+      "custom": {
+        "name": -17,
+        "notes": "-17",
+        "tags": -17,
+        "future": []
+      },
+      "name": "-17",
+      "tags": [],
+      "names": [
+        [
+          "a",
+          "-17"
+        ],
+        [
+          "b",
+          "unchanged"
+        ]
+      ]
+    },
+    {
+      "input": {
+        "name": 0.0,
+        "notes": 0.0,
+        "tags": 0.0,
+        "future": {
+          "retained": [
+            0.0
+          ]
+        }
+      },
+      "default": {
+        "name": "0",
+        "notes": "0",
+        "tags": [],
+        "future": {
+          "retained": [
+            0.0
+          ]
+        }
+      },
+      "dashboard": {
+        "name": "0",
+        "notes": "0",
+        "tags": [],
+        "future": {
+          "retained": [
+            0.0
+          ]
+        }
+      },
+      "custom": {
+        "name": 0.0,
+        "notes": "0",
+        "tags": 0.0,
+        "future": []
+      },
+      "name": "0",
+      "tags": [],
+      "names": [
+        [
+          "a",
+          "0"
+        ],
+        [
+          "b",
+          "unchanged"
+        ]
+      ]
+    },
+    {
+      "input": {
+        "name": -0.0,
+        "notes": -0.0,
+        "tags": -0.0,
+        "future": {
+          "retained": [
+            -0.0
+          ]
+        }
+      },
+      "default": {
+        "name": "-0",
+        "notes": "-0",
+        "tags": [],
+        "future": {
+          "retained": [
+            -0.0
+          ]
+        }
+      },
+      "dashboard": {
+        "name": "-0",
+        "notes": "-0",
+        "tags": [],
+        "future": {
+          "retained": [
+            -0.0
+          ]
+        }
+      },
+      "custom": {
+        "name": -0.0,
+        "notes": "-0",
+        "tags": -0.0,
+        "future": []
+      },
+      "name": "-0",
+      "tags": [],
+      "names": [
+        [
+          "a",
+          "-0"
+        ],
+        [
+          "b",
+          "unchanged"
+        ]
+      ]
+    },
+    {
+      "input": {
+        "name": 1.0,
+        "notes": 1.0,
+        "tags": 1.0,
+        "future": {
+          "retained": [
+            1.0
+          ]
+        }
+      },
+      "default": {
+        "name": "1",
+        "notes": "1",
+        "tags": [],
+        "future": {
+          "retained": [
+            1.0
+          ]
+        }
+      },
+      "dashboard": {
+        "name": "1",
+        "notes": "1",
+        "tags": [],
+        "future": {
+          "retained": [
+            1.0
+          ]
+        }
+      },
+      "custom": {
+        "name": 1.0,
+        "notes": "1",
+        "tags": 1.0,
+        "future": []
+      },
+      "name": "1",
+      "tags": [],
+      "names": [
+        [
+          "a",
+          "1"
+        ],
+        [
+          "b",
+          "unchanged"
+        ]
+      ]
+    },
+    {
+      "input": {
+        "name": 1.23456789,
+        "notes": 1.23456789,
+        "tags": 1.23456789,
+        "future": {
+          "retained": [
+            1.23456789
+          ]
+        }
+      },
+      "default": {
+        "name": "1.23457",
+        "notes": "1.23457",
+        "tags": [],
+        "future": {
+          "retained": [
+            1.23456789
+          ]
+        }
+      },
+      "dashboard": {
+        "name": "1.23457",
+        "notes": "1.23457",
+        "tags": [],
+        "future": {
+          "retained": [
+            1.23456789
+          ]
+        }
+      },
+      "custom": {
+        "name": 1.23456789,
+        "notes": "1.23457",
+        "tags": 1.23456789,
+        "future": []
+      },
+      "name": "1.23457",
+      "tags": [],
+      "names": [
+        [
+          "a",
+          "1.23457"
+        ],
+        [
+          "b",
+          "unchanged"
+        ]
+      ]
+    },
+    {
+      "input": {
+        "name": 1e-05,
+        "notes": 1e-05,
+        "tags": 1e-05,
+        "future": {
+          "retained": [
+            1e-05
+          ]
+        }
+      },
+      "default": {
+        "name": "1e-05",
+        "notes": "1e-05",
+        "tags": [],
+        "future": {
+          "retained": [
+            1e-05
+          ]
+        }
+      },
+      "dashboard": {
+        "name": "1e-05",
+        "notes": "1e-05",
+        "tags": [],
+        "future": {
+          "retained": [
+            1e-05
+          ]
+        }
+      },
+      "custom": {
+        "name": 1e-05,
+        "notes": "1e-05",
+        "tags": 1e-05,
+        "future": []
+      },
+      "name": "1e-05",
+      "tags": [],
+      "names": [
+        [
+          "a",
+          "1e-05"
+        ],
+        [
+          "b",
+          "unchanged"
+        ]
+      ]
+    },
+    {
+      "input": {
+        "name": 0.0001,
+        "notes": 0.0001,
+        "tags": 0.0001,
+        "future": {
+          "retained": [
+            0.0001
+          ]
+        }
+      },
+      "default": {
+        "name": "0.0001",
+        "notes": "0.0001",
+        "tags": [],
+        "future": {
+          "retained": [
+            0.0001
+          ]
+        }
+      },
+      "dashboard": {
+        "name": "0.0001",
+        "notes": "0.0001",
+        "tags": [],
+        "future": {
+          "retained": [
+            0.0001
+          ]
+        }
+      },
+      "custom": {
+        "name": 0.0001,
+        "notes": "0.0001",
+        "tags": 0.0001,
+        "future": []
+      },
+      "name": "0.0001",
+      "tags": [],
+      "names": [
+        [
+          "a",
+          "0.0001"
+        ],
+        [
+          "b",
+          "unchanged"
+        ]
+      ]
+    },
+    {
+      "input": {
+        "name": 999999.5,
+        "notes": 999999.5,
+        "tags": 999999.5,
+        "future": {
+          "retained": [
+            999999.5
+          ]
+        }
+      },
+      "default": {
+        "name": "1e+06",
+        "notes": "1e+06",
+        "tags": [],
+        "future": {
+          "retained": [
+            999999.5
+          ]
+        }
+      },
+      "dashboard": {
+        "name": "1e+06",
+        "notes": "1e+06",
+        "tags": [],
+        "future": {
+          "retained": [
+            999999.5
+          ]
+        }
+      },
+      "custom": {
+        "name": 999999.5,
+        "notes": "1e+06",
+        "tags": 999999.5,
+        "future": []
+      },
+      "name": "1e+06",
+      "tags": [],
+      "names": [
+        [
+          "a",
+          "1e+06"
+        ],
+        [
+          "b",
+          "unchanged"
+        ]
+      ]
+    },
+    {
+      "input": {
+        "name": 1000000.0,
+        "notes": 1000000.0,
+        "tags": 1000000.0,
+        "future": {
+          "retained": [
+            1000000.0
+          ]
+        }
+      },
+      "default": {
+        "name": "1e+06",
+        "notes": "1e+06",
+        "tags": [],
+        "future": {
+          "retained": [
+            1000000.0
+          ]
+        }
+      },
+      "dashboard": {
+        "name": "1e+06",
+        "notes": "1e+06",
+        "tags": [],
+        "future": {
+          "retained": [
+            1000000.0
+          ]
+        }
+      },
+      "custom": {
+        "name": 1000000.0,
+        "notes": "1e+06",
+        "tags": 1000000.0,
+        "future": []
+      },
+      "name": "1e+06",
+      "tags": [],
+      "names": [
+        [
+          "a",
+          "1e+06"
+        ],
+        [
+          "b",
+          "unchanged"
+        ]
+      ]
+    },
+    {
+      "input": {
+        "name": 1e+100,
+        "notes": 1e+100,
+        "tags": 1e+100,
+        "future": {
+          "retained": [
+            1e+100
+          ]
+        }
+      },
+      "default": {
+        "name": "1e+100",
+        "notes": "1e+100",
+        "tags": [],
+        "future": {
+          "retained": [
+            1e+100
+          ]
+        }
+      },
+      "dashboard": {
+        "name": "1e+100",
+        "notes": "1e+100",
+        "tags": [],
+        "future": {
+          "retained": [
+            1e+100
+          ]
+        }
+      },
+      "custom": {
+        "name": 1e+100,
+        "notes": "1e+100",
+        "tags": 1e+100,
+        "future": []
+      },
+      "name": "1e+100",
+      "tags": [],
+      "names": [
+        [
+          "a",
+          "1e+100"
+        ],
+        [
+          "b",
+          "unchanged"
+        ]
+      ]
+    },
+    {
+      "input": {
+        "name": 5e-324,
+        "notes": 5e-324,
+        "tags": 5e-324,
+        "future": {
+          "retained": [
+            5e-324
+          ]
+        }
+      },
+      "default": {
+        "name": "4.94066e-324",
+        "notes": "4.94066e-324",
+        "tags": [],
+        "future": {
+          "retained": [
+            5e-324
+          ]
+        }
+      },
+      "dashboard": {
+        "name": "4.94066e-324",
+        "notes": "4.94066e-324",
+        "tags": [],
+        "future": {
+          "retained": [
+            5e-324
+          ]
+        }
+      },
+      "custom": {
+        "name": 5e-324,
+        "notes": "4.94066e-324",
+        "tags": 5e-324,
+        "future": []
+      },
+      "name": "4.94066e-324",
+      "tags": [],
+      "names": [
+        [
+          "a",
+          "4.94066e-324"
+        ],
+        [
+          "b",
+          "unchanged"
+        ]
+      ]
+    },
+    {
+      "input": {
+        "name": 9007199254740993,
+        "notes": 9007199254740993,
+        "tags": 9007199254740993,
+        "future": {
+          "retained": [
+            9007199254740993
+          ]
+        }
+      },
+      "default": {
+        "name": "9007199254740993",
+        "notes": "9007199254740993",
+        "tags": [],
+        "future": {
+          "retained": [
+            9007199254740993
+          ]
+        }
+      },
+      "dashboard": {
+        "name": "9007199254740993",
+        "notes": "9007199254740993",
+        "tags": [],
+        "future": {
+          "retained": [
+            9007199254740993
+          ]
+        }
+      },
+      "custom": {
+        "name": 9007199254740993,
+        "notes": "9007199254740993",
+        "tags": 9007199254740993,
+        "future": []
+      },
+      "name": "9007199254740993",
+      "tags": [],
+      "names": [
+        [
+          "a",
+          "9007199254740993"
+        ],
+        [
+          "b",
+          "unchanged"
+        ]
+      ]
+    },
+    {
+      "input": {
+        "name": [],
+        "notes": [],
+        "tags": [],
+        "future": {
+          "retained": [
+            []
+          ]
+        }
+      },
+      "default": {
+        "name": "",
+        "notes": "",
+        "tags": [],
+        "future": {
+          "retained": [
+            []
+          ]
+        }
+      },
+      "dashboard": {
+        "name": "",
+        "notes": "",
+        "tags": [],
+        "future": {
+          "retained": [
+            []
+          ]
+        }
+      },
+      "custom": {
+        "name": [],
+        "notes": "",
+        "tags": [],
+        "future": []
+      },
+      "name": "",
+      "tags": [],
+      "names": [
+        [
+          "a",
+          ""
+        ],
+        [
+          "b",
+          "unchanged"
+        ]
+      ]
+    },
+    {
+      "input": {
+        "name": [
+          "\u03b1",
+          1,
+          null,
+          true,
+          "z"
+        ],
+        "notes": [
+          "\u03b1",
+          1,
+          null,
+          true,
+          "z"
+        ],
+        "tags": [
+          "\u03b1",
+          1,
+          null,
+          true,
+          "z"
+        ],
+        "future": {
+          "retained": [
+            [
+              "\u03b1",
+              1,
+              null,
+              true,
+              "z"
+            ]
+          ]
+        }
+      },
+      "default": {
+        "name": "",
+        "notes": "",
+        "tags": [
+          "\u03b1",
+          "z"
+        ],
+        "future": {
+          "retained": [
+            [
+              "\u03b1",
+              1,
+              null,
+              true,
+              "z"
+            ]
+          ]
+        }
+      },
+      "dashboard": {
+        "name": "",
+        "notes": "",
+        "tags": [
+          "\u03b1",
+          "z"
+        ],
+        "future": {
+          "retained": [
+            [
+              "\u03b1",
+              1,
+              null,
+              true,
+              "z"
+            ]
+          ]
+        }
+      },
+      "custom": {
+        "name": [
+          "\u03b1",
+          1,
+          null,
+          true,
+          "z"
+        ],
+        "notes": "",
+        "tags": [
+          "\u03b1",
+          1,
+          null,
+          true,
+          "z"
+        ],
+        "future": []
+      },
+      "name": "",
+      "tags": [
+        "\u03b1",
+        "z"
+      ],
+      "names": [
+        [
+          "a",
+          ""
+        ],
+        [
+          "b",
+          "unchanged"
+        ]
+      ]
+    },
+    {
+      "input": {
+        "name": {},
+        "notes": {},
+        "tags": {},
+        "future": {
+          "retained": [
+            {}
+          ]
+        }
+      },
+      "default": {
+        "name": "",
+        "notes": "",
+        "tags": [],
+        "future": {
+          "retained": [
+            {}
+          ]
+        }
+      },
+      "dashboard": {
+        "name": "",
+        "notes": "",
+        "tags": [],
+        "future": {
+          "retained": [
+            {}
+          ]
+        }
+      },
+      "custom": {
+        "name": {},
+        "notes": "",
+        "tags": {},
+        "future": []
+      },
+      "name": "",
+      "tags": [],
+      "names": [
+        [
+          "a",
+          ""
+        ],
+        [
+          "b",
+          "unchanged"
+        ]
+      ]
+    },
+    {
+      "input": {
+        "name": {
+          "nested": [
+            true,
+            null,
+            1.25
+          ]
+        },
+        "notes": {
+          "nested": [
+            true,
+            null,
+            1.25
+          ]
+        },
+        "tags": {
+          "nested": [
+            true,
+            null,
+            1.25
+          ]
+        },
+        "future": {
+          "retained": [
+            {
+              "nested": [
+                true,
+                null,
+                1.25
+              ]
+            }
+          ]
+        }
+      },
+      "default": {
+        "name": "",
+        "notes": "",
+        "tags": [],
+        "future": {
+          "retained": [
+            {
+              "nested": [
+                true,
+                null,
+                1.25
+              ]
+            }
+          ]
+        }
+      },
+      "dashboard": {
+        "name": "",
+        "notes": "",
+        "tags": [],
+        "future": {
+          "retained": [
+            {
+              "nested": [
+                true,
+                null,
+                1.25
+              ]
+            }
+          ]
+        }
+      },
+      "custom": {
+        "name": {
+          "nested": [
+            true,
+            null,
+            1.25
+          ]
+        },
+        "notes": "",
+        "tags": {
+          "nested": [
+            true,
+            null,
+            1.25
+          ]
+        },
+        "future": []
+      },
+      "name": "",
+      "tags": [],
+      "names": [
+        [
+          "a",
+          ""
+        ],
+        [
+          "b",
+          "unchanged"
+        ]
+      ]
+    },
+    {
+      "input": {},
+      "default": {
+        "name": ""
+      },
+      "dashboard": {
+        "name": ""
+      },
+      "custom": {}
+    },
+    {
+      "input": {
+        "notes": null,
+        "future": {
+          "x": [
+            1,
+            2
+          ]
+        }
+      },
+      "default": {
+        "notes": "",
+        "future": {
+          "x": [
+            1,
+            2
+          ]
+        },
+        "name": ""
+      },
+      "dashboard": {
+        "notes": "",
+        "future": {
+          "x": [
+            1,
+            2
+          ]
+        },
+        "name": ""
+      },
+      "custom": {
+        "notes": "",
+        "future": []
+      }
+    }
+  ],
+  "names": [
+    {
+      "record": {
+        "id": "aaaaaaaaaaaa",
+        "name": 1.0
+      },
+      "directory": "profiles",
+      "candidate": {
+        "id": "bbbbbbbbbbbb",
+        "name": "1",
+        "notes": "",
+        "tags": [],
+        "engine": "playwright",
+        "startup_urls": [],
+        "extensions": [],
+        "launch_args": [],
+        "bookmarks": [],
+        "dns": "",
+        "ip_based": [],
+        "clear_on_start": [],
+        "switched_off": [],
+        "created_at": 1700000000.0,
+        "updated_at": 1700000000.0,
+        "fingerprint": {
+          "os": "windows",
+          "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+          "platform": "Win32",
+          "ch_platform": "\"Windows\"",
+          "chrome_version": "128.0.0.0",
+          "screen_width": 1920,
+          "screen_height": 1080,
+          "viewport_width": 1920,
+          "viewport_height": 992,
+          "hardware_concurrency": 12,
+          "device_memory": 16,
+          "webgl_vendor": "Google Inc. (Intel)",
+          "webgl_renderer": "ANGLE (Intel, Intel(R) UHD Graphics 630 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "locale": "en-US",
+          "timezone": "America/New_York",
+          "languages": [
+            "en-US",
+            "en"
+          ],
+          "is_mobile": false,
+          "seed": 42,
+          "fonts": [
+            "Arial",
+            "Arial Black",
+            "Bahnschrift",
+            "Calibri",
+            "Cambria",
+            "Candara",
+            "Comic Sans MS",
+            "Consolas",
+            "Constantia",
+            "Corbel",
+            "Courier New",
+            "Ebrima",
+            "Franklin Gothic Medium",
+            "Gabriola",
+            "Gadugi",
+            "Georgia",
+            "Impact",
+            "Ink Free",
+            "Lucida Console",
+            "Lucida Sans Unicode",
+            "MS Gothic",
+            "MV Boli",
+            "Malgun Gothic",
+            "Microsoft Sans Serif",
+            "Nirmala UI",
+            "Palatino Linotype",
+            "Segoe Print",
+            "Segoe Script",
+            "Segoe UI",
+            "SimSun",
+            "Sylfaen",
+            "Symbol",
+            "Tahoma",
+            "Times New Roman",
+            "Trebuchet MS",
+            "Verdana",
+            "Webdings",
+            "Wingdings"
+          ],
+          "cameras": 2,
+          "microphones": 1,
+          "webrtc": "altered",
+          "canvas": "noise",
+          "audio": "noise",
+          "font_mode": "masked",
+          "geolocation": "prompt",
+          "do_not_track": false,
+          "client_rects": "noise",
+          "webgl_image": "noise",
+          "media_mode": "masked",
+          "speakers": 2,
+          "os_version": "11",
+          "device_model": "",
+          "max_touch_points": 10,
+          "device_pixel_ratio": 1.0
+        },
+        "proxy": {
+          "server": "http://127.0.0.1:8080",
+          "username": null,
+          "password": null,
+          "country": null
+        }
+      },
+      "error": "a profile called '1' already exists"
+    },
+    {
+      "record": {
+        "id": "aaaaaaaaaaaa",
+        "name": 1.0
+      },
+      "directory": "dashboard",
+      "candidate": {
+        "id": "bbbbbbbbbbbb",
+        "name": "1",
+        "notes": "",
+        "tags": [],
+        "engine": "playwright",
+        "startup_urls": [],
+        "extensions": [],
+        "launch_args": [],
+        "bookmarks": [],
+        "dns": "",
+        "ip_based": [],
+        "clear_on_start": [],
+        "switched_off": [],
+        "created_at": 1700000000.0,
+        "updated_at": 1700000000.0,
+        "fingerprint": {
+          "os": "windows",
+          "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+          "platform": "Win32",
+          "ch_platform": "\"Windows\"",
+          "chrome_version": "128.0.0.0",
+          "screen_width": 1920,
+          "screen_height": 1080,
+          "viewport_width": 1920,
+          "viewport_height": 992,
+          "hardware_concurrency": 12,
+          "device_memory": 16,
+          "webgl_vendor": "Google Inc. (Intel)",
+          "webgl_renderer": "ANGLE (Intel, Intel(R) UHD Graphics 630 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "locale": "en-US",
+          "timezone": "America/New_York",
+          "languages": [
+            "en-US",
+            "en"
+          ],
+          "is_mobile": false,
+          "seed": 42,
+          "fonts": [
+            "Arial",
+            "Arial Black",
+            "Bahnschrift",
+            "Calibri",
+            "Cambria",
+            "Candara",
+            "Comic Sans MS",
+            "Consolas",
+            "Constantia",
+            "Corbel",
+            "Courier New",
+            "Ebrima",
+            "Franklin Gothic Medium",
+            "Gabriola",
+            "Gadugi",
+            "Georgia",
+            "Impact",
+            "Ink Free",
+            "Lucida Console",
+            "Lucida Sans Unicode",
+            "MS Gothic",
+            "MV Boli",
+            "Malgun Gothic",
+            "Microsoft Sans Serif",
+            "Nirmala UI",
+            "Palatino Linotype",
+            "Segoe Print",
+            "Segoe Script",
+            "Segoe UI",
+            "SimSun",
+            "Sylfaen",
+            "Symbol",
+            "Tahoma",
+            "Times New Roman",
+            "Trebuchet MS",
+            "Verdana",
+            "Webdings",
+            "Wingdings"
+          ],
+          "cameras": 2,
+          "microphones": 1,
+          "webrtc": "altered",
+          "canvas": "noise",
+          "audio": "noise",
+          "font_mode": "masked",
+          "geolocation": "prompt",
+          "do_not_track": false,
+          "client_rects": "noise",
+          "webgl_image": "noise",
+          "media_mode": "masked",
+          "speakers": 2,
+          "os_version": "11",
+          "device_model": "",
+          "max_touch_points": 10,
+          "device_pixel_ratio": 1.0
+        },
+        "proxy": {
+          "server": "http://127.0.0.1:8080",
+          "username": null,
+          "password": null,
+          "country": null
+        }
+      },
+      "error": "a profile called '1' already exists"
+    },
+    {
+      "record": {
+        "id": "aaaaaaaaaaaa",
+        "name": -1.0
+      },
+      "directory": "profiles",
+      "candidate": {
+        "id": "bbbbbbbbbbbb",
+        "name": "-1",
+        "notes": "",
+        "tags": [],
+        "engine": "playwright",
+        "startup_urls": [],
+        "extensions": [],
+        "launch_args": [],
+        "bookmarks": [],
+        "dns": "",
+        "ip_based": [],
+        "clear_on_start": [],
+        "switched_off": [],
+        "created_at": 1700000000.0,
+        "updated_at": 1700000000.0,
+        "fingerprint": {
+          "os": "windows",
+          "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+          "platform": "Win32",
+          "ch_platform": "\"Windows\"",
+          "chrome_version": "128.0.0.0",
+          "screen_width": 1920,
+          "screen_height": 1080,
+          "viewport_width": 1920,
+          "viewport_height": 992,
+          "hardware_concurrency": 12,
+          "device_memory": 16,
+          "webgl_vendor": "Google Inc. (Intel)",
+          "webgl_renderer": "ANGLE (Intel, Intel(R) UHD Graphics 630 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "locale": "en-US",
+          "timezone": "America/New_York",
+          "languages": [
+            "en-US",
+            "en"
+          ],
+          "is_mobile": false,
+          "seed": 42,
+          "fonts": [
+            "Arial",
+            "Arial Black",
+            "Bahnschrift",
+            "Calibri",
+            "Cambria",
+            "Candara",
+            "Comic Sans MS",
+            "Consolas",
+            "Constantia",
+            "Corbel",
+            "Courier New",
+            "Ebrima",
+            "Franklin Gothic Medium",
+            "Gabriola",
+            "Gadugi",
+            "Georgia",
+            "Impact",
+            "Ink Free",
+            "Lucida Console",
+            "Lucida Sans Unicode",
+            "MS Gothic",
+            "MV Boli",
+            "Malgun Gothic",
+            "Microsoft Sans Serif",
+            "Nirmala UI",
+            "Palatino Linotype",
+            "Segoe Print",
+            "Segoe Script",
+            "Segoe UI",
+            "SimSun",
+            "Sylfaen",
+            "Symbol",
+            "Tahoma",
+            "Times New Roman",
+            "Trebuchet MS",
+            "Verdana",
+            "Webdings",
+            "Wingdings"
+          ],
+          "cameras": 2,
+          "microphones": 1,
+          "webrtc": "altered",
+          "canvas": "noise",
+          "audio": "noise",
+          "font_mode": "masked",
+          "geolocation": "prompt",
+          "do_not_track": false,
+          "client_rects": "noise",
+          "webgl_image": "noise",
+          "media_mode": "masked",
+          "speakers": 2,
+          "os_version": "11",
+          "device_model": "",
+          "max_touch_points": 10,
+          "device_pixel_ratio": 1.0
+        },
+        "proxy": {
+          "server": "http://127.0.0.1:8080",
+          "username": null,
+          "password": null,
+          "country": null
+        }
+      },
+      "error": "a profile called '-1' already exists"
+    },
+    {
+      "record": {
+        "id": "aaaaaaaaaaaa",
+        "name": -1.0
+      },
+      "directory": "dashboard",
+      "candidate": {
+        "id": "bbbbbbbbbbbb",
+        "name": "-1",
+        "notes": "",
+        "tags": [],
+        "engine": "playwright",
+        "startup_urls": [],
+        "extensions": [],
+        "launch_args": [],
+        "bookmarks": [],
+        "dns": "",
+        "ip_based": [],
+        "clear_on_start": [],
+        "switched_off": [],
+        "created_at": 1700000000.0,
+        "updated_at": 1700000000.0,
+        "fingerprint": {
+          "os": "windows",
+          "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+          "platform": "Win32",
+          "ch_platform": "\"Windows\"",
+          "chrome_version": "128.0.0.0",
+          "screen_width": 1920,
+          "screen_height": 1080,
+          "viewport_width": 1920,
+          "viewport_height": 992,
+          "hardware_concurrency": 12,
+          "device_memory": 16,
+          "webgl_vendor": "Google Inc. (Intel)",
+          "webgl_renderer": "ANGLE (Intel, Intel(R) UHD Graphics 630 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "locale": "en-US",
+          "timezone": "America/New_York",
+          "languages": [
+            "en-US",
+            "en"
+          ],
+          "is_mobile": false,
+          "seed": 42,
+          "fonts": [
+            "Arial",
+            "Arial Black",
+            "Bahnschrift",
+            "Calibri",
+            "Cambria",
+            "Candara",
+            "Comic Sans MS",
+            "Consolas",
+            "Constantia",
+            "Corbel",
+            "Courier New",
+            "Ebrima",
+            "Franklin Gothic Medium",
+            "Gabriola",
+            "Gadugi",
+            "Georgia",
+            "Impact",
+            "Ink Free",
+            "Lucida Console",
+            "Lucida Sans Unicode",
+            "MS Gothic",
+            "MV Boli",
+            "Malgun Gothic",
+            "Microsoft Sans Serif",
+            "Nirmala UI",
+            "Palatino Linotype",
+            "Segoe Print",
+            "Segoe Script",
+            "Segoe UI",
+            "SimSun",
+            "Sylfaen",
+            "Symbol",
+            "Tahoma",
+            "Times New Roman",
+            "Trebuchet MS",
+            "Verdana",
+            "Webdings",
+            "Wingdings"
+          ],
+          "cameras": 2,
+          "microphones": 1,
+          "webrtc": "altered",
+          "canvas": "noise",
+          "audio": "noise",
+          "font_mode": "masked",
+          "geolocation": "prompt",
+          "do_not_track": false,
+          "client_rects": "noise",
+          "webgl_image": "noise",
+          "media_mode": "masked",
+          "speakers": 2,
+          "os_version": "11",
+          "device_model": "",
+          "max_touch_points": 10,
+          "device_pixel_ratio": 1.0
+        },
+        "proxy": {
+          "server": "http://127.0.0.1:8080",
+          "username": null,
+          "password": null,
+          "country": null
+        }
+      },
+      "error": "a profile called '-1' already exists"
+    },
+    {
+      "record": {
+        "id": "aaaaaaaaaaaa",
+        "name": 1.23456789
+      },
+      "directory": "profiles",
+      "candidate": {
+        "id": "bbbbbbbbbbbb",
+        "name": "1.23457",
+        "notes": "",
+        "tags": [],
+        "engine": "playwright",
+        "startup_urls": [],
+        "extensions": [],
+        "launch_args": [],
+        "bookmarks": [],
+        "dns": "",
+        "ip_based": [],
+        "clear_on_start": [],
+        "switched_off": [],
+        "created_at": 1700000000.0,
+        "updated_at": 1700000000.0,
+        "fingerprint": {
+          "os": "windows",
+          "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+          "platform": "Win32",
+          "ch_platform": "\"Windows\"",
+          "chrome_version": "128.0.0.0",
+          "screen_width": 1920,
+          "screen_height": 1080,
+          "viewport_width": 1920,
+          "viewport_height": 992,
+          "hardware_concurrency": 12,
+          "device_memory": 16,
+          "webgl_vendor": "Google Inc. (Intel)",
+          "webgl_renderer": "ANGLE (Intel, Intel(R) UHD Graphics 630 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "locale": "en-US",
+          "timezone": "America/New_York",
+          "languages": [
+            "en-US",
+            "en"
+          ],
+          "is_mobile": false,
+          "seed": 42,
+          "fonts": [
+            "Arial",
+            "Arial Black",
+            "Bahnschrift",
+            "Calibri",
+            "Cambria",
+            "Candara",
+            "Comic Sans MS",
+            "Consolas",
+            "Constantia",
+            "Corbel",
+            "Courier New",
+            "Ebrima",
+            "Franklin Gothic Medium",
+            "Gabriola",
+            "Gadugi",
+            "Georgia",
+            "Impact",
+            "Ink Free",
+            "Lucida Console",
+            "Lucida Sans Unicode",
+            "MS Gothic",
+            "MV Boli",
+            "Malgun Gothic",
+            "Microsoft Sans Serif",
+            "Nirmala UI",
+            "Palatino Linotype",
+            "Segoe Print",
+            "Segoe Script",
+            "Segoe UI",
+            "SimSun",
+            "Sylfaen",
+            "Symbol",
+            "Tahoma",
+            "Times New Roman",
+            "Trebuchet MS",
+            "Verdana",
+            "Webdings",
+            "Wingdings"
+          ],
+          "cameras": 2,
+          "microphones": 1,
+          "webrtc": "altered",
+          "canvas": "noise",
+          "audio": "noise",
+          "font_mode": "masked",
+          "geolocation": "prompt",
+          "do_not_track": false,
+          "client_rects": "noise",
+          "webgl_image": "noise",
+          "media_mode": "masked",
+          "speakers": 2,
+          "os_version": "11",
+          "device_model": "",
+          "max_touch_points": 10,
+          "device_pixel_ratio": 1.0
+        },
+        "proxy": {
+          "server": "http://127.0.0.1:8080",
+          "username": null,
+          "password": null,
+          "country": null
+        }
+      },
+      "error": "a profile called '1.23457' already exists"
+    },
+    {
+      "record": {
+        "id": "aaaaaaaaaaaa",
+        "name": 1.23456789
+      },
+      "directory": "dashboard",
+      "candidate": {
+        "id": "bbbbbbbbbbbb",
+        "name": "1.23457",
+        "notes": "",
+        "tags": [],
+        "engine": "playwright",
+        "startup_urls": [],
+        "extensions": [],
+        "launch_args": [],
+        "bookmarks": [],
+        "dns": "",
+        "ip_based": [],
+        "clear_on_start": [],
+        "switched_off": [],
+        "created_at": 1700000000.0,
+        "updated_at": 1700000000.0,
+        "fingerprint": {
+          "os": "windows",
+          "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+          "platform": "Win32",
+          "ch_platform": "\"Windows\"",
+          "chrome_version": "128.0.0.0",
+          "screen_width": 1920,
+          "screen_height": 1080,
+          "viewport_width": 1920,
+          "viewport_height": 992,
+          "hardware_concurrency": 12,
+          "device_memory": 16,
+          "webgl_vendor": "Google Inc. (Intel)",
+          "webgl_renderer": "ANGLE (Intel, Intel(R) UHD Graphics 630 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "locale": "en-US",
+          "timezone": "America/New_York",
+          "languages": [
+            "en-US",
+            "en"
+          ],
+          "is_mobile": false,
+          "seed": 42,
+          "fonts": [
+            "Arial",
+            "Arial Black",
+            "Bahnschrift",
+            "Calibri",
+            "Cambria",
+            "Candara",
+            "Comic Sans MS",
+            "Consolas",
+            "Constantia",
+            "Corbel",
+            "Courier New",
+            "Ebrima",
+            "Franklin Gothic Medium",
+            "Gabriola",
+            "Gadugi",
+            "Georgia",
+            "Impact",
+            "Ink Free",
+            "Lucida Console",
+            "Lucida Sans Unicode",
+            "MS Gothic",
+            "MV Boli",
+            "Malgun Gothic",
+            "Microsoft Sans Serif",
+            "Nirmala UI",
+            "Palatino Linotype",
+            "Segoe Print",
+            "Segoe Script",
+            "Segoe UI",
+            "SimSun",
+            "Sylfaen",
+            "Symbol",
+            "Tahoma",
+            "Times New Roman",
+            "Trebuchet MS",
+            "Verdana",
+            "Webdings",
+            "Wingdings"
+          ],
+          "cameras": 2,
+          "microphones": 1,
+          "webrtc": "altered",
+          "canvas": "noise",
+          "audio": "noise",
+          "font_mode": "masked",
+          "geolocation": "prompt",
+          "do_not_track": false,
+          "client_rects": "noise",
+          "webgl_image": "noise",
+          "media_mode": "masked",
+          "speakers": 2,
+          "os_version": "11",
+          "device_model": "",
+          "max_touch_points": 10,
+          "device_pixel_ratio": 1.0
+        },
+        "proxy": {
+          "server": "http://127.0.0.1:8080",
+          "username": null,
+          "password": null,
+          "country": null
+        }
+      },
+      "error": "a profile called '1.23457' already exists"
+    },
+    {
+      "record": {
+        "id": "aaaaaaaaaaaa",
+        "name": 1e-05
+      },
+      "directory": "profiles",
+      "candidate": {
+        "id": "bbbbbbbbbbbb",
+        "name": "1e-05",
+        "notes": "",
+        "tags": [],
+        "engine": "playwright",
+        "startup_urls": [],
+        "extensions": [],
+        "launch_args": [],
+        "bookmarks": [],
+        "dns": "",
+        "ip_based": [],
+        "clear_on_start": [],
+        "switched_off": [],
+        "created_at": 1700000000.0,
+        "updated_at": 1700000000.0,
+        "fingerprint": {
+          "os": "windows",
+          "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+          "platform": "Win32",
+          "ch_platform": "\"Windows\"",
+          "chrome_version": "128.0.0.0",
+          "screen_width": 1920,
+          "screen_height": 1080,
+          "viewport_width": 1920,
+          "viewport_height": 992,
+          "hardware_concurrency": 12,
+          "device_memory": 16,
+          "webgl_vendor": "Google Inc. (Intel)",
+          "webgl_renderer": "ANGLE (Intel, Intel(R) UHD Graphics 630 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "locale": "en-US",
+          "timezone": "America/New_York",
+          "languages": [
+            "en-US",
+            "en"
+          ],
+          "is_mobile": false,
+          "seed": 42,
+          "fonts": [
+            "Arial",
+            "Arial Black",
+            "Bahnschrift",
+            "Calibri",
+            "Cambria",
+            "Candara",
+            "Comic Sans MS",
+            "Consolas",
+            "Constantia",
+            "Corbel",
+            "Courier New",
+            "Ebrima",
+            "Franklin Gothic Medium",
+            "Gabriola",
+            "Gadugi",
+            "Georgia",
+            "Impact",
+            "Ink Free",
+            "Lucida Console",
+            "Lucida Sans Unicode",
+            "MS Gothic",
+            "MV Boli",
+            "Malgun Gothic",
+            "Microsoft Sans Serif",
+            "Nirmala UI",
+            "Palatino Linotype",
+            "Segoe Print",
+            "Segoe Script",
+            "Segoe UI",
+            "SimSun",
+            "Sylfaen",
+            "Symbol",
+            "Tahoma",
+            "Times New Roman",
+            "Trebuchet MS",
+            "Verdana",
+            "Webdings",
+            "Wingdings"
+          ],
+          "cameras": 2,
+          "microphones": 1,
+          "webrtc": "altered",
+          "canvas": "noise",
+          "audio": "noise",
+          "font_mode": "masked",
+          "geolocation": "prompt",
+          "do_not_track": false,
+          "client_rects": "noise",
+          "webgl_image": "noise",
+          "media_mode": "masked",
+          "speakers": 2,
+          "os_version": "11",
+          "device_model": "",
+          "max_touch_points": 10,
+          "device_pixel_ratio": 1.0
+        },
+        "proxy": {
+          "server": "http://127.0.0.1:8080",
+          "username": null,
+          "password": null,
+          "country": null
+        }
+      },
+      "error": "a profile called '1e-05' already exists"
+    },
+    {
+      "record": {
+        "id": "aaaaaaaaaaaa",
+        "name": 1e-05
+      },
+      "directory": "dashboard",
+      "candidate": {
+        "id": "bbbbbbbbbbbb",
+        "name": "1e-05",
+        "notes": "",
+        "tags": [],
+        "engine": "playwright",
+        "startup_urls": [],
+        "extensions": [],
+        "launch_args": [],
+        "bookmarks": [],
+        "dns": "",
+        "ip_based": [],
+        "clear_on_start": [],
+        "switched_off": [],
+        "created_at": 1700000000.0,
+        "updated_at": 1700000000.0,
+        "fingerprint": {
+          "os": "windows",
+          "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+          "platform": "Win32",
+          "ch_platform": "\"Windows\"",
+          "chrome_version": "128.0.0.0",
+          "screen_width": 1920,
+          "screen_height": 1080,
+          "viewport_width": 1920,
+          "viewport_height": 992,
+          "hardware_concurrency": 12,
+          "device_memory": 16,
+          "webgl_vendor": "Google Inc. (Intel)",
+          "webgl_renderer": "ANGLE (Intel, Intel(R) UHD Graphics 630 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "locale": "en-US",
+          "timezone": "America/New_York",
+          "languages": [
+            "en-US",
+            "en"
+          ],
+          "is_mobile": false,
+          "seed": 42,
+          "fonts": [
+            "Arial",
+            "Arial Black",
+            "Bahnschrift",
+            "Calibri",
+            "Cambria",
+            "Candara",
+            "Comic Sans MS",
+            "Consolas",
+            "Constantia",
+            "Corbel",
+            "Courier New",
+            "Ebrima",
+            "Franklin Gothic Medium",
+            "Gabriola",
+            "Gadugi",
+            "Georgia",
+            "Impact",
+            "Ink Free",
+            "Lucida Console",
+            "Lucida Sans Unicode",
+            "MS Gothic",
+            "MV Boli",
+            "Malgun Gothic",
+            "Microsoft Sans Serif",
+            "Nirmala UI",
+            "Palatino Linotype",
+            "Segoe Print",
+            "Segoe Script",
+            "Segoe UI",
+            "SimSun",
+            "Sylfaen",
+            "Symbol",
+            "Tahoma",
+            "Times New Roman",
+            "Trebuchet MS",
+            "Verdana",
+            "Webdings",
+            "Wingdings"
+          ],
+          "cameras": 2,
+          "microphones": 1,
+          "webrtc": "altered",
+          "canvas": "noise",
+          "audio": "noise",
+          "font_mode": "masked",
+          "geolocation": "prompt",
+          "do_not_track": false,
+          "client_rects": "noise",
+          "webgl_image": "noise",
+          "media_mode": "masked",
+          "speakers": 2,
+          "os_version": "11",
+          "device_model": "",
+          "max_touch_points": 10,
+          "device_pixel_ratio": 1.0
+        },
+        "proxy": {
+          "server": "http://127.0.0.1:8080",
+          "username": null,
+          "password": null,
+          "country": null
+        }
+      },
+      "error": "a profile called '1e-05' already exists"
+    },
+    {
+      "record": {
+        "id": "aaaaaaaaaaaa",
+        "name": 999999.5
+      },
+      "directory": "profiles",
+      "candidate": {
+        "id": "bbbbbbbbbbbb",
+        "name": "1e+06",
+        "notes": "",
+        "tags": [],
+        "engine": "playwright",
+        "startup_urls": [],
+        "extensions": [],
+        "launch_args": [],
+        "bookmarks": [],
+        "dns": "",
+        "ip_based": [],
+        "clear_on_start": [],
+        "switched_off": [],
+        "created_at": 1700000000.0,
+        "updated_at": 1700000000.0,
+        "fingerprint": {
+          "os": "windows",
+          "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+          "platform": "Win32",
+          "ch_platform": "\"Windows\"",
+          "chrome_version": "128.0.0.0",
+          "screen_width": 1920,
+          "screen_height": 1080,
+          "viewport_width": 1920,
+          "viewport_height": 992,
+          "hardware_concurrency": 12,
+          "device_memory": 16,
+          "webgl_vendor": "Google Inc. (Intel)",
+          "webgl_renderer": "ANGLE (Intel, Intel(R) UHD Graphics 630 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "locale": "en-US",
+          "timezone": "America/New_York",
+          "languages": [
+            "en-US",
+            "en"
+          ],
+          "is_mobile": false,
+          "seed": 42,
+          "fonts": [
+            "Arial",
+            "Arial Black",
+            "Bahnschrift",
+            "Calibri",
+            "Cambria",
+            "Candara",
+            "Comic Sans MS",
+            "Consolas",
+            "Constantia",
+            "Corbel",
+            "Courier New",
+            "Ebrima",
+            "Franklin Gothic Medium",
+            "Gabriola",
+            "Gadugi",
+            "Georgia",
+            "Impact",
+            "Ink Free",
+            "Lucida Console",
+            "Lucida Sans Unicode",
+            "MS Gothic",
+            "MV Boli",
+            "Malgun Gothic",
+            "Microsoft Sans Serif",
+            "Nirmala UI",
+            "Palatino Linotype",
+            "Segoe Print",
+            "Segoe Script",
+            "Segoe UI",
+            "SimSun",
+            "Sylfaen",
+            "Symbol",
+            "Tahoma",
+            "Times New Roman",
+            "Trebuchet MS",
+            "Verdana",
+            "Webdings",
+            "Wingdings"
+          ],
+          "cameras": 2,
+          "microphones": 1,
+          "webrtc": "altered",
+          "canvas": "noise",
+          "audio": "noise",
+          "font_mode": "masked",
+          "geolocation": "prompt",
+          "do_not_track": false,
+          "client_rects": "noise",
+          "webgl_image": "noise",
+          "media_mode": "masked",
+          "speakers": 2,
+          "os_version": "11",
+          "device_model": "",
+          "max_touch_points": 10,
+          "device_pixel_ratio": 1.0
+        },
+        "proxy": {
+          "server": "http://127.0.0.1:8080",
+          "username": null,
+          "password": null,
+          "country": null
+        }
+      },
+      "error": "a profile called '1e+06' already exists"
+    },
+    {
+      "record": {
+        "id": "aaaaaaaaaaaa",
+        "name": 999999.5
+      },
+      "directory": "dashboard",
+      "candidate": {
+        "id": "bbbbbbbbbbbb",
+        "name": "1e+06",
+        "notes": "",
+        "tags": [],
+        "engine": "playwright",
+        "startup_urls": [],
+        "extensions": [],
+        "launch_args": [],
+        "bookmarks": [],
+        "dns": "",
+        "ip_based": [],
+        "clear_on_start": [],
+        "switched_off": [],
+        "created_at": 1700000000.0,
+        "updated_at": 1700000000.0,
+        "fingerprint": {
+          "os": "windows",
+          "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+          "platform": "Win32",
+          "ch_platform": "\"Windows\"",
+          "chrome_version": "128.0.0.0",
+          "screen_width": 1920,
+          "screen_height": 1080,
+          "viewport_width": 1920,
+          "viewport_height": 992,
+          "hardware_concurrency": 12,
+          "device_memory": 16,
+          "webgl_vendor": "Google Inc. (Intel)",
+          "webgl_renderer": "ANGLE (Intel, Intel(R) UHD Graphics 630 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "locale": "en-US",
+          "timezone": "America/New_York",
+          "languages": [
+            "en-US",
+            "en"
+          ],
+          "is_mobile": false,
+          "seed": 42,
+          "fonts": [
+            "Arial",
+            "Arial Black",
+            "Bahnschrift",
+            "Calibri",
+            "Cambria",
+            "Candara",
+            "Comic Sans MS",
+            "Consolas",
+            "Constantia",
+            "Corbel",
+            "Courier New",
+            "Ebrima",
+            "Franklin Gothic Medium",
+            "Gabriola",
+            "Gadugi",
+            "Georgia",
+            "Impact",
+            "Ink Free",
+            "Lucida Console",
+            "Lucida Sans Unicode",
+            "MS Gothic",
+            "MV Boli",
+            "Malgun Gothic",
+            "Microsoft Sans Serif",
+            "Nirmala UI",
+            "Palatino Linotype",
+            "Segoe Print",
+            "Segoe Script",
+            "Segoe UI",
+            "SimSun",
+            "Sylfaen",
+            "Symbol",
+            "Tahoma",
+            "Times New Roman",
+            "Trebuchet MS",
+            "Verdana",
+            "Webdings",
+            "Wingdings"
+          ],
+          "cameras": 2,
+          "microphones": 1,
+          "webrtc": "altered",
+          "canvas": "noise",
+          "audio": "noise",
+          "font_mode": "masked",
+          "geolocation": "prompt",
+          "do_not_track": false,
+          "client_rects": "noise",
+          "webgl_image": "noise",
+          "media_mode": "masked",
+          "speakers": 2,
+          "os_version": "11",
+          "device_model": "",
+          "max_touch_points": 10,
+          "device_pixel_ratio": 1.0
+        },
+        "proxy": {
+          "server": "http://127.0.0.1:8080",
+          "username": null,
+          "password": null,
+          "country": null
+        }
+      },
+      "error": "a profile called '1e+06' already exists"
+    },
+    {
+      "record": {
+        "id": "aaaaaaaaaaaa",
+        "name": 1e+100
+      },
+      "directory": "profiles",
+      "candidate": {
+        "id": "bbbbbbbbbbbb",
+        "name": "1e+100",
+        "notes": "",
+        "tags": [],
+        "engine": "playwright",
+        "startup_urls": [],
+        "extensions": [],
+        "launch_args": [],
+        "bookmarks": [],
+        "dns": "",
+        "ip_based": [],
+        "clear_on_start": [],
+        "switched_off": [],
+        "created_at": 1700000000.0,
+        "updated_at": 1700000000.0,
+        "fingerprint": {
+          "os": "windows",
+          "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+          "platform": "Win32",
+          "ch_platform": "\"Windows\"",
+          "chrome_version": "128.0.0.0",
+          "screen_width": 1920,
+          "screen_height": 1080,
+          "viewport_width": 1920,
+          "viewport_height": 992,
+          "hardware_concurrency": 12,
+          "device_memory": 16,
+          "webgl_vendor": "Google Inc. (Intel)",
+          "webgl_renderer": "ANGLE (Intel, Intel(R) UHD Graphics 630 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "locale": "en-US",
+          "timezone": "America/New_York",
+          "languages": [
+            "en-US",
+            "en"
+          ],
+          "is_mobile": false,
+          "seed": 42,
+          "fonts": [
+            "Arial",
+            "Arial Black",
+            "Bahnschrift",
+            "Calibri",
+            "Cambria",
+            "Candara",
+            "Comic Sans MS",
+            "Consolas",
+            "Constantia",
+            "Corbel",
+            "Courier New",
+            "Ebrima",
+            "Franklin Gothic Medium",
+            "Gabriola",
+            "Gadugi",
+            "Georgia",
+            "Impact",
+            "Ink Free",
+            "Lucida Console",
+            "Lucida Sans Unicode",
+            "MS Gothic",
+            "MV Boli",
+            "Malgun Gothic",
+            "Microsoft Sans Serif",
+            "Nirmala UI",
+            "Palatino Linotype",
+            "Segoe Print",
+            "Segoe Script",
+            "Segoe UI",
+            "SimSun",
+            "Sylfaen",
+            "Symbol",
+            "Tahoma",
+            "Times New Roman",
+            "Trebuchet MS",
+            "Verdana",
+            "Webdings",
+            "Wingdings"
+          ],
+          "cameras": 2,
+          "microphones": 1,
+          "webrtc": "altered",
+          "canvas": "noise",
+          "audio": "noise",
+          "font_mode": "masked",
+          "geolocation": "prompt",
+          "do_not_track": false,
+          "client_rects": "noise",
+          "webgl_image": "noise",
+          "media_mode": "masked",
+          "speakers": 2,
+          "os_version": "11",
+          "device_model": "",
+          "max_touch_points": 10,
+          "device_pixel_ratio": 1.0
+        },
+        "proxy": {
+          "server": "http://127.0.0.1:8080",
+          "username": null,
+          "password": null,
+          "country": null
+        }
+      },
+      "error": "a profile called '1e+100' already exists"
+    },
+    {
+      "record": {
+        "id": "aaaaaaaaaaaa",
+        "name": 1e+100
+      },
+      "directory": "dashboard",
+      "candidate": {
+        "id": "bbbbbbbbbbbb",
+        "name": "1e+100",
+        "notes": "",
+        "tags": [],
+        "engine": "playwright",
+        "startup_urls": [],
+        "extensions": [],
+        "launch_args": [],
+        "bookmarks": [],
+        "dns": "",
+        "ip_based": [],
+        "clear_on_start": [],
+        "switched_off": [],
+        "created_at": 1700000000.0,
+        "updated_at": 1700000000.0,
+        "fingerprint": {
+          "os": "windows",
+          "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+          "platform": "Win32",
+          "ch_platform": "\"Windows\"",
+          "chrome_version": "128.0.0.0",
+          "screen_width": 1920,
+          "screen_height": 1080,
+          "viewport_width": 1920,
+          "viewport_height": 992,
+          "hardware_concurrency": 12,
+          "device_memory": 16,
+          "webgl_vendor": "Google Inc. (Intel)",
+          "webgl_renderer": "ANGLE (Intel, Intel(R) UHD Graphics 630 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "locale": "en-US",
+          "timezone": "America/New_York",
+          "languages": [
+            "en-US",
+            "en"
+          ],
+          "is_mobile": false,
+          "seed": 42,
+          "fonts": [
+            "Arial",
+            "Arial Black",
+            "Bahnschrift",
+            "Calibri",
+            "Cambria",
+            "Candara",
+            "Comic Sans MS",
+            "Consolas",
+            "Constantia",
+            "Corbel",
+            "Courier New",
+            "Ebrima",
+            "Franklin Gothic Medium",
+            "Gabriola",
+            "Gadugi",
+            "Georgia",
+            "Impact",
+            "Ink Free",
+            "Lucida Console",
+            "Lucida Sans Unicode",
+            "MS Gothic",
+            "MV Boli",
+            "Malgun Gothic",
+            "Microsoft Sans Serif",
+            "Nirmala UI",
+            "Palatino Linotype",
+            "Segoe Print",
+            "Segoe Script",
+            "Segoe UI",
+            "SimSun",
+            "Sylfaen",
+            "Symbol",
+            "Tahoma",
+            "Times New Roman",
+            "Trebuchet MS",
+            "Verdana",
+            "Webdings",
+            "Wingdings"
+          ],
+          "cameras": 2,
+          "microphones": 1,
+          "webrtc": "altered",
+          "canvas": "noise",
+          "audio": "noise",
+          "font_mode": "masked",
+          "geolocation": "prompt",
+          "do_not_track": false,
+          "client_rects": "noise",
+          "webgl_image": "noise",
+          "media_mode": "masked",
+          "speakers": 2,
+          "os_version": "11",
+          "device_model": "",
+          "max_touch_points": 10,
+          "device_pixel_ratio": 1.0
+        },
+        "proxy": {
+          "server": "http://127.0.0.1:8080",
+          "username": null,
+          "password": null,
+          "country": null
+        }
+      },
+      "error": "a profile called '1e+100' already exists"
+    },
+    {
+      "record": {
+        "id": "aaaaaaaaaaaa",
+        "name": 17
+      },
+      "directory": "profiles",
+      "candidate": {
+        "id": "bbbbbbbbbbbb",
+        "name": "17",
+        "notes": "",
+        "tags": [],
+        "engine": "playwright",
+        "startup_urls": [],
+        "extensions": [],
+        "launch_args": [],
+        "bookmarks": [],
+        "dns": "",
+        "ip_based": [],
+        "clear_on_start": [],
+        "switched_off": [],
+        "created_at": 1700000000.0,
+        "updated_at": 1700000000.0,
+        "fingerprint": {
+          "os": "windows",
+          "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+          "platform": "Win32",
+          "ch_platform": "\"Windows\"",
+          "chrome_version": "128.0.0.0",
+          "screen_width": 1920,
+          "screen_height": 1080,
+          "viewport_width": 1920,
+          "viewport_height": 992,
+          "hardware_concurrency": 12,
+          "device_memory": 16,
+          "webgl_vendor": "Google Inc. (Intel)",
+          "webgl_renderer": "ANGLE (Intel, Intel(R) UHD Graphics 630 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "locale": "en-US",
+          "timezone": "America/New_York",
+          "languages": [
+            "en-US",
+            "en"
+          ],
+          "is_mobile": false,
+          "seed": 42,
+          "fonts": [
+            "Arial",
+            "Arial Black",
+            "Bahnschrift",
+            "Calibri",
+            "Cambria",
+            "Candara",
+            "Comic Sans MS",
+            "Consolas",
+            "Constantia",
+            "Corbel",
+            "Courier New",
+            "Ebrima",
+            "Franklin Gothic Medium",
+            "Gabriola",
+            "Gadugi",
+            "Georgia",
+            "Impact",
+            "Ink Free",
+            "Lucida Console",
+            "Lucida Sans Unicode",
+            "MS Gothic",
+            "MV Boli",
+            "Malgun Gothic",
+            "Microsoft Sans Serif",
+            "Nirmala UI",
+            "Palatino Linotype",
+            "Segoe Print",
+            "Segoe Script",
+            "Segoe UI",
+            "SimSun",
+            "Sylfaen",
+            "Symbol",
+            "Tahoma",
+            "Times New Roman",
+            "Trebuchet MS",
+            "Verdana",
+            "Webdings",
+            "Wingdings"
+          ],
+          "cameras": 2,
+          "microphones": 1,
+          "webrtc": "altered",
+          "canvas": "noise",
+          "audio": "noise",
+          "font_mode": "masked",
+          "geolocation": "prompt",
+          "do_not_track": false,
+          "client_rects": "noise",
+          "webgl_image": "noise",
+          "media_mode": "masked",
+          "speakers": 2,
+          "os_version": "11",
+          "device_model": "",
+          "max_touch_points": 10,
+          "device_pixel_ratio": 1.0
+        },
+        "proxy": {
+          "server": "http://127.0.0.1:8080",
+          "username": null,
+          "password": null,
+          "country": null
+        }
+      },
+      "error": "a profile called '17' already exists"
+    },
+    {
+      "record": {
+        "id": "aaaaaaaaaaaa",
+        "name": 17
+      },
+      "directory": "dashboard",
+      "candidate": {
+        "id": "bbbbbbbbbbbb",
+        "name": "17",
+        "notes": "",
+        "tags": [],
+        "engine": "playwright",
+        "startup_urls": [],
+        "extensions": [],
+        "launch_args": [],
+        "bookmarks": [],
+        "dns": "",
+        "ip_based": [],
+        "clear_on_start": [],
+        "switched_off": [],
+        "created_at": 1700000000.0,
+        "updated_at": 1700000000.0,
+        "fingerprint": {
+          "os": "windows",
+          "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+          "platform": "Win32",
+          "ch_platform": "\"Windows\"",
+          "chrome_version": "128.0.0.0",
+          "screen_width": 1920,
+          "screen_height": 1080,
+          "viewport_width": 1920,
+          "viewport_height": 992,
+          "hardware_concurrency": 12,
+          "device_memory": 16,
+          "webgl_vendor": "Google Inc. (Intel)",
+          "webgl_renderer": "ANGLE (Intel, Intel(R) UHD Graphics 630 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "locale": "en-US",
+          "timezone": "America/New_York",
+          "languages": [
+            "en-US",
+            "en"
+          ],
+          "is_mobile": false,
+          "seed": 42,
+          "fonts": [
+            "Arial",
+            "Arial Black",
+            "Bahnschrift",
+            "Calibri",
+            "Cambria",
+            "Candara",
+            "Comic Sans MS",
+            "Consolas",
+            "Constantia",
+            "Corbel",
+            "Courier New",
+            "Ebrima",
+            "Franklin Gothic Medium",
+            "Gabriola",
+            "Gadugi",
+            "Georgia",
+            "Impact",
+            "Ink Free",
+            "Lucida Console",
+            "Lucida Sans Unicode",
+            "MS Gothic",
+            "MV Boli",
+            "Malgun Gothic",
+            "Microsoft Sans Serif",
+            "Nirmala UI",
+            "Palatino Linotype",
+            "Segoe Print",
+            "Segoe Script",
+            "Segoe UI",
+            "SimSun",
+            "Sylfaen",
+            "Symbol",
+            "Tahoma",
+            "Times New Roman",
+            "Trebuchet MS",
+            "Verdana",
+            "Webdings",
+            "Wingdings"
+          ],
+          "cameras": 2,
+          "microphones": 1,
+          "webrtc": "altered",
+          "canvas": "noise",
+          "audio": "noise",
+          "font_mode": "masked",
+          "geolocation": "prompt",
+          "do_not_track": false,
+          "client_rects": "noise",
+          "webgl_image": "noise",
+          "media_mode": "masked",
+          "speakers": 2,
+          "os_version": "11",
+          "device_model": "",
+          "max_touch_points": 10,
+          "device_pixel_ratio": 1.0
+        },
+        "proxy": {
+          "server": "http://127.0.0.1:8080",
+          "username": null,
+          "password": null,
+          "country": null
+        }
+      },
+      "error": "a profile called '17' already exists"
+    },
+    {
+      "record": {
+        "id": "aaaaaaaaaaaa",
+        "name": true
+      },
+      "directory": "profiles",
+      "candidate": {
+        "id": "bbbbbbbbbbbb",
+        "name": "true",
+        "notes": "",
+        "tags": [],
+        "engine": "playwright",
+        "startup_urls": [],
+        "extensions": [],
+        "launch_args": [],
+        "bookmarks": [],
+        "dns": "",
+        "ip_based": [],
+        "clear_on_start": [],
+        "switched_off": [],
+        "created_at": 1700000000.0,
+        "updated_at": 1700000000.0,
+        "fingerprint": {
+          "os": "windows",
+          "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+          "platform": "Win32",
+          "ch_platform": "\"Windows\"",
+          "chrome_version": "128.0.0.0",
+          "screen_width": 1920,
+          "screen_height": 1080,
+          "viewport_width": 1920,
+          "viewport_height": 992,
+          "hardware_concurrency": 12,
+          "device_memory": 16,
+          "webgl_vendor": "Google Inc. (Intel)",
+          "webgl_renderer": "ANGLE (Intel, Intel(R) UHD Graphics 630 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "locale": "en-US",
+          "timezone": "America/New_York",
+          "languages": [
+            "en-US",
+            "en"
+          ],
+          "is_mobile": false,
+          "seed": 42,
+          "fonts": [
+            "Arial",
+            "Arial Black",
+            "Bahnschrift",
+            "Calibri",
+            "Cambria",
+            "Candara",
+            "Comic Sans MS",
+            "Consolas",
+            "Constantia",
+            "Corbel",
+            "Courier New",
+            "Ebrima",
+            "Franklin Gothic Medium",
+            "Gabriola",
+            "Gadugi",
+            "Georgia",
+            "Impact",
+            "Ink Free",
+            "Lucida Console",
+            "Lucida Sans Unicode",
+            "MS Gothic",
+            "MV Boli",
+            "Malgun Gothic",
+            "Microsoft Sans Serif",
+            "Nirmala UI",
+            "Palatino Linotype",
+            "Segoe Print",
+            "Segoe Script",
+            "Segoe UI",
+            "SimSun",
+            "Sylfaen",
+            "Symbol",
+            "Tahoma",
+            "Times New Roman",
+            "Trebuchet MS",
+            "Verdana",
+            "Webdings",
+            "Wingdings"
+          ],
+          "cameras": 2,
+          "microphones": 1,
+          "webrtc": "altered",
+          "canvas": "noise",
+          "audio": "noise",
+          "font_mode": "masked",
+          "geolocation": "prompt",
+          "do_not_track": false,
+          "client_rects": "noise",
+          "webgl_image": "noise",
+          "media_mode": "masked",
+          "speakers": 2,
+          "os_version": "11",
+          "device_model": "",
+          "max_touch_points": 10,
+          "device_pixel_ratio": 1.0
+        },
+        "proxy": {
+          "server": "http://127.0.0.1:8080",
+          "username": null,
+          "password": null,
+          "country": null
+        }
+      },
+      "error": "a profile called 'true' already exists"
+    },
+    {
+      "record": {
+        "id": "aaaaaaaaaaaa",
+        "name": true
+      },
+      "directory": "dashboard",
+      "candidate": {
+        "id": "bbbbbbbbbbbb",
+        "name": "true",
+        "notes": "",
+        "tags": [],
+        "engine": "playwright",
+        "startup_urls": [],
+        "extensions": [],
+        "launch_args": [],
+        "bookmarks": [],
+        "dns": "",
+        "ip_based": [],
+        "clear_on_start": [],
+        "switched_off": [],
+        "created_at": 1700000000.0,
+        "updated_at": 1700000000.0,
+        "fingerprint": {
+          "os": "windows",
+          "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+          "platform": "Win32",
+          "ch_platform": "\"Windows\"",
+          "chrome_version": "128.0.0.0",
+          "screen_width": 1920,
+          "screen_height": 1080,
+          "viewport_width": 1920,
+          "viewport_height": 992,
+          "hardware_concurrency": 12,
+          "device_memory": 16,
+          "webgl_vendor": "Google Inc. (Intel)",
+          "webgl_renderer": "ANGLE (Intel, Intel(R) UHD Graphics 630 Direct3D11 vs_5_0 ps_5_0, D3D11)",
+          "locale": "en-US",
+          "timezone": "America/New_York",
+          "languages": [
+            "en-US",
+            "en"
+          ],
+          "is_mobile": false,
+          "seed": 42,
+          "fonts": [
+            "Arial",
+            "Arial Black",
+            "Bahnschrift",
+            "Calibri",
+            "Cambria",
+            "Candara",
+            "Comic Sans MS",
+            "Consolas",
+            "Constantia",
+            "Corbel",
+            "Courier New",
+            "Ebrima",
+            "Franklin Gothic Medium",
+            "Gabriola",
+            "Gadugi",
+            "Georgia",
+            "Impact",
+            "Ink Free",
+            "Lucida Console",
+            "Lucida Sans Unicode",
+            "MS Gothic",
+            "MV Boli",
+            "Malgun Gothic",
+            "Microsoft Sans Serif",
+            "Nirmala UI",
+            "Palatino Linotype",
+            "Segoe Print",
+            "Segoe Script",
+            "Segoe UI",
+            "SimSun",
+            "Sylfaen",
+            "Symbol",
+            "Tahoma",
+            "Times New Roman",
+            "Trebuchet MS",
+            "Verdana",
+            "Webdings",
+            "Wingdings"
+          ],
+          "cameras": 2,
+          "microphones": 1,
+          "webrtc": "altered",
+          "canvas": "noise",
+          "audio": "noise",
+          "font_mode": "masked",
+          "geolocation": "prompt",
+          "do_not_track": false,
+          "client_rects": "noise",
+          "webgl_image": "noise",
+          "media_mode": "masked",
+          "speakers": 2,
+          "os_version": "11",
+          "device_model": "",
+          "max_touch_points": 10,
+          "device_pixel_ratio": 1.0
+        },
+        "proxy": {
+          "server": "http://127.0.0.1:8080",
+          "username": null,
+          "password": null,
+          "country": null
+        }
+      },
+      "error": "a profile called 'true' already exists"
+    }
+  ]
+}

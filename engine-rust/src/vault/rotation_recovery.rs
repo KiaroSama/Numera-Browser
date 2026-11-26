@@ -35,7 +35,11 @@ pub(crate) fn finish(
             .map_err(|_| {
                 refusal("Persisted vault config cannot be read; recovery evidence retained")
             })?;
-        if persisted["vault"] != *new {
+        let active = &persisted["vault"];
+        if !super::journal::usable_descriptor(active)
+            || active["salt"] != new["salt"]
+            || active["verifier"] != new["verifier"]
+        {
             return Err(refusal(
                 "Persisted descriptor disagrees with the verified generation; recovery evidence retained",
             ));
@@ -47,7 +51,12 @@ pub(crate) fn finish(
                 "master-password rotation",
             ));
         }
-        end_journal(root)?;
+        end_journal(root).map_err(|error| {
+            super::recovery::caused_refusal(
+                format!("Vault migration cleanup failed; evidence retained: {error}"),
+                error,
+            )
+        })?;
         return Ok(true);
     }
     let (Some(password), Some(old_password)) = (
@@ -57,42 +66,55 @@ pub(crate) fn finish(
         let mut error = refusal(
             "A master-password rotation was interrupted, so some secrets are under the new password and some under the old one. Finish it with `numera vault resume`, which needs both passwords - they are the only way to tell the two apart, because both are ciphertext. This data root is not served until then, and the record of the new salt is kept.",
         );
+        error.kind = super::recovery::RecoveryErrorKind::VaultIncomplete;
         error.codes.push("needs_both_passwords");
+        error.problems.push(super::completion::Problem {
+            code: "needs_both_passwords",
+            detail: "a resumed rotation needs both the old and the new master password".into(),
+        });
         return Err(error);
     };
-    if !check_password(
-        password,
-        new["salt"].as_str().unwrap_or(""),
-        new["verifier"].as_str().unwrap_or(""),
-    ) {
+    let Some((new_salt, new_verifier)) = new["salt"]
+        .as_str()
+        .filter(|value| !value.is_empty())
+        .zip(new["verifier"].as_str().filter(|value| !value.is_empty()))
+    else {
+        return Err(super::recovery::locked(
+            "new",
+            "that is not the new master password the rotation was moving to",
+        ));
+    };
+    if !check_password(password, new_salt, new_verifier) {
         return Err(super::recovery::locked(
             "new",
             "that is not the new master password the rotation was moving to",
         ));
     }
-    if !check_password(
-        old_password,
-        old["salt"].as_str().unwrap_or(""),
-        old["verifier"].as_str().unwrap_or(""),
-    ) {
+    let Some((old_salt, old_verifier)) = old["salt"]
+        .as_str()
+        .filter(|value| !value.is_empty())
+        .zip(old["verifier"].as_str().filter(|value| !value.is_empty()))
+    else {
+        return Err(super::recovery::locked(
+            "old",
+            "that is not the master password the rotation was moving away from",
+        ));
+    };
+    if !check_password(old_password, old_salt, old_verifier) {
         return Err(super::recovery::locked(
             "old",
             "that is not the master password the rotation was moving away from",
         ));
     }
+    #[cfg(feature = "test-support")]
+    super::testing::event("before-recovery", root)?;
     let mut step = Migration::new(root.to_owned());
     let result = (|| {
-        step.rekey_all(
-            old_password,
-            old["salt"].as_str().unwrap_or(""),
-            password,
-            new["salt"].as_str().unwrap_or(""),
-            true,
-        )
-        .map_err(|error| refusal(error.to_string()))?;
+        step.rekey_all(old_password, old_salt, password, new_salt, true)
+            .map_err(super::recovery::migration_failure)?;
         // Recovery also covers plaintext left by a prior incomplete enable.
-        step.encrypt_all(password, new["salt"].as_str().unwrap_or(""))
-            .map_err(|error| refusal(error.to_string()))?;
+        step.encrypt_all(password, new_salt)
+            .map_err(super::recovery::migration_failure)?;
         commit_and_verify(
             root,
             &mut step,
@@ -105,15 +127,21 @@ pub(crate) fn finish(
     if let Err(error) = result {
         let failures = step.rollback();
         if !failures.is_empty() {
-            return Err(refusal(format!(
-                "Vault recovery failed and {} file(s) could not be restored; journal retained",
-                failures.len()
-            )));
+            return Err(super::recovery::rollback_failed(
+                error,
+                failures,
+                "Vault recovery failed",
+            ));
         }
         sync_data(root)?;
         sync_config(root)?;
         return Err(error);
     }
-    end_journal(root)?;
+    end_journal(root).map_err(|error| {
+        super::recovery::caused_refusal(
+            format!("Vault migration cleanup failed; evidence retained: {error}"),
+            error,
+        )
+    })?;
     Ok(true)
 }

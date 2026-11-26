@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "reviewed_at": "2026-11-13",
+  "base_commit": "fe9b2f940b6b8501f382d34145c633136afa8188",
+  "bootstrap_sources": {
+    "tools/security-scan/Cargo.toml": "61539c78ae23ce82280cd17436f8132ad1fbab710c41edd860d4072b6c0974be",
+    "tools/security-scan/Cargo.lock": "d5ee34a7017457ca39dc76873e76b471b2b7dc550f9e73c1f8375a05b9ae5667",
+    "tools/security-scan/src/main.rs": "240bb7d693a05215f2f19bce6693d55d06ac4aaf9526d96d7494959cdb60aa84",
+    "tools/security-scan/src/contract.rs": "edce532712685b304b88fbf6ea5172765dda2ff042826702b24a4a14340a57cd"
+  },
+  "observations": [
+    {
+      "control": "actual pinned Gitleaks 8.30.1 over all fetched Git history",
+      "result": "passed",
+      "log": "/workspace/work/security-bootstrap-real-scan-current.log",
+      "limitation": "Scans committed history available before the next PR update; not an assertion about later commits."
+    },
+    {
+      "control": "actual scanner with a compiled Rust Git fixture that exits 7 for history reads",
+      "result": "rejected",
+      "exit": 1,
+      "phase": 6,
+      "log": "/workspace/work/security-bootstrap-negative-git-current.log",
+      "assertion": "A failed Git producer cannot yield a clean verdict even if scanner status or empty report would otherwise pass."
+    },
+    {
+      "control": "standalone locked Rust build and strict Clippy",
+      "result": "passed"
+    },
+    {
+      "control": "workflow actionlint",
+      "result": "passed"
+    }
+  ],
+  "privacy": "No matched values, source snippets, private reports or commit messages are recorded in this artifact.",
+  "hosted_status": "Pending execution of the updated workflow on the next exact PR head."
+}

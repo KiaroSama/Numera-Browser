@@ -15,8 +15,10 @@ A clear description of the bug.
 What you expected instead.
 
 **Environment**
-- Component: engine / dashboard
-- OS:
-- Python / Node version:
+- Component: native engine / dashboard / desktop / browser worker
+- OS and architecture:
+- Numera version or source commit:
+- Browser backend and version, if relevant:
+- Rust toolchain, for source builds:
 
 **Logs / screenshots**

@@ -1,0 +1,1230 @@
+[
+  {
+    "argv": [
+      "-V"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "--version"
+    ],
+    "exit": 0,
+    "version": "numera 0.36.0\n"
+  },
+  {
+    "argv": [
+      "--ver"
+    ],
+    "exit": 0,
+    "version": "numera 0.36.0\n"
+  },
+  {
+    "argv": [
+      "--vers"
+    ],
+    "exit": 0,
+    "version": "numera 0.36.0\n"
+  },
+  {
+    "argv": [
+      "--version="
+    ],
+    "exit": 2,
+    "invalid_option": "--version"
+  },
+  {
+    "argv": [
+      "--version=fixture"
+    ],
+    "exit": 2,
+    "invalid_option": "--version"
+  },
+  {
+    "argv": [
+      "-VV"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "-Vh"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "-V=fixture"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "--v"
+    ],
+    "exit": 0,
+    "version": "numera 0.36.0\n"
+  },
+  {
+    "argv": [
+      "--version",
+      "list"
+    ],
+    "exit": 0,
+    "version": "numera 0.36.0\n"
+  },
+  {
+    "argv": [
+      "--version",
+      "--unknown"
+    ],
+    "exit": 0,
+    "version": "numera 0.36.0\n"
+  },
+  {
+    "argv": [
+      "--version",
+      "-V"
+    ],
+    "exit": 0,
+    "version": "numera 0.36.0\n"
+  },
+  {
+    "argv": [
+      "--password=fixture",
+      "--version"
+    ],
+    "exit": 0,
+    "version": "numera 0.36.0\n"
+  },
+  {
+    "argv": [
+      "-V",
+      "--version"
+    ],
+    "exit": 0,
+    "version": "numera 0.36.0\n"
+  },
+  {
+    "argv": [
+      "-VV",
+      "--ver"
+    ],
+    "exit": 0,
+    "version": "numera 0.36.0\n"
+  },
+  {
+    "argv": [
+      "-Vh",
+      "--version"
+    ],
+    "exit": 0,
+    "version": "numera 0.36.0\n"
+  },
+  {
+    "argv": [
+      "-V=fixture",
+      "--version"
+    ],
+    "exit": 0,
+    "version": "numera 0.36.0\n"
+  },
+  {
+    "argv": [
+      "-V",
+      "--help"
+    ],
+    "exit": 0,
+    "help": "numera",
+    "help_flag": "--help"
+  },
+  {
+    "argv": [
+      "-V",
+      "list",
+      "--help"
+    ],
+    "exit": 0,
+    "help": "numera list",
+    "help_flag": "--help"
+  },
+  {
+    "argv": [
+      "-V",
+      "--password",
+      "--version"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "-V",
+      "unknown",
+      "--version"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "-V",
+      "list"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "-V",
+      "show",
+      "--",
+      "-V"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "-V value",
+      "--version"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "--help",
+      "-V"
+    ],
+    "exit": 0,
+    "help": "numera",
+    "help_flag": "--help"
+  },
+  {
+    "argv": [
+      "-hV"
+    ],
+    "exit": 0,
+    "help": "numera",
+    "help_flag": "-h"
+  },
+  {
+    "argv": [
+      "--password",
+      "-V",
+      "list"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "--password=-V",
+      "list"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": "-V",
+      "command": "list",
+      "json": false,
+      "detach": false,
+      "tag": null
+    }
+  },
+  {
+    "argv": [
+      "--data-dir=-V",
+      "list"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": "-V",
+      "password": null,
+      "command": "list",
+      "json": false,
+      "detach": false,
+      "tag": null
+    }
+  },
+  {
+    "argv": [
+      "--password=--version",
+      "list"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": "--version",
+      "command": "list",
+      "json": false,
+      "detach": false,
+      "tag": null
+    }
+  },
+  {
+    "argv": [
+      "--data-dir=--version",
+      "list"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": "--version",
+      "password": null,
+      "command": "list",
+      "json": false,
+      "detach": false,
+      "tag": null
+    }
+  },
+  {
+    "argv": [
+      "--password",
+      "--version",
+      "list"
+    ],
+    "exit": 2,
+    "invalid_option": "--password"
+  },
+  {
+    "argv": [
+      "--",
+      "-V"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "--",
+      "--version"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "list",
+      "--version"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "list",
+      "-V"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "show",
+      "--",
+      "-V"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "show",
+      "json": false,
+      "detach": false,
+      "ref": "-V"
+    }
+  },
+  {
+    "argv": [
+      "show",
+      "--",
+      "--version"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "show",
+      "json": false,
+      "detach": false,
+      "ref": "--version"
+    }
+  },
+  {
+    "argv": [
+      "create",
+      "-V"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "create",
+      "--",
+      "-V"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "create",
+      "json": false,
+      "detach": false,
+      "name": "-V",
+      "os": null,
+      "locale": null,
+      "proxy": null,
+      "country": null,
+      "seed": null,
+      "mobile": false,
+      "engine": null,
+      "notes": "",
+      "tag": null
+    }
+  },
+  {
+    "argv": [
+      "edit",
+      "fixture",
+      "--notes=-V"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "edit",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "notes": "-V",
+      "add_tag": null,
+      "proxy": null,
+      "country": null
+    }
+  },
+  {
+    "argv": [
+      "edit",
+      "fixture",
+      "--notes=--version"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "edit",
+      "json": false,
+      "detach": false,
+      "ref": "fixture",
+      "notes": "--version",
+      "add_tag": null,
+      "proxy": null,
+      "country": null
+    }
+  },
+  {
+    "argv": [
+      "--help",
+      "--version"
+    ],
+    "exit": 0,
+    "help": "numera",
+    "help_flag": "--help"
+  },
+  {
+    "argv": [
+      "--version",
+      "--help"
+    ],
+    "exit": 0,
+    "version": "numera 0.36.0\n"
+  },
+  {
+    "argv": [
+      "--data-dir=fixture",
+      "--version"
+    ],
+    "exit": 0,
+    "version": "numera 0.36.0\n"
+  },
+  {
+    "argv": [
+      "--password",
+      "-V",
+      "list",
+      "--help"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "--data-dir",
+      "-V",
+      "list",
+      "--help"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "-V",
+      "--unknown",
+      "--version"
+    ],
+    "exit": 0,
+    "version": "numera 0.36.0\n"
+  },
+  {
+    "argv": [
+      "-V",
+      "--unknown=fixture",
+      "--version"
+    ],
+    "exit": 0,
+    "version": "numera 0.36.0\n"
+  },
+  {
+    "argv": [
+      "-V",
+      "list",
+      "-V",
+      "--help"
+    ],
+    "exit": 0,
+    "help": "numera list",
+    "help_flag": "--help"
+  },
+  {
+    "argv": [
+      "-V",
+      "list",
+      "extra",
+      "--help"
+    ],
+    "exit": 0,
+    "help": "numera list",
+    "help_flag": "--help"
+  },
+  {
+    "argv": [
+      "-V",
+      "show",
+      "fixture",
+      "extra",
+      "--help"
+    ],
+    "exit": 0,
+    "help": "numera show",
+    "help_flag": "--help"
+  },
+  {
+    "argv": [
+      "-V",
+      "list",
+      "--tag",
+      "-V",
+      "--help"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "-V",
+      "delete",
+      "fixture",
+      "-y",
+      "--help"
+    ],
+    "exit": 0,
+    "help": "numera delete",
+    "help_flag": "--help"
+  },
+  {
+    "argv": [
+      "-V",
+      "--password",
+      "-V",
+      "list",
+      "--help"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "-V",
+      "show",
+      "-1",
+      "--help"
+    ],
+    "exit": 0,
+    "help": "numera show",
+    "help_flag": "--help"
+  },
+  {
+    "argv": [
+      "-V",
+      "list",
+      "-xx",
+      "--help"
+    ],
+    "exit": 0,
+    "help": "numera list",
+    "help_flag": "--help"
+  },
+  {
+    "argv": [
+      "-V",
+      "list",
+      "-xy=fixture",
+      "--help"
+    ],
+    "exit": 0,
+    "help": "numera list",
+    "help_flag": "--help"
+  },
+  {
+    "argv": [
+      "-V",
+      "create",
+      "--co=fixture",
+      "--help"
+    ],
+    "exit": 0,
+    "help": "numera create",
+    "help_flag": "--help"
+  },
+  {
+    "argv": [
+      "-V",
+      "delete",
+      "fixture",
+      "-yx",
+      "--help"
+    ],
+    "exit": 0,
+    "help": "numera delete",
+    "help_flag": "--help"
+  },
+  {
+    "argv": [
+      "-V",
+      "list",
+      "-xx",
+      "--json"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "-V",
+      "show",
+      "-V",
+      "--help"
+    ],
+    "exit": 0,
+    "help": "numera show",
+    "help_flag": "--help"
+  },
+  {
+    "argv": [
+      "-V",
+      "list",
+      "--tag",
+      "-V",
+      "--json"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "-V",
+      "-1",
+      "--version"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "-V",
+      "jobs",
+      "-1",
+      "--help"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "-V",
+      "delete",
+      "fixture",
+      "-y=fixture",
+      "--help"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "-V",
+      "export",
+      "-1",
+      "--help"
+    ],
+    "exit": 0,
+    "help": "numera export",
+    "help_flag": "--help"
+  },
+  {
+    "argv": [
+      "-V",
+      "delete",
+      "fixture",
+      "--json",
+      "-1",
+      "--help"
+    ],
+    "exit": 0,
+    "help": "numera delete",
+    "help_flag": "--help"
+  },
+  {
+    "argv": [
+      "-V",
+      "show",
+      "fixture",
+      "-12",
+      "--help"
+    ],
+    "exit": 0,
+    "help": "numera show",
+    "help_flag": "--help"
+  },
+  {
+    "argv": [
+      "list",
+      "-V",
+      "--help"
+    ],
+    "exit": 0,
+    "help": "numera list",
+    "help_flag": "--help"
+  },
+  {
+    "argv": [
+      "-V",
+      "--unknown value",
+      "--version"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "-V",
+      "jobs",
+      "--unknown value",
+      "--help"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "-V",
+      "create",
+      "-h"
+    ],
+    "exit": 0,
+    "help": "numera create",
+    "help_flag": "-h"
+  },
+  {
+    "argv": [
+      "-V",
+      "delete",
+      "fixture",
+      "-yh=fixture"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "-V",
+      "delete",
+      "fixture",
+      "-hy=fixture"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "-V",
+      "create",
+      "fixture",
+      "--seed=invalid",
+      "--help"
+    ],
+    "exit": 2,
+    "invalid_option": "--seed"
+  },
+  {
+    "argv": [
+      "-V",
+      "create",
+      "fixture",
+      "--seed=2",
+      "--help"
+    ],
+    "exit": 0,
+    "help": "numera create",
+    "help_flag": "--help"
+  },
+  {
+    "argv": [
+      "-V",
+      "warmup",
+      "fixture",
+      "--minutes=invalid",
+      "--help"
+    ],
+    "exit": 2,
+    "invalid_option": "--minutes"
+  },
+  {
+    "argv": [
+      "-V",
+      "warmup",
+      "fixture",
+      "--minutes=1.5",
+      "--help"
+    ],
+    "exit": 0,
+    "help": "numera warmup",
+    "help_flag": "--help"
+  },
+  {
+    "argv": [
+      "-V",
+      "create",
+      "fixture",
+      "--os=invalid",
+      "--help"
+    ],
+    "exit": 2,
+    "invalid_option": "--os"
+  },
+  {
+    "argv": [
+      "-V",
+      "create",
+      "fixture",
+      "--os=linux",
+      "--help"
+    ],
+    "exit": 0,
+    "help": "numera create",
+    "help_flag": "--help"
+  },
+  {
+    "argv": [
+      "--unknown",
+      "--help"
+    ],
+    "exit": 0,
+    "help": "numera",
+    "help_flag": "--help"
+  },
+  {
+    "argv": [
+      "--unknown",
+      "--version"
+    ],
+    "exit": 0,
+    "version": "numera 0.36.0\n"
+  },
+  {
+    "argv": [
+      "--unknown",
+      "list",
+      "--help"
+    ],
+    "exit": 0,
+    "help": "numera list",
+    "help_flag": "--help"
+  },
+  {
+    "argv": [
+      "--unknown",
+      "jobs",
+      "--help"
+    ],
+    "exit": 0,
+    "help": "numera jobs",
+    "help_flag": "--help"
+  },
+  {
+    "argv": [
+      "--unknown=fixture",
+      "--help"
+    ],
+    "exit": 0,
+    "help": "numera",
+    "help_flag": "--help"
+  },
+  {
+    "argv": [
+      "--unknown=fixture",
+      "--version"
+    ],
+    "exit": 0,
+    "version": "numera 0.36.0\n"
+  },
+  {
+    "argv": [
+      "--unknown=fixture",
+      "list",
+      "--help"
+    ],
+    "exit": 0,
+    "help": "numera list",
+    "help_flag": "--help"
+  },
+  {
+    "argv": [
+      "--unknown=fixture",
+      "jobs",
+      "--help"
+    ],
+    "exit": 0,
+    "help": "numera jobs",
+    "help_flag": "--help"
+  },
+  {
+    "argv": [
+      "-x",
+      "--help"
+    ],
+    "exit": 0,
+    "help": "numera",
+    "help_flag": "--help"
+  },
+  {
+    "argv": [
+      "-x",
+      "--version"
+    ],
+    "exit": 0,
+    "version": "numera 0.36.0\n"
+  },
+  {
+    "argv": [
+      "-x",
+      "list",
+      "--help"
+    ],
+    "exit": 0,
+    "help": "numera list",
+    "help_flag": "--help"
+  },
+  {
+    "argv": [
+      "-x",
+      "jobs",
+      "--help"
+    ],
+    "exit": 0,
+    "help": "numera jobs",
+    "help_flag": "--help"
+  },
+  {
+    "argv": [
+      "--unknown",
+      "list"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "--unknown",
+      "jobs"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "--unknown",
+      "unknown",
+      "--help"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "--unknown",
+      "--password",
+      "--help"
+    ],
+    "exit": 2,
+    "invalid_option": "--password"
+  },
+  {
+    "argv": [
+      "--password",
+      "--unknown",
+      "--help"
+    ],
+    "exit": 2,
+    "invalid_option": "--password"
+  },
+  {
+    "argv": [
+      "--data-dir",
+      "--unknown",
+      "--help"
+    ],
+    "exit": 2,
+    "invalid_option": "--data-dir"
+  },
+  {
+    "argv": [
+      "--unknown",
+      "--password",
+      "-x",
+      "list",
+      "--help"
+    ],
+    "exit": 2,
+    "invalid_option": "--password"
+  },
+  {
+    "argv": [
+      "--unknown",
+      "create",
+      "--os=invalid",
+      "--help"
+    ],
+    "exit": 2,
+    "invalid_option": "--os"
+  },
+  {
+    "argv": [
+      "--unknown",
+      "create",
+      "--seed=invalid",
+      "--help"
+    ],
+    "exit": 2,
+    "invalid_option": "--seed"
+  },
+  {
+    "argv": [
+      "--unknown",
+      "warmup",
+      "fixture",
+      "--minutes=invalid",
+      "--help"
+    ],
+    "exit": 2,
+    "invalid_option": "--minutes"
+  },
+  {
+    "argv": [
+      "--unknown",
+      "--",
+      "--help"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "list",
+      "--unknown",
+      "--help"
+    ],
+    "exit": 0,
+    "help": "numera list",
+    "help_flag": "--help"
+  },
+  {
+    "argv": [
+      "show",
+      "fixture",
+      "extra",
+      "--help"
+    ],
+    "exit": 0,
+    "help": "numera show",
+    "help_flag": "--help"
+  },
+  {
+    "argv": [
+      "delete",
+      "fixture",
+      "-yx",
+      "--help"
+    ],
+    "exit": 0,
+    "help": "numera delete",
+    "help_flag": "--help"
+  },
+  {
+    "argv": [
+      "delete",
+      "fixture",
+      "-y=fixture",
+      "--help"
+    ],
+    "exit": 2,
+    "invalid_option": "--yes"
+  },
+  {
+    "argv": [
+      "delete",
+      "fixture",
+      "-yh=fixture"
+    ],
+    "exit": 2
+  },
+  {
+    "argv": [
+      "--password=--unknown",
+      "list"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": "--unknown",
+      "command": "list",
+      "json": false,
+      "detach": false,
+      "tag": null
+    }
+  },
+  {
+    "argv": [
+      "list",
+      "--tag=--unknown"
+    ],
+    "exit": 0,
+    "values": {
+      "data_dir": null,
+      "password": null,
+      "command": "list",
+      "json": false,
+      "detach": false,
+      "tag": "--unknown"
+    }
+  },
+  {
+    "argv": [
+      "--unknown",
+      "--version=fixture",
+      "--help"
+    ],
+    "exit": 2,
+    "invalid_option": "--version"
+  },
+  {
+    "argv": [
+      "--unknown",
+      "config",
+      "--default=fixture",
+      "--help"
+    ],
+    "exit": 2,
+    "invalid_option": "--default"
+  },
+  {
+    "argv": [
+      [
+        45,
+        86
+      ],
+      [
+        45,
+        45,
+        117,
+        110,
+        107,
+        110,
+        111,
+        119,
+        110,
+        61,
+        255
+      ],
+      [
+        45,
+        45,
+        118,
+        101,
+        114,
+        115,
+        105,
+        111,
+        110
+      ]
+    ],
+    "exit": 0,
+    "version": "numera 0.36.0\n"
+  },
+  {
+    "argv": [
+      [
+        45,
+        86
+      ],
+      [
+        45,
+        45,
+        112,
+        97,
+        115,
+        115,
+        119,
+        111,
+        114,
+        100
+      ],
+      [
+        255
+      ],
+      [
+        45,
+        45,
+        118,
+        101,
+        114,
+        115,
+        105,
+        111,
+        110
+      ]
+    ],
+    "exit": 0,
+    "version": "numera 0.36.0\n"
+  },
+  {
+    "argv": [
+      [
+        45,
+        86
+      ],
+      [
+        45,
+        45,
+        112,
+        97,
+        115,
+        115,
+        119,
+        111,
+        114,
+        100,
+        61,
+        255
+      ],
+      [
+        45,
+        45,
+        118,
+        101,
+        114,
+        115,
+        105,
+        111,
+        110
+      ]
+    ],
+    "exit": 0,
+    "version": "numera 0.36.0\n"
+  }
+]

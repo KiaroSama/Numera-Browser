@@ -1,6 +1,124 @@
 use numera_core::storage::first_run::run_if_needed;
 use std::{fs, path::PathBuf};
 
+#[cfg(unix)]
+mod common;
+#[cfg(unix)]
+#[path = "first_run_failure/copytree_errors.rs"]
+mod copytree_errors;
+#[cfg(unix)]
+#[path = "first_run_failure/profile_count.rs"]
+mod profile_count;
+#[cfg(unix)]
+#[path = "first_run_parity/support.rs"]
+mod support;
+
+#[cfg(unix)]
+#[test]
+fn fifo_import_matches_original_refusal_continuation_and_retry()
+-> Result<(), Box<dyn std::error::Error>> {
+    use numera_core::ownership::capture;
+    use serde_json::Value;
+    use std::{process::Command, time::Duration};
+
+    const TEST: &str = "fifo_import_matches_original_refusal_continuation_and_retry";
+    if let Some(document) = std::env::var_os("NUMERA_FIFO_IMPORT_FIXTURE") {
+        let cases: Vec<Value> = serde_json::from_slice(&fs::read(document)?)?;
+        for case in cases {
+            let source = PathBuf::from(case["source"].as_str().ok_or("Source missing")?);
+            let destination =
+                PathBuf::from(case["destination"].as_str().ok_or("Destination missing")?);
+            let first = run_if_needed(&destination, std::slice::from_ref(&source))?;
+            assert_eq!(
+                serde_json::to_value(first)?,
+                case["first"],
+                "First-run FIFO refusal differs"
+            );
+            assert_eq!(
+                destination.join(".imported").exists(),
+                case["marked"].as_bool().ok_or("Marker result missing")?
+            );
+            assert_eq!(
+                fs::read(destination.join("schedules.json"))?,
+                b"independent"
+            );
+            assert_eq!(fs::read(source.join("schedules.json"))?, b"independent");
+            let pipe = source.join(case["pipe"].as_str().ok_or("Pipe missing")?);
+            use std::os::unix::fs::FileTypeExt;
+            assert!(fs::symlink_metadata(&pipe)?.file_type().is_fifo());
+            fs::remove_file(&pipe)?;
+            fs::write(&pipe, b"retried")?;
+            let again = run_if_needed(&destination, std::slice::from_ref(&source))?;
+            assert_eq!(serde_json::to_value(again)?, case["again"]);
+            assert!(destination.join(".imported").is_file());
+            let expected: Vec<u8> = serde_json::from_value(case["written"].clone())?;
+            assert_eq!(
+                fs::read(destination.join(case["pipe"].as_str().ok_or("Pipe missing")?))?,
+                expected
+            );
+            assert_eq!(fs::read(&pipe)?, b"retried");
+        }
+        return Ok(());
+    }
+    let temporary = common::TempDirectory::new("fifo-import")?;
+    // Frozen immutable source observation; all native assertions below remain live.
+    let cases: Vec<Value> = support::load(
+        include_str!(
+            "fixtures/characterization/fifo_import_matches_original_refusal_continuation_and_retry.json"
+        ),
+        temporary.path(),
+    )?;
+    assert_eq!(cases.len(), 4, "FIFO import observations missing");
+    let document = temporary.path().join("observations.json");
+    for case in &cases {
+        let source = std::path::Path::new(case["source"].as_str().ok_or("Source missing")?);
+        let destination =
+            std::path::Path::new(case["destination"].as_str().ok_or("Destination missing")?);
+        fs::create_dir_all(source.join("profiles"))?;
+        fs::create_dir_all(destination)?;
+        fs::write(source.join("schedules.json"), b"independent")?;
+        let pipe = case["pipe"].as_str().ok_or("Pipe missing")?;
+        fifo(&source.join(pipe))?;
+        if case["marked"] == true {
+            let target = destination.join(pipe);
+            fs::create_dir_all(target.parent().ok_or("Parent missing")?)?;
+            fs::write(target, b"destination wins")?;
+        }
+    }
+    fs::write(&document, serde_json::to_vec(&cases)?)?;
+    let limits = || capture::Limits {
+        wall: Duration::from_secs(10),
+        idle: Duration::from_secs(8),
+        bytes: 65536,
+        cleanup: Duration::from_secs(5),
+    };
+    let mut command = Command::new(std::env::current_exe()?);
+    command
+        .args(["--exact", TEST, "--nocapture", "--test-threads=1"])
+        .env("NUMERA_FIFO_IMPORT_FIXTURE", &document);
+    let native = match capture::run(&mut command, limits()) {
+        Ok(output) => output,
+        Err(mut error) if error.kind() == std::io::ErrorKind::TimedOut => {
+            error.settle(Duration::from_secs(5))?;
+            panic!("First-run FIFO refusal differs: {error}");
+        }
+        Err(error) => return Err(error.into()),
+    };
+    assert_eq!(
+        native.exit,
+        0,
+        "Native FIFO import observer failed: {}",
+        String::from_utf8_lossy(&native.stderr)
+    );
+    let stdout = String::from_utf8(native.stdout)?;
+    assert!(
+        stdout.contains("running 1 test") && stdout.contains("test result: ok. 1 passed; 0 failed"),
+        "Native FIFO import observer did not run"
+    );
+    temporary.cleanup()?;
+    Ok(())
+}
+
 #[test]
 fn failed_first_run_remains_retryable_and_never_overwrites_the_obstruction()
 -> Result<(), Box<dyn std::error::Error>> {
@@ -40,4 +158,18 @@ fn failed_first_run_remains_retryable_and_never_overwrites_the_obstruction()
     })();
     fs::remove_dir_all(root)?;
     result
+}
+
+#[cfg(unix)]
+#[allow(unsafe_code)]
+fn fifo(path: &std::path::Path) -> std::io::Result<()> {
+    use std::os::unix::ffi::OsStrExt;
+    let path =
+        std::ffi::CString::new(path.as_os_str().as_bytes()).map_err(std::io::Error::other)?;
+    // SAFETY: NUL-terminated owned path; the file is created only in this test's root.
+    if unsafe { libc::mkfifo(path.as_ptr(), 0o600) } == 0 {
+        Ok(())
+    } else {
+        Err(std::io::Error::last_os_error())
+    }
 }

@@ -5,14 +5,6 @@ use std::io::{self, Write};
 
 pub fn config(fp: &Fingerprint) -> Result<Value, serde_json::Error> {
     let metadata = identity::metadata(fp)?;
-    let full = if fp.chrome_version.matches('.').count() == 3 {
-        fp.chrome_version.clone()
-    } else {
-        format!(
-            "{}.0.0.0",
-            fp.chrome_version.split('.').next().unwrap_or("")
-        )
-    };
     let fields = [
         ("platform", serde_json::to_value(&fp.platform)?),
         ("uaPlatform", fp.ch_platform.trim_matches('"').into()),
@@ -21,23 +13,23 @@ pub fn config(fp: &Fingerprint) -> Result<Value, serde_json::Error> {
             "platformVersion",
             identity::platform_version(&fp.os, &fp.os_version)?.into(),
         ),
-        ("fullVersion", full.into()),
+        ("fullVersion", identity::full_version(fp).into()),
         ("isMobile", fp.is_mobile.into()),
         ("architecture", metadata["architecture"].clone()),
-        ("hasUaData", (fp.os != "ios").into()),
+        ("hasUaData", identity::sends_client_hints(fp).into()),
         ("deviceModel", serde_json::to_value(&fp.device_model)?),
         ("hardwareConcurrency", fp.hardware_concurrency.into()),
         ("deviceMemory", fp.device_memory.clone()),
         ("maxTouchPoints", fp.max_touch_points.into()),
         (
             "devicePixelRatio",
-            serde_json::to_value(fp.device_pixel_ratio)?,
+            Value::Number(fp.device_pixel_ratio.clone()),
         ),
         ("languages", serde_json::to_value(&fp.languages)?),
         ("webglVendor", serde_json::to_value(&fp.webgl_vendor)?),
         ("webglRenderer", serde_json::to_value(&fp.webgl_renderer)?),
         ("webglImage", serde_json::to_value(&fp.webgl_image)?),
-        ("seed", fp.seed.into()),
+        ("seed", fp.seed.clone().into()),
         ("fonts", serde_json::to_value(&fp.fonts)?),
         ("cameras", fp.cameras.into()),
         ("microphones", fp.microphones.into()),
@@ -50,9 +42,22 @@ pub fn config(fp: &Fingerprint) -> Result<Value, serde_json::Error> {
         ("fontMode", serde_json::to_value(&fp.font_mode)?),
         ("doNotTrack", fp.do_not_track.into()),
     ];
-    Ok(Value::Object(Map::from_iter(
-        fields.into_iter().map(|(key, value)| (key.into(), value)),
-    )))
+    let mut config = Map::from_iter(fields.into_iter().map(|(key, value)| (key.into(), value)));
+    if let Some(mac) = identity::profile_mac_address(fp) {
+        config.insert("macAddress".into(), mac.into());
+        config.insert(
+            "macAddressMode".into(),
+            serde_json::to_value(fp.mac_address_mode)?,
+        );
+    }
+    if let Some(name) = fp
+        .device_name
+        .as_deref()
+        .filter(|value| crate::validation_identity::valid_device_name(value))
+    {
+        config.insert("deviceName".into(), name.into());
+    }
+    Ok(Value::Object(config))
 }
 
 pub(crate) fn write_ascii_fragment<W: ?Sized + Write>(
@@ -72,7 +77,7 @@ pub(crate) fn write_ascii_fragment<W: ?Sized + Write>(
     Ok(())
 }
 
-struct SourceJson;
+pub(crate) struct SourceJson;
 impl Formatter for SourceJson {
     fn begin_array_value<W: ?Sized + Write>(
         &mut self,
@@ -104,7 +109,7 @@ impl Formatter for SourceJson {
     }
 }
 
-/// Retain the original page script; Rust owns only its identity configuration.
+/// Initialize the compiler-generated Rust browser runtime before page scripts.
 pub fn build(fp: &Fingerprint) -> Result<String, serde_json::Error> {
     let value = config(fp)?;
     let mut bytes = Vec::new();
@@ -114,5 +119,35 @@ pub fn build(fp: &Fingerprint) -> Result<String, serde_json::Error> {
     let encoded = String::from_utf8(bytes).map_err(|error| {
         serde_json::Error::io(io::Error::new(io::ErrorKind::InvalidData, error))
     })?;
-    Ok(include_str!("identity_page.js").replacen("{{CONFIG}}", &encoded, 1))
+    Ok(crate::page_runtime::identity(&encoded))
+}
+
+#[cfg(test)]
+#[test]
+fn profile_identity_only_injects_valid_opt_in_values() -> Result<(), Box<dyn std::error::Error>> {
+    use crate::{
+        fingerprint::{GenerateOptions, generate},
+        models::MacAddressMode,
+    };
+    let mut fp = generate(GenerateOptions {
+        seed: 42_i64,
+        ..GenerateOptions::default()
+    })?;
+    let original = config(&fp)?;
+    assert!(original.get("macAddress").is_none());
+    assert!(original.get("deviceName").is_none());
+    fp.mac_address_mode = MacAddressMode::Manual;
+    fp.mac_address = Some("02:11:22:33:44:55".into());
+    fp.device_name = Some("Device_42.local".into());
+    let script = build(&fp)?;
+    assert!(script.contains("02:11:22:33:44:55"));
+    assert!(script.contains("Device_42.local"));
+    fp.mac_address = Some("not-a-mac".into());
+    fp.device_name = Some("bad device".into());
+    assert!(config(&fp)?.get("macAddress").is_none());
+    assert!(config(&fp)?.get("deviceName").is_none());
+    let issues = identity::validate(&fp)?;
+    assert!(issues.iter().any(|issue| issue == "invalid MAC address"));
+    assert!(issues.iter().any(|issue| issue == "invalid device name"));
+    Ok(())
 }

@@ -7,6 +7,8 @@ use serde_json::Value;
 use std::{collections::BTreeMap, fs, time::Duration};
 use tower::ServiceExt;
 mod common;
+#[path = "config_routes_parity/strict_settings.rs"]
+mod strict_settings;
 
 #[test]
 fn settings_http_validates_every_field_before_one_write_and_reports_stored_pool()
@@ -83,7 +85,12 @@ fn settings_http_validates_every_field_before_one_write_and_reports_stored_pool(
                 assert_eq!(body["root"], root.to_string_lossy().as_ref());
                 body["root"] = "<fixture-root>".into();
             }
-            assert_eq!(body, case["body"], "{}", case["name"]);
+            let mut expected = case["body"].clone();
+            if expected.get("version").and_then(Value::as_str) == Some("0.36.0") {
+                assert_eq!(body["version"], env!("CARGO_PKG_VERSION"));
+                expected["version"] = env!("CARGO_PKG_VERSION").into();
+            }
+            assert_eq!(body, expected, "{}", case["name"]);
             let bytes = fs::read(path)?;
             assert_eq!(
                 serde_json::from_slice::<Value>(&bytes)?,

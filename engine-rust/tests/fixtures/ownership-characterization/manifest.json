@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "scope": "historical ownership characterization; live process tests use compiled native fixtures",
+  "files": [
+    {
+      "file": "receipt-tokens.json",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_rust_file": "engine-rust/tests/ownership_receipt_parity.rs",
+      "observer_sha256": "b12340a9ba86f2d84edcbd1081aadb897a02a6a4575f671f729399cdcbac7d4e",
+      "sha256": "f582c44e9833f132de1cc8bfc62ae620354b61b3d78bd3b57fcd0b13944d5661",
+      "bytes": 17305
+    },
+    {
+      "file": "procfs-observation.json",
+      "source_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+      "source_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+      "observer_rust_file": "engine-rust/src/ownership/procfs_tests.rs",
+      "observer_sha256": "9feb41d9c0c32158986053b99c48d32e218853edb2aef60b797c779148087be1",
+      "sha256": "302deae0d08110fc5f517dd47f8d8cb5e54f029c33c2dce9f767c1858b470a7c",
+      "bytes": 922
+    }
+  ]
+}

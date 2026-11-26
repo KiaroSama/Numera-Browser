@@ -1,0 +1,13 @@
+name: Native entry replay and real browser performance
+description: Require the actual native application and its separately pinned checkpoint comparison.
+inputs:
+  engine:
+    description: Explicitly provisioned SDK backend
+    default: playwright
+runs:
+  using: composite
+  steps:
+    - name: Require native application acceptance and independent checkpoint measurements
+      uses: ./.github/actions/native-candidate-acceptance
+      with:
+        engine: ${{ inputs.engine }}

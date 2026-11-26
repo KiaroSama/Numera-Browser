@@ -1,0 +1,476 @@
+[
+  {
+    "rows": [
+      {
+        "profileId": "gone",
+        "everyHours": 1,
+        "minutes": 1,
+        "preset": "news",
+        "enabled": true,
+        "lastRun": null,
+        "createdAt": 0,
+        "future": {
+          "kept": "\u65e5\u672c\u8a9e"
+        }
+      },
+      {
+        "id": "later",
+        "profileId": "bad",
+        "everyHours": 1,
+        "minutes": 1,
+        "preset": "news",
+        "enabled": true,
+        "lastRun": null,
+        "createdAt": 0
+      }
+    ],
+    "profile": {
+      "id": "bad",
+      "name": "bad",
+      "seed": 42,
+      "proxy": {
+        "type": "INVALID",
+        "host": "fixture.test",
+        "port": "80"
+      }
+    },
+    "error": null,
+    "stored": [
+      {
+        "profileId": "gone",
+        "everyHours": 1,
+        "minutes": 1,
+        "preset": "news",
+        "enabled": true,
+        "lastRun": null,
+        "createdAt": 0,
+        "future": {
+          "kept": "\u65e5\u672c\u8a9e"
+        }
+      },
+      {
+        "id": "later",
+        "profileId": "bad",
+        "everyHours": 1,
+        "minutes": 1,
+        "preset": "news",
+        "enabled": true,
+        "lastRun": null,
+        "createdAt": 0,
+        "claimedBy": null,
+        "claimedAt": null,
+        "lastOutcome": "failed",
+        "lastError": "unsupported proxy type 'INVALID'; expected one of ['HTTP', 'HTTPS', 'SOCKS4', 'SOCKS5']",
+        "lastFailedAt": 1000.0
+      }
+    ]
+  },
+  {
+    "rows": [
+      {
+        "profileId": "gone",
+        "everyHours": 1,
+        "minutes": 1,
+        "preset": "news",
+        "enabled": true,
+        "lastRun": null,
+        "createdAt": 0,
+        "future": {
+          "kept": "\u65e5\u672c\u8a9e"
+        },
+        "id": null
+      },
+      {
+        "id": "later",
+        "profileId": "bad",
+        "everyHours": 1,
+        "minutes": 1,
+        "preset": "news",
+        "enabled": true,
+        "lastRun": null,
+        "createdAt": 0
+      }
+    ],
+    "profile": {
+      "id": "bad",
+      "name": "bad",
+      "seed": 42,
+      "proxy": {
+        "type": "INVALID",
+        "host": "fixture.test",
+        "port": "80"
+      }
+    },
+    "error": null,
+    "stored": [
+      {
+        "profileId": "gone",
+        "everyHours": 1,
+        "minutes": 1,
+        "preset": "news",
+        "enabled": true,
+        "lastRun": null,
+        "createdAt": 0,
+        "future": {
+          "kept": "\u65e5\u672c\u8a9e"
+        },
+        "id": null
+      },
+      {
+        "id": "later",
+        "profileId": "bad",
+        "everyHours": 1,
+        "minutes": 1,
+        "preset": "news",
+        "enabled": true,
+        "lastRun": null,
+        "createdAt": 0,
+        "claimedBy": null,
+        "claimedAt": null,
+        "lastOutcome": "failed",
+        "lastError": "unsupported proxy type 'INVALID'; expected one of ['HTTP', 'HTTPS', 'SOCKS4', 'SOCKS5']",
+        "lastFailedAt": 1000.0
+      }
+    ]
+  },
+  {
+    "rows": [
+      {
+        "profileId": "gone",
+        "everyHours": 1,
+        "minutes": 1,
+        "preset": "news",
+        "enabled": true,
+        "lastRun": null,
+        "createdAt": 0,
+        "future": {
+          "kept": "\u65e5\u672c\u8a9e"
+        },
+        "id": 7
+      },
+      {
+        "id": "later",
+        "profileId": "bad",
+        "everyHours": 1,
+        "minutes": 1,
+        "preset": "news",
+        "enabled": true,
+        "lastRun": null,
+        "createdAt": 0
+      }
+    ],
+    "profile": {
+      "id": "bad",
+      "name": "bad",
+      "seed": 42,
+      "proxy": {
+        "type": "INVALID",
+        "host": "fixture.test",
+        "port": "80"
+      }
+    },
+    "error": null,
+    "stored": [
+      {
+        "profileId": "gone",
+        "everyHours": 1,
+        "minutes": 1,
+        "preset": "news",
+        "enabled": true,
+        "lastRun": null,
+        "createdAt": 0,
+        "future": {
+          "kept": "\u65e5\u672c\u8a9e"
+        },
+        "id": 7
+      },
+      {
+        "id": "later",
+        "profileId": "bad",
+        "everyHours": 1,
+        "minutes": 1,
+        "preset": "news",
+        "enabled": true,
+        "lastRun": null,
+        "createdAt": 0,
+        "claimedBy": null,
+        "claimedAt": null,
+        "lastOutcome": "failed",
+        "lastError": "unsupported proxy type 'INVALID'; expected one of ['HTTP', 'HTTPS', 'SOCKS4', 'SOCKS5']",
+        "lastFailedAt": 1000.0
+      }
+    ]
+  },
+  {
+    "rows": [
+      {
+        "profileId": "gone",
+        "everyHours": 1,
+        "minutes": 1,
+        "preset": "news",
+        "enabled": true,
+        "lastRun": null,
+        "createdAt": 0,
+        "future": {
+          "kept": "\u65e5\u672c\u8a9e"
+        },
+        "id": []
+      },
+      {
+        "id": "later",
+        "profileId": "bad",
+        "everyHours": 1,
+        "minutes": 1,
+        "preset": "news",
+        "enabled": true,
+        "lastRun": null,
+        "createdAt": 0
+      }
+    ],
+    "profile": {
+      "id": "bad",
+      "name": "bad",
+      "seed": 42,
+      "proxy": {
+        "type": "INVALID",
+        "host": "fixture.test",
+        "port": "80"
+      }
+    },
+    "error": null,
+    "stored": [
+      {
+        "profileId": "gone",
+        "everyHours": 1,
+        "minutes": 1,
+        "preset": "news",
+        "enabled": true,
+        "lastRun": null,
+        "createdAt": 0,
+        "future": {
+          "kept": "\u65e5\u672c\u8a9e"
+        },
+        "id": []
+      },
+      {
+        "id": "later",
+        "profileId": "bad",
+        "everyHours": 1,
+        "minutes": 1,
+        "preset": "news",
+        "enabled": true,
+        "lastRun": null,
+        "createdAt": 0,
+        "claimedBy": null,
+        "claimedAt": null,
+        "lastOutcome": "failed",
+        "lastError": "unsupported proxy type 'INVALID'; expected one of ['HTTP', 'HTTPS', 'SOCKS4', 'SOCKS5']",
+        "lastFailedAt": 1000.0
+      }
+    ]
+  },
+  {
+    "rows": [
+      {
+        "profileId": "gone",
+        "everyHours": 1,
+        "minutes": 1,
+        "preset": "news",
+        "enabled": true,
+        "lastRun": null,
+        "createdAt": 0,
+        "future": {
+          "kept": "\u65e5\u672c\u8a9e"
+        },
+        "id": {}
+      },
+      {
+        "id": "later",
+        "profileId": "bad",
+        "everyHours": 1,
+        "minutes": 1,
+        "preset": "news",
+        "enabled": true,
+        "lastRun": null,
+        "createdAt": 0
+      }
+    ],
+    "profile": {
+      "id": "bad",
+      "name": "bad",
+      "seed": 42,
+      "proxy": {
+        "type": "INVALID",
+        "host": "fixture.test",
+        "port": "80"
+      }
+    },
+    "error": null,
+    "stored": [
+      {
+        "profileId": "gone",
+        "everyHours": 1,
+        "minutes": 1,
+        "preset": "news",
+        "enabled": true,
+        "lastRun": null,
+        "createdAt": 0,
+        "future": {
+          "kept": "\u65e5\u672c\u8a9e"
+        },
+        "id": {}
+      },
+      {
+        "id": "later",
+        "profileId": "bad",
+        "everyHours": 1,
+        "minutes": 1,
+        "preset": "news",
+        "enabled": true,
+        "lastRun": null,
+        "createdAt": 0,
+        "claimedBy": null,
+        "claimedAt": null,
+        "lastOutcome": "failed",
+        "lastError": "unsupported proxy type 'INVALID'; expected one of ['HTTP', 'HTTPS', 'SOCKS4', 'SOCKS5']",
+        "lastFailedAt": 1000.0
+      }
+    ]
+  },
+  {
+    "rows": [
+      {
+        "profileId": "gone",
+        "everyHours": 1,
+        "minutes": 1,
+        "preset": "news",
+        "enabled": true,
+        "lastRun": null,
+        "createdAt": 0,
+        "future": {
+          "kept": "\u65e5\u672c\u8a9e"
+        },
+        "id": ""
+      },
+      {
+        "id": "later",
+        "profileId": "bad",
+        "everyHours": 1,
+        "minutes": 1,
+        "preset": "news",
+        "enabled": true,
+        "lastRun": null,
+        "createdAt": 0
+      }
+    ],
+    "profile": {
+      "id": "bad",
+      "name": "bad",
+      "seed": 42,
+      "proxy": {
+        "type": "INVALID",
+        "host": "fixture.test",
+        "port": "80"
+      }
+    },
+    "error": null,
+    "stored": [
+      {
+        "profileId": "gone",
+        "everyHours": 1,
+        "minutes": 1,
+        "preset": "news",
+        "enabled": true,
+        "lastRun": null,
+        "createdAt": 0,
+        "future": {
+          "kept": "\u65e5\u672c\u8a9e"
+        },
+        "id": ""
+      },
+      {
+        "id": "later",
+        "profileId": "bad",
+        "everyHours": 1,
+        "minutes": 1,
+        "preset": "news",
+        "enabled": true,
+        "lastRun": null,
+        "createdAt": 0,
+        "claimedBy": null,
+        "claimedAt": null,
+        "lastOutcome": "failed",
+        "lastError": "unsupported proxy type 'INVALID'; expected one of ['HTTP', 'HTTPS', 'SOCKS4', 'SOCKS5']",
+        "lastFailedAt": 1000.0
+      }
+    ]
+  },
+  {
+    "rows": [
+      {
+        "profileId": "gone",
+        "everyHours": 1,
+        "minutes": 1,
+        "preset": "news",
+        "enabled": true,
+        "lastRun": null,
+        "createdAt": 0,
+        "future": {
+          "kept": "\u65e5\u672c\u8a9e"
+        },
+        "id": "missing-profile"
+      },
+      {
+        "id": "later",
+        "profileId": "bad",
+        "everyHours": 1,
+        "minutes": 1,
+        "preset": "news",
+        "enabled": true,
+        "lastRun": null,
+        "createdAt": 0
+      }
+    ],
+    "profile": {
+      "id": "bad",
+      "name": "bad",
+      "seed": 42,
+      "proxy": {
+        "type": "INVALID",
+        "host": "fixture.test",
+        "port": "80"
+      }
+    },
+    "error": null,
+    "stored": [
+      {
+        "profileId": "gone",
+        "everyHours": 1,
+        "minutes": 1,
+        "preset": "news",
+        "enabled": true,
+        "lastRun": null,
+        "createdAt": 0,
+        "future": {
+          "kept": "\u65e5\u672c\u8a9e"
+        },
+        "id": "missing-profile"
+      },
+      {
+        "id": "later",
+        "profileId": "bad",
+        "everyHours": 1,
+        "minutes": 1,
+        "preset": "news",
+        "enabled": true,
+        "lastRun": null,
+        "createdAt": 0,
+        "claimedBy": null,
+        "claimedAt": null,
+        "lastOutcome": "failed",
+        "lastError": "unsupported proxy type 'INVALID'; expected one of ['HTTP', 'HTTPS', 'SOCKS4', 'SOCKS5']",
+        "lastFailedAt": 1000.0
+      }
+    ]
+  }
+]

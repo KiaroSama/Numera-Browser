@@ -1,0 +1,3100 @@
+{
+  "schema": 1,
+  "baseline": "docs/rust-test-baseline.json",
+  "baseline_source_commit": "3bf1d839fd33e42a10b982bd8607a7052ea7c4cd",
+  "suite": "source_acceptance",
+  "count": 167,
+  "files": {
+    "tests/test_live_engine_contract.py": 51,
+    "tests/test_migration_cleanup.py": 22,
+    "tests/test_native_entry_acceptance.py": 32,
+    "tests/test_native_export_round_trip.py": 18,
+    "tests/test_native_http_replay.py": 16,
+    "tests/test_replay_contracts.py": 2,
+    "tests/test_self_command.py": 10,
+    "tests/test_update_admission.py": 16
+  },
+  "case_types": {
+    "parameterized": 117,
+    "standard": 50
+  },
+  "native_only": true,
+  "source_collection_platform": "linux",
+  "verification": {
+    "status": "passed",
+    "mapping_set_equals_frozen_baseline_subset": true,
+    "individually_reported_cases": 167,
+    "source_oracle_processes": 0,
+    "core": {
+      "passed": 44,
+      "failed": 0,
+      "ignored": 0,
+      "elapsed_seconds": 5.49,
+      "verified_on": "2026-11-13",
+      "strict_lint": "passed"
+    },
+    "xtask": {
+      "passed": 123,
+      "failed": 0,
+      "ignored": 0,
+      "elapsed_seconds": 2.99,
+      "verified_on": "2026-11-14",
+      "strict_lint": "passed: source_acceptance test target, -D warnings,8.45s",
+      "parallel_stress": {
+        "threads": 64,
+        "passed": 123,
+        "failed": 0,
+        "ignored": 0,
+        "elapsed_seconds": 1.45,
+        "verified_on": "2026-11-13"
+      }
+    },
+    "native_gate": {
+      "verified_on": "2026-11-13",
+      "native": true,
+      "cli": true,
+      "http": true,
+      "shared_store": true,
+      "handles_before": 4,
+      "handles_after": 4,
+      "threads_before": 1,
+      "threads_after": 1,
+      "panics": 0
+    }
+  },
+  "cases": [
+    {
+      "python_id": "tests/test_live_engine_contract.py::test_report_requires_both_selected_tests_to_pass[None]",
+      "rust_test": "live::test_report_requires_both_selected_tests_to_pass_none_dd19e7",
+      "rust_file": "tools/xtask/tests/source_acceptance/live.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "damage"
+      ],
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "adaptation": "Actual xtask CI evidence, workflow/release validators, compiler phase dispatch, bounded producers and stateful Cargo progress projection replace Python tools. Rust case/WASM inventories replace JUnit/TypeScript reports, compile-time whole-module exclusions retain only the two reviewed Windows POSIX domains, and locked Cargo metadata replaces pip-freeze auditing."
+    },
+    {
+      "python_id": "tests/test_live_engine_contract.py::test_report_requires_both_selected_tests_to_pass[missing]",
+      "rust_test": "live::test_report_requires_both_selected_tests_to_pass_missing_1c3afa",
+      "rust_file": "tools/xtask/tests/source_acceptance/live.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "damage"
+      ],
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "adaptation": "Actual xtask CI evidence, workflow/release validators, compiler phase dispatch, bounded producers and stateful Cargo progress projection replace Python tools. Rust case/WASM inventories replace JUnit/TypeScript reports, compile-time whole-module exclusions retain only the two reviewed Windows POSIX domains, and locked Cargo metadata replaces pip-freeze auditing."
+    },
+    {
+      "python_id": "tests/test_live_engine_contract.py::test_report_requires_both_selected_tests_to_pass[wrong-engine]",
+      "rust_test": "live::test_report_requires_both_selected_tests_to_pass_wrong_engine_728576",
+      "rust_file": "tools/xtask/tests/source_acceptance/live.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "damage"
+      ],
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "adaptation": "Actual xtask CI evidence, workflow/release validators, compiler phase dispatch, bounded producers and stateful Cargo progress projection replace Python tools. Rust case/WASM inventories replace JUnit/TypeScript reports, compile-time whole-module exclusions retain only the two reviewed Windows POSIX domains, and locked Cargo metadata replaces pip-freeze auditing."
+    },
+    {
+      "python_id": "tests/test_live_engine_contract.py::test_report_requires_both_selected_tests_to_pass[duplicate]",
+      "rust_test": "live::test_report_requires_both_selected_tests_to_pass_duplicate_b0fad9",
+      "rust_file": "tools/xtask/tests/source_acceptance/live.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "damage"
+      ],
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "adaptation": "Actual xtask CI evidence, workflow/release validators, compiler phase dispatch, bounded producers and stateful Cargo progress projection replace Python tools. Rust case/WASM inventories replace JUnit/TypeScript reports, compile-time whole-module exclusions retain only the two reviewed Windows POSIX domains, and locked Cargo metadata replaces pip-freeze auditing."
+    },
+    {
+      "python_id": "tests/test_live_engine_contract.py::test_report_requires_both_selected_tests_to_pass[skipped]",
+      "rust_test": "live::test_report_requires_both_selected_tests_to_pass_skipped_57cc3e",
+      "rust_file": "tools/xtask/tests/source_acceptance/live.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "damage"
+      ],
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "adaptation": "Actual xtask CI evidence, workflow/release validators, compiler phase dispatch, bounded producers and stateful Cargo progress projection replace Python tools. Rust case/WASM inventories replace JUnit/TypeScript reports, compile-time whole-module exclusions retain only the two reviewed Windows POSIX domains, and locked Cargo metadata replaces pip-freeze auditing."
+    },
+    {
+      "python_id": "tests/test_live_engine_contract.py::test_report_requires_both_selected_tests_to_pass[failure]",
+      "rust_test": "live::test_report_requires_both_selected_tests_to_pass_failure_a69a0a",
+      "rust_file": "tools/xtask/tests/source_acceptance/live.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "damage"
+      ],
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "adaptation": "Actual xtask CI evidence, workflow/release validators, compiler phase dispatch, bounded producers and stateful Cargo progress projection replace Python tools. Rust case/WASM inventories replace JUnit/TypeScript reports, compile-time whole-module exclusions retain only the two reviewed Windows POSIX domains, and locked Cargo metadata replaces pip-freeze auditing."
+    },
+    {
+      "python_id": "tests/test_live_engine_contract.py::test_report_requires_both_selected_tests_to_pass[error]",
+      "rust_test": "live::test_report_requires_both_selected_tests_to_pass_error_27023b",
+      "rust_file": "tools/xtask/tests/source_acceptance/live.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "damage"
+      ],
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "adaptation": "Actual xtask CI evidence, workflow/release validators, compiler phase dispatch, bounded producers and stateful Cargo progress projection replace Python tools. Rust case/WASM inventories replace JUnit/TypeScript reports, compile-time whole-module exclusions retain only the two reviewed Windows POSIX domains, and locked Cargo metadata replaces pip-freeze auditing."
+    },
+    {
+      "python_id": "tests/test_live_engine_contract.py::test_missing_report_and_browser_are_failures",
+      "rust_test": "live::test_missing_report_and_browser_are_failures",
+      "rust_file": "tools/xtask/tests/source_acceptance/live.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Actual xtask CI evidence, workflow/release validators, compiler phase dispatch, bounded producers and stateful Cargo progress projection replace Python tools. Rust case/WASM inventories replace JUnit/TypeScript reports, compile-time whole-module exclusions retain only the two reviewed Windows POSIX domains, and locked Cargo metadata replaces pip-freeze auditing."
+    },
+    {
+      "python_id": "tests/test_live_engine_contract.py::test_native_handoff_exports_only_the_verified_cloak_path",
+      "rust_test": "live::test_native_handoff_exports_only_the_verified_cloak_path",
+      "rust_file": "tools/xtask/tests/source_acceptance/live.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Actual xtask CI evidence, workflow/release validators, compiler phase dispatch, bounded producers and stateful Cargo progress projection replace Python tools. Rust case/WASM inventories replace JUnit/TypeScript reports, compile-time whole-module exclusions retain only the two reviewed Windows POSIX domains, and locked Cargo metadata replaces pip-freeze auditing."
+    },
+    {
+      "python_id": "tests/test_live_engine_contract.py::test_native_handoff_rejects_environment_injection[\\n]",
+      "rust_test": "live::test_native_handoff_rejects_environment_injection_n_0bdb05",
+      "rust_file": "tools/xtask/tests/source_acceptance/live.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "control"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Actual xtask CI evidence, workflow/release validators, compiler phase dispatch, bounded producers and stateful Cargo progress projection replace Python tools. Rust case/WASM inventories replace JUnit/TypeScript reports, compile-time whole-module exclusions retain only the two reviewed Windows POSIX domains, and locked Cargo metadata replaces pip-freeze auditing."
+    },
+    {
+      "python_id": "tests/test_live_engine_contract.py::test_native_handoff_rejects_environment_injection[\\r]",
+      "rust_test": "live::test_native_handoff_rejects_environment_injection_r_76c9a0",
+      "rust_file": "tools/xtask/tests/source_acceptance/live.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "control"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Actual xtask CI evidence, workflow/release validators, compiler phase dispatch, bounded producers and stateful Cargo progress projection replace Python tools. Rust case/WASM inventories replace JUnit/TypeScript reports, compile-time whole-module exclusions retain only the two reviewed Windows POSIX domains, and locked Cargo metadata replaces pip-freeze auditing."
+    },
+    {
+      "python_id": "tests/test_live_engine_contract.py::test_native_handoff_rejects_environment_injection[\\x00]",
+      "rust_test": "live::test_native_handoff_rejects_environment_injection_x00_e3569e",
+      "rust_file": "tools/xtask/tests/source_acceptance/live.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "control"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Actual xtask CI evidence, workflow/release validators, compiler phase dispatch, bounded producers and stateful Cargo progress projection replace Python tools. Rust case/WASM inventories replace JUnit/TypeScript reports, compile-time whole-module exclusions retain only the two reviewed Windows POSIX domains, and locked Cargo metadata replaces pip-freeze auditing."
+    },
+    {
+      "python_id": "tests/test_live_engine_contract.py::test_native_handoff_rejects_environment_injection[\\x1f]",
+      "rust_test": "live::test_native_handoff_rejects_environment_injection_x1f_20c1c4",
+      "rust_file": "tools/xtask/tests/source_acceptance/live.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "control"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Actual xtask CI evidence, workflow/release validators, compiler phase dispatch, bounded producers and stateful Cargo progress projection replace Python tools. Rust case/WASM inventories replace JUnit/TypeScript reports, compile-time whole-module exclusions retain only the two reviewed Windows POSIX domains, and locked Cargo metadata replaces pip-freeze auditing."
+    },
+    {
+      "python_id": "tests/test_live_engine_contract.py::test_native_handoff_rejects_environment_injection[\\x7f]",
+      "rust_test": "live::test_native_handoff_rejects_environment_injection_x7f_28d792",
+      "rust_file": "tools/xtask/tests/source_acceptance/live.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "control"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Actual xtask CI evidence, workflow/release validators, compiler phase dispatch, bounded producers and stateful Cargo progress projection replace Python tools. Rust case/WASM inventories replace JUnit/TypeScript reports, compile-time whole-module exclusions retain only the two reviewed Windows POSIX domains, and locked Cargo metadata replaces pip-freeze auditing."
+    },
+    {
+      "python_id": "tests/test_live_engine_contract.py::test_every_supported_engine_is_required_on_both_platforms",
+      "rust_test": "live::test_every_supported_engine_is_required_on_both_platforms",
+      "rust_file": "tools/xtask/tests/source_acceptance/live.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "original_parameters": [],
+      "original_fixtures": [],
+      "adaptation": "Parses actual native-ci.yml live matrix: four mandatory engines on Linux/Windows, bounded two-way concurrency, complete required-job topology and native SDK action. The legacy manual ci.yml now owns signed artifact review rather than automatic SDK acceptance."
+    },
+    {
+      "python_id": "tests/test_live_engine_contract.py::test_release_downloads_and_publishes_only_verified_manifest_products",
+      "rust_test": "live::test_release_downloads_and_publishes_only_verified_manifest_products",
+      "rust_file": "tools/xtask/tests/source_acceptance/live.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "original_parameters": [],
+      "original_fixtures": [],
+      "adaptation": "Real native distribution hash/source/extra-asset refusal controls remain. Actual owner-only read-only workflows require signed-product-review after download and exact-source CodeQL; removing or softening verification is refused. No release publication is performed by the migrated workflow."
+    },
+    {
+      "python_id": "tests/test_live_engine_contract.py::test_independent_native_acceptance_precedes_the_required_benchmark[None]",
+      "rust_test": "live::test_independent_native_acceptance_precedes_the_required_benchmark_none_8d61b2",
+      "rust_file": "tools/xtask/tests/source_acceptance/live.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "damage"
+      ],
+      "original_fixtures": [],
+      "adaptation": "Actual xtask CI evidence, workflow/release validators, compiler phase dispatch, bounded producers and stateful Cargo progress projection replace Python tools. Rust case/WASM inventories replace JUnit/TypeScript reports, compile-time whole-module exclusions retain only the two reviewed Windows POSIX domains, and locked Cargo metadata replaces pip-freeze auditing."
+    },
+    {
+      "python_id": "tests/test_live_engine_contract.py::test_independent_native_acceptance_precedes_the_required_benchmark[old-order]",
+      "rust_test": "live::test_independent_native_acceptance_precedes_the_required_benchmark_old_order_9d5fd6",
+      "rust_file": "tools/xtask/tests/source_acceptance/live.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "damage"
+      ],
+      "original_fixtures": [],
+      "adaptation": "Actual xtask CI evidence, workflow/release validators, compiler phase dispatch, bounded producers and stateful Cargo progress projection replace Python tools. Rust case/WASM inventories replace JUnit/TypeScript reports, compile-time whole-module exclusions retain only the two reviewed Windows POSIX domains, and locked Cargo metadata replaces pip-freeze auditing."
+    },
+    {
+      "python_id": "tests/test_live_engine_contract.py::test_independent_native_acceptance_precedes_the_required_benchmark[missing]",
+      "rust_test": "live::test_independent_native_acceptance_precedes_the_required_benchmark_missing_f9c561",
+      "rust_file": "tools/xtask/tests/source_acceptance/live.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "damage"
+      ],
+      "original_fixtures": [],
+      "adaptation": "Actual xtask CI evidence, workflow/release validators, compiler phase dispatch, bounded producers and stateful Cargo progress projection replace Python tools. Rust case/WASM inventories replace JUnit/TypeScript reports, compile-time whole-module exclusions retain only the two reviewed Windows POSIX domains, and locked Cargo metadata replaces pip-freeze auditing."
+    },
+    {
+      "python_id": "tests/test_live_engine_contract.py::test_independent_native_acceptance_precedes_the_required_benchmark[duplicate]",
+      "rust_test": "live::test_independent_native_acceptance_precedes_the_required_benchmark_duplicate_f9998d",
+      "rust_file": "tools/xtask/tests/source_acceptance/live.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "damage"
+      ],
+      "original_fixtures": [],
+      "adaptation": "Actual xtask CI evidence, workflow/release validators, compiler phase dispatch, bounded producers and stateful Cargo progress projection replace Python tools. Rust case/WASM inventories replace JUnit/TypeScript reports, compile-time whole-module exclusions retain only the two reviewed Windows POSIX domains, and locked Cargo metadata replaces pip-freeze auditing."
+    },
+    {
+      "python_id": "tests/test_live_engine_contract.py::test_native_development_optimizes_real_crypto_without_weakening_checks",
+      "rust_test": "live::test_native_development_optimizes_real_crypto_without_weakening_checks",
+      "rust_file": "tools/xtask/tests/source_acceptance/live.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "original_parameters": [],
+      "original_fixtures": [],
+      "adaptation": "Actual xtask CI evidence, workflow/release validators, compiler phase dispatch, bounded producers and stateful Cargo progress projection replace Python tools. Rust case/WASM inventories replace JUnit/TypeScript reports, compile-time whole-module exclusions retain only the two reviewed Windows POSIX domains, and locked Cargo metadata replaces pip-freeze auditing."
+    },
+    {
+      "python_id": "tests/test_live_engine_contract.py::test_discovered_native_targets_are_all_selected_and_build_is_separate",
+      "rust_test": "live::test_discovered_native_targets_are_all_selected_and_build_is_separate",
+      "rust_file": "tools/xtask/tests/source_acceptance/live.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "original_parameters": [],
+      "original_fixtures": [],
+      "adaptation": "Actual xtask CI evidence, workflow/release validators, compiler phase dispatch, bounded producers and stateful Cargo progress projection replace Python tools. Rust case/WASM inventories replace JUnit/TypeScript reports, compile-time whole-module exclusions retain only the two reviewed Windows POSIX domains, and locked Cargo metadata replaces pip-freeze auditing."
+    },
+    {
+      "python_id": "tests/test_live_engine_contract.py::test_native_history_precedes_fixed_build_and_never_runs_in_fixed_test[None]",
+      "rust_test": "live::test_native_history_precedes_fixed_build_and_never_runs_in_fixed_test_none_b75a6d",
+      "rust_file": "tools/xtask/tests/source_acceptance/live.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "monkeypatch",
+        "damage"
+      ],
+      "original_fixtures": [
+        "monkeypatch"
+      ],
+      "adaptation": "Actual xtask CI evidence, workflow/release validators, compiler phase dispatch, bounded producers and stateful Cargo progress projection replace Python tools. Rust case/WASM inventories replace JUnit/TypeScript reports, compile-time whole-module exclusions retain only the two reviewed Windows POSIX domains, and locked Cargo metadata replaces pip-freeze auditing."
+    },
+    {
+      "python_id": "tests/test_live_engine_contract.py::test_native_history_precedes_fixed_build_and_never_runs_in_fixed_test[fetch]",
+      "rust_test": "live::test_native_history_precedes_fixed_build_and_never_runs_in_fixed_test_fetch_7fb2cb",
+      "rust_file": "tools/xtask/tests/source_acceptance/live.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "monkeypatch",
+        "damage"
+      ],
+      "original_fixtures": [
+        "monkeypatch"
+      ],
+      "adaptation": "Actual xtask CI evidence, workflow/release validators, compiler phase dispatch, bounded producers and stateful Cargo progress projection replace Python tools. Rust case/WASM inventories replace JUnit/TypeScript reports, compile-time whole-module exclusions retain only the two reviewed Windows POSIX domains, and locked Cargo metadata replaces pip-freeze auditing."
+    },
+    {
+      "python_id": "tests/test_live_engine_contract.py::test_native_history_precedes_fixed_build_and_never_runs_in_fixed_test[proof]",
+      "rust_test": "live::test_native_history_precedes_fixed_build_and_never_runs_in_fixed_test_proof_a56dbb",
+      "rust_file": "tools/xtask/tests/source_acceptance/live.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "monkeypatch",
+        "damage"
+      ],
+      "original_fixtures": [
+        "monkeypatch"
+      ],
+      "adaptation": "Actual xtask CI evidence, workflow/release validators, compiler phase dispatch, bounded producers and stateful Cargo progress projection replace Python tools. Rust case/WASM inventories replace JUnit/TypeScript reports, compile-time whole-module exclusions retain only the two reviewed Windows POSIX domains, and locked Cargo metadata replaces pip-freeze auditing."
+    },
+    {
+      "python_id": "tests/test_live_engine_contract.py::test_native_progress_projects_artifacts_without_exposing_cargo_payloads[build-0]",
+      "rust_test": "live::test_native_progress_projects_artifacts_without_exposing_cargo_payloads_build_0_5774a0",
+      "rust_file": "tools/xtask/tests/source_acceptance/live.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "monkeypatch",
+        "capsys",
+        "exit_code",
+        "phase"
+      ],
+      "original_fixtures": [
+        "monkeypatch",
+        "capsys"
+      ],
+      "adaptation": "Actual xtask CI evidence, workflow/release validators, compiler phase dispatch, bounded producers and stateful Cargo progress projection replace Python tools. Rust case/WASM inventories replace JUnit/TypeScript reports, compile-time whole-module exclusions retain only the two reviewed Windows POSIX domains, and locked Cargo metadata replaces pip-freeze auditing."
+    },
+    {
+      "python_id": "tests/test_live_engine_contract.py::test_native_progress_projects_artifacts_without_exposing_cargo_payloads[build-101]",
+      "rust_test": "live::test_native_progress_projects_artifacts_without_exposing_cargo_payloads_build_101_0bd2e9",
+      "rust_file": "tools/xtask/tests/source_acceptance/live.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "monkeypatch",
+        "capsys",
+        "exit_code",
+        "phase"
+      ],
+      "original_fixtures": [
+        "monkeypatch",
+        "capsys"
+      ],
+      "adaptation": "Actual xtask CI evidence, workflow/release validators, compiler phase dispatch, bounded producers and stateful Cargo progress projection replace Python tools. Rust case/WASM inventories replace JUnit/TypeScript reports, compile-time whole-module exclusions retain only the two reviewed Windows POSIX domains, and locked Cargo metadata replaces pip-freeze auditing."
+    },
+    {
+      "python_id": "tests/test_live_engine_contract.py::test_native_progress_projects_artifacts_without_exposing_cargo_payloads[test-0]",
+      "rust_test": "live::test_native_progress_projects_artifacts_without_exposing_cargo_payloads_test_0_75e841",
+      "rust_file": "tools/xtask/tests/source_acceptance/live.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "monkeypatch",
+        "capsys",
+        "exit_code",
+        "phase"
+      ],
+      "original_fixtures": [
+        "monkeypatch",
+        "capsys"
+      ],
+      "adaptation": "Actual xtask CI evidence, workflow/release validators, compiler phase dispatch, bounded producers and stateful Cargo progress projection replace Python tools. Rust case/WASM inventories replace JUnit/TypeScript reports, compile-time whole-module exclusions retain only the two reviewed Windows POSIX domains, and locked Cargo metadata replaces pip-freeze auditing."
+    },
+    {
+      "python_id": "tests/test_live_engine_contract.py::test_native_progress_projects_artifacts_without_exposing_cargo_payloads[test-101]",
+      "rust_test": "live::test_native_progress_projects_artifacts_without_exposing_cargo_payloads_test_101_5a0a1a",
+      "rust_file": "tools/xtask/tests/source_acceptance/live.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "monkeypatch",
+        "capsys",
+        "exit_code",
+        "phase"
+      ],
+      "original_fixtures": [
+        "monkeypatch",
+        "capsys"
+      ],
+      "adaptation": "Actual xtask CI evidence, workflow/release validators, compiler phase dispatch, bounded producers and stateful Cargo progress projection replace Python tools. Rust case/WASM inventories replace JUnit/TypeScript reports, compile-time whole-module exclusions retain only the two reviewed Windows POSIX domains, and locked Cargo metadata replaces pip-freeze auditing."
+    },
+    {
+      "python_id": "tests/test_live_engine_contract.py::test_suite_report_rejects_omissions_false_green_and_missing_prerequisites[None]",
+      "rust_test": "live::test_suite_report_rejects_omissions_false_green_and_missing_prerequisites_none_10624b",
+      "rust_file": "tools/xtask/tests/source_acceptance/live.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "damage"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Actual xtask CI evidence, workflow/release validators, compiler phase dispatch, bounded producers and stateful Cargo progress projection replace Python tools. Rust case/WASM inventories replace JUnit/TypeScript reports, compile-time whole-module exclusions retain only the two reviewed Windows POSIX domains, and locked Cargo metadata replaces pip-freeze auditing."
+    },
+    {
+      "python_id": "tests/test_live_engine_contract.py::test_suite_report_rejects_omissions_false_green_and_missing_prerequisites[missing]",
+      "rust_test": "live::test_suite_report_rejects_omissions_false_green_and_missing_prerequisites_missing_f83784",
+      "rust_file": "tools/xtask/tests/source_acceptance/live.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "damage"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Actual xtask CI evidence, workflow/release validators, compiler phase dispatch, bounded producers and stateful Cargo progress projection replace Python tools. Rust case/WASM inventories replace JUnit/TypeScript reports, compile-time whole-module exclusions retain only the two reviewed Windows POSIX domains, and locked Cargo metadata replaces pip-freeze auditing."
+    },
+    {
+      "python_id": "tests/test_live_engine_contract.py::test_suite_report_rejects_omissions_false_green_and_missing_prerequisites[prerequisite-skip]",
+      "rust_test": "live::test_suite_report_rejects_omissions_false_green_and_missing_prerequisites_prerequisite_skip_536fe9",
+      "rust_file": "tools/xtask/tests/source_acceptance/live.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "damage"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Actual xtask CI evidence, workflow/release validators, compiler phase dispatch, bounded producers and stateful Cargo progress projection replace Python tools. Rust case/WASM inventories replace JUnit/TypeScript reports, compile-time whole-module exclusions retain only the two reviewed Windows POSIX domains, and locked Cargo metadata replaces pip-freeze auditing."
+    },
+    {
+      "python_id": "tests/test_live_engine_contract.py::test_suite_report_rejects_omissions_false_green_and_missing_prerequisites[failed]",
+      "rust_test": "live::test_suite_report_rejects_omissions_false_green_and_missing_prerequisites_failed_19a983",
+      "rust_file": "tools/xtask/tests/source_acceptance/live.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "damage"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Actual xtask CI evidence, workflow/release validators, compiler phase dispatch, bounded producers and stateful Cargo progress projection replace Python tools. Rust case/WASM inventories replace JUnit/TypeScript reports, compile-time whole-module exclusions retain only the two reviewed Windows POSIX domains, and locked Cargo metadata replaces pip-freeze auditing."
+    },
+    {
+      "python_id": "tests/test_live_engine_contract.py::test_suite_report_rejects_omissions_false_green_and_missing_prerequisites[unexpected]",
+      "rust_test": "live::test_suite_report_rejects_omissions_false_green_and_missing_prerequisites_unexpected_b3d807",
+      "rust_file": "tools/xtask/tests/source_acceptance/live.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "damage"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Actual xtask CI evidence, workflow/release validators, compiler phase dispatch, bounded producers and stateful Cargo progress projection replace Python tools. Rust case/WASM inventories replace JUnit/TypeScript reports, compile-time whole-module exclusions retain only the two reviewed Windows POSIX domains, and locked Cargo metadata replaces pip-freeze auditing."
+    },
+    {
+      "python_id": "tests/test_live_engine_contract.py::test_suite_report_rejects_omissions_false_green_and_missing_prerequisites[wholly-capability-skipped]",
+      "rust_test": "live::test_suite_report_rejects_omissions_false_green_and_missing_prerequisites_wholly_capability_skipped_221689",
+      "rust_file": "tools/xtask/tests/source_acceptance/live.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "damage"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Actual xtask CI evidence, workflow/release validators, compiler phase dispatch, bounded producers and stateful Cargo progress projection replace Python tools. Rust case/WASM inventories replace JUnit/TypeScript reports, compile-time whole-module exclusions retain only the two reviewed Windows POSIX domains, and locked Cargo metadata replaces pip-freeze auditing."
+    },
+    {
+      "python_id": "tests/test_live_engine_contract.py::test_suite_report_rejects_omissions_false_green_and_missing_prerequisites[xfail]",
+      "rust_test": "live::test_suite_report_rejects_omissions_false_green_and_missing_prerequisites_xfail_cd3911",
+      "rust_file": "tools/xtask/tests/source_acceptance/live.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "damage"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Actual xtask CI evidence, workflow/release validators, compiler phase dispatch, bounded producers and stateful Cargo progress projection replace Python tools. Rust case/WASM inventories replace JUnit/TypeScript reports, compile-time whole-module exclusions retain only the two reviewed Windows POSIX domains, and locked Cargo metadata replaces pip-freeze auditing."
+    },
+    {
+      "python_id": "tests/test_live_engine_contract.py::test_whole_module_os_exceptions_do_not_waive_mixed_platform_suites[win32-test_posix_observation_errors-POSIX process-group observation-True]",
+      "rust_test": "live::test_whole_module_os_exceptions_do_not_waive_mixed_platform_suites_win32_test_posix_observation_errors_posix_process_group_observation_true_475014",
+      "rust_file": "tools/xtask/tests/source_acceptance/live.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "platform",
+        "module",
+        "reason",
+        "accepted"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Actual xtask CI evidence, workflow/release validators, compiler phase dispatch, bounded producers and stateful Cargo progress projection replace Python tools. Rust case/WASM inventories replace JUnit/TypeScript reports, compile-time whole-module exclusions retain only the two reviewed Windows POSIX domains, and locked Cargo metadata replaces pip-freeze auditing."
+    },
+    {
+      "python_id": "tests/test_live_engine_contract.py::test_whole_module_os_exceptions_do_not_waive_mixed_platform_suites[win32-test_shell_death_cleanup-Windows owns the engine through a job object-True]",
+      "rust_test": "live::test_whole_module_os_exceptions_do_not_waive_mixed_platform_suites_win32_test_shell_death_cleanup_windows_owns_the_engine_through_a_job_object_true_4de299",
+      "rust_file": "tools/xtask/tests/source_acceptance/live.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "platform",
+        "module",
+        "reason",
+        "accepted"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Actual xtask CI evidence, workflow/release validators, compiler phase dispatch, bounded producers and stateful Cargo progress projection replace Python tools. Rust case/WASM inventories replace JUnit/TypeScript reports, compile-time whole-module exclusions retain only the two reviewed Windows POSIX domains, and locked Cargo metadata replaces pip-freeze auditing."
+    },
+    {
+      "python_id": "tests/test_live_engine_contract.py::test_whole_module_os_exceptions_do_not_waive_mixed_platform_suites[linux-test_posix_observation_errors-POSIX process-group observation-False]",
+      "rust_test": "live::test_whole_module_os_exceptions_do_not_waive_mixed_platform_suites_linux_test_posix_observation_errors_posix_process_group_observation_false_29346e",
+      "rust_file": "tools/xtask/tests/source_acceptance/live.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "platform",
+        "module",
+        "reason",
+        "accepted"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Actual xtask CI evidence, workflow/release validators, compiler phase dispatch, bounded producers and stateful Cargo progress projection replace Python tools. Rust case/WASM inventories replace JUnit/TypeScript reports, compile-time whole-module exclusions retain only the two reviewed Windows POSIX domains, and locked Cargo metadata replaces pip-freeze auditing."
+    },
+    {
+      "python_id": "tests/test_live_engine_contract.py::test_whole_module_os_exceptions_do_not_waive_mixed_platform_suites[darwin-test_posix_observation_errors-requires Linux procfs-False]",
+      "rust_test": "live::test_whole_module_os_exceptions_do_not_waive_mixed_platform_suites_darwin_test_posix_observation_errors_requires_linux_procfs_false_23cbd1",
+      "rust_file": "tools/xtask/tests/source_acceptance/live.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "platform",
+        "module",
+        "reason",
+        "accepted"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Actual xtask CI evidence, workflow/release validators, compiler phase dispatch, bounded producers and stateful Cargo progress projection replace Python tools. Rust case/WASM inventories replace JUnit/TypeScript reports, compile-time whole-module exclusions retain only the two reviewed Windows POSIX domains, and locked Cargo metadata replaces pip-freeze auditing."
+    },
+    {
+      "python_id": "tests/test_live_engine_contract.py::test_whole_module_os_exceptions_do_not_waive_mixed_platform_suites[win32-test_parent_ownership-liveness is only answerable on POSIX-False]",
+      "rust_test": "live::test_whole_module_os_exceptions_do_not_waive_mixed_platform_suites_win32_test_parent_ownership_liveness_is_only_answerable_on_posix_false_936d87",
+      "rust_file": "tools/xtask/tests/source_acceptance/live.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "platform",
+        "module",
+        "reason",
+        "accepted"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Actual xtask CI evidence, workflow/release validators, compiler phase dispatch, bounded producers and stateful Cargo progress projection replace Python tools. Rust case/WASM inventories replace JUnit/TypeScript reports, compile-time whole-module exclusions retain only the two reviewed Windows POSIX domains, and locked Cargo metadata replaces pip-freeze auditing."
+    },
+    {
+      "python_id": "tests/test_live_engine_contract.py::test_native_guard_rejects_ignored_library_cases[#[ignore]]",
+      "rust_test": "live::test_native_guard_rejects_ignored_library_cases_ignore_92a7b8",
+      "rust_file": "tools/xtask/tests/source_acceptance/live.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "attribute"
+      ],
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "adaptation": "Actual xtask CI evidence, workflow/release validators, compiler phase dispatch, bounded producers and stateful Cargo progress projection replace Python tools. Rust case/WASM inventories replace JUnit/TypeScript reports, compile-time whole-module exclusions retain only the two reviewed Windows POSIX domains, and locked Cargo metadata replaces pip-freeze auditing."
+    },
+    {
+      "python_id": "tests/test_live_engine_contract.py::test_native_guard_rejects_ignored_library_cases[#[ignore = \"unmapped\"]]",
+      "rust_test": "live::test_native_guard_rejects_ignored_library_cases_ignore_unmapped_424208",
+      "rust_file": "tools/xtask/tests/source_acceptance/live.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "attribute"
+      ],
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "adaptation": "Actual xtask CI evidence, workflow/release validators, compiler phase dispatch, bounded producers and stateful Cargo progress projection replace Python tools. Rust case/WASM inventories replace JUnit/TypeScript reports, compile-time whole-module exclusions retain only the two reviewed Windows POSIX domains, and locked Cargo metadata replaces pip-freeze auditing."
+    },
+    {
+      "python_id": "tests/test_live_engine_contract.py::test_python_audit_excludes_only_local_distribution_and_keeps_every_dependency",
+      "rust_test": "live::test_python_audit_excludes_only_local_distribution_and_keeps_every_dependency",
+      "rust_file": "tools/xtask/tests/source_acceptance/live.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "original_parameters": [],
+      "original_fixtures": [],
+      "adaptation": "Actual xtask CI evidence, workflow/release validators, compiler phase dispatch, bounded producers and stateful Cargo progress projection replace Python tools. Rust case/WASM inventories replace JUnit/TypeScript reports, compile-time whole-module exclusions retain only the two reviewed Windows POSIX domains, and locked Cargo metadata replaces pip-freeze auditing."
+    },
+    {
+      "python_id": "tests/test_live_engine_contract.py::test_utf8_gate_rejects_invalid_text_without_decoding_binary",
+      "rust_test": "live::test_utf8_gate_rejects_invalid_text_without_decoding_binary",
+      "rust_file": "tools/xtask/tests/source_acceptance/live.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path"
+      ],
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "adaptation": "Actual xtask CI evidence, workflow/release validators, compiler phase dispatch, bounded producers and stateful Cargo progress projection replace Python tools. Rust case/WASM inventories replace JUnit/TypeScript reports, compile-time whole-module exclusions retain only the two reviewed Windows POSIX domains, and locked Cargo metadata replaces pip-freeze auditing."
+    },
+    {
+      "python_id": "tests/test_live_engine_contract.py::test_dashboard_guard_requires_every_discovered_file_and_actual_pass[None]",
+      "rust_test": "live::test_dashboard_guard_requires_every_discovered_file_and_actual_pass_none_bf61fe",
+      "rust_file": "tools/xtask/tests/source_acceptance/live.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "damage"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Actual xtask CI evidence, workflow/release validators, compiler phase dispatch, bounded producers and stateful Cargo progress projection replace Python tools. Rust case/WASM inventories replace JUnit/TypeScript reports, compile-time whole-module exclusions retain only the two reviewed Windows POSIX domains, and locked Cargo metadata replaces pip-freeze auditing."
+    },
+    {
+      "python_id": "tests/test_live_engine_contract.py::test_dashboard_guard_requires_every_discovered_file_and_actual_pass[missing]",
+      "rust_test": "live::test_dashboard_guard_requires_every_discovered_file_and_actual_pass_missing_787b81",
+      "rust_file": "tools/xtask/tests/source_acceptance/live.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "damage"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Actual xtask CI evidence, workflow/release validators, compiler phase dispatch, bounded producers and stateful Cargo progress projection replace Python tools. Rust case/WASM inventories replace JUnit/TypeScript reports, compile-time whole-module exclusions retain only the two reviewed Windows POSIX domains, and locked Cargo metadata replaces pip-freeze auditing."
+    },
+    {
+      "python_id": "tests/test_live_engine_contract.py::test_dashboard_guard_requires_every_discovered_file_and_actual_pass[skipped]",
+      "rust_test": "live::test_dashboard_guard_requires_every_discovered_file_and_actual_pass_skipped_37707b",
+      "rust_file": "tools/xtask/tests/source_acceptance/live.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "damage"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Actual xtask CI evidence, workflow/release validators, compiler phase dispatch, bounded producers and stateful Cargo progress projection replace Python tools. Rust case/WASM inventories replace JUnit/TypeScript reports, compile-time whole-module exclusions retain only the two reviewed Windows POSIX domains, and locked Cargo metadata replaces pip-freeze auditing."
+    },
+    {
+      "python_id": "tests/test_live_engine_contract.py::test_secret_exceptions_are_only_exact_reviewed_rule_path_and_literal",
+      "rust_test": "live::test_secret_exceptions_are_only_exact_reviewed_rule_path_and_literal",
+      "rust_file": "tools/xtask/tests/source_acceptance/live.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "original_parameters": [],
+      "original_fixtures": [],
+      "adaptation": "Pins the independently reviewed complete template and exact10 rule/path groups (9 secret-literal groups with17 literal digests and1 path-only public PFX group). Retains documentation/SPKI checks; real native current-byte/provenance and isolated Git-history controls reject changed, restored, deleted, shallow/unborn and wrong-path signing material."
+    },
+    {
+      "python_id": "tests/test_live_engine_contract.py::test_strict_secret_config_keeps_rules_but_removes_inherited_path_omissions[lf]",
+      "rust_test": "live::test_strict_secret_config_keeps_rules_but_removes_inherited_path_omissions_lf_04adc8",
+      "rust_file": "tools/xtask/tests/source_acceptance/live.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "newline"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Actual pinned configuration preparation preserves the required official rules and nonpath selectors while removing inherited path omissions. LF/CRLF inputs retain checksum-before-mutation refusal; output must match the independently pinned reviewed template with only its exact canonical upstream path substituted and all10 rule/path/literal groups verified."
+    },
+    {
+      "python_id": "tests/test_live_engine_contract.py::test_strict_secret_config_keeps_rules_but_removes_inherited_path_omissions[crlf]",
+      "rust_test": "live::test_strict_secret_config_keeps_rules_but_removes_inherited_path_omissions_crlf_f678c7",
+      "rust_file": "tools/xtask/tests/source_acceptance/live.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "newline"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Actual pinned configuration preparation preserves the required official rules and nonpath selectors while removing inherited path omissions. LF/CRLF inputs retain checksum-before-mutation refusal; output must match the independently pinned reviewed template with only its exact canonical upstream path substituted and all10 rule/path/literal groups verified."
+    },
+    {
+      "python_id": "tests/test_migration_cleanup.py::test_public_run_reports_failed_cleanup_without_swallowing_or_repeating[5-unlink]",
+      "rust_test": "cleanup::test_public_run_reports_failed_cleanup_without_swallowing_or_repeating_5_unlink_3ed4e6",
+      "rust_file": "tools/xtask/tests/source_acceptance/cleanup.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "caplog",
+        "operation",
+        "winerror"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch",
+        "caplog"
+      ],
+      "adaptation": "Actual exclusive directories and injected typed filesystem failures exercise production recursive cleanup diagnostics. Timeout controls use real isolated Rust worker ResourceGuard observations (open handle/thread), replacing obsolete Python reader-thread ownership. The historical no-diagnostic defect is exercised as a native silent-diagnostic counterexample; the original historical source hash is preserved as provenance."
+    },
+    {
+      "python_id": "tests/test_migration_cleanup.py::test_public_run_reports_failed_cleanup_without_swallowing_or_repeating[5-rmdir]",
+      "rust_test": "cleanup::test_public_run_reports_failed_cleanup_without_swallowing_or_repeating_5_rmdir_58af57",
+      "rust_file": "tools/xtask/tests/source_acceptance/cleanup.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "caplog",
+        "operation",
+        "winerror"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch",
+        "caplog"
+      ],
+      "adaptation": "Actual exclusive directories and injected typed filesystem failures exercise production recursive cleanup diagnostics. Timeout controls use real isolated Rust worker ResourceGuard observations (open handle/thread), replacing obsolete Python reader-thread ownership. The historical no-diagnostic defect is exercised as a native silent-diagnostic counterexample; the original historical source hash is preserved as provenance."
+    },
+    {
+      "python_id": "tests/test_migration_cleanup.py::test_public_run_reports_failed_cleanup_without_swallowing_or_repeating[5-scandir]",
+      "rust_test": "cleanup::test_public_run_reports_failed_cleanup_without_swallowing_or_repeating_5_scandir_c1f058",
+      "rust_file": "tools/xtask/tests/source_acceptance/cleanup.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "caplog",
+        "operation",
+        "winerror"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch",
+        "caplog"
+      ],
+      "adaptation": "Actual exclusive directories and injected typed filesystem failures exercise production recursive cleanup diagnostics. Timeout controls use real isolated Rust worker ResourceGuard observations (open handle/thread), replacing obsolete Python reader-thread ownership. The historical no-diagnostic defect is exercised as a native silent-diagnostic counterexample; the original historical source hash is preserved as provenance."
+    },
+    {
+      "python_id": "tests/test_migration_cleanup.py::test_public_run_reports_failed_cleanup_without_swallowing_or_repeating[5-islink]",
+      "rust_test": "cleanup::test_public_run_reports_failed_cleanup_without_swallowing_or_repeating_5_islink_b17cb4",
+      "rust_file": "tools/xtask/tests/source_acceptance/cleanup.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "caplog",
+        "operation",
+        "winerror"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch",
+        "caplog"
+      ],
+      "adaptation": "Actual exclusive directories and injected typed filesystem failures exercise production recursive cleanup diagnostics. Timeout controls use real isolated Rust worker ResourceGuard observations (open handle/thread), replacing obsolete Python reader-thread ownership. The historical no-diagnostic defect is exercised as a native silent-diagnostic counterexample; the original historical source hash is preserved as provenance."
+    },
+    {
+      "python_id": "tests/test_migration_cleanup.py::test_public_run_reports_failed_cleanup_without_swallowing_or_repeating[5-unknown]",
+      "rust_test": "cleanup::test_public_run_reports_failed_cleanup_without_swallowing_or_repeating_5_unknown_3d80ea",
+      "rust_file": "tools/xtask/tests/source_acceptance/cleanup.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "caplog",
+        "operation",
+        "winerror"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch",
+        "caplog"
+      ],
+      "adaptation": "Actual exclusive directories and injected typed filesystem failures exercise production recursive cleanup diagnostics. Timeout controls use real isolated Rust worker ResourceGuard observations (open handle/thread), replacing obsolete Python reader-thread ownership. The historical no-diagnostic defect is exercised as a native silent-diagnostic counterexample; the original historical source hash is preserved as provenance."
+    },
+    {
+      "python_id": "tests/test_migration_cleanup.py::test_public_run_reports_failed_cleanup_without_swallowing_or_repeating[32-unlink]",
+      "rust_test": "cleanup::test_public_run_reports_failed_cleanup_without_swallowing_or_repeating_32_unlink_17e5b1",
+      "rust_file": "tools/xtask/tests/source_acceptance/cleanup.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "caplog",
+        "operation",
+        "winerror"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch",
+        "caplog"
+      ],
+      "adaptation": "Actual exclusive directories and injected typed filesystem failures exercise production recursive cleanup diagnostics. Timeout controls use real isolated Rust worker ResourceGuard observations (open handle/thread), replacing obsolete Python reader-thread ownership. The historical no-diagnostic defect is exercised as a native silent-diagnostic counterexample; the original historical source hash is preserved as provenance."
+    },
+    {
+      "python_id": "tests/test_migration_cleanup.py::test_public_run_reports_failed_cleanup_without_swallowing_or_repeating[32-rmdir]",
+      "rust_test": "cleanup::test_public_run_reports_failed_cleanup_without_swallowing_or_repeating_32_rmdir_038ce3",
+      "rust_file": "tools/xtask/tests/source_acceptance/cleanup.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "caplog",
+        "operation",
+        "winerror"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch",
+        "caplog"
+      ],
+      "adaptation": "Actual exclusive directories and injected typed filesystem failures exercise production recursive cleanup diagnostics. Timeout controls use real isolated Rust worker ResourceGuard observations (open handle/thread), replacing obsolete Python reader-thread ownership. The historical no-diagnostic defect is exercised as a native silent-diagnostic counterexample; the original historical source hash is preserved as provenance."
+    },
+    {
+      "python_id": "tests/test_migration_cleanup.py::test_public_run_reports_failed_cleanup_without_swallowing_or_repeating[32-scandir]",
+      "rust_test": "cleanup::test_public_run_reports_failed_cleanup_without_swallowing_or_repeating_32_scandir_571943",
+      "rust_file": "tools/xtask/tests/source_acceptance/cleanup.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "caplog",
+        "operation",
+        "winerror"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch",
+        "caplog"
+      ],
+      "adaptation": "Actual exclusive directories and injected typed filesystem failures exercise production recursive cleanup diagnostics. Timeout controls use real isolated Rust worker ResourceGuard observations (open handle/thread), replacing obsolete Python reader-thread ownership. The historical no-diagnostic defect is exercised as a native silent-diagnostic counterexample; the original historical source hash is preserved as provenance."
+    },
+    {
+      "python_id": "tests/test_migration_cleanup.py::test_public_run_reports_failed_cleanup_without_swallowing_or_repeating[32-islink]",
+      "rust_test": "cleanup::test_public_run_reports_failed_cleanup_without_swallowing_or_repeating_32_islink_398716",
+      "rust_file": "tools/xtask/tests/source_acceptance/cleanup.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "caplog",
+        "operation",
+        "winerror"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch",
+        "caplog"
+      ],
+      "adaptation": "Actual exclusive directories and injected typed filesystem failures exercise production recursive cleanup diagnostics. Timeout controls use real isolated Rust worker ResourceGuard observations (open handle/thread), replacing obsolete Python reader-thread ownership. The historical no-diagnostic defect is exercised as a native silent-diagnostic counterexample; the original historical source hash is preserved as provenance."
+    },
+    {
+      "python_id": "tests/test_migration_cleanup.py::test_public_run_reports_failed_cleanup_without_swallowing_or_repeating[32-unknown]",
+      "rust_test": "cleanup::test_public_run_reports_failed_cleanup_without_swallowing_or_repeating_32_unknown_b2aae6",
+      "rust_file": "tools/xtask/tests/source_acceptance/cleanup.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "caplog",
+        "operation",
+        "winerror"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch",
+        "caplog"
+      ],
+      "adaptation": "Actual exclusive directories and injected typed filesystem failures exercise production recursive cleanup diagnostics. Timeout controls use real isolated Rust worker ResourceGuard observations (open handle/thread), replacing obsolete Python reader-thread ownership. The historical no-diagnostic defect is exercised as a native silent-diagnostic counterexample; the original historical source hash is preserved as provenance."
+    },
+    {
+      "python_id": "tests/test_migration_cleanup.py::test_public_run_reports_failed_cleanup_without_swallowing_or_repeating[None-unlink]",
+      "rust_test": "cleanup::test_public_run_reports_failed_cleanup_without_swallowing_or_repeating_none_unlink_53d3d0",
+      "rust_file": "tools/xtask/tests/source_acceptance/cleanup.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "caplog",
+        "operation",
+        "winerror"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch",
+        "caplog"
+      ],
+      "adaptation": "Actual exclusive directories and injected typed filesystem failures exercise production recursive cleanup diagnostics. Timeout controls use real isolated Rust worker ResourceGuard observations (open handle/thread), replacing obsolete Python reader-thread ownership. The historical no-diagnostic defect is exercised as a native silent-diagnostic counterexample; the original historical source hash is preserved as provenance."
+    },
+    {
+      "python_id": "tests/test_migration_cleanup.py::test_public_run_reports_failed_cleanup_without_swallowing_or_repeating[None-rmdir]",
+      "rust_test": "cleanup::test_public_run_reports_failed_cleanup_without_swallowing_or_repeating_none_rmdir_ee223c",
+      "rust_file": "tools/xtask/tests/source_acceptance/cleanup.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "caplog",
+        "operation",
+        "winerror"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch",
+        "caplog"
+      ],
+      "adaptation": "Actual exclusive directories and injected typed filesystem failures exercise production recursive cleanup diagnostics. Timeout controls use real isolated Rust worker ResourceGuard observations (open handle/thread), replacing obsolete Python reader-thread ownership. The historical no-diagnostic defect is exercised as a native silent-diagnostic counterexample; the original historical source hash is preserved as provenance."
+    },
+    {
+      "python_id": "tests/test_migration_cleanup.py::test_public_run_reports_failed_cleanup_without_swallowing_or_repeating[None-scandir]",
+      "rust_test": "cleanup::test_public_run_reports_failed_cleanup_without_swallowing_or_repeating_none_scandir_f31948",
+      "rust_file": "tools/xtask/tests/source_acceptance/cleanup.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "caplog",
+        "operation",
+        "winerror"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch",
+        "caplog"
+      ],
+      "adaptation": "Actual exclusive directories and injected typed filesystem failures exercise production recursive cleanup diagnostics. Timeout controls use real isolated Rust worker ResourceGuard observations (open handle/thread), replacing obsolete Python reader-thread ownership. The historical no-diagnostic defect is exercised as a native silent-diagnostic counterexample; the original historical source hash is preserved as provenance."
+    },
+    {
+      "python_id": "tests/test_migration_cleanup.py::test_public_run_reports_failed_cleanup_without_swallowing_or_repeating[None-islink]",
+      "rust_test": "cleanup::test_public_run_reports_failed_cleanup_without_swallowing_or_repeating_none_islink_ca5a31",
+      "rust_file": "tools/xtask/tests/source_acceptance/cleanup.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "caplog",
+        "operation",
+        "winerror"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch",
+        "caplog"
+      ],
+      "adaptation": "Actual exclusive directories and injected typed filesystem failures exercise production recursive cleanup diagnostics. Timeout controls use real isolated Rust worker ResourceGuard observations (open handle/thread), replacing obsolete Python reader-thread ownership. The historical no-diagnostic defect is exercised as a native silent-diagnostic counterexample; the original historical source hash is preserved as provenance."
+    },
+    {
+      "python_id": "tests/test_migration_cleanup.py::test_public_run_reports_failed_cleanup_without_swallowing_or_repeating[None-unknown]",
+      "rust_test": "cleanup::test_public_run_reports_failed_cleanup_without_swallowing_or_repeating_none_unknown_85f81b",
+      "rust_file": "tools/xtask/tests/source_acceptance/cleanup.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "caplog",
+        "operation",
+        "winerror"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch",
+        "caplog"
+      ],
+      "adaptation": "Actual exclusive directories and injected typed filesystem failures exercise production recursive cleanup diagnostics. Timeout controls use real isolated Rust worker ResourceGuard observations (open handle/thread), replacing obsolete Python reader-thread ownership. The historical no-diagnostic defect is exercised as a native silent-diagnostic counterexample; the original historical source hash is preserved as provenance."
+    },
+    {
+      "python_id": "tests/test_migration_cleanup.py::test_timeout_trigger_is_retained_before_fatal_cleanup[settled-wall]",
+      "rust_test": "cleanup::test_timeout_trigger_is_retained_before_fatal_cleanup_settled_wall_bfa81b",
+      "rust_file": "tools/xtask/tests/source_acceptance/cleanup.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "caplog",
+        "wall",
+        "idle",
+        "wall_expired",
+        "idle_expired",
+        "reader_alive"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch",
+        "caplog"
+      ],
+      "adaptation": "Actual isolated Rust worker owns a file and controlled thread. Clean control joins and then requires OS-visible thread settlement within2s before unchanged ResourceGuard handle/thread non-increase and zero-panic checks. Unsettled controls measure while resources remain live; timeout diagnostic precedes retained-fixture cleanup refusal."
+    },
+    {
+      "python_id": "tests/test_migration_cleanup.py::test_timeout_trigger_is_retained_before_fatal_cleanup[settled-idle]",
+      "rust_test": "cleanup::test_timeout_trigger_is_retained_before_fatal_cleanup_settled_idle_50c17c",
+      "rust_file": "tools/xtask/tests/source_acceptance/cleanup.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "caplog",
+        "wall",
+        "idle",
+        "wall_expired",
+        "idle_expired",
+        "reader_alive"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch",
+        "caplog"
+      ],
+      "adaptation": "Actual isolated Rust worker owns a file and controlled thread. Clean control joins and then requires OS-visible thread settlement within2s before unchanged ResourceGuard handle/thread non-increase and zero-panic checks. Unsettled controls measure while resources remain live; timeout diagnostic precedes retained-fixture cleanup refusal."
+    },
+    {
+      "python_id": "tests/test_migration_cleanup.py::test_timeout_trigger_is_retained_before_fatal_cleanup[settled-both]",
+      "rust_test": "cleanup::test_timeout_trigger_is_retained_before_fatal_cleanup_settled_both_dac14a",
+      "rust_file": "tools/xtask/tests/source_acceptance/cleanup.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "caplog",
+        "wall",
+        "idle",
+        "wall_expired",
+        "idle_expired",
+        "reader_alive"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch",
+        "caplog"
+      ],
+      "adaptation": "Actual isolated Rust worker owns a file and controlled thread. Clean control joins and then requires OS-visible thread settlement within2s before unchanged ResourceGuard handle/thread non-increase and zero-panic checks. Unsettled controls measure while resources remain live; timeout diagnostic precedes retained-fixture cleanup refusal."
+    },
+    {
+      "python_id": "tests/test_migration_cleanup.py::test_timeout_trigger_is_retained_before_fatal_cleanup[reader-unsettled-wall]",
+      "rust_test": "cleanup::test_timeout_trigger_is_retained_before_fatal_cleanup_reader_unsettled_wall_bda9cd",
+      "rust_file": "tools/xtask/tests/source_acceptance/cleanup.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "caplog",
+        "wall",
+        "idle",
+        "wall_expired",
+        "idle_expired",
+        "reader_alive"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch",
+        "caplog"
+      ],
+      "adaptation": "Actual isolated Rust worker owns a file and controlled thread. Clean control joins and then requires OS-visible thread settlement within2s before unchanged ResourceGuard handle/thread non-increase and zero-panic checks. Unsettled controls measure while resources remain live; timeout diagnostic precedes retained-fixture cleanup refusal."
+    },
+    {
+      "python_id": "tests/test_migration_cleanup.py::test_timeout_trigger_is_retained_before_fatal_cleanup[reader-unsettled-idle]",
+      "rust_test": "cleanup::test_timeout_trigger_is_retained_before_fatal_cleanup_reader_unsettled_idle_cb6509",
+      "rust_file": "tools/xtask/tests/source_acceptance/cleanup.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "caplog",
+        "wall",
+        "idle",
+        "wall_expired",
+        "idle_expired",
+        "reader_alive"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch",
+        "caplog"
+      ],
+      "adaptation": "Actual isolated Rust worker owns a file and controlled thread. Clean control joins and then requires OS-visible thread settlement within2s before unchanged ResourceGuard handle/thread non-increase and zero-panic checks. Unsettled controls measure while resources remain live; timeout diagnostic precedes retained-fixture cleanup refusal."
+    },
+    {
+      "python_id": "tests/test_migration_cleanup.py::test_timeout_trigger_is_retained_before_fatal_cleanup[reader-unsettled-both]",
+      "rust_test": "cleanup::test_timeout_trigger_is_retained_before_fatal_cleanup_reader_unsettled_both_885256",
+      "rust_file": "tools/xtask/tests/source_acceptance/cleanup.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "caplog",
+        "wall",
+        "idle",
+        "wall_expired",
+        "idle_expired",
+        "reader_alive"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch",
+        "caplog"
+      ],
+      "adaptation": "Actual isolated Rust worker owns a file and controlled thread. Clean control joins and then requires OS-visible thread settlement within2s before unchanged ResourceGuard handle/thread non-increase and zero-panic checks. Unsettled controls measure while resources remain live; timeout diagnostic precedes retained-fixture cleanup refusal."
+    },
+    {
+      "python_id": "tests/test_migration_cleanup.py::test_cleanup_diagnostic_is_load_bearing_against_exact_previous_runner",
+      "rust_test": "cleanup::test_cleanup_diagnostic_is_load_bearing_against_exact_previous_runner",
+      "rust_file": "tools/xtask/tests/source_acceptance/cleanup.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "caplog"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch",
+        "caplog"
+      ],
+      "adaptation": "Actual exclusive directories and injected typed filesystem failures exercise production recursive cleanup diagnostics. Timeout controls use real isolated Rust worker ResourceGuard observations (open handle/thread), replacing obsolete Python reader-thread ownership. The historical no-diagnostic defect is exercised as a native silent-diagnostic counterexample; the original historical source hash is preserved as provenance.",
+      "historical_source": {
+        "path": "engine/tests/fixtures/migration-owned-before-cleanup-diagnostic.py.txt",
+        "sha256": "2510efada47b91c39dbfb8697d2836426009e9f9adf2c9c9270c13a1bbe443c3",
+        "runtime": "none; native silent-diagnostic counterexample executes the defect"
+      }
+    },
+    {
+      "python_id": "tests/test_native_entry_acceptance.py::test_execute_preserves_child_environment_and_settles_only_its_direct_tree[normal-no-parent]",
+      "rust_test": "entry::test_execute_preserves_child_environment_and_settles_only_its_direct_tree_normal_no_parent_e81835",
+      "rust_file": "tools/xtask/tests/source_acceptance/entry.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "mode",
+        "reported"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Real native producers run through the production bounded nonblocking executor. Explicit typed observer failures exercise receipt/communication/cleanup/wait faults. Receipts are validated against real command/SDK trees, native token fields and kernel liveness; no process environment mutation."
+    },
+    {
+      "python_id": "tests/test_native_entry_acceptance.py::test_execute_preserves_child_environment_and_settles_only_its_direct_tree[normal-parent-report]",
+      "rust_test": "entry::test_execute_preserves_child_environment_and_settles_only_its_direct_tree_normal_parent_report_70f345",
+      "rust_file": "tools/xtask/tests/source_acceptance/entry.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "mode",
+        "reported"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Real native producers run through the production bounded nonblocking executor. Explicit typed observer failures exercise receipt/communication/cleanup/wait faults. Receipts are validated against real command/SDK trees, native token fields and kernel liveness; no process environment mutation."
+    },
+    {
+      "python_id": "tests/test_native_entry_acceptance.py::test_execute_preserves_child_environment_and_settles_only_its_direct_tree[input-no-parent]",
+      "rust_test": "entry::test_execute_preserves_child_environment_and_settles_only_its_direct_tree_input_no_parent_3408ff",
+      "rust_file": "tools/xtask/tests/source_acceptance/entry.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "mode",
+        "reported"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Real native producers run through the production bounded nonblocking executor. Explicit typed observer failures exercise receipt/communication/cleanup/wait faults. Receipts are validated against real command/SDK trees, native token fields and kernel liveness; no process environment mutation."
+    },
+    {
+      "python_id": "tests/test_native_entry_acceptance.py::test_execute_preserves_child_environment_and_settles_only_its_direct_tree[input-parent-report]",
+      "rust_test": "entry::test_execute_preserves_child_environment_and_settles_only_its_direct_tree_input_parent_report_8ab57c",
+      "rust_file": "tools/xtask/tests/source_acceptance/entry.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "mode",
+        "reported"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Real native producers run through the production bounded nonblocking executor. Explicit typed observer failures exercise receipt/communication/cleanup/wait faults. Receipts are validated against real command/SDK trees, native token fields and kernel liveness; no process environment mutation."
+    },
+    {
+      "python_id": "tests/test_native_entry_acceptance.py::test_execute_preserves_child_environment_and_settles_only_its_direct_tree[communicate-no-parent]",
+      "rust_test": "entry::test_execute_preserves_child_environment_and_settles_only_its_direct_tree_communicate_no_parent_ae0c3e",
+      "rust_file": "tools/xtask/tests/source_acceptance/entry.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "mode",
+        "reported"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Real native producers run through the production bounded nonblocking executor. Explicit typed observer failures exercise receipt/communication/cleanup/wait faults. Receipts are validated against real command/SDK trees, native token fields and kernel liveness; no process environment mutation."
+    },
+    {
+      "python_id": "tests/test_native_entry_acceptance.py::test_execute_preserves_child_environment_and_settles_only_its_direct_tree[communicate-parent-report]",
+      "rust_test": "entry::test_execute_preserves_child_environment_and_settles_only_its_direct_tree_communicate_parent_report_713274",
+      "rust_file": "tools/xtask/tests/source_acceptance/entry.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "mode",
+        "reported"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Real native producers run through the production bounded nonblocking executor. Explicit typed observer failures exercise receipt/communication/cleanup/wait faults. Receipts are validated against real command/SDK trees, native token fields and kernel liveness; no process environment mutation."
+    },
+    {
+      "python_id": "tests/test_native_entry_acceptance.py::test_execute_preserves_child_environment_and_settles_only_its_direct_tree[decode-no-parent]",
+      "rust_test": "entry::test_execute_preserves_child_environment_and_settles_only_its_direct_tree_decode_no_parent_f4c9e1",
+      "rust_file": "tools/xtask/tests/source_acceptance/entry.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "mode",
+        "reported"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Real native producers run through the production bounded nonblocking executor. Explicit typed observer failures exercise receipt/communication/cleanup/wait faults. Receipts are validated against real command/SDK trees, native token fields and kernel liveness; no process environment mutation."
+    },
+    {
+      "python_id": "tests/test_native_entry_acceptance.py::test_execute_preserves_child_environment_and_settles_only_its_direct_tree[decode-parent-report]",
+      "rust_test": "entry::test_execute_preserves_child_environment_and_settles_only_its_direct_tree_decode_parent_report_9358d2",
+      "rust_file": "tools/xtask/tests/source_acceptance/entry.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "mode",
+        "reported"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Real native producers run through the production bounded nonblocking executor. Explicit typed observer failures exercise receipt/communication/cleanup/wait faults. Receipts are validated against real command/SDK trees, native token fields and kernel liveness; no process environment mutation."
+    },
+    {
+      "python_id": "tests/test_native_entry_acceptance.py::test_execute_preserves_child_environment_and_settles_only_its_direct_tree[settlement-no-parent]",
+      "rust_test": "entry::test_execute_preserves_child_environment_and_settles_only_its_direct_tree_settlement_no_parent_a34bf7",
+      "rust_file": "tools/xtask/tests/source_acceptance/entry.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "mode",
+        "reported"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Real native producers run through the production bounded nonblocking executor. Explicit typed observer failures exercise receipt/communication/cleanup/wait faults. Receipts are validated against real command/SDK trees, native token fields and kernel liveness; no process environment mutation."
+    },
+    {
+      "python_id": "tests/test_native_entry_acceptance.py::test_execute_preserves_child_environment_and_settles_only_its_direct_tree[settlement-parent-report]",
+      "rust_test": "entry::test_execute_preserves_child_environment_and_settles_only_its_direct_tree_settlement_parent_report_8cb56c",
+      "rust_file": "tools/xtask/tests/source_acceptance/entry.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "mode",
+        "reported"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Real native producers run through the production bounded nonblocking executor. Explicit typed observer failures exercise receipt/communication/cleanup/wait faults. Receipts are validated against real command/SDK trees, native token fields and kernel liveness; no process environment mutation."
+    },
+    {
+      "python_id": "tests/test_native_entry_acceptance.py::test_execute_preserves_child_environment_and_settles_only_its_direct_tree[record-no-parent]",
+      "rust_test": "entry::test_execute_preserves_child_environment_and_settles_only_its_direct_tree_record_no_parent_4fe440",
+      "rust_file": "tools/xtask/tests/source_acceptance/entry.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "mode",
+        "reported"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Real native producers run through the production bounded nonblocking executor. Explicit typed observer failures exercise receipt/communication/cleanup/wait faults. Receipts are validated against real command/SDK trees, native token fields and kernel liveness; no process environment mutation."
+    },
+    {
+      "python_id": "tests/test_native_entry_acceptance.py::test_execute_preserves_child_environment_and_settles_only_its_direct_tree[record-parent-report]",
+      "rust_test": "entry::test_execute_preserves_child_environment_and_settles_only_its_direct_tree_record_parent_report_376c43",
+      "rust_file": "tools/xtask/tests/source_acceptance/entry.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "mode",
+        "reported"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Real native producers run through the production bounded nonblocking executor. Explicit typed observer failures exercise receipt/communication/cleanup/wait faults. Receipts are validated against real command/SDK trees, native token fields and kernel liveness; no process environment mutation."
+    },
+    {
+      "python_id": "tests/test_native_entry_acceptance.py::test_execute_preserves_child_environment_and_settles_only_its_direct_tree[wait-no-parent]",
+      "rust_test": "entry::test_execute_preserves_child_environment_and_settles_only_its_direct_tree_wait_no_parent_a72199",
+      "rust_file": "tools/xtask/tests/source_acceptance/entry.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "mode",
+        "reported"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Real native producers run through the production bounded nonblocking executor. Explicit typed observer failures exercise receipt/communication/cleanup/wait faults. Receipts are validated against real command/SDK trees, native token fields and kernel liveness; no process environment mutation."
+    },
+    {
+      "python_id": "tests/test_native_entry_acceptance.py::test_execute_preserves_child_environment_and_settles_only_its_direct_tree[wait-parent-report]",
+      "rust_test": "entry::test_execute_preserves_child_environment_and_settles_only_its_direct_tree_wait_parent_report_aacb43",
+      "rust_file": "tools/xtask/tests/source_acceptance/entry.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "mode",
+        "reported"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Real native producers run through the production bounded nonblocking executor. Explicit typed observer failures exercise receipt/communication/cleanup/wait faults. Receipts are validated against real command/SDK trees, native token fields and kernel liveness; no process environment mutation."
+    },
+    {
+      "python_id": "tests/test_native_entry_acceptance.py::test_execute_preserves_child_environment_and_settles_only_its_direct_tree[cleanup-no-parent]",
+      "rust_test": "entry::test_execute_preserves_child_environment_and_settles_only_its_direct_tree_cleanup_no_parent_6534d1",
+      "rust_file": "tools/xtask/tests/source_acceptance/entry.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "mode",
+        "reported"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Real native producers run through the production bounded nonblocking executor. Explicit typed observer failures exercise receipt/communication/cleanup/wait faults. Receipts are validated against real command/SDK trees, native token fields and kernel liveness; no process environment mutation."
+    },
+    {
+      "python_id": "tests/test_native_entry_acceptance.py::test_execute_preserves_child_environment_and_settles_only_its_direct_tree[cleanup-parent-report]",
+      "rust_test": "entry::test_execute_preserves_child_environment_and_settles_only_its_direct_tree_cleanup_parent_report_6cc2d5",
+      "rust_file": "tools/xtask/tests/source_acceptance/entry.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "mode",
+        "reported"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Real native producers run through the production bounded nonblocking executor. Explicit typed observer failures exercise receipt/communication/cleanup/wait faults. Receipts are validated against real command/SDK trees, native token fields and kernel liveness; no process environment mutation."
+    },
+    {
+      "python_id": "tests/test_native_entry_acceptance.py::test_main_removes_only_successful_entry_fixtures[False-no-parent]",
+      "rust_test": "entry::test_main_removes_only_successful_entry_fixtures_false_no_parent_3b575e",
+      "rust_file": "tools/xtask/tests/source_acceptance/entry.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "failure",
+        "reported"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Real native producers run through the production bounded nonblocking executor. Explicit typed observer failures exercise receipt/communication/cleanup/wait faults. Receipts are validated against real command/SDK trees, native token fields and kernel liveness; no process environment mutation."
+    },
+    {
+      "python_id": "tests/test_native_entry_acceptance.py::test_main_removes_only_successful_entry_fixtures[False-parent-report]",
+      "rust_test": "entry::test_main_removes_only_successful_entry_fixtures_false_parent_report_846211",
+      "rust_file": "tools/xtask/tests/source_acceptance/entry.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "failure",
+        "reported"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Real native producers run through the production bounded nonblocking executor. Explicit typed observer failures exercise receipt/communication/cleanup/wait faults. Receipts are validated against real command/SDK trees, native token fields and kernel liveness; no process environment mutation."
+    },
+    {
+      "python_id": "tests/test_native_entry_acceptance.py::test_main_removes_only_successful_entry_fixtures[True-no-parent]",
+      "rust_test": "entry::test_main_removes_only_successful_entry_fixtures_true_no_parent_80bdbd",
+      "rust_file": "tools/xtask/tests/source_acceptance/entry.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "failure",
+        "reported"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Real native producers run through the production bounded nonblocking executor. Explicit typed observer failures exercise receipt/communication/cleanup/wait faults. Receipts are validated against real command/SDK trees, native token fields and kernel liveness; no process environment mutation."
+    },
+    {
+      "python_id": "tests/test_native_entry_acceptance.py::test_main_removes_only_successful_entry_fixtures[True-parent-report]",
+      "rust_test": "entry::test_main_removes_only_successful_entry_fixtures_true_parent_report_e2ab80",
+      "rust_file": "tools/xtask/tests/source_acceptance/entry.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "failure",
+        "reported"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Real native producers run through the production bounded nonblocking executor. Explicit typed observer failures exercise receipt/communication/cleanup/wait faults. Receipts are validated against real command/SDK trees, native token fields and kernel liveness; no process environment mutation."
+    },
+    {
+      "python_id": "tests/test_native_entry_acceptance.py::test_detached_sdk_receipts_match_actual_command_and_session_claim[None]",
+      "rust_test": "entry::test_detached_sdk_receipts_match_actual_command_and_session_claim_none_b69438",
+      "rust_file": "tools/xtask/tests/source_acceptance/entry.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "damage"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Real native producers run through the production bounded nonblocking executor. Explicit typed observer failures exercise receipt/communication/cleanup/wait faults. Receipts are validated against real command/SDK trees, native token fields and kernel liveness; no process environment mutation."
+    },
+    {
+      "python_id": "tests/test_native_entry_acceptance.py::test_detached_sdk_receipts_match_actual_command_and_session_claim[metadata]",
+      "rust_test": "entry::test_detached_sdk_receipts_match_actual_command_and_session_claim_metadata_18544c",
+      "rust_file": "tools/xtask/tests/source_acceptance/entry.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "damage"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Real native producers run through the production bounded nonblocking executor. Explicit typed observer failures exercise receipt/communication/cleanup/wait faults. Receipts are validated against real command/SDK trees, native token fields and kernel liveness; no process environment mutation."
+    },
+    {
+      "python_id": "tests/test_native_entry_acceptance.py::test_detached_sdk_receipts_match_actual_command_and_session_claim[missing-command]",
+      "rust_test": "entry::test_detached_sdk_receipts_match_actual_command_and_session_claim_missing_command_90e11b",
+      "rust_file": "tools/xtask/tests/source_acceptance/entry.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "damage"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Real native producers run through the production bounded nonblocking executor. Explicit typed observer failures exercise receipt/communication/cleanup/wait faults. Receipts are validated against real command/SDK trees, native token fields and kernel liveness; no process environment mutation."
+    },
+    {
+      "python_id": "tests/test_native_entry_acceptance.py::test_detached_sdk_receipts_match_actual_command_and_session_claim[missing-sdk]",
+      "rust_test": "entry::test_detached_sdk_receipts_match_actual_command_and_session_claim_missing_sdk_211d54",
+      "rust_file": "tools/xtask/tests/source_acceptance/entry.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "damage"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Real native producers run through the production bounded nonblocking executor. Explicit typed observer failures exercise receipt/communication/cleanup/wait faults. Receipts are validated against real command/SDK trees, native token fields and kernel liveness; no process environment mutation."
+    },
+    {
+      "python_id": "tests/test_native_entry_acceptance.py::test_detached_sdk_receipts_match_actual_command_and_session_claim[foreign-sdk]",
+      "rust_test": "entry::test_detached_sdk_receipts_match_actual_command_and_session_claim_foreign_sdk_2a3067",
+      "rust_file": "tools/xtask/tests/source_acceptance/entry.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "damage"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Real native producers run through the production bounded nonblocking executor. Explicit typed observer failures exercise receipt/communication/cleanup/wait faults. Receipts are validated against real command/SDK trees, native token fields and kernel liveness; no process environment mutation."
+    },
+    {
+      "python_id": "tests/test_native_entry_acceptance.py::test_detached_sdk_receipts_match_actual_command_and_session_claim[same-command]",
+      "rust_test": "entry::test_detached_sdk_receipts_match_actual_command_and_session_claim_same_command_8ae3e9",
+      "rust_file": "tools/xtask/tests/source_acceptance/entry.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "damage"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Real native producers run through the production bounded nonblocking executor. Explicit typed observer failures exercise receipt/communication/cleanup/wait faults. Receipts are validated against real command/SDK trees, native token fields and kernel liveness; no process environment mutation."
+    },
+    {
+      "python_id": "tests/test_native_entry_acceptance.py::test_detached_sdk_receipts_match_actual_command_and_session_claim[command-token]",
+      "rust_test": "entry::test_detached_sdk_receipts_match_actual_command_and_session_claim_command_token_115c1b",
+      "rust_file": "tools/xtask/tests/source_acceptance/entry.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "damage"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Real native producers run through the production bounded nonblocking executor. Explicit typed observer failures exercise receipt/communication/cleanup/wait faults. Receipts are validated against real command/SDK trees, native token fields and kernel liveness; no process environment mutation."
+    },
+    {
+      "python_id": "tests/test_native_entry_acceptance.py::test_detached_sdk_receipts_match_actual_command_and_session_claim[sdk-token]",
+      "rust_test": "entry::test_detached_sdk_receipts_match_actual_command_and_session_claim_sdk_token_bbfb5d",
+      "rust_file": "tools/xtask/tests/source_acceptance/entry.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "damage"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Real native producers run through the production bounded nonblocking executor. Explicit typed observer failures exercise receipt/communication/cleanup/wait faults. Receipts are validated against real command/SDK trees, native token fields and kernel liveness; no process environment mutation."
+    },
+    {
+      "python_id": "tests/test_native_entry_acceptance.py::test_detached_sdk_receipts_match_actual_command_and_session_claim[sdk-group]",
+      "rust_test": "entry::test_detached_sdk_receipts_match_actual_command_and_session_claim_sdk_group_fab87f",
+      "rust_file": "tools/xtask/tests/source_acceptance/entry.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "damage"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Real native producers run through the production bounded nonblocking executor. Explicit typed observer failures exercise receipt/communication/cleanup/wait faults. Receipts are validated against real command/SDK trees, native token fields and kernel liveness; no process environment mutation."
+    },
+    {
+      "python_id": "tests/test_native_entry_acceptance.py::test_detached_sdk_receipts_match_actual_command_and_session_claim[dead-sdk]",
+      "rust_test": "entry::test_detached_sdk_receipts_match_actual_command_and_session_claim_dead_sdk_181661",
+      "rust_file": "tools/xtask/tests/source_acceptance/entry.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "damage"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Real native producers run through the production bounded nonblocking executor. Explicit typed observer failures exercise receipt/communication/cleanup/wait faults. Receipts are validated against real command/SDK trees, native token fields and kernel liveness; no process environment mutation."
+    },
+    {
+      "python_id": "tests/test_native_entry_acceptance.py::test_detached_sdk_receipts_match_actual_command_and_session_claim[pending]",
+      "rust_test": "entry::test_detached_sdk_receipts_match_actual_command_and_session_claim_pending_4e91ca",
+      "rust_file": "tools/xtask/tests/source_acceptance/entry.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "damage"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Real native producers run through the production bounded nonblocking executor. Explicit typed observer failures exercise receipt/communication/cleanup/wait faults. Receipts are validated against real command/SDK trees, native token fields and kernel liveness; no process environment mutation."
+    },
+    {
+      "python_id": "tests/test_native_entry_acceptance.py::test_detached_sdk_receipts_match_actual_command_and_session_claim[malformed]",
+      "rust_test": "entry::test_detached_sdk_receipts_match_actual_command_and_session_claim_malformed_ce12bc",
+      "rust_file": "tools/xtask/tests/source_acceptance/entry.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "damage"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Real native producers run through the production bounded nonblocking executor. Explicit typed observer failures exercise receipt/communication/cleanup/wait faults. Receipts are validated against real command/SDK trees, native token fields and kernel liveness; no process environment mutation."
+    },
+    {
+      "python_id": "tests/test_native_export_round_trip.py::test_the_sentinel_covers_every_field_a_client_may_write",
+      "rust_test": "export::sentinel_covers_every_field",
+      "rust_file": "engine-rust/tests/source_acceptance/export.rs",
+      "crate": "engine-rust",
+      "target": "source_acceptance",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "original_parameters": [],
+      "original_fixtures": [],
+      "adaptation": "Real axum HTTP create/import/list with actual ProfileRepo conversion, native sentinel and encrypted-store effects."
+    },
+    {
+      "python_id": "tests/test_native_export_round_trip.py::test_every_editable_field_survives_the_round_trip",
+      "rust_test": "export::every_editable_field_survives",
+      "rust_file": "engine-rust/tests/source_acceptance/export.rs",
+      "crate": "engine-rust",
+      "target": "source_acceptance",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "store",
+        "elsewhere"
+      ],
+      "original_fixtures": [],
+      "adaptation": "Real axum HTTP create/import/list with actual ProfileRepo conversion, native sentinel and encrypted-store effects."
+    },
+    {
+      "python_id": "tests/test_native_export_round_trip.py::test_the_fingerprint_that_lands_is_the_one_that_left",
+      "rust_test": "export::fingerprint_that_lands_is_the_one_that_left",
+      "rust_file": "engine-rust/tests/source_acceptance/export.rs",
+      "crate": "engine-rust",
+      "target": "source_acceptance",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "store",
+        "elsewhere"
+      ],
+      "original_fixtures": [],
+      "adaptation": "Real axum HTTP create/import/list with actual ProfileRepo conversion, native sentinel and encrypted-store effects."
+    },
+    {
+      "python_id": "tests/test_native_export_round_trip.py::test_the_id_and_the_stores_bookkeeping_are_reminted",
+      "rust_test": "export::identity_and_bookkeeping_reminted",
+      "rust_file": "engine-rust/tests/source_acceptance/export.rs",
+      "crate": "engine-rust",
+      "target": "source_acceptance",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "store",
+        "elsewhere"
+      ],
+      "original_fixtures": [],
+      "adaptation": "Real axum HTTP create/import/list with actual ProfileRepo conversion, native sentinel and encrypted-store effects."
+    },
+    {
+      "python_id": "tests/test_native_export_round_trip.py::test_a_file_this_build_cannot_read_is_refused",
+      "rust_test": "export::newer_file_refused",
+      "rust_file": "engine-rust/tests/source_acceptance/export.rs",
+      "crate": "engine-rust",
+      "target": "source_acceptance",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "store"
+      ],
+      "original_fixtures": [],
+      "adaptation": "Real axum HTTP create/import/list with actual ProfileRepo conversion, native sentinel and encrypted-store effects."
+    },
+    {
+      "python_id": "tests/test_native_export_round_trip.py::test_an_unversioned_native_export_is_refused_not_guessed_at",
+      "rust_test": "export::unversioned_file_refused",
+      "rust_file": "engine-rust/tests/source_acceptance/export.rs",
+      "crate": "engine-rust",
+      "target": "source_acceptance",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "store",
+        "elsewhere"
+      ],
+      "original_fixtures": [],
+      "adaptation": "Real axum HTTP create/import/list with actual ProfileRepo conversion, native sentinel and encrypted-store effects."
+    },
+    {
+      "python_id": "tests/test_native_export_round_trip.py::test_a_vendor_export_still_imports",
+      "rust_test": "export::vendor_export_still_imports",
+      "rust_file": "engine-rust/tests/source_acceptance/export.rs",
+      "crate": "engine-rust",
+      "target": "source_acceptance",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "store"
+      ],
+      "original_fixtures": [],
+      "adaptation": "Real axum HTTP create/import/list with actual ProfileRepo conversion, native sentinel and encrypted-store effects."
+    },
+    {
+      "python_id": "tests/test_native_export_round_trip.py::test_a_flat_vendor_export_is_not_mistaken_for_a_native_one",
+      "rust_test": "export::flat_vendor_not_mistaken_for_native",
+      "rust_file": "engine-rust/tests/source_acceptance/export.rs",
+      "crate": "engine-rust",
+      "target": "source_acceptance",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "store"
+      ],
+      "original_fixtures": [],
+      "adaptation": "Real axum HTTP create/import/list with actual ProfileRepo conversion, native sentinel and encrypted-store effects."
+    },
+    {
+      "python_id": "tests/test_native_export_round_trip.py::test_a_malformed_entry_refuses_the_whole_batch",
+      "rust_test": "export::malformed_entry_refuses_whole_batch",
+      "rust_file": "engine-rust/tests/source_acceptance/export.rs",
+      "crate": "engine-rust",
+      "target": "source_acceptance",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "store",
+        "elsewhere"
+      ],
+      "original_fixtures": [],
+      "adaptation": "Real axum HTTP create/import/list with actual ProfileRepo conversion, native sentinel and encrypted-store effects."
+    },
+    {
+      "python_id": "tests/test_native_export_round_trip.py::test_profiles_is_not_a_list_of_objects",
+      "rust_test": "export::profiles_must_be_list_of_objects",
+      "rust_file": "engine-rust/tests/source_acceptance/export.rs",
+      "crate": "engine-rust",
+      "target": "source_acceptance",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "store"
+      ],
+      "original_fixtures": [],
+      "adaptation": "Real axum HTTP create/import/list with actual ProfileRepo conversion, native sentinel and encrypted-store effects."
+    },
+    {
+      "python_id": "tests/test_native_export_round_trip.py::test_an_unknown_engine_is_refused",
+      "rust_test": "export::unknown_engine_refused",
+      "rust_file": "engine-rust/tests/source_acceptance/export.rs",
+      "crate": "engine-rust",
+      "target": "source_acceptance",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "store",
+        "elsewhere"
+      ],
+      "original_fixtures": [],
+      "adaptation": "Real axum HTTP create/import/list with actual ProfileRepo conversion, native sentinel and encrypted-store effects."
+    },
+    {
+      "python_id": "tests/test_native_export_round_trip.py::test_a_name_that_is_already_taken_refuses_the_import",
+      "rust_test": "export::taken_name_refuses_import",
+      "rust_file": "engine-rust/tests/source_acceptance/export.rs",
+      "crate": "engine-rust",
+      "target": "source_acceptance",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "store"
+      ],
+      "original_fixtures": [],
+      "adaptation": "Real axum HTTP create/import/list with actual ProfileRepo conversion, native sentinel and encrypted-store effects."
+    },
+    {
+      "python_id": "tests/test_native_export_round_trip.py::test_a_password_the_vault_was_holding_is_reported_missing",
+      "rust_test": "export::withheld_password_reported_missing",
+      "rust_file": "engine-rust/tests/source_acceptance/export.rs",
+      "crate": "engine-rust",
+      "target": "source_acceptance",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "store",
+        "elsewhere"
+      ],
+      "original_fixtures": [],
+      "adaptation": "Real axum HTTP create/import/list with actual ProfileRepo conversion, native sentinel and encrypted-store effects."
+    },
+    {
+      "python_id": "tests/test_native_export_round_trip.py::test_a_readable_password_comes_across",
+      "rust_test": "export::readable_password_comes_across",
+      "rust_file": "engine-rust/tests/source_acceptance/export.rs",
+      "crate": "engine-rust",
+      "target": "source_acceptance",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "store",
+        "elsewhere"
+      ],
+      "original_fixtures": [],
+      "adaptation": "Real axum HTTP create/import/list with actual ProfileRepo conversion, native sentinel and encrypted-store effects."
+    },
+    {
+      "python_id": "tests/test_native_export_round_trip.py::test_an_import_does_not_change_the_default_engine",
+      "rust_test": "export::import_preserves_default_engine",
+      "rust_file": "engine-rust/tests/source_acceptance/export.rs",
+      "crate": "engine-rust",
+      "target": "source_acceptance",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "store",
+        "elsewhere"
+      ],
+      "original_fixtures": [],
+      "adaptation": "Real axum HTTP create/import/list with actual ProfileRepo conversion, native sentinel and encrypted-store effects."
+    },
+    {
+      "python_id": "tests/test_native_export_round_trip.py::test_the_cli_importer_refuses_a_native_file_too",
+      "rust_test": "export::cli_import_refuses_native",
+      "rust_file": "engine-rust/tests/source_acceptance/export.rs",
+      "crate": "engine-rust",
+      "target": "source_acceptance",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "store",
+        "tmp_path"
+      ],
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "adaptation": "Real axum HTTP create/import/list with actual ProfileRepo conversion, native sentinel and encrypted-store effects."
+    },
+    {
+      "python_id": "tests/test_native_export_round_trip.py::test_the_cli_importer_still_reads_a_vendor_file",
+      "rust_test": "export::cli_vendor_file_still_reads",
+      "rust_file": "engine-rust/tests/source_acceptance/export.rs",
+      "crate": "engine-rust",
+      "target": "source_acceptance",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path"
+      ],
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "adaptation": "Real axum HTTP create/import/list with actual ProfileRepo conversion, native sentinel and encrypted-store effects."
+    },
+    {
+      "python_id": "tests/test_native_export_round_trip.py::test_an_entry_naming_no_engine_takes_the_saved_default",
+      "rust_test": "export::absent_engine_uses_saved_default",
+      "rust_file": "engine-rust/tests/source_acceptance/export.rs",
+      "crate": "engine-rust",
+      "target": "source_acceptance",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "store",
+        "elsewhere"
+      ],
+      "original_fixtures": [],
+      "adaptation": "Real axum HTTP create/import/list with actual ProfileRepo conversion, native sentinel and encrypted-store effects."
+    },
+    {
+      "python_id": "tests/test_native_http_replay.py::test_request_retains_auth_headers_and_sends_json_as_utf8_bytes[None]",
+      "rust_test": "http::test_request_retains_auth_headers_and_sends_json_as_utf8_bytes_none_42445b",
+      "rust_file": "tools/xtask/tests/source_acceptance/http.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "monkeypatch",
+        "payload"
+      ],
+      "original_fixtures": [
+        "monkeypatch"
+      ],
+      "adaptation": "Real loopback HTTP wire requests validate UTF8 bytes, bearer headers, response framing, peer EOF on failures, complete profile fields and finite timestamps. Production retained-fixture completion governs success/failure evidence."
+    },
+    {
+      "python_id": "tests/test_native_http_replay.py::test_request_retains_auth_headers_and_sends_json_as_utf8_bytes[payload1]",
+      "rust_test": "http::test_request_retains_auth_headers_and_sends_json_as_utf8_bytes_payload1_92adae",
+      "rust_file": "tools/xtask/tests/source_acceptance/http.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "monkeypatch",
+        "payload"
+      ],
+      "original_fixtures": [
+        "monkeypatch"
+      ],
+      "adaptation": "Real loopback HTTP wire requests validate UTF8 bytes, bearer headers, response framing, peer EOF on failures, complete profile fields and finite timestamps. Production retained-fixture completion governs success/failure evidence."
+    },
+    {
+      "python_id": "tests/test_native_http_replay.py::test_request_failures_close_the_connection_without_accepting_output[send]",
+      "rust_test": "http::test_request_failures_close_the_connection_without_accepting_output_send_8595c6",
+      "rust_file": "tools/xtask/tests/source_acceptance/http.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "monkeypatch",
+        "failure"
+      ],
+      "original_fixtures": [
+        "monkeypatch"
+      ],
+      "adaptation": "Real loopback HTTP wire requests validate UTF8 bytes, bearer headers, response framing, peer EOF on failures, complete profile fields and finite timestamps. Production retained-fixture completion governs success/failure evidence."
+    },
+    {
+      "python_id": "tests/test_native_http_replay.py::test_request_failures_close_the_connection_without_accepting_output[oversize]",
+      "rust_test": "http::test_request_failures_close_the_connection_without_accepting_output_oversize_1f4f25",
+      "rust_file": "tools/xtask/tests/source_acceptance/http.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "monkeypatch",
+        "failure"
+      ],
+      "original_fixtures": [
+        "monkeypatch"
+      ],
+      "adaptation": "Real loopback HTTP wire requests validate UTF8 bytes, bearer headers, response framing, peer EOF on failures, complete profile fields and finite timestamps. Production retained-fixture completion governs success/failure evidence."
+    },
+    {
+      "python_id": "tests/test_native_http_replay.py::test_request_failures_close_the_connection_without_accepting_output[malformed]",
+      "rust_test": "http::test_request_failures_close_the_connection_without_accepting_output_malformed_191d31",
+      "rust_file": "tools/xtask/tests/source_acceptance/http.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "monkeypatch",
+        "failure"
+      ],
+      "original_fixtures": [
+        "monkeypatch"
+      ],
+      "adaptation": "Real loopback HTTP wire requests validate UTF8 bytes, bearer headers, response framing, peer EOF on failures, complete profile fields and finite timestamps. Production retained-fixture completion governs success/failure evidence."
+    },
+    {
+      "python_id": "tests/test_native_http_replay.py::test_http_profile_comparison_retains_every_stable_field_and_bounds_both_timestamps[none]",
+      "rust_test": "http::test_http_profile_comparison_retains_every_stable_field_and_bounds_both_timestamps_none_59cf3a",
+      "rust_file": "tools/xtask/tests/source_acceptance/http.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "monkeypatch",
+        "damage"
+      ],
+      "original_fixtures": [
+        "monkeypatch"
+      ],
+      "adaptation": "Real loopback HTTP wire requests validate UTF8 bytes, bearer headers, response framing, peer EOF on failures, complete profile fields and finite timestamps. Production retained-fixture completion governs success/failure evidence."
+    },
+    {
+      "python_id": "tests/test_native_http_replay.py::test_http_profile_comparison_retains_every_stable_field_and_bounds_both_timestamps[identity]",
+      "rust_test": "http::test_http_profile_comparison_retains_every_stable_field_and_bounds_both_timestamps_identity_9a1d75",
+      "rust_file": "tools/xtask/tests/source_acceptance/http.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "monkeypatch",
+        "damage"
+      ],
+      "original_fixtures": [
+        "monkeypatch"
+      ],
+      "adaptation": "Real loopback HTTP wire requests validate UTF8 bytes, bearer headers, response framing, peer EOF on failures, complete profile fields and finite timestamps. Production retained-fixture completion governs success/failure evidence."
+    },
+    {
+      "python_id": "tests/test_native_http_replay.py::test_http_profile_comparison_retains_every_stable_field_and_bounds_both_timestamps[secret]",
+      "rust_test": "http::test_http_profile_comparison_retains_every_stable_field_and_bounds_both_timestamps_secret_af9526",
+      "rust_file": "tools/xtask/tests/source_acceptance/http.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "monkeypatch",
+        "damage"
+      ],
+      "original_fixtures": [
+        "monkeypatch"
+      ],
+      "adaptation": "Real loopback HTTP wire requests validate UTF8 bytes, bearer headers, response framing, peer EOF on failures, complete profile fields and finite timestamps. Production retained-fixture completion governs success/failure evidence."
+    },
+    {
+      "python_id": "tests/test_native_http_replay.py::test_http_profile_comparison_retains_every_stable_field_and_bounds_both_timestamps[fingerprint]",
+      "rust_test": "http::test_http_profile_comparison_retains_every_stable_field_and_bounds_both_timestamps_fingerprint_18556d",
+      "rust_file": "tools/xtask/tests/source_acceptance/http.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "monkeypatch",
+        "damage"
+      ],
+      "original_fixtures": [
+        "monkeypatch"
+      ],
+      "adaptation": "Real loopback HTTP wire requests validate UTF8 bytes, bearer headers, response framing, peer EOF on failures, complete profile fields and finite timestamps. Production retained-fixture completion governs success/failure evidence."
+    },
+    {
+      "python_id": "tests/test_native_http_replay.py::test_http_profile_comparison_retains_every_stable_field_and_bounds_both_timestamps[unknown]",
+      "rust_test": "http::test_http_profile_comparison_retains_every_stable_field_and_bounds_both_timestamps_unknown_c9c583",
+      "rust_file": "tools/xtask/tests/source_acceptance/http.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "monkeypatch",
+        "damage"
+      ],
+      "original_fixtures": [
+        "monkeypatch"
+      ],
+      "adaptation": "Real loopback HTTP wire requests validate UTF8 bytes, bearer headers, response framing, peer EOF on failures, complete profile fields and finite timestamps. Production retained-fixture completion governs success/failure evidence."
+    },
+    {
+      "python_id": "tests/test_native_http_replay.py::test_http_profile_comparison_retains_every_stable_field_and_bounds_both_timestamps[created-before]",
+      "rust_test": "http::test_http_profile_comparison_retains_every_stable_field_and_bounds_both_timestamps_created_before_3b44fc",
+      "rust_file": "tools/xtask/tests/source_acceptance/http.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "monkeypatch",
+        "damage"
+      ],
+      "original_fixtures": [
+        "monkeypatch"
+      ],
+      "adaptation": "Real loopback HTTP wire requests validate UTF8 bytes, bearer headers, response framing, peer EOF on failures, complete profile fields and finite timestamps. Production retained-fixture completion governs success/failure evidence."
+    },
+    {
+      "python_id": "tests/test_native_http_replay.py::test_http_profile_comparison_retains_every_stable_field_and_bounds_both_timestamps[created-after]",
+      "rust_test": "http::test_http_profile_comparison_retains_every_stable_field_and_bounds_both_timestamps_created_after_9147b1",
+      "rust_file": "tools/xtask/tests/source_acceptance/http.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "monkeypatch",
+        "damage"
+      ],
+      "original_fixtures": [
+        "monkeypatch"
+      ],
+      "adaptation": "Real loopback HTTP wire requests validate UTF8 bytes, bearer headers, response framing, peer EOF on failures, complete profile fields and finite timestamps. Production retained-fixture completion governs success/failure evidence."
+    },
+    {
+      "python_id": "tests/test_native_http_replay.py::test_http_profile_comparison_retains_every_stable_field_and_bounds_both_timestamps[updated-bool]",
+      "rust_test": "http::test_http_profile_comparison_retains_every_stable_field_and_bounds_both_timestamps_updated_bool_f58141",
+      "rust_file": "tools/xtask/tests/source_acceptance/http.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "monkeypatch",
+        "damage"
+      ],
+      "original_fixtures": [
+        "monkeypatch"
+      ],
+      "adaptation": "Real loopback HTTP wire requests validate UTF8 bytes, bearer headers, response framing, peer EOF on failures, complete profile fields and finite timestamps. Production retained-fixture completion governs success/failure evidence."
+    },
+    {
+      "python_id": "tests/test_native_http_replay.py::test_http_profile_comparison_retains_every_stable_field_and_bounds_both_timestamps[updated-nonfinite]",
+      "rust_test": "http::test_http_profile_comparison_retains_every_stable_field_and_bounds_both_timestamps_updated_nonfinite_99c831",
+      "rust_file": "tools/xtask/tests/source_acceptance/http.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "monkeypatch",
+        "damage"
+      ],
+      "original_fixtures": [
+        "monkeypatch"
+      ],
+      "adaptation": "Real loopback HTTP wire requests validate UTF8 bytes, bearer headers, response framing, peer EOF on failures, complete profile fields and finite timestamps. Production retained-fixture completion governs success/failure evidence."
+    },
+    {
+      "python_id": "tests/test_native_http_replay.py::test_main_removes_only_successful_fixtures_and_retains_failed_owned_state[False]",
+      "rust_test": "http::test_main_removes_only_successful_fixtures_and_retains_failed_owned_state_false_e1a80b",
+      "rust_file": "tools/xtask/tests/source_acceptance/http.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "failure"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Real loopback HTTP wire requests validate UTF8 bytes, bearer headers, response framing, peer EOF on failures, complete profile fields and finite timestamps. Production retained-fixture completion governs success/failure evidence."
+    },
+    {
+      "python_id": "tests/test_native_http_replay.py::test_main_removes_only_successful_fixtures_and_retains_failed_owned_state[True]",
+      "rust_test": "http::test_main_removes_only_successful_fixtures_and_retains_failed_owned_state_true_7a9c6a",
+      "rust_file": "tools/xtask/tests/source_acceptance/http.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "failure"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Real loopback HTTP wire requests validate UTF8 bytes, bearer headers, response framing, peer EOF on failures, complete profile fields and finite timestamps. Production retained-fixture completion governs success/failure evidence."
+    },
+    {
+      "python_id": "tests/test_replay_contracts.py::test_complete_replay_comparison_ignores_only_object_key_order",
+      "rust_test": "replay::test_complete_replay_comparison_ignores_only_object_key_order",
+      "rust_file": "tools/xtask/tests/source_acceptance/replay.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "original_parameters": [],
+      "original_fixtures": [],
+      "adaptation": "Actual production complete JSON comparator preserves scalar kinds, identities, unknown fields, array order and secrets, and rejects nonfinite values with payload-free diagnostics."
+    },
+    {
+      "python_id": "tests/test_replay_contracts.py::test_replay_comparison_refuses_nonfinite_values_without_printing_payloads",
+      "rust_test": "replay::test_replay_comparison_refuses_nonfinite_values_without_printing_payloads",
+      "rust_file": "tools/xtask/tests/source_acceptance/replay.rs",
+      "crate": "tools/xtask",
+      "target": "source_acceptance",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "original_parameters": [],
+      "original_fixtures": [],
+      "adaptation": "Actual production complete JSON comparator preserves scalar kinds, identities, unknown fields, array order and secrets, and rejects nonfinite values with payload-free diagnostics."
+    },
+    {
+      "python_id": "tests/test_self_command.py::test_source_mode_runs_the_module_through_the_interpreter",
+      "rust_test": "self_command::test_source_mode_runs_the_module_through_the_interpreter",
+      "rust_file": "engine-rust/tests/source_acceptance/self_command.rs",
+      "crate": "engine-rust",
+      "target": "source_acceptance",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "monkeypatch"
+      ],
+      "original_fixtures": [
+        "monkeypatch"
+      ],
+      "adaptation": "Native execution has one direct executable shape in development and installation. Actual command builders, real CLI parsing/subprocess output, a copied executable with spaces, and current native call-site inventory replace interpreter/frozen-mode branches."
+    },
+    {
+      "python_id": "tests/test_self_command.py::test_frozen_mode_invokes_the_executable_directly",
+      "rust_test": "self_command::test_frozen_mode_invokes_the_executable_directly",
+      "rust_file": "engine-rust/tests/source_acceptance/self_command.rs",
+      "crate": "engine-rust",
+      "target": "source_acceptance",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "monkeypatch"
+      ],
+      "original_fixtures": [
+        "monkeypatch"
+      ],
+      "adaptation": "Native execution has one direct executable shape in development and installation. Actual command builders, real CLI parsing/subprocess output, a copied executable with spaces, and current native call-site inventory replace interpreter/frozen-mode branches."
+    },
+    {
+      "python_id": "tests/test_self_command.py::test_a_path_with_spaces_stays_one_argument",
+      "rust_test": "self_command::test_a_path_with_spaces_stays_one_argument",
+      "rust_file": "engine-rust/tests/source_acceptance/self_command.rs",
+      "crate": "engine-rust",
+      "target": "source_acceptance",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "monkeypatch"
+      ],
+      "original_fixtures": [
+        "monkeypatch"
+      ],
+      "adaptation": "Native execution has one direct executable shape in development and installation. Actual command builders, real CLI parsing/subprocess output, a copied executable with spaces, and current native call-site inventory replace interpreter/frozen-mode branches."
+    },
+    {
+      "python_id": "tests/test_self_command.py::test_no_arguments_is_the_bare_program",
+      "rust_test": "self_command::test_no_arguments_is_the_bare_program",
+      "rust_file": "engine-rust/tests/source_acceptance/self_command.rs",
+      "crate": "engine-rust",
+      "target": "source_acceptance",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "monkeypatch"
+      ],
+      "original_fixtures": [
+        "monkeypatch"
+      ],
+      "adaptation": "Native execution has one direct executable shape in development and installation. Actual command builders, real CLI parsing/subprocess output, a copied executable with spaces, and current native call-site inventory replace interpreter/frozen-mode branches."
+    },
+    {
+      "python_id": "tests/test_self_command.py::test_no_call_site_builds_its_own_self_command[numera.jobs]",
+      "rust_test": "self_command::test_no_call_site_builds_its_own_self_command_numera_jobs_f99edf",
+      "rust_file": "engine-rust/tests/source_acceptance/self_command.rs",
+      "crate": "engine-rust",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "module"
+      ],
+      "original_fixtures": [],
+      "adaptation": "Native execution has one direct executable shape in development and installation. Actual command builders, real CLI parsing/subprocess output, a copied executable with spaces, and current native call-site inventory replace interpreter/frozen-mode branches."
+    },
+    {
+      "python_id": "tests/test_self_command.py::test_no_call_site_builds_its_own_self_command[numera.mcp]",
+      "rust_test": "self_command::test_no_call_site_builds_its_own_self_command_numera_mcp_6c7157",
+      "rust_file": "engine-rust/tests/source_acceptance/self_command.rs",
+      "crate": "engine-rust",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "module"
+      ],
+      "original_fixtures": [],
+      "adaptation": "Native execution has one direct executable shape in development and installation. Actual command builders, real CLI parsing/subprocess output, a copied executable with spaces, and current native call-site inventory replace interpreter/frozen-mode branches."
+    },
+    {
+      "python_id": "tests/test_self_command.py::test_no_call_site_builds_its_own_self_command[numera.server.routes_browser]",
+      "rust_test": "self_command::test_no_call_site_builds_its_own_self_command_numera_server_routes_browser_eced67",
+      "rust_file": "engine-rust/tests/source_acceptance/self_command.rs",
+      "crate": "engine-rust",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "module"
+      ],
+      "original_fixtures": [],
+      "adaptation": "Native execution has one direct executable shape in development and installation. Actual command builders, real CLI parsing/subprocess output, a copied executable with spaces, and current native call-site inventory replace interpreter/frozen-mode branches."
+    },
+    {
+      "python_id": "tests/test_self_command.py::test_no_call_site_builds_its_own_self_command[numera.server.routes_schedules]",
+      "rust_test": "self_command::test_no_call_site_builds_its_own_self_command_numera_server_routes_schedules_ed6980",
+      "rust_file": "engine-rust/tests/source_acceptance/self_command.rs",
+      "crate": "engine-rust",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "module"
+      ],
+      "original_fixtures": [],
+      "adaptation": "Native execution has one direct executable shape in development and installation. Actual command builders, real CLI parsing/subprocess output, a copied executable with spaces, and current native call-site inventory replace interpreter/frozen-mode branches."
+    },
+    {
+      "python_id": "tests/test_self_command.py::test_the_frozen_entry_would_reject_the_old_command",
+      "rust_test": "self_command::test_the_frozen_entry_would_reject_the_old_command",
+      "rust_file": "engine-rust/tests/source_acceptance/self_command.rs",
+      "crate": "engine-rust",
+      "target": "source_acceptance",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "original_parameters": [],
+      "original_fixtures": [],
+      "adaptation": "Native execution has one direct executable shape in development and installation. Actual command builders, real CLI parsing/subprocess output, a copied executable with spaces, and current native call-site inventory replace interpreter/frozen-mode branches."
+    },
+    {
+      "python_id": "tests/test_self_command.py::test_a_frozen_build_rejects_the_old_shape_for_real",
+      "rust_test": "self_command::test_a_frozen_build_rejects_the_old_shape_for_real",
+      "rust_file": "engine-rust/tests/source_acceptance/self_command.rs",
+      "crate": "engine-rust",
+      "target": "source_acceptance",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path"
+      ],
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "adaptation": "Native execution has one direct executable shape in development and installation. Actual command builders, real CLI parsing/subprocess output, a copied executable with spaces, and current native call-site inventory replace interpreter/frozen-mode branches."
+    },
+    {
+      "python_id": "tests/test_update_admission.py::test_gate_blocks_real_session_claim_and_cli_until_exact_ticket_resume",
+      "rust_test": "update::test_gate_blocks_real_session_claim_and_cli_until_exact_ticket_resume",
+      "rust_file": "engine-rust/tests/source_acceptance/update.rs",
+      "crate": "engine-rust",
+      "target": "source_acceptance",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path"
+      ],
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "adaptation": "Actual durable Admission/Reservation/Session and private HTTP routers. Cancellation abandons real tower awaits while actual profile/token blocking IO retains admission; original method faults use existing scoped native IO observers."
+    },
+    {
+      "python_id": "tests/test_update_admission.py::test_precommitted_ticket_recovers_after_quiesce_response_is_lost",
+      "rust_test": "update::test_precommitted_ticket_recovers_after_quiesce_response_is_lost",
+      "rust_file": "engine-rust/tests/source_acceptance/update.rs",
+      "crate": "engine-rust",
+      "target": "source_acceptance",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path"
+      ],
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "adaptation": "Actual durable Admission/Reservation/Session and private HTTP routers. Cancellation abandons real tower awaits while actual profile/token blocking IO retains admission; original method faults use existing scoped native IO observers."
+    },
+    {
+      "python_id": "tests/test_update_admission.py::test_resume_receipt_is_idempotent_but_never_authorizes_another_gate",
+      "rust_test": "update::test_resume_receipt_is_idempotent_but_never_authorizes_another_gate",
+      "rust_file": "engine-rust/tests/source_acceptance/update.rs",
+      "crate": "engine-rust",
+      "target": "source_acceptance",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path"
+      ],
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "adaptation": "Actual durable Admission/Reservation/Session and private HTTP routers. Cancellation abandons real tower awaits while actual profile/token blocking IO retains admission; original method faults use existing scoped native IO observers."
+    },
+    {
+      "python_id": "tests/test_update_admission.py::test_resume_receipt_failure_keeps_admission_closed",
+      "rust_test": "update::test_resume_receipt_failure_keeps_admission_closed",
+      "rust_file": "engine-rust/tests/source_acceptance/update.rs",
+      "crate": "engine-rust",
+      "target": "source_acceptance",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Actual durable Admission/Reservation/Session and private HTTP routers. Cancellation abandons real tower awaits while actual profile/token blocking IO retains admission; original method faults use existing scoped native IO observers."
+    },
+    {
+      "python_id": "tests/test_update_admission.py::test_inflight_work_refuses_quiesce_without_closing_admission",
+      "rust_test": "update::test_inflight_work_refuses_quiesce_without_closing_admission",
+      "rust_file": "engine-rust/tests/source_acceptance/update.rs",
+      "crate": "engine-rust",
+      "target": "source_acceptance",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path"
+      ],
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "adaptation": "Actual durable Admission/Reservation/Session and private HTTP routers. Cancellation abandons real tower awaits while actual profile/token blocking IO retains admission; original method faults use existing scoped native IO observers."
+    },
+    {
+      "python_id": "tests/test_update_admission.py::test_unsettled_helper_reservation_survives_its_parent_scope",
+      "rust_test": "update::test_unsettled_helper_reservation_survives_its_parent_scope",
+      "rust_file": "engine-rust/tests/source_acceptance/update.rs",
+      "crate": "engine-rust",
+      "target": "source_acceptance",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path"
+      ],
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "adaptation": "Actual durable Admission/Reservation/Session and private HTTP routers. Cancellation abandons real tower awaits while actual profile/token blocking IO retains admission; original method faults use existing scoped native IO observers."
+    },
+    {
+      "python_id": "tests/test_update_admission.py::test_unknown_claim_or_gate_never_expires_into_available",
+      "rust_test": "update::test_unknown_claim_or_gate_never_expires_into_available",
+      "rust_file": "engine-rust/tests/source_acceptance/update.rs",
+      "crate": "engine-rust",
+      "target": "source_acceptance",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path"
+      ],
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "adaptation": "Actual durable Admission/Reservation/Session and private HTTP routers. Cancellation abandons real tower awaits while actual profile/token blocking IO retains admission; original method faults use existing scoped native IO observers."
+    },
+    {
+      "python_id": "tests/test_update_admission.py::test_thread_race_has_no_successful_quiesce_beside_admitted_work",
+      "rust_test": "update::test_thread_race_has_no_successful_quiesce_beside_admitted_work",
+      "rust_file": "engine-rust/tests/source_acceptance/update.rs",
+      "crate": "engine-rust",
+      "target": "source_acceptance",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path"
+      ],
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "adaptation": "Actual durable Admission/Reservation/Session and private HTTP routers. Cancellation abandons real tower awaits while actual profile/token blocking IO retains admission; original method faults use existing scoped native IO observers."
+    },
+    {
+      "python_id": "tests/test_update_admission.py::test_actual_session_claim_defers_then_proved_stop_allows_quiesce",
+      "rust_test": "update::test_actual_session_claim_defers_then_proved_stop_allows_quiesce",
+      "rust_file": "engine-rust/tests/source_acceptance/update.rs",
+      "crate": "engine-rust",
+      "target": "source_acceptance",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path"
+      ],
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "adaptation": "Actual durable Admission/Reservation/Session and private HTTP routers. Cancellation abandons real tower awaits while actual profile/token blocking IO retains admission; original method faults use existing scoped native IO observers."
+    },
+    {
+      "python_id": "tests/test_update_admission.py::test_cancelled_http_await_does_not_release_still_executing_handler",
+      "rust_test": "update::test_cancelled_http_await_does_not_release_still_executing_handler",
+      "rust_file": "engine-rust/tests/source_acceptance/update.rs",
+      "crate": "engine-rust",
+      "target": "source_acceptance",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Actual durable Admission/Reservation/Session and private HTTP routers. Cancellation abandons real tower awaits while actual profile/token blocking IO retains admission; original method faults use existing scoped native IO observers."
+    },
+    {
+      "python_id": "tests/test_update_admission.py::test_private_http_token_is_not_public_api_token_and_survives_restart",
+      "rust_test": "update::test_private_http_token_is_not_public_api_token_and_survives_restart",
+      "rust_file": "engine-rust/tests/source_acceptance/update.rs",
+      "crate": "engine-rust",
+      "target": "source_acceptance",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Actual durable Admission/Reservation/Session and private HTTP routers. Cancellation abandons real tower awaits while actual profile/token blocking IO retains admission; original method faults use existing scoped native IO observers."
+    },
+    {
+      "python_id": "tests/test_update_admission.py::test_closed_gate_refuses_named_token_auth_before_last_used_write",
+      "rust_test": "update::test_closed_gate_refuses_named_token_auth_before_last_used_write",
+      "rust_file": "engine-rust/tests/source_acceptance/update.rs",
+      "crate": "engine-rust",
+      "target": "source_acceptance",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Actual durable Admission/Reservation/Session and private HTTP routers. Cancellation abandons real tower awaits while actual profile/token blocking IO retains admission; original method faults use existing scoped native IO observers."
+    },
+    {
+      "python_id": "tests/test_update_admission.py::test_abandoned_named_auth_worker_retains_admission_until_last_used_settles",
+      "rust_test": "update::test_abandoned_named_auth_worker_retains_admission_until_last_used_settles",
+      "rust_file": "engine-rust/tests/source_acceptance/update.rs",
+      "crate": "engine-rust",
+      "target": "source_acceptance",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path"
+      ],
+      "original_fixtures": [
+        "tmp_path"
+      ],
+      "adaptation": "Actual durable Admission/Reservation/Session and private HTTP routers. Cancellation abandons real tower awaits while actual profile/token blocking IO retains admission; original method faults use existing scoped native IO observers."
+    },
+    {
+      "python_id": "tests/test_update_admission.py::test_private_update_errors_never_return_internal_paths_or_capabilities[quiesce]",
+      "rust_test": "update::test_private_update_errors_never_return_internal_paths_or_capabilities_quiesce_fb2347",
+      "rust_file": "engine-rust/tests/source_acceptance/update.rs",
+      "crate": "engine-rust",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "operation"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Actual durable Admission/Reservation/Session and private HTTP routers. Cancellation abandons real tower awaits while actual profile/token blocking IO retains admission; original method faults use existing scoped native IO observers."
+    },
+    {
+      "python_id": "tests/test_update_admission.py::test_private_update_errors_never_return_internal_paths_or_capabilities[resume]",
+      "rust_test": "update::test_private_update_errors_never_return_internal_paths_or_capabilities_resume_e48e1a",
+      "rust_file": "engine-rust/tests/source_acceptance/update.rs",
+      "crate": "engine-rust",
+      "target": "source_acceptance",
+      "original_type": "parameterized",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "tmp_path",
+        "monkeypatch",
+        "operation"
+      ],
+      "original_fixtures": [
+        "tmp_path",
+        "monkeypatch"
+      ],
+      "adaptation": "Actual durable Admission/Reservation/Session and private HTTP routers. Cancellation abandons real tower awaits while actual profile/token blocking IO retains admission; original method faults use existing scoped native IO observers."
+    },
+    {
+      "python_id": "tests/test_update_admission.py::test_private_token_is_not_inherited_by_browser_helper_children",
+      "rust_test": "update::test_private_token_is_not_inherited_by_browser_helper_children",
+      "rust_file": "engine-rust/tests/source_acceptance/update.rs",
+      "crate": "engine-rust",
+      "target": "source_acceptance",
+      "original_type": "standard",
+      "native_type": "#[test]",
+      "original_parameters": [
+        "monkeypatch"
+      ],
+      "original_fixtures": [
+        "monkeypatch"
+      ],
+      "adaptation": "Actual durable Admission/Reservation/Session and private HTTP routers. Cancellation abandons real tower awaits while actual profile/token blocking IO retains admission; original method faults use existing scoped native IO observers."
+    }
+  ],
+  "source_sha256": {
+    "engine/tests/test_live_engine_contract.py": "4f4fe0d0ec33f9d352750c3e07d6083e0fcc76becb4e6876c8f11bdf9b0b4b55",
+    "engine/tests/test_migration_cleanup.py": "f30b4d83a0c68b4811f3f0ea68d0da6e37ae0964ed75eaafa0f8852636e80650",
+    "engine/tests/test_native_entry_acceptance.py": "02fc572b8a76d8849b2b1230a0a970e4692dbd43fc0a5e6e7c9c6635abd4efd0",
+    "engine/tests/test_native_export_round_trip.py": "ed9412df12cb4d9d9224f098ad83827a334ac5a40154128f23328934156e891b",
+    "engine/tests/test_native_http_replay.py": "e1cdca0a8dae9482e972a1612467a026adbac8eab879698de10f01bad4f8c6e6",
+    "engine/tests/test_replay_contracts.py": "01662faff3b4fd1e32a5110802176f02c6845f5f00ca25dfa437c33ce84ec806",
+    "engine/tests/test_self_command.py": "8b3af08f32777b36e8086d2a417f428862fdb5c0be0f3f908a49093d161e44ba",
+    "engine/tests/test_update_admission.py": "59b164585728518f81b9ae8ed9451e326fb89d2149fd3944de5f426d2955b08b"
+  },
+  "adaptations": [
+    "Real axum HTTP create/import/list with actual ProfileRepo conversion, native sentinel and encrypted-store effects.",
+    "Actual durable Admission/Reservation/Session and private HTTP routers. Cancellation abandons real tower awaits while actual profile/token blocking IO retains admission; original method faults use existing scoped native IO observers.",
+    "Native execution has one direct executable shape in development and installation. Actual command builders, real CLI parsing/subprocess output, a copied executable with spaces, and current native call-site inventory replace interpreter/frozen-mode branches.",
+    "Real native producers run through the production bounded nonblocking executor. Explicit typed observer failures exercise receipt/communication/cleanup/wait faults. Receipts are validated against real command/SDK trees, native token fields and kernel liveness; no process environment mutation.",
+    "Real loopback HTTP wire requests validate UTF8 bytes, bearer headers, response framing, peer EOF on failures, complete profile fields and finite timestamps. Production retained-fixture completion governs success/failure evidence.",
+    "Actual exclusive directories and injected typed filesystem failures exercise production recursive cleanup diagnostics. Timeout controls use real isolated Rust worker ResourceGuard observations (open handle/thread), replacing obsolete Python reader-thread ownership. The historical no-diagnostic defect is exercised as a native silent-diagnostic counterexample; the original historical source hash is preserved as provenance.",
+    "Actual production complete JSON comparator preserves scalar kinds, identities, unknown fields, array order and secrets, and rejects nonfinite values with payload-free diagnostics.",
+    "Actual xtask CI evidence, workflow/release validators, compiler phase dispatch, bounded producers and stateful Cargo progress projection replace Python tools. Rust case/WASM inventories replace JUnit/TypeScript reports, compile-time whole-module exclusions retain only the two reviewed Windows POSIX domains, and locked Cargo metadata replaces pip-freeze auditing."
+  ]
+}

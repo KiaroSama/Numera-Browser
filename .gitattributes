@@ -39,3 +39,12 @@
 *.whl binary
 *.exe binary
 *.dll binary
+
+# Source-generated FastAPI templates retain their exact response whitespace.
+engine-rust/src/http/documentation-assets/*.html whitespace=-blank-at-eol,-blank-at-eof
+
+# Keep the checked compiler's exact output bytes; authored Rust uses rustfmt.
+browser-page-rust/generated/runtime.js whitespace=-blank-at-eol
+
+# Transparent compiler output; authored page behavior is in browser-page-rust/src.
+browser-page-rust/generated/runtime.js linguist-generated=true

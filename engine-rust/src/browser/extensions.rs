@@ -2,7 +2,7 @@ use crate::storage::{data_root::expand_home, locks::resolved};
 use std::{io, path::Path};
 
 /// Resolve launch resources against the caller's paths, not an SDK process CWD.
-/// Named-user homes require a platform account resolver before this boundary.
+/// Current and named-user homes use the shared platform account resolver.
 pub fn paths(entries: &[String], cwd: &Path, home: &Path) -> io::Result<Vec<String>> {
     if !cwd.is_absolute() || !home.is_absolute() {
         return Err(io::Error::new(
@@ -13,20 +13,7 @@ pub fn paths(entries: &[String], cwd: &Path, home: &Path) -> io::Result<Vec<Stri
     let mut paths = Vec::new();
     for entry in entries {
         let path = Path::new(entry);
-        if !path.is_absolute()
-            && path.components().next().is_some_and(|component| {
-                component
-                    .as_os_str()
-                    .to_str()
-                    .is_some_and(|value| value.starts_with('~') && value != "~")
-            })
-        {
-            return Err(io::Error::new(
-                io::ErrorKind::Unsupported,
-                "Named-user extension paths require account resolution",
-            ));
-        }
-        let path = expand_home(path, home);
+        let path = expand_home(path, home)?;
         #[cfg(windows)]
         let path = {
             use std::path::{Component, Prefix};

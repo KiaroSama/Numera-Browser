@@ -1,0 +1,163 @@
+{
+  "schema": 1,
+  "baseline_commit": "13b6d9c6973281fe123353eaec05b29d65781a2d",
+  "baseline_tree": "760f9873ded13c5ebfecae1f16b385e34f695124",
+  "source_trees": {
+    "engine/numera": "25cd7f34689e4a1688c426fdb7d4a6c4b898998e",
+    "engine/tests": "ec1a33ab13ca6ee1dd6e7c629de4118ab848c82a"
+  },
+  "interpreter": "Python 3.13.15, temporary immutable-source observation only",
+  "runtime": "Native tests consume only these data observations and compiled Rust process fixtures. No Python process is required.",
+  "fixtures": [
+    {
+      "file": "engine-rust/tests/fixtures/cli-characterization/cli_profile_parity.json",
+      "sha256": "621f2cbe8833168f9117cea42d5e898faa06df92bb7867ce03683a376ddf2817",
+      "bytes": 90586,
+      "observer_file": "engine-rust/tests/cli_profile_parity.rs",
+      "observer_sha256": "b40ec41d678c0448fb9752949eaa04565564bf30b9901503f7ffec722a3ca2f3",
+      "observer_helpers": [
+        {
+          "file": "scripts/migration/cli_profile_cases.py",
+          "sha256": "f09b2db83f945397e8b41b03396cea35aab011c847b3625f45cb9d17d3c49e03"
+        },
+        {
+          "file": "scripts/migration/cli_fleet_output_cases.py",
+          "sha256": "b7521a087b9a91fefa8816cd747fa3915bd383e20dc1b2cd8b8154e2713f89a2"
+        }
+      ],
+      "fixture_files": 0,
+      "normalization": "Only the temporary source root is replaced by @CLI_ROOT@; all native assertions and other output bytes are retained."
+    },
+    {
+      "file": "engine-rust/tests/fixtures/cli-characterization/cli_pool_parity.json",
+      "sha256": "9b9394c4c8ad1880710fbf1503a1319cb97e6bdb6b762b3918af4982f29409e7",
+      "bytes": 137367,
+      "observer_file": "engine-rust/tests/cli_pool_parity.rs",
+      "observer_sha256": "e446ab3979b35558c6cca4bbfbe6b94ebcbf465df70c428441c27f00797fdb16",
+      "observer_helpers": [
+        {
+          "file": "scripts/migration/cli_pool_cases.py",
+          "sha256": "910498b3d3a4e6278d4abfe2ccf135169302d787c896f6bd9242f78f98bb4e1b"
+        }
+      ],
+      "fixture_files": 0,
+      "normalization": "Only the temporary source root is replaced by @CLI_ROOT@; all native assertions and other output bytes are retained."
+    },
+    {
+      "file": "engine-rust/tests/fixtures/cli-characterization/cli_import_parity.json",
+      "sha256": "188561e31dd526587689f85a6119979d510ba7197b5477e58e5f4e5fa474e31c",
+      "bytes": 21855,
+      "observer_file": "engine-rust/tests/cli_import_parity.rs",
+      "observer_sha256": "b109a55a6a6e592cfac3a5437c7b1af303d05159344a554fc719ba0a996c61c9",
+      "observer_helpers": [
+        {
+          "file": "scripts/migration/cli_import_cases.py",
+          "sha256": "a1ebf1f0dc6c4a69b70f8c79e37f20fe779170e08d7887f095ce411cd6d754ae"
+        }
+      ],
+      "fixture_files": 0,
+      "normalization": "Only the temporary source root is replaced by @CLI_ROOT@; all native assertions and other output bytes are retained."
+    },
+    {
+      "file": "engine-rust/tests/fixtures/cli-characterization/cli_settings_parity.json",
+      "sha256": "424e6846d77a68e9c58a2df205cc6f20c5cfcaff503282489c5ea003b21a6060",
+      "bytes": 34880,
+      "observer_file": "engine-rust/tests/cli_settings_parity.rs",
+      "observer_sha256": "35df6a419a1446e0b28fcbdd61ecb2e6d072d1f5bcbc2af1118f62bfcfaa2717",
+      "observer_helpers": [
+        {
+          "file": "scripts/migration/cli_settings_cases.py",
+          "sha256": "fa804f9591176a328d71a42b0234de21d862dec457e114ed5d67687a2c684fdf"
+        },
+        {
+          "file": "scripts/migration/cli_automation_output_cases.py",
+          "sha256": "14e031d9dae561afe0019fc28ea920de8ac164c58784ef176fbfa04cca5bfd9f"
+        },
+        {
+          "file": "scripts/migration/cli_extension_output_cases.py",
+          "sha256": "f4f0e89a31bcf603c75e841429b8f51552e2bd1f3d4c3415f6ef9e97420edde4"
+        }
+      ],
+      "fixture_files": 1,
+      "normalization": "Only the temporary source root is replaced by @CLI_ROOT@; all native assertions and other output bytes are retained."
+    },
+    {
+      "file": "engine-rust/tests/fixtures/cli-characterization/cli_cookie_parity.json",
+      "sha256": "35cf695e95e55769ca6ac5f9d8a5d8d554a3a375bb2c2511630014d258182172",
+      "bytes": 173330,
+      "observer_file": "engine-rust/tests/cli_cookie_parity.rs",
+      "observer_sha256": "16e4f2c08e0194931cbfa1e37e6c9280a0e13f3fade400666ecab69a84b8d06d",
+      "observer_helpers": [
+        {
+          "file": "scripts/migration/cli_cookie_cases.py",
+          "sha256": "878de73d969735641a56642e5d6859e70b8a4da13f0cee028cc29ba7cf6e274b"
+        },
+        {
+          "file": "scripts/migration/probe_cases.py",
+          "sha256": "9e44093f7d222949ef2fec8f1c60a5dd5c1657a02ae6ea26f3a069925aab6d5f"
+        },
+        {
+          "file": "scripts/migration/cli_probe_output_cases.py",
+          "sha256": "f6556554701cbe185ad469a64df37ab8cf5ad04b92a8148efe2b697dfe530b58"
+        }
+      ],
+      "fixture_files": 0,
+      "normalization": "Only the temporary source root is replaced by @CLI_ROOT@; all native assertions and other output bytes are retained."
+    },
+    {
+      "file": "engine-rust/tests/fixtures/cli-characterization/bulk_parity.json",
+      "sha256": "e169040409a1f6777a0ab3ee95d1c832c184ff30c8ab5e9b29010a7e0d3d7e2d",
+      "bytes": 38407,
+      "observer_file": "engine-rust/tests/bulk_parity.rs",
+      "observer_sha256": "258ed494d38340fc70bc5d3af3f3e95c164fa51ec37898be8270d6371bc860c7",
+      "observer_helpers": [
+        {
+          "file": "scripts/migration/bulk_cases.py",
+          "sha256": "de68c803a766d97c3bf5ff77591eaaeeea80f439dc4ef5f460355a7d0b329a10"
+        }
+      ],
+      "fixture_files": 0,
+      "normalization": "Only the temporary source root is replaced by @CLI_ROOT@; all native assertions and other output bytes are retained."
+    },
+    {
+      "file": "engine-rust/tests/fixtures/cli-characterization/proxy_assignment_parity.json",
+      "sha256": "354c64d48abe89dad83265087685fe8408046dd4432b4e6c1e752ee991418d5f",
+      "bytes": 397896,
+      "observer_file": "engine-rust/tests/proxy_assignment_parity.rs",
+      "observer_sha256": "bf7171d2b74ff2ad00e62138e0ae98b2fda15ce3e475c3d6001f4aecd6cbb592",
+      "observer_helpers": [
+        {
+          "file": "scripts/migration/proxy_assignment_cases.py",
+          "sha256": "0cdce4fbea9c5a5caa67ecb9b6340506279e43409bd2c82c4b1ef1b201e392bd"
+        }
+      ],
+      "fixture_files": 0,
+      "normalization": "Only the temporary source root is replaced by @CLI_ROOT@; all native assertions and other output bytes are retained."
+    }
+  ],
+  "observer_note": "Each observer_sha256 identifies the first inline observation program in its observer_file at observer_revision. The helper source activation separately enforces the immutable baseline commit and source trees above.",
+  "native_process_fixtures": {
+    "source": "engine-rust/tests/common/cli_browser_fixture.rs",
+    "transport": "Compiled Rust SDK protocol peer; actual native CLI services own application stores, locks, validation, output and lifecycle.",
+    "installed_cloak": "The CLI trust fixture stages its compiled peer in its owned browser cache with an exact local version marker, preserving the original installed=true prerequisite through the current acquisition guard. No acquisition or external browser is requested."
+  },
+  "observer_revision": "1ac6762075993007bb939e787261651ad1d32187",
+  "named_home_contract": {
+    "file": "engine-rust/tests/fixtures/cli-characterization/named-home-contract.json",
+    "sha256": "dee05f1bcf3dab4c42c284313a5e21efee280055e2baf647cd23911873aea6aa",
+    "bytes": 934,
+    "source": "Immutable13b engine/numera/cli/setup.py Path(...).expanduser() boundary; standard-library behavior observed with Python3.13.15 pwd/pathlib/ntpath.",
+    "stdlib_ntpath_sha256": "bf16566322f41f7052b7516fb684b2d64a437b39f5bbd21731b1bda1697d1a2e",
+    "privacy": "No actual account names, home paths or account contents are stored. Windows paths are synthetic; the Unix observation stores only the equality/refusal shape.",
+    "runtime": "Rust tests call native account lookup and CLI settings services; no observer interpreter is invoked."
+  },
+  "bulk_integer_contract": {
+    "file": "engine-rust/tests/fixtures/cli-characterization/bulk-integer-contract.json",
+    "sha256": "a6e69f6be28c74b264d94c6f7129622c9d06a152e36c31eb3c72f5b79cd11568",
+    "bytes": 10574,
+    "source": "Immutable13b numera.bulk.generate_profiles, activated with exact baseline/source tree verification.",
+    "observer_runtime": "Python3.13.15; temporary observation only.",
+    "normalization": "Only generated UUID identities are replaced with fixtureN and wall-clock creation/update times with1000.0; all fingerprint/name/profile fields and refusal type/message are retained.",
+    "runtime": "Existing Rust bulk test calls actual CLI parsing, application service, repository and pure generator; no interpreter is invoked."
+  }
+}

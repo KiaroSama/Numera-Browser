@@ -1,0 +1,105 @@
+name: Sign and verify Windows release files
+description: Use the pinned publisher certificate from the protected release job.
+inputs:
+  pfx:
+    description: Base64 PKCS#12 identity from the protected signing environment.
+    required: true
+  password:
+    description: Password for the PKCS#12 identity.
+    required: true
+  kind:
+    description: Sign the portable executables or the rebuilt installer.
+    required: true
+runs:
+  using: composite
+  steps:
+    - shell: pwsh
+      env:
+        NUMERA_SIGNING_PFX_BASE64: ${{ inputs.pfx }}
+        NUMERA_SIGNING_PASSWORD: ${{ inputs.password }}
+        SIGNING_KIND: ${{ inputs.kind }}
+      run: |
+        $ErrorActionPreference = 'Stop'
+        if (!$env:NUMERA_SIGNING_PFX_BASE64 -or !$env:NUMERA_SIGNING_PASSWORD) { throw 'Protected signing credentials are missing' }
+        $expected = [System.Security.Cryptography.X509Certificates.X509Certificate2]::CreateFromPem([IO.File]::ReadAllText((Resolve-Path 'docs/code-signing-cert.pem').Path))
+        $PSNativeCommandUseErrorActionPreference = $false
+        $secret = ConvertTo-SecureString -String $env:NUMERA_SIGNING_PASSWORD -AsPlainText -Force
+        $raw = [Convert]::FromBase64String($env:NUMERA_SIGNING_PFX_BASE64)
+        Remove-Item Env:NUMERA_SIGNING_PFX_BASE64, Env:NUMERA_SIGNING_PASSWORD
+        $tmp = Join-Path $env:RUNNER_TEMP ('numera-authenticode-' + [Guid]::NewGuid())
+        New-Item -ItemType Directory -Path $tmp | Out-Null
+        $store = 'Cert:\CurrentUser\My'
+        $files = switch ($env:SIGNING_KIND) {
+          portable { @('release-input/Numera Browser/numera.exe', 'release-input/Numera Browser/engine/numera-engine.exe', 'release-input/Numera Browser/engine/numera-browser-runtime.exe') }
+          installer { (Get-ChildItem -LiteralPath dist -Filter '*.msi' -File).FullName }
+          default { throw 'Unknown signing stage' }
+        }
+        if (!$files -or ($env:SIGNING_KIND -eq 'installer' -and @($files).Count -ne 1)) { throw 'Expected release files missing' }
+        $toolRoot = "${env:ProgramFiles(x86)}/Windows Kits/10/bin"
+        $architectures = if ($env:RUNNER_ARCH -eq 'ARM64') { @('arm64', 'x64') } else { @('x64') }
+        $signtool = Get-ChildItem -LiteralPath $toolRoot -Directory | Sort-Object { try { [version]$_.Name } catch { [version]'0.0' } } -Descending | ForEach-Object {
+          foreach ($arch in $architectures) { Join-Path $_.FullName "$arch/signtool.exe" }
+        } | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } | Select-Object -First 1
+        if (!$signtool) { throw 'Windows SDK SignTool is missing' }
+        $thumbprint = $expected.Thumbprint
+        if (Test-Path "$store/$thumbprint") { throw 'Refusing to replace a certificate in the runner store' }
+        $rootStore = 'Cert:\CurrentUser\Root'
+        $trustedHere = $false
+        try {
+          $pfx = Join-Path $tmp 'identity.pfx'
+          [IO.File]::WriteAllBytes($pfx, $raw)
+          $imported = @(Import-PfxCertificate -FilePath $pfx -CertStoreLocation $store -Password $secret)
+          $identity = @($imported | Where-Object Thumbprint -EQ $thumbprint)
+          if ($identity.Count -ne 1 -or !$identity[0].HasPrivateKey) { throw 'Signing identity does not match the pinned publisher' }
+          if ($expected.Subject -eq $expected.Issuer -and !(Test-Path "$rootStore/$thumbprint")) {
+            Import-Certificate -FilePath (Resolve-Path 'docs/code-signing-cert.pem').Path -CertStoreLocation $rootStore | Out-Null
+            $trustedHere = $true
+          }
+          foreach ($file in $files) {
+            $file = (Resolve-Path -LiteralPath $file).Path
+            & $signtool sign /fd SHA256 /s My /sha1 $thumbprint /tr http://timestamp.digicert.com /td SHA256 $file
+            if ($LASTEXITCODE -ne 0) { throw 'Authenticode signing failed' }
+            & $signtool verify /pa /all /tw $file
+            if ($LASTEXITCODE -ne 0) { throw 'Authenticode verification failed' }
+            $signature = Get-AuthenticodeSignature -LiteralPath $file
+            if ($signature.Status -ne 'Valid' -or $signature.SignerCertificate.Thumbprint -ne $thumbprint -or !$signature.TimeStamperCertificate) { throw 'Signer or RFC 3161 timestamp is missing or invalid' }
+            $tampered = Join-Path $tmp ([IO.Path]::GetFileName($file))
+            Copy-Item -LiteralPath $file -Destination $tampered
+            if ($file.EndsWith('.msi')) {
+              $installer = New-Object -ComObject WindowsInstaller.Installer
+              $database = $installer.OpenDatabase($tampered, 1)
+              $view = $database.OpenView("UPDATE ``Property`` SET ``Value`` = 'Changed' WHERE ``Property`` = 'ProductName'")
+              $view.Execute()
+              $view.Close()
+              $database.Commit()
+              [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($view)
+              [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($database)
+              [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($installer)
+            } else {
+              $stream = [IO.File]::Open($tampered, [IO.FileMode]::Open)
+              $reader = [IO.BinaryReader]::new($stream)
+              try {
+                $stream.Position = 0x3c
+                $pe = $reader.ReadUInt32()
+                $stream.Position = $pe + 20
+                $section = $pe + 24 + $reader.ReadUInt16()
+                $stream.Position = $section + 20
+                $offset = $reader.ReadUInt32()
+                if ($offset -eq 0 -or $offset -ge $stream.Length) { throw 'Could not select a covered executable byte' }
+                $stream.Position = $offset
+                $byte = $reader.ReadByte()
+                $stream.Position = $offset
+                $stream.WriteByte($byte -bxor 1)
+              } finally { $reader.Dispose() }
+            }
+            & $signtool verify /pa /all $tampered *> $null
+            if ($LASTEXITCODE -eq 0 -or (Get-AuthenticodeSignature -LiteralPath $tampered).Status -eq 'Valid') { throw 'SignTool accepted a modified release file' }
+            Remove-Item -LiteralPath $tampered
+          }
+        } finally {
+          if (Test-Path "$store/$thumbprint") { Remove-Item -LiteralPath "$store/$thumbprint" -DeleteKey }
+          if ($trustedHere) { Remove-Item -LiteralPath "$rootStore/$thumbprint" }
+          [Array]::Clear($raw)
+          $secret.Dispose()
+          Remove-Item -LiteralPath $tmp -Recurse -Force
+        }

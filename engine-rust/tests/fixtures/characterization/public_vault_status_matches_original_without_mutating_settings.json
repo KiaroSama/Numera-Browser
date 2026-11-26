@@ -1,0 +1,405 @@
+{
+  "cases": [
+    {
+      "config": {},
+      "password": null,
+      "result": {
+        "descriptor": null,
+        "enabled": false,
+        "unlocked": true
+      }
+    },
+    {
+      "config": {},
+      "password": "fixture-master",
+      "result": {
+        "descriptor": null,
+        "enabled": false,
+        "unlocked": true
+      }
+    },
+    {
+      "config": {},
+      "password": "wrong-fixture-password",
+      "result": {
+        "descriptor": null,
+        "enabled": false,
+        "unlocked": true
+      }
+    },
+    {
+      "config": {
+        "vault": null,
+        "future": 7
+      },
+      "password": null,
+      "result": {
+        "descriptor": null,
+        "enabled": false,
+        "unlocked": true
+      }
+    },
+    {
+      "config": {
+        "vault": null,
+        "future": 7
+      },
+      "password": "fixture-master",
+      "result": {
+        "descriptor": null,
+        "enabled": false,
+        "unlocked": true
+      }
+    },
+    {
+      "config": {
+        "vault": null,
+        "future": 7
+      },
+      "password": "wrong-fixture-password",
+      "result": {
+        "descriptor": null,
+        "enabled": false,
+        "unlocked": true
+      }
+    },
+    {
+      "config": {
+        "vault": {},
+        "future": 7
+      },
+      "password": null,
+      "result": {
+        "descriptor": {},
+        "enabled": true,
+        "unlocked": true
+      }
+    },
+    {
+      "config": {
+        "vault": {},
+        "future": 7
+      },
+      "password": "fixture-master",
+      "result": {
+        "descriptor": {},
+        "enabled": true,
+        "unlocked": true
+      }
+    },
+    {
+      "config": {
+        "vault": {},
+        "future": 7
+      },
+      "password": "wrong-fixture-password",
+      "result": {
+        "descriptor": {},
+        "enabled": true,
+        "unlocked": true
+      }
+    },
+    {
+      "config": {
+        "vault": false,
+        "future": 7
+      },
+      "password": null,
+      "result": {
+        "descriptor": false,
+        "enabled": true,
+        "unlocked": true
+      }
+    },
+    {
+      "config": {
+        "vault": false,
+        "future": 7
+      },
+      "password": "fixture-master",
+      "result": {
+        "descriptor": false,
+        "enabled": true,
+        "unlocked": true
+      }
+    },
+    {
+      "config": {
+        "vault": false,
+        "future": 7
+      },
+      "password": "wrong-fixture-password",
+      "result": {
+        "descriptor": false,
+        "enabled": true,
+        "unlocked": true
+      }
+    },
+    {
+      "config": {
+        "vault": 0,
+        "future": 7
+      },
+      "password": null,
+      "result": {
+        "descriptor": 0,
+        "enabled": true,
+        "unlocked": true
+      }
+    },
+    {
+      "config": {
+        "vault": 0,
+        "future": 7
+      },
+      "password": "fixture-master",
+      "result": {
+        "descriptor": 0,
+        "enabled": true,
+        "unlocked": true
+      }
+    },
+    {
+      "config": {
+        "vault": 0,
+        "future": 7
+      },
+      "password": "wrong-fixture-password",
+      "result": {
+        "descriptor": 0,
+        "enabled": true,
+        "unlocked": true
+      }
+    },
+    {
+      "config": {
+        "vault": "",
+        "future": 7
+      },
+      "password": null,
+      "result": {
+        "descriptor": "",
+        "enabled": true,
+        "unlocked": true
+      }
+    },
+    {
+      "config": {
+        "vault": "",
+        "future": 7
+      },
+      "password": "fixture-master",
+      "result": {
+        "descriptor": "",
+        "enabled": true,
+        "unlocked": true
+      }
+    },
+    {
+      "config": {
+        "vault": "",
+        "future": 7
+      },
+      "password": "wrong-fixture-password",
+      "result": {
+        "descriptor": "",
+        "enabled": true,
+        "unlocked": true
+      }
+    },
+    {
+      "config": {
+        "vault": [],
+        "future": 7
+      },
+      "password": null,
+      "result": {
+        "descriptor": [],
+        "enabled": true,
+        "unlocked": true
+      }
+    },
+    {
+      "config": {
+        "vault": [],
+        "future": 7
+      },
+      "password": "fixture-master",
+      "result": {
+        "descriptor": [],
+        "enabled": true,
+        "unlocked": true
+      }
+    },
+    {
+      "config": {
+        "vault": [],
+        "future": 7
+      },
+      "password": "wrong-fixture-password",
+      "result": {
+        "descriptor": [],
+        "enabled": true,
+        "unlocked": true
+      }
+    },
+    {
+      "config": {
+        "vault": {
+          "salt": "AAECAwQFBgcICQoLDA0ODw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAQEBAQEBAQEBAQEBAQEBAWWyQWZXpd0fcQPS9XsJfMRJc-TKcZG9EB62TAt4kpHqXpyRD3LkpK6xmIcXyys0yQ=="
+        },
+        "future": 7
+      },
+      "password": null,
+      "result": {
+        "descriptor": {
+          "salt": "AAECAwQFBgcICQoLDA0ODw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAQEBAQEBAQEBAQEBAQEBAWWyQWZXpd0fcQPS9XsJfMRJc-TKcZG9EB62TAt4kpHqXpyRD3LkpK6xmIcXyys0yQ=="
+        },
+        "enabled": true,
+        "unlocked": false
+      }
+    },
+    {
+      "config": {
+        "vault": {
+          "salt": "AAECAwQFBgcICQoLDA0ODw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAQEBAQEBAQEBAQEBAQEBAWWyQWZXpd0fcQPS9XsJfMRJc-TKcZG9EB62TAt4kpHqXpyRD3LkpK6xmIcXyys0yQ=="
+        },
+        "future": 7
+      },
+      "password": "fixture-master",
+      "result": {
+        "descriptor": {
+          "salt": "AAECAwQFBgcICQoLDA0ODw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAQEBAQEBAQEBAQEBAQEBAWWyQWZXpd0fcQPS9XsJfMRJc-TKcZG9EB62TAt4kpHqXpyRD3LkpK6xmIcXyys0yQ=="
+        },
+        "enabled": true,
+        "unlocked": true
+      }
+    },
+    {
+      "config": {
+        "vault": {
+          "salt": "AAECAwQFBgcICQoLDA0ODw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAQEBAQEBAQEBAQEBAQEBAWWyQWZXpd0fcQPS9XsJfMRJc-TKcZG9EB62TAt4kpHqXpyRD3LkpK6xmIcXyys0yQ=="
+        },
+        "future": 7
+      },
+      "password": "wrong-fixture-password",
+      "result": {
+        "descriptor": {
+          "salt": "AAECAwQFBgcICQoLDA0ODw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAQEBAQEBAQEBAQEBAQEBAWWyQWZXpd0fcQPS9XsJfMRJc-TKcZG9EB62TAt4kpHqXpyRD3LkpK6xmIcXyys0yQ=="
+        },
+        "enabled": true,
+        "unlocked": false
+      }
+    },
+    {
+      "config": {
+        "vault": {
+          "salt": "invalid",
+          "verifier": "enc:v2:broken"
+        },
+        "future": 7
+      },
+      "password": null,
+      "result": {
+        "descriptor": {
+          "salt": "invalid",
+          "verifier": "enc:v2:broken"
+        },
+        "enabled": true,
+        "unlocked": false
+      }
+    },
+    {
+      "config": {
+        "vault": {
+          "salt": "invalid",
+          "verifier": "enc:v2:broken"
+        },
+        "future": 7
+      },
+      "password": "fixture-master",
+      "result": {
+        "descriptor": {
+          "salt": "invalid",
+          "verifier": "enc:v2:broken"
+        },
+        "enabled": true,
+        "unlocked": false
+      }
+    },
+    {
+      "config": {
+        "vault": {
+          "salt": "invalid",
+          "verifier": "enc:v2:broken"
+        },
+        "future": 7
+      },
+      "password": "wrong-fixture-password",
+      "result": {
+        "descriptor": {
+          "salt": "invalid",
+          "verifier": "enc:v2:broken"
+        },
+        "enabled": true,
+        "unlocked": false
+      }
+    }
+  ],
+  "guards": [
+    {
+      "journal": "{",
+      "config": {
+        "vault": {
+          "salt": "AAECAwQFBgcICQoLDA0ODw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAQEBAQEBAQEBAQEBAQEBAWWyQWZXpd0fcQPS9XsJfMRJc-TKcZG9EB62TAt4kpHqXpyRD3LkpK6xmIcXyys0yQ=="
+        }
+      },
+      "errors": [
+        "another process left a vault migration unresolved under this data root while this store was open, so its secrets can no longer be read or written safely. Reopen the store (or restart the server) to finish or refuse that migration.",
+        "another process left a vault migration unresolved under this data root while this store was open, so its secrets can no longer be read or written safely. Reopen the store (or restart the server) to finish or refuse that migration.",
+        "another process left a vault migration unresolved under this data root while this store was open, so its secrets can no longer be read or written safely. Reopen the store (or restart the server) to finish or refuse that migration.",
+        "another process left a vault migration unresolved under this data root while this store was open, so its secrets can no longer be read or written safely. Reopen the store (or restart the server) to finish or refuse that migration.",
+        "another process left a vault migration unresolved under this data root while this store was open, so its secrets can no longer be read or written safely. Reopen the store (or restart the server) to finish or refuse that migration."
+      ]
+    },
+    {
+      "journal": "{\"version\": 99}",
+      "config": {
+        "vault": {
+          "salt": "AAECAwQFBgcICQoLDA0ODw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAQEBAQEBAQEBAQEBAQEBAWWyQWZXpd0fcQPS9XsJfMRJc-TKcZG9EB62TAt4kpHqXpyRD3LkpK6xmIcXyys0yQ=="
+        }
+      },
+      "errors": [
+        "another process left a vault migration unresolved under this data root while this store was open, so its secrets can no longer be read or written safely. Reopen the store (or restart the server) to finish or refuse that migration.",
+        "another process left a vault migration unresolved under this data root while this store was open, so its secrets can no longer be read or written safely. Reopen the store (or restart the server) to finish or refuse that migration.",
+        "another process left a vault migration unresolved under this data root while this store was open, so its secrets can no longer be read or written safely. Reopen the store (or restart the server) to finish or refuse that migration.",
+        "another process left a vault migration unresolved under this data root while this store was open, so its secrets can no longer be read or written safely. Reopen the store (or restart the server) to finish or refuse that migration.",
+        "another process left a vault migration unresolved under this data root while this store was open, so its secrets can no longer be read or written safely. Reopen the store (or restart the server) to finish or refuse that migration."
+      ]
+    },
+    {
+      "journal": "{\"version\": 1, \"op\": \"rotate\", \"old\": {\"salt\": \"AAECAwQFBgcICQoLDA0ODw==\", \"verifier\": \"enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD1e4W1gbT4L-X4_cVYhxdyk4kdY2U2I-kKZVKjDAKZtv7qeLk5DiAq-HEEdOtxi-AA==\"}, \"new\": {\"salt\": \"EBESExQVFhcYGRobHB0eHw==\", \"verifier\": \"enc:v2:gAAAAABlU_EAAAECAwQFBgcICQoLDA0OD2q0tL_d2LQimNEQSbeJYq6qwLKD-jCjNhRZi9fzWyUR5gpdXP_dWxjcDzG44A1YcA==\"}, \"pid\": 0}",
+      "config": {
+        "vault": {
+          "salt": "AAECAwQFBgcICQoLDA0ODw==",
+          "verifier": "enc:v2:gAAAAABlU_EAAQEBAQEBAQEBAQEBAQEBAWWyQWZXpd0fcQPS9XsJfMRJc-TKcZG9EB62TAt4kpHqXpyRD3LkpK6xmIcXyys0yQ=="
+        }
+      },
+      "errors": [
+        "another process left a vault migration unresolved under this data root while this store was open, so its secrets can no longer be read or written safely. Reopen the store (or restart the server) to finish or refuse that migration.",
+        "another process left a vault migration unresolved under this data root while this store was open, so its secrets can no longer be read or written safely. Reopen the store (or restart the server) to finish or refuse that migration.",
+        "another process left a vault migration unresolved under this data root while this store was open, so its secrets can no longer be read or written safely. Reopen the store (or restart the server) to finish or refuse that migration.",
+        "another process left a vault migration unresolved under this data root while this store was open, so its secrets can no longer be read or written safely. Reopen the store (or restart the server) to finish or refuse that migration.",
+        "another process left a vault migration unresolved under this data root while this store was open, so its secrets can no longer be read or written safely. Reopen the store (or restart the server) to finish or refuse that migration."
+      ]
+    }
+  ]
+}

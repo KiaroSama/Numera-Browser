@@ -1,0 +1,14 @@
+[
+  {
+    "root": "/workspace/work/native-characterization-8o1qs7rv/source path 0",
+    "existing": false,
+    "message": "cannot create /workspace/work/native-characterization-8o1qs7rv/source path 0/profiles - the data directory /workspace/work/native-characterization-8o1qs7rv/source path 0 is not writable by this process (it is owned by uid 1000:1000, this process runs as uid 1000:1000). Point --data-dir or NUMERA_DATA_DIR at a directory you can write, or fix the ownership of that one. In Docker, prefer the named volume the bundled docker-compose.yml uses; a bind-mounted host directory keeps its own ownership and must already be writable by the container's user.",
+    "code": 13
+  },
+  {
+    "root": "/workspace/work/native-characterization-8o1qs7rv/source path 1",
+    "existing": true,
+    "message": "cannot create /workspace/work/native-characterization-8o1qs7rv/source path 1/user-data - the data directory /workspace/work/native-characterization-8o1qs7rv/source path 1 is not writable by this process (it is owned by uid 1000:1000, this process runs as uid 1000:1000). Point --data-dir or NUMERA_DATA_DIR at a directory you can write, or fix the ownership of that one. In Docker, prefer the named volume the bundled docker-compose.yml uses; a bind-mounted host directory keeps its own ownership and must already be writable by the container's user.",
+    "code": 13
+  }
+]

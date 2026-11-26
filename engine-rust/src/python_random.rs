@@ -14,6 +14,34 @@ impl PythonRandom {
         if magnitude >> 32 != 0 {
             key.push((magnitude >> 32) as u32);
         }
+        Self::from_words(&key)
+    }
+
+    pub(crate) fn from_number(seed: &serde_json::Number) -> Option<Self> {
+        if let Some(seed) = seed.as_i64() {
+            return Some(Self::new(seed));
+        }
+        let text = seed.to_string();
+        let digits = text.strip_prefix('-').unwrap_or(&text);
+        if digits.is_empty() || !digits.bytes().all(|byte| byte.is_ascii_digit()) {
+            return None;
+        }
+        let mut words = vec![0u32];
+        for digit in digits.bytes() {
+            let mut carry = u64::from(digit - b'0');
+            for word in &mut words {
+                let value = u64::from(*word) * 10 + carry;
+                *word = value as u32;
+                carry = value >> 32;
+            }
+            if carry != 0 {
+                words.push(carry as u32);
+            }
+        }
+        Some(Self::from_words(&words))
+    }
+
+    fn from_words(key: &[u32]) -> Self {
         let mut rng = Self {
             state: [0; 624],
             index: 624,
@@ -72,46 +100,58 @@ impl PythonRandom {
         y ^ (y >> 18)
     }
 
-    fn random(&mut self) -> f64 {
+    pub(crate) fn random(&mut self) -> f64 {
         let a = self.word() >> 5;
         let b = self.word() >> 6;
         (a as f64 * 67_108_864.0 + b as f64) / 9_007_199_254_740_992.0
     }
 
     pub(crate) fn below(&mut self, n: usize) -> usize {
-        // All callers are bounded device pools, never attacker-controlled lengths.
-        debug_assert!(n > 0 && n <= u32::MAX as usize);
+        debug_assert!(n > 0);
         let bits = usize::BITS - n.leading_zeros();
         loop {
-            let value = (self.word() >> (32 - bits)) as usize;
+            let value = if bits <= 32 {
+                (self.word() >> (32 - bits)) as usize
+            } else {
+                // Python getrandbits fills its least-significant 32-bit word
+                // first; only the final word is shifted for the remaining bits.
+                let low = u64::from(self.word());
+                let high = u64::from(self.word() >> (64 - bits));
+                (low | (high << 32)) as usize
+            };
             if value < n {
                 return value;
             }
         }
     }
 
-    pub(crate) fn weighted(&mut self, weights: &[u64]) -> usize {
-        let total: u64 = weights.iter().sum();
-        let value = self.random() * total as f64;
-        let mut cumulative = 0;
-        for (i, weight) in weights.iter().enumerate() {
-            cumulative += weight;
-            if value < cumulative as f64 {
-                return i;
-            }
-        }
-        weights.len() - 1
-    }
-
     pub(crate) fn sample_indices(&mut self, n: usize, k: usize) -> Vec<usize> {
-        let mut pool: Vec<usize> = (0..n).collect();
+        debug_assert!(k <= n);
         let mut selected = Vec::with_capacity(k);
-        // Existing desktop font samples always take all but at most six entries:
-        // CPython selects its pool-swap branch for these concrete catalog sizes.
-        for i in 0..k {
-            let j = self.below(n - i);
-            selected.push(pool[j]);
-            pool[j] = pool[n - i - 1];
+        let mut set_size = 21;
+        if k > 5 {
+            let mut power = 4usize;
+            while power < k * 3 {
+                power *= 4;
+            }
+            set_size += power;
+        }
+        if n <= set_size {
+            let mut pool: Vec<usize> = (0..n).collect();
+            for i in 0..k {
+                let j = self.below(n - i);
+                selected.push(pool[j]);
+                pool[j] = pool[n - i - 1];
+            }
+        } else {
+            let mut seen = std::collections::HashSet::new();
+            for _ in 0..k {
+                let mut j = self.below(n);
+                while !seen.insert(j) {
+                    j = self.below(n);
+                }
+                selected.push(j);
+            }
         }
         selected
     }

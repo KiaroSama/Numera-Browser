@@ -8,7 +8,7 @@ Numera Browser has two front doors and they are not the same size.
 * The **CLI** (`numera …`) is what a script or an agent on a headless server
   wants: no server to start, no port to pick, an exit code that means something.
 
-`engine/tests/test_agent_parity.py` holds the two against each other and fails
+`engine-rust/tests/source_http/agent.rs` holds the two against each other and fails
 when they drift. This page is the human version of that file.
 
 ---
@@ -37,9 +37,9 @@ Two conventions worth knowing:
   *unhealthy* — the payload is still on stdout, so
   `numera check p --json; echo $?` is a one-liner health gate. `trust` and
   `align` exit **0 under `--json` whatever the grade** (read `score` from the
-  payload); the API shells out to those two and treats a non-zero exit as a
-  server error, so a merely-imperfect profile must not look like a broken
-  command. Their human form still reports the verdict in `$?`.
+  payload). The native API and CLI use the shared Rust implementation, so a
+  merely-imperfect profile must not look like a broken command. Their human
+  form still reports the verdict in `$?`.
 * **`--json` never prompts.** A destructive command without `-y` fails with
   `{"ok": false, "error": "this needs confirmation — pass -y …"}` instead of
   waiting on a keyboard nobody is at. Same for `vault enable` without
@@ -183,41 +183,35 @@ here; `authRequired` tells a client whether to go looking for a credential.
 
 ## MCP
 
-`numera mcp` speaks MCP over stdio. Point a client at it:
+`numera-engine mcp` speaks newline-delimited JSON-RPC over stdio. For example:
 
 ```json
 {
   "mcpServers": {
     "numera": {
-      "command": "numera",
+      "command": "numera-engine",
       "args": ["--data-dir", "/srv/numera", "mcp"]
     }
   }
 }
 ```
 
-Every command becomes a tool — `create`, `list`, `pool_assign`, `jobs_show`,
-`cookies_export`, and so on — and each tool's schema is **derived from the
-argparse parser at run time**, not written out beside it. Adding a CLI command
-adds a tool; renaming a flag renames its argument. There is no second list to
-fall out of date.
+To use an existing Numera HTTP service, run:
 
-Two things a caller should know:
+```bash
+numera-engine mcp --bridge http://127.0.0.1:8787
+```
 
-* Every tool takes `detach: true`. A call is bounded at 120 seconds, so anything
-  that opens a browser (`launch`, `warmup`, `attach`, `trust`, `align`, the
-  cookie and probe tools) should be detached and polled with `jobs_show`.
-* A non-zero exit is a *verdict*, not a failure. `check` on an incoherent
-  profile returns a normal result whose payload lists the issues, with the code
-  in `_meta.exitCode`. `isError` is reserved for a tool that could not run at
-  all.
+The bridge forwards MCP JSON-RPC to `POST /api/mcp`. If the service requires
+bearer authentication, configure the token in your client and keep it out of
+shell history and logs. The bridge refuses non-loopback targets unless you
+explicitly allow remote access and provide a bearer token.
 
-`serve` and `mcp` are deliberately not tools — they never return.
-
-No SDK is involved: MCP's stdio transport is newline-delimited JSON-RPC 2.0,
-which the standard library already speaks.
-
----
+Call `tools/list` to see the tool names and schemas that your installed build
+actually exposes. For CLI scripts, use `numera-engine --help` to check arguments
+and `--json` where supported to read structured output. The acceptance tests
+check shared CLI, MCP and dashboard API behavior without printing real account
+or session data.
 
 ## Known gaps and closed ones
 

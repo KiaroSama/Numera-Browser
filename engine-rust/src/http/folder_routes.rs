@@ -48,7 +48,7 @@ async fn mutate(
     body: Map<String, Value>,
     operation: &'static str,
 ) -> Response {
-    let result = tokio::task::spawn_blocking(move || match operation {
+    let result = super::admission::blocking(move || match operation {
         "create" => folders.create(&text(&body, "name")?),
         "rename" => folders.rename(&text(&body, "from")?, &text(&body, "to")?),
         "delete" => folders.delete(&text(&body, "name")?, Some(&text(&body, "reassignTo")?)),

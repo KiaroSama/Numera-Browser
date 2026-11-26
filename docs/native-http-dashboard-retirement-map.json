@@ -1,0 +1,70 @@
+{
+  "schema": 1,
+  "suite": "native_http_dashboard_retirement",
+  "baseline": "docs/rust-test-baseline.json",
+  "already_counted_in_native_294": true,
+  "new_reported_cases": 0,
+  "count": 4,
+  "case_types": {
+    "standard": 4
+  },
+  "native_only": true,
+  "verification": {
+    "status": "passed",
+    "reported_tests": 4,
+    "ignored": 0,
+    "test_logs": [
+      "/tmp/native-http-dashboard-retirement.log",
+      "/tmp/native-http-server-retirement.log"
+    ],
+    "strict_library_clippy_log": "/tmp/native-storage-stable-remainder-clippy-final.log",
+    "cargo_locked": true,
+    "features": [
+      "native-product",
+      "native-browser",
+      "test-support"
+    ],
+    "runtime_python": false
+  },
+  "observation_manifest": "engine-rust/tests/fixtures/native-http-dashboard/manifest.json",
+  "fixture_sha256": {
+    "engine-rust/tests/fixtures/native-http-dashboard/manifest.json": "e6ed796335f02f9f904d863fb164125570145eaec0dc7aea94f1436e4dde745f",
+    "engine-rust/tests/fixtures/native-http-dashboard/responses.json": "6b1eaadabda06bfa3361e86e54d58613e07e35d16ce9bf0d4bd2741a120939df"
+  },
+  "preserved_contracts": [
+    "The original dashboard unit test retains14 static/SPA method/path/status/content-type/body comparisons and4 authenticated response comparisons through actual native routers. The same4 build files are now prepared in Rust from exact independently captured source input bytes; read-only requests additionally check unchanged build files and original discover result.",
+    "Expected HTTP responses were captured once during development from the immutable13b6d9 source tree using real FastAPI TestClient requests and exact Git blob verification. The separate small corpus contains JSON data and provenance only, and leaves the parent-owned83-observation manifest untouched.",
+    "The3 existing native server lifecycle cases still use real HTTP listener readiness, actual socket response bytes, refusal/occupied-port checks, worker ownership and bounded shutdown. Their inert browser adapter configuration preserves the assertion that readiness creates no SDK log or browser child.",
+    "All4 test names/counts/types remain in the native294 inventory. No Python runtime, RPC source observer, ignored case, count-only test or assertion weakening remains in this scope."
+  ],
+  "cases": [
+    {
+      "rust_target": "lib",
+      "rust_test": "http::dashboard::tests::dashboard_files_and_spa_fallback_match_original_without_swallowing_api",
+      "rust_file": "engine-rust/src/http/dashboard_tests.rs",
+      "type": "standard",
+      "already_in_native_baseline": true
+    },
+    {
+      "rust_target": "lib",
+      "rust_test": "http::server::tests::real_http_readiness_and_stop_close_the_listener_without_starting_an_sdk",
+      "rust_file": "engine-rust/src/http/server_tests.rs",
+      "type": "standard",
+      "already_in_native_baseline": true
+    },
+    {
+      "rust_target": "lib",
+      "rust_test": "http::server::tests::failed_readiness_never_becomes_success_on_a_second_attempt",
+      "rust_file": "engine-rust/src/http/server_tests.rs",
+      "type": "standard",
+      "already_in_native_baseline": true
+    },
+    {
+      "rust_target": "lib",
+      "rust_test": "http::server::tests::bind_refusal_and_occupied_port_do_not_create_a_worker",
+      "rust_file": "engine-rust/src/http/server_tests.rs",
+      "type": "standard",
+      "already_in_native_baseline": true
+    }
+  ]
+}

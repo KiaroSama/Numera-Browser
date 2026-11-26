@@ -9,6 +9,40 @@ use std::{
 
 static NONCE: AtomicU64 = AtomicU64::new(0);
 
+// Result failures use the explicit cleanup below so cleanup errors stay visible.
+// Unwinding must also close and remove only the temporary file we created.
+struct OwnedTemporary {
+    path: PathBuf,
+    file: Option<fs::File>,
+}
+impl Drop for OwnedTemporary {
+    fn drop(&mut self) {
+        if std::thread::panicking() {
+            // Windows refuses unlinking an open file. Close before reclaiming it.
+            drop(self.file.take());
+            let _ = fs::remove_file(&self.path);
+        }
+    }
+}
+
+fn replace_once(temporary: &Path, destination: &Path) -> io::Result<()> {
+    #[cfg(feature = "test-support")]
+    crate::vault::testing::event("before-atomic-replace-attempt", destination)?;
+    fs::rename(temporary, destination)
+}
+fn retry_delay(path: &Path, delay: Duration) -> io::Result<()> {
+    #[cfg(feature = "test-support")]
+    {
+        crate::vault::testing::wait("before-atomic-retry-delay", path, delay)
+    }
+    #[cfg(not(feature = "test-support"))]
+    {
+        let _ = path;
+        std::thread::sleep(delay);
+        Ok(())
+    }
+}
+
 fn temporary(path: &Path) -> io::Result<PathBuf> {
     let name = path
         .file_name()
@@ -32,6 +66,8 @@ pub fn write_stream(
     path: &Path,
     write: impl FnOnce(&mut fs::File) -> io::Result<()>,
 ) -> io::Result<()> {
+    #[cfg(feature = "test-support")]
+    crate::vault::testing::event("before-atomic-write", path)?;
     let parent = path
         .parent()
         .filter(|parent| !parent.as_os_str().is_empty())
@@ -47,16 +83,32 @@ pub fn write_stream(
             use std::os::unix::fs::OpenOptionsExt;
             options.mode(0o600);
         }
-        let mut file = options.open(&tmp)?;
+        #[cfg(feature = "test-support")]
+        crate::vault::testing::event("before-temporary-create", &tmp)?;
+        let file = options.open(&tmp)?;
         owned = true;
-        write(&mut file)?;
+        let mut temporary = OwnedTemporary {
+            path: tmp.clone(),
+            file: Some(file),
+        };
+        let file = temporary
+            .file
+            .as_mut()
+            .ok_or_else(|| io::Error::other("Owned temporary file is closed"))?;
+        write(file)?;
         file.sync_all()?;
-        drop(file);
+        drop(temporary.file.take());
+        #[cfg(feature = "test-support")]
+        crate::vault::testing::event("before-atomic-replace", path)?;
         for attempt in 0..5 {
-            match fs::rename(&tmp, path) {
-                Ok(()) => return Ok(()),
+            match replace_once(&tmp, path) {
+                Ok(()) => {
+                    #[cfg(feature = "test-support")]
+                    crate::vault::testing::event("after-atomic-write", path)?;
+                    return Ok(());
+                }
                 Err(error) if error.kind() == io::ErrorKind::PermissionDenied && attempt < 4 => {
-                    std::thread::sleep(Duration::from_millis(20 * (attempt + 1)));
+                    retry_delay(path, Duration::from_millis(50 * (attempt + 1)))?;
                 }
                 Err(error) => return Err(error),
             }
@@ -81,8 +133,47 @@ pub fn write_stream(
 }
 
 pub fn write_json(path: &Path, value: &Value) -> io::Result<()> {
-    let bytes = serde_json::to_vec_pretty(value).map_err(io::Error::other)?;
+    let encoded = serde_json::to_string_pretty(value).map_err(io::Error::other)?;
+    let mut bytes = Vec::with_capacity(encoded.len());
+    // Source JSON escapes non-ASCII text; text-mode writes translate structural LF.
+    for character in encoded.chars() {
+        if cfg!(windows) && character == '\n' {
+            bytes.extend_from_slice(b"\r\n");
+        } else if character.is_ascii() && character != '\u{7f}' {
+            bytes.push(character as u8);
+        } else {
+            crate::identity_script::write_ascii_fragment(&mut bytes, &character.to_string())?;
+        }
+    }
     write_bytes(path, &bytes)
+}
+
+/// A write failed and one or more exact byte restorations also failed.
+/// The primary cause and every failed path remain available to callers.
+#[derive(Debug)]
+pub struct RollbackFailed {
+    pub cause: io::Error,
+    pub failures: Vec<(PathBuf, io::Error)>,
+}
+impl std::fmt::Display for RollbackFailed {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            formatter,
+            "{}; {} file(s) could not be restored: {}",
+            self.cause,
+            self.failures.len(),
+            self.failures
+                .iter()
+                .map(|(path, error)| format!("{} ({error})", path.display()))
+                .collect::<Vec<_>>()
+                .join(", ")
+        )
+    }
+}
+impl std::error::Error for RollbackFailed {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        Some(&self.cause)
+    }
 }
 
 /// Snapshot bytes, never a decoded approximation, so failed changes are reversible.
@@ -102,11 +193,28 @@ impl Batch {
     }
     pub fn write(&mut self, path: &Path, value: &Value) -> io::Result<()> {
         self.remember(path)?;
+        #[cfg(feature = "test-support")]
+        crate::vault::testing::event("before-batch-write", path)?;
         write_json(path, value)
+    }
+    /// Attempt every pending restoration. A clean rollback returns the original
+    /// failure unchanged; an incomplete rollback keeps both causes structured.
+    pub fn fail(&mut self, cause: io::Error) -> io::Error {
+        let failures = self.rollback();
+        if failures.is_empty() {
+            cause
+        } else {
+            io::Error::other(RollbackFailed { cause, failures })
+        }
     }
     pub fn rollback(&mut self) -> Vec<(PathBuf, io::Error)> {
         let mut failures = Vec::new();
         for (path, bytes) in self.undo.drain(..).rev() {
+            #[cfg(feature = "test-support")]
+            if let Err(error) = crate::vault::testing::event("before-restore", &path) {
+                failures.push((path, error));
+                continue;
+            }
             let result = match bytes {
                 Some(bytes) => write_bytes(&path, &bytes),
                 None => match fs::remove_file(&path) {

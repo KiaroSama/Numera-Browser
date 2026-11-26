@@ -1,0 +1,262 @@
+name: Signed native release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: signed-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  source:
+    if: github.repository == 'KiaroSama/Numera-Browser' && github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Require a version tag pointing to a commit on main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          [[ "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          gh api "repos/$GITHUB_REPOSITORY/compare/main...$GITHUB_SHA" | jq -e '.status == "identical" or .status == "behind"'
+
+  acceptance:
+    name: Verify the exact release source
+    needs: source
+    permissions:
+      contents: read
+      actions: read
+      checks: read
+      pull-requests: read
+      security-events: write
+    uses: ./.github/workflows/native-ci.yml
+    with:
+      release_artifacts: true
+    secrets:
+      CLOAKBROWSER_LICENSE_KEY: ${{ secrets.CLOAKBROWSER_LICENSE_KEY }}
+
+  signing:
+    name: Sign ${{ matrix.platform }}
+    needs: acceptance
+    environment: numera-signing
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 50
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {platform: windows-x64, os: windows-2025, triple: x86_64-pc-windows-msvc}
+          - {platform: windows-arm64, os: windows-11-arm, triple: aarch64-pc-windows-msvc}
+          - {platform: linux-x64, os: ubuntu-24.04, triple: x86_64-unknown-linux-gnu}
+          - {platform: linux-arm64, os: ubuntu-24.04-arm, triple: aarch64-unknown-linux-gnu}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: release-input-${{ matrix.platform }}-${{ github.sha }}
+          path: ${{ runner.temp }}/release-input
+      - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249
+        with:
+          toolchain: 1.100.0
+      - name: Check exact checkout, tag and native host; unpack signing inputs
+        shell: bash
+        env:
+          TARGET_TRIPLE: ${{ matrix.triple }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(rustc -vV | awk '/^host: / {print $2}')" = "$TARGET_TRIPLE"
+          version=$(jq -er '.version' desktop/src-tauri/tauri.conf.json)
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          test "$GITHUB_REF_NAME" = "v$version"
+          printf 'RELEASE_VERSION=%s\n' "$version" >> "$GITHUB_ENV"
+          mkdir release-input dist
+          tar -xf "$RUNNER_TEMP/release-input/native-signing-input.tar" -C release-input
+      - name: Build packaging and binary verification tools without signing credentials
+        run: cargo build --manifest-path tools/xtask/Cargo.toml --locked
+      - name: Verify approved binary identity before signing
+        shell: bash
+        env:
+          PLATFORM: ${{ matrix.platform }}
+        run: |
+          set -euo pipefail
+          stage='release-input/Numera Browser'
+          suffix=''
+          if [[ "$RUNNER_OS" == Windows ]]; then suffix=.exe; fi
+          for file in "numera$suffix" "engine/numera-engine$suffix" "engine/numera-browser-runtime$suffix"; do
+            cargo xtask verify-binary --executable "$stage/$file" --target "$PLATFORM"
+            "$stage/$file" --build-info | jq -e --arg sha "$GITHUB_SHA" --arg version "$RELEASE_VERSION" \
+              '.source_sha == $sha and .version == $version and .product == "Numera Browser"'
+          done
+      - name: Install reviewed WiX bundler front end
+        if: runner.os == 'Windows'
+        uses: ./.github/actions/native-packaging-tools
+      - name: Restore the verified dashboard for WiX bundling
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Copy-Item -LiteralPath 'release-input/Numera Browser/engine/web' -Destination 'dashboard/dist' -Recurse
+      - name: Authenticode-sign the portable executables
+        if: runner.os == 'Windows'
+        uses: ./.github/actions/numera-authenticode
+        with:
+          pfx: ${{ secrets.NUMERA_SIGNING_PFX_BASE64 }}
+          password: ${{ secrets.NUMERA_SIGNING_PASSWORD }}
+          kind: portable
+      - name: Build the MSI from those signed binaries
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          TARGET_TRIPLE: ${{ matrix.triple }}
+          PLATFORM: ${{ matrix.platform }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          $stage = (Resolve-Path 'release-input/Numera Browser').Path
+          $target = Join-Path $env:RUNNER_TEMP 'numera-signed-tauri'
+          $release = Join-Path $target "$env:TARGET_TRIPLE/release"
+          New-Item -ItemType Directory -Path $release | Out-Null
+          Copy-Item -LiteralPath "$stage/numera.exe" -Destination "$release/numera.exe"
+          $env:CARGO_TARGET_DIR = $target
+          $config = Join-Path $env:RUNNER_TEMP 'signed-tauri.json'
+          @{bundle = @{targets = @('msi'); resources = @{ "$stage/engine" = 'engine/' }}} |
+            ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $config -Encoding utf8NoBOM
+          Push-Location desktop
+          try { cargo tauri bundle --bundles msi --target $env:TARGET_TRIPLE --config $config }
+          finally { Pop-Location }
+          $msi = @(Get-ChildItem -LiteralPath "$release/bundle/msi" -Filter '*.msi' -File)
+          if ($msi.Count -ne 1) { throw 'Expected exactly one MSI from the signed stage' }
+          Copy-Item -LiteralPath $msi[0].FullName -Destination "dist/numera-browser-$env:RELEASE_VERSION-$env:PLATFORM.msi"
+      - name: Authenticode-sign the final MSI
+        if: runner.os == 'Windows'
+        uses: ./.github/actions/numera-authenticode
+        with:
+          pfx: ${{ secrets.NUMERA_SIGNING_PFX_BASE64 }}
+          password: ${{ secrets.NUMERA_SIGNING_PASSWORD }}
+          kind: installer
+      - name: Prepare the signed portable inventory
+        shell: bash
+        env:
+          PLATFORM: ${{ matrix.platform }}
+          NUMERA_RELEASE_SIGNING_KEY: ${{ secrets.NUMERA_RELEASE_SIGNING_KEY }}
+        run: |
+          set -euo pipefail
+          stage='release-input/Numera Browser'
+          cargo xtask ci release-stage-inventory "$stage"
+          cargo xtask ci release-update-feed stage "$stage" "$PLATFORM"
+      - name: Assemble packages and matching source
+        shell: bash
+        env:
+          PLATFORM: ${{ matrix.platform }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          stage='release-input/Numera Browser'
+          base="numera-browser-$RELEASE_VERSION-$PLATFORM"
+          sources=(release-input/numera-source-*.zip)
+          test "${#sources[@]}" -eq 1
+          cp -- "${sources[0]}" "dist/$base-source.zip"
+          if [[ "$RUNNER_OS" == Linux ]]; then
+            debs=(release-input/*.deb); images=(release-input/*.AppImage)
+            test "${#debs[@]}" -eq 1 && test "${#images[@]}" -eq 1
+            cp -- "${debs[0]}" "dist/$base.deb"
+            cp -- "${images[0]}" "dist/$base.AppImage"
+            # Verify installer icon assets in the actual bundled files.
+            dpkg-deb -c "dist/$base.deb" > "$RUNNER_TEMP/numera-deb-files"
+            grep -Eq 'icons/hicolor/.*/apps/.*\.(png|svg)$' "$RUNNER_TEMP/numera-deb-files"
+            chmod +x "dist/$base.AppImage"
+            image="$PWD/dist/$base.AppImage"
+            mkdir "$RUNNER_TEMP/numera-appimage-icon"
+            (cd "$RUNNER_TEMP/numera-appimage-icon"; "$image" --appimage-extract .DirIcon; test -e squashfs-root/.DirIcon || test -L squashfs-root/.DirIcon)
+          fi
+          cargo xtask ci release-portable-archive "$stage" "dist/$base-portable.zip"
+          cargo xtask cli-package --target "$PLATFORM" --version "$RELEASE_VERSION" --bin-dir "$stage/engine" --out dist
+      - name: Sign and check every asset; reject a one-byte change
+        uses: ./.github/actions/numera-detached-signature
+        with:
+          pfx: ${{ secrets.NUMERA_SIGNING_PFX_BASE64 }}
+          password: ${{ secrets.NUMERA_SIGNING_PASSWORD }}
+          operation: assets
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: release-signed-${{ matrix.platform }}-${{ github.sha }}
+          path: dist/*
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
+  publish:
+    name: Verify and publish the complete signed release
+    needs: signing
+    environment: numera-signing
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: release-signed-*-${{ github.sha }}
+          path: dist
+          merge-multiple: true
+      - name: Require the exact asset set from all four targets
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=$(jq -er '.version' desktop/src-tauri/tauri.conf.json)
+          test "$GITHUB_REF_NAME" = "v$version"
+          cd dist
+          for platform in windows-x64 windows-arm64 linux-x64 linux-arm64; do
+            base="numera-browser-$version-$platform"
+            cli="numera-browser-cli-$version-$platform"
+            case "$platform" in
+              windows-*) extras=("$base.msi" "$cli.zip") ;;
+              linux-*) extras=("$base.AppImage" "$base.deb" "$cli.tar.gz") ;;
+            esac
+            for file in "$base-portable.zip" "$base-source.zip" "${extras[@]}"; do
+              test -s "$file"
+              test -s "$file.sig"
+            done
+          done
+          test "$(find . -maxdepth 1 -type f | wc -l)" -eq 36
+      - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249
+        with:
+          toolchain: 1.100.0
+      - name: Build update metadata tooling without signing credentials
+        run: cargo build --manifest-path tools/xtask/Cargo.toml --locked
+      - name: Verify installed manifests and sign the versioned update feed
+        env:
+          NUMERA_RELEASE_SIGNING_KEY: ${{ secrets.NUMERA_RELEASE_SIGNING_KEY }}
+        run: cargo xtask ci release-update-feed publish dist
+      - name: Recheck all assets and sign the combined SHA256SUMS
+        uses: ./.github/actions/numera-detached-signature
+        with:
+          pfx: ${{ secrets.NUMERA_SIGNING_PFX_BASE64 }}
+          password: ${{ secrets.NUMERA_SIGNING_PASSWORD }}
+          operation: checksums
+      - name: Attest release asset provenance
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4
+        with:
+          subject-path: dist/*
+      - name: Upload all verified assets to a draft and publish it
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --verify-tag --draft --generate-notes dist/*
+          gh release edit "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --draft=false

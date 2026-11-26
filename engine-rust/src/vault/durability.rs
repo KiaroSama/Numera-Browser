@@ -2,6 +2,14 @@ use super::completion::sites;
 use std::{collections::BTreeSet, fs, io, path::Path};
 
 fn tolerated(error: io::Error, directory: bool) -> io::Result<()> {
+    // Rust exposes native Windows synchronization errors through ErrorKind;
+    // Unix additionally preserves the original fsync errno compatibility.
+    if matches!(
+        error.kind(),
+        io::ErrorKind::Unsupported | io::ErrorKind::InvalidInput
+    ) {
+        return Ok(());
+    }
     #[cfg(unix)]
     if error.raw_os_error().is_some_and(|code| {
         [libc::EINVAL, libc::ENOTSUP, libc::EOPNOTSUPP].contains(&code)
@@ -9,26 +17,40 @@ fn tolerated(error: io::Error, directory: bool) -> io::Result<()> {
     }) {
         return Ok(());
     }
+    // std currently classifies FlushFileBuffers ERROR_NOT_SUPPORTED as
+    // Uncategorized, although it is exactly the unsupported-object case.
+    #[cfg(windows)]
+    if error.raw_os_error() == Some(windows_sys::Win32::Foundation::ERROR_NOT_SUPPORTED as i32) {
+        return Ok(());
+    }
     #[cfg(not(unix))]
     let _ = directory;
     Err(error)
 }
 
-pub(crate) fn sync_file(path: &Path) -> io::Result<()> {
+pub fn sync_file(path: &Path) -> io::Result<()> {
     // Windows FlushFileBuffers requires write access, without truncation.
     fs::OpenOptions::new()
         .read(true)
         .write(true)
         .open(path)
-        .and_then(|file| file.sync_all())
+        .and_then(|file| {
+            #[cfg(feature = "test-support")]
+            super::testing::event("fsync-file", path)?;
+            file.sync_all()
+        })
         .or_else(|error| tolerated(error, false))
 }
 
-pub(crate) fn sync_dir(path: &Path) -> io::Result<()> {
+pub fn sync_dir(path: &Path) -> io::Result<()> {
     #[cfg(unix)]
     {
         fs::File::open(path)
-            .and_then(|file| file.sync_all())
+            .and_then(|file| {
+                #[cfg(feature = "test-support")]
+                super::testing::event("fsync-directory", path)?;
+                file.sync_all()
+            })
             .or_else(|error| tolerated(error, true))
     }
     #[cfg(not(unix))]
@@ -38,7 +60,7 @@ pub(crate) fn sync_dir(path: &Path) -> io::Result<()> {
     }
 }
 
-pub(crate) fn sync_data(root: &Path) -> io::Result<()> {
+pub fn sync_data(root: &Path) -> io::Result<()> {
     let mut directories = BTreeSet::new();
     for site in sites(root)? {
         sync_file(&site.path)?;
@@ -52,7 +74,7 @@ pub(crate) fn sync_data(root: &Path) -> io::Result<()> {
     Ok(())
 }
 
-pub(crate) fn sync_config(root: &Path) -> io::Result<()> {
+pub fn sync_config(root: &Path) -> io::Result<()> {
     let config = root.join("config.json");
     if config.exists() {
         sync_file(&config)?;
@@ -60,11 +82,16 @@ pub(crate) fn sync_config(root: &Path) -> io::Result<()> {
     sync_dir(root)
 }
 
-pub(crate) fn end_journal(root: &Path) -> io::Result<()> {
+pub fn end_journal(root: &Path) -> io::Result<()> {
+    #[cfg(feature = "test-support")]
+    super::testing::event("before-cleanup", &root.join("vault-migration.json"))?;
     match fs::remove_file(root.join("vault-migration.json")) {
         Ok(()) => {}
         Err(error) if error.kind() == io::ErrorKind::NotFound => {}
         Err(error) => return Err(error),
     }
-    sync_dir(root)
+    sync_dir(root)?;
+    #[cfg(feature = "test-support")]
+    super::testing::event("after-cleanup", &root.join("vault-migration.json"))?;
+    Ok(())
 }
