@@ -10,9 +10,11 @@ pub(super) fn commands() -> Vec<Command> {
                 leaf("list", "Show what's in the profile's cookie jar")
                     .arg(profile())
                     .arg(engine("Open with a different engine than the profile's")),
-                leaf("export", "Write the profile's cookies to a file")
+                leaf("export", "Export only the selected profile's cookies as JSON or Netscape text")
+                    .after_help("Example: numera-engine cookies export qa --format netscape --out qa-cookies.txt --json")
                     .arg(profile())
-                    .arg(positional("file", ""))
+                    .arg(positional("file", "Destination file").required(false).conflicts_with("out"))
+                    .arg(option("out", "out", "Destination file").conflicts_with("file"))
                     .arg(
                         option(
                             "format",

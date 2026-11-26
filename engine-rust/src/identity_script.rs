@@ -42,9 +42,22 @@ pub fn config(fp: &Fingerprint) -> Result<Value, serde_json::Error> {
         ("fontMode", serde_json::to_value(&fp.font_mode)?),
         ("doNotTrack", fp.do_not_track.into()),
     ];
-    Ok(Value::Object(Map::from_iter(
-        fields.into_iter().map(|(key, value)| (key.into(), value)),
-    )))
+    let mut config = Map::from_iter(fields.into_iter().map(|(key, value)| (key.into(), value)));
+    if let Some(mac) = identity::profile_mac_address(fp) {
+        config.insert("macAddress".into(), mac.into());
+        config.insert(
+            "macAddressMode".into(),
+            serde_json::to_value(fp.mac_address_mode)?,
+        );
+    }
+    if let Some(name) = fp
+        .device_name
+        .as_deref()
+        .filter(|value| crate::validation::valid_device_name(value))
+    {
+        config.insert("deviceName".into(), name.into());
+    }
+    Ok(Value::Object(config))
 }
 
 pub(crate) fn write_ascii_fragment<W: ?Sized + Write>(
@@ -107,4 +120,34 @@ pub fn build(fp: &Fingerprint) -> Result<String, serde_json::Error> {
         serde_json::Error::io(io::Error::new(io::ErrorKind::InvalidData, error))
     })?;
     Ok(crate::page_runtime::identity(&encoded))
+}
+
+#[cfg(test)]
+#[test]
+fn profile_identity_only_injects_valid_opt_in_values() -> Result<(), Box<dyn std::error::Error>> {
+    use crate::{
+        fingerprint::{GenerateOptions, generate},
+        models::MacAddressMode,
+    };
+    let mut fp = generate(GenerateOptions {
+        seed: 42_i64,
+        ..GenerateOptions::default()
+    })?;
+    let original = config(&fp)?;
+    assert!(original.get("macAddress").is_none());
+    assert!(original.get("deviceName").is_none());
+    fp.mac_address_mode = MacAddressMode::Manual;
+    fp.mac_address = Some("02:11:22:33:44:55".into());
+    fp.device_name = Some("Device_42.local".into());
+    let script = build(&fp)?;
+    assert!(script.contains("02:11:22:33:44:55"));
+    assert!(script.contains("Device_42.local"));
+    fp.mac_address = Some("not-a-mac".into());
+    fp.device_name = Some("bad device".into());
+    assert!(config(&fp)?.get("macAddress").is_none());
+    assert!(config(&fp)?.get("deviceName").is_none());
+    let issues = identity::validate(&fp)?;
+    assert!(issues.iter().any(|issue| issue == "invalid MAC address"));
+    assert!(issues.iter().any(|issue| issue == "invalid device name"));
+    Ok(())
 }

@@ -301,7 +301,21 @@ fn pair(mode: &str) -> TestResult {
 }
 source_cases!("tests/test_browser_benchmark.py::test_browser_pair_checks_full_export_and_preserves_failed_inputs",pair,[browser_pair_normal=>("normal","normal"),browser_pair_cookie=>("cookie","cookie"),browser_pair_order=>("order","order"),browser_pair_type=>("type","type"),browser_pair_profile=>("profile","profile"),browser_pair_sentinel=>("sentinel","sentinel"),browser_pair_metadata=>("metadata","metadata"),browser_pair_exit=>("exit","exit")]);
 fn pairs(mode: &str) -> TestResult {
-    if ["normal", "parity", "inconclusive", "metric", "write"].contains(&mode) {
+    if mode == "normal" {
+        pairs("hosted-noise")?;
+        pairs("hosted-parity")?;
+    }
+    if [
+        "normal",
+        "parity",
+        "inconclusive",
+        "metric",
+        "write",
+        "hosted-noise",
+        "hosted-parity",
+    ]
+    .contains(&mode)
+    {
         entry_pairs(mode)?;
     }
     let temp = Temp::new("browser all pairs")?;
@@ -313,11 +327,12 @@ fn pairs(mode: &str) -> TestResult {
     let baseline = json!({"cookies":[{"name":"one"},{"name":"two"}],"origins":[]});
     let mut observed = Vec::new();
     let mut diagnostic_runs = Vec::new();
-    let result = browser::run_pairs(
+    let result = browser::run_pairs_with_policy(
         &parent,
         &destination,
         "playwright",
         &baseline,
+        mode.starts_with("hosted-"),
         |runtime, workspace, index, diagnostic| {
             fs::write(workspace.join("input.json"), b"{\"synthetic\":true}")?;
             if diagnostic {
@@ -345,7 +360,7 @@ fn pairs(mode: &str) -> TestResult {
             let value = if runtime == "native"
                 && !matches!(
                     mode,
-                    "inconclusive" | "diagnostic-refusal" | "diagnostic-cleanup"
+                    "inconclusive" | "diagnostic-refusal" | "diagnostic-cleanup" | "hosted-noise"
                 ) {
                 1
             } else {
@@ -357,7 +372,7 @@ fn pairs(mode: &str) -> TestResult {
             }
             Ok((
                 value,
-                if mode == "parity" {
+                if matches!(mode, "parity" | "hosted-parity") {
                     json!(runtime)
                 } else {
                     baseline.clone()
@@ -365,10 +380,14 @@ fn pairs(mode: &str) -> TestResult {
             ))
         },
     );
-    if mode == "normal" {
+    if matches!(mode, "normal" | "hosted-noise") {
         let report = result?;
         assert_eq!(report["comparison"], "native-checkpoint-to-native-product");
         assert_eq!(fs::read_dir(&parent)?.count(), 0);
+        if mode == "hosted-noise" {
+            assert_eq!(report["performance_policy"], "diagnostic");
+            assert_eq!(report["results"][0]["memory"], "inconclusive");
+        }
     } else {
         assert!(result.is_err());
         let run = fs::read_dir(&parent)?
@@ -382,7 +401,7 @@ fn pairs(mode: &str) -> TestResult {
             .count();
         assert_eq!(count, observed.len() + diagnostic_runs.len());
     }
-    let expected = if mode == "inconclusive" {
+    let expected = if matches!(mode, "inconclusive" | "hosted-noise") {
         vec!["reference", "native"]
     } else if matches!(mode, "diagnostic-refusal" | "diagnostic-cleanup") {
         vec!["reference"]
@@ -390,7 +409,7 @@ fn pairs(mode: &str) -> TestResult {
         vec![]
     };
     assert_eq!(diagnostic_runs, expected);
-    if mode != "parity" {
+    if !matches!(mode, "parity" | "hosted-parity") {
         let expected = (-1i32..7)
             .flat_map(|i| {
                 if i % 2 == 0 {
@@ -406,7 +425,7 @@ fn pairs(mode: &str) -> TestResult {
         assert_eq!(fs::read_to_string(destination)?, "prior evidence");
     } else if matches!(
         mode,
-        "normal" | "inconclusive" | "diagnostic-refusal" | "diagnostic-cleanup"
+        "normal" | "inconclusive" | "diagnostic-refusal" | "diagnostic-cleanup" | "hosted-noise"
     ) {
         let report = ci::decode(&fs::read(destination)?)?;
         assert_eq!(report["engine"], "playwright");
@@ -424,17 +443,18 @@ fn entry_pairs(mode: &str) -> TestResult {
         fs::write(&destination, b"prior evidence")?;
     }
     let mut observed = Vec::<(Scenario, String, i32)>::new();
-    let result = entry::run_pairs(
+    let result = entry::run_pairs_with_policy(
         &parent,
         &destination,
         &json!({"comparison":"native-checkpoint-to-native-product"}),
+        mode.starts_with("hosted-"),
         |scenario, runtime, workspace, repetition| {
             fs::write(
                 workspace.join("input.json"),
                 b"synthetic retained measurement input",
             )?;
             observed.push((scenario, runtime.into(), repetition));
-            let value = if runtime == "native" && mode != "inconclusive" {
+            let value = if runtime == "native" && !matches!(mode, "inconclusive" | "hosted-noise") {
                 1
             } else {
                 100
@@ -445,7 +465,7 @@ fn entry_pairs(mode: &str) -> TestResult {
             }
             Ok((
                 value,
-                if mode == "parity" {
+                if matches!(mode, "parity" | "hosted-parity") {
                     json!(runtime)
                 } else {
                     json!({"complete":[true,42,"preserved"]})
@@ -453,7 +473,7 @@ fn entry_pairs(mode: &str) -> TestResult {
             ))
         },
     );
-    if mode == "normal" {
+    if matches!(mode, "normal" | "hosted-noise") {
         let report = result?;
         assert_eq!(report["results"].as_array().expect("results").len(), 5);
         assert_eq!(fs::read_dir(&parent)?.count(), 0);
@@ -471,7 +491,7 @@ fn entry_pairs(mode: &str) -> TestResult {
             observed.len()
         );
     }
-    let scenarios = if matches!(mode, "parity" | "metric") {
+    let scenarios = if matches!(mode, "parity" | "metric" | "hosted-parity") {
         &entry::SCENARIOS[..1]
     } else {
         &entry::SCENARIOS[..]
@@ -493,7 +513,7 @@ fn entry_pairs(mode: &str) -> TestResult {
         .collect::<Vec<_>>();
     assert_eq!(
         observed,
-        if mode == "parity" {
+        if matches!(mode, "parity" | "hosted-parity") {
             expected[..2].to_vec()
         } else {
             expected
@@ -501,7 +521,7 @@ fn entry_pairs(mode: &str) -> TestResult {
     );
     if mode == "write" {
         assert_eq!(fs::read_to_string(&destination)?, "prior evidence");
-    } else if matches!(mode, "normal" | "inconclusive") {
+    } else if matches!(mode, "normal" | "inconclusive" | "hosted-noise") {
         let report = ci::decode(&fs::read(destination)?)?;
         assert_eq!(
             report["results"]
@@ -538,482 +558,11 @@ fn entry_pairs(mode: &str) -> TestResult {
 }
 source_cases!("tests/test_browser_benchmark.py::test_browser_run_requires_all_pairs_and_retains_unaccepted_evidence",pairs,[browser_run_normal=>("normal","normal"),browser_run_parity=>("parity","parity"),browser_run_inconclusive=>("inconclusive","inconclusive"),browser_run_diagnostic_refusal=>("diagnostic-refusal","diagnostic-refusal"),browser_run_diagnostic_cleanup=>("diagnostic-cleanup","diagnostic-cleanup"),browser_run_metric=>("metric","metric"),browser_run_write=>("write","write")]);
 
-pub(super) struct Host {
-    pub mode: String,
-    pub clock: u64,
-    pub events: Vec<&'static str>,
-    pub reads: usize,
-    pub sleeps: Vec<u64>,
-    pub created: bool,
-}
-impl Host {
-    pub fn new(mode: &str) -> Self {
-        Self {
-            mode: mode.into(),
-            clock: 0,
-            events: Vec::new(),
-            reads: 0,
-            sleeps: Vec::new(),
-            created: false,
-        }
-    }
-}
-impl browser::Observer for Host {
-    fn register(&mut self) -> TestResult {
-        self.register_before(self.clock.saturating_add(2_000_000_000))
-    }
-    fn register_before(&mut self, deadline: u64) -> TestResult {
-        if matches!(
-            self.mode.as_str(),
-            "registration-consumes-wall" | "registration-late"
-        ) {
-            self.clock = deadline - u64::from(self.mode == "registration-consumes-wall");
-            self.events.push("intent");
-            return Ok(());
-        }
-        let mode = self.mode.clone();
-        let reads = &mut self.reads;
-        let sleeps = &mut self.sleeps;
-        let clock = std::cell::Cell::new(self.clock);
-        let result = browser::registration(
-            42,
-            4200,
-            deadline,
-            || clock.get(),
-            |_| {
-                *reads += 1;
-                if mode == "absent" {
-                    return ci::fail("Observer receipt absent");
-                }
-                let mut trees = vec![json!({"pid":41,"pidToken":4100})];
-                if mode != "missing-self" {
-                    trees.push(json!({"pid":42,"pidToken":if mode=="wrong-self"{9999}else{4200}}));
-                }
-                Ok(Report {
-                    trees,
-                    complete: mode != "incomplete-before"
-                        && !(mode == "pending-self" && *reads == 1),
-                    problem: None,
-                })
-            },
-            |duration| {
-                sleeps.push(u64::try_from(duration.as_millis())?);
-                clock.set(clock.get() + u64::try_from(duration.as_nanos())?);
-                Ok(())
-            },
-            |_| Ok(true),
-        );
-        self.clock = clock.get();
-        result?;
-        self.events.push("intent");
-        Ok(())
-    }
-    fn ticks(&mut self) -> u64 {
-        self.clock
-    }
-    fn spawn(&mut self) -> TestResult {
-        self.events.push("spawn");
-        if self.mode == "spawn-refusal" {
-            return ci::fail("Synthetic spawn refusal");
-        }
-        self.created = true;
-        Ok(())
-    }
-    fn owned(&self) -> bool {
-        self.created
-    }
-    fn communicate(&mut self, _: u64) -> ci::Result<Value> {
-        self.events.push("capture");
-        self.clock += 7;
-        Ok(json!({"ok":true}))
-    }
-    fn natural(&mut self, deadline: u64) -> ci::Result<bool> {
-        assert!(deadline <= 90_000_000_000);
-        self.events.extend(["direct-proof", "sdk-proof"]);
-        if self.mode == "incomplete" {
-            return ci::fail("Nested receipt incomplete");
-        }
-        Ok(self.mode != "live")
-    }
-    fn pause(&mut self) -> TestResult {
-        self.sleeps.push(1);
-        self.clock += 1_000_000_000;
-        Ok(())
-    }
-    fn peak(&mut self) -> ci::Result<(String, u64)> {
-        self.events.push("peak");
-        Ok(("fixture".into(), 1234))
-    }
-    fn diagnostic(&mut self) -> ci::Result<Option<Value>> {
-        if self.mode == "diagnostics" {
-            self.events.push("snapshot");
-            Ok(Some(json!({"coverage":"sampled-not-lifetime-attribution"})))
-        } else {
-            Ok(None)
-        }
-    }
-    fn cleanup(&mut self) -> TestResult {
-        self.events.extend(["direct-cleanup", "sdk-cleanup"]);
-        if self.mode == "cleanup" {
-            return ci::fail("Nested cleanup refused");
-        }
-        Ok(())
-    }
-    fn reap(&mut self) -> TestResult {
-        self.events.push("reap");
-        if self.mode == "wait" {
-            return ci::fail("Leader reap failure");
-        }
-        Ok(())
-    }
-    fn close(&mut self) -> TestResult {
-        self.events
-            .extend(["stdout-close", "stderr-close", "process-close", "job-close"]);
-        Ok(())
-    }
-}
-fn lifecycle(mode: &str) -> TestResult {
-    let mut host = Host::new(mode);
-    let result = browser::observe(&mut host, Duration::from_secs(90));
-    if matches!(mode, "normal" | "pending-self" | "diagnostics") {
-        let result = result?;
-        assert_eq!(result.payload, json!({"ok":true}));
-        assert_eq!(result.elapsed_ns, 7);
-        assert_eq!(result.bytes, 1234);
-        assert_eq!(result.diagnostics.is_some(), mode == "diagnostics");
-        let pos = |e| host.events.iter().position(|v| *v == e).expect("event");
-        assert!(pos("sdk-proof") < pos("peak") && pos("peak") < pos("sdk-cleanup"));
-        assert_eq!(
-            host.sleeps,
-            if mode == "pending-self" {
-                vec![10]
-            } else {
-                vec![]
-            }
-        );
-    } else {
-        assert!(result.is_err());
-        if !matches!(mode, "cleanup" | "wait") {
-            assert!(!host.events.contains(&"peak"));
-        }
-    }
-    if matches!(
-        mode,
-        "absent" | "missing-self" | "wrong-self" | "incomplete-before"
-    ) {
-        assert!(!host.events.contains(&"spawn"));
-    } else {
-        for event in [
-            "direct-cleanup",
-            "sdk-cleanup",
-            "stdout-close",
-            "stderr-close",
-        ] {
-            assert_eq!(host.events.iter().filter(|v| **v == event).count(), 1);
-        }
-        assert_eq!(
-            &host.events[host.events.len() - 2..],
-            ["process-close", "job-close"]
-        );
-    }
-    if mode == "pending-self" {
-        parent_publication("delayed")?;
-    }
-    if mode == "incomplete-before" {
-        for publication in ["held-lock", "malformed", "expired"] {
-            parent_publication(publication)?;
-        }
-    }
-    if mode == "wrong-self" {
-        parent_publication("wrong-birth")?;
-    }
-    registration_deadline_controls(mode)?;
-    Ok(())
-}
-fn registration_deadline_controls(mode: &str) -> TestResult {
-    use std::cell::Cell;
-    if mode == "incomplete-before" {
-        let mut late = Host::new("registration-late");
-        assert!(browser::observe(&mut late, Duration::from_nanos(50)).is_err());
-        assert!(!late.events.contains(&"spawn"));
-        let mut consumed = Host::new("registration-consumes-wall");
-        assert!(browser::observe(&mut consumed, Duration::from_nanos(50)).is_err());
-        assert!(consumed.events.contains(&"spawn"));
-        assert!(!consumed.events.contains(&"peak"));
-        assert!(consumed.events.contains(&"sdk-cleanup"));
-    }
-    let cases: &[&str] = match mode {
-        "pending-self" => &["many-pending", "complete-without-self", "prior-reused-pid"],
-        "missing-self" => &["missing", "short-wall"],
-        "wrong-self" => &["wrong-birth", "wrong-tree", "verification-error"],
-        "incomplete-before" => &["expired", "late-read", "late-tree"],
-        "absent" => &["read-error"],
-        _ => &[],
-    };
-    for &case in cases {
-        let clock = Cell::new(0u64);
-        let reads = Cell::new(0usize);
-        let verified = Cell::new(0usize);
-        let pauses = std::cell::RefCell::new(Vec::new());
-        let deadline = match case {
-            "expired" => 0,
-            "short-wall" => 15_000_000,
-            _ => 90_000_000_000,
-        };
-        let result = browser::registration(
-            42,
-            4200,
-            deadline,
-            || clock.get(),
-            |end| {
-                assert_eq!(end, deadline.min(2_000_000_000));
-                reads.set(reads.get() + 1);
-                if case == "read-error" {
-                    return Err(
-                        io::Error::new(io::ErrorKind::PermissionDenied, "Receipt refused").into(),
-                    );
-                }
-                if case == "late-read" {
-                    clock.set(end);
-                }
-                let waiting = match case {
-                    "missing" | "short-wall" => true,
-                    "many-pending" | "complete-without-self" => reads.get() < 5,
-                    _ => false,
-                };
-                let mut trees = vec![json!({"pid":41,"pidToken":4100})];
-                if case == "prior-reused-pid" {
-                    trees.push(json!({"pid":42,"pidToken":4199}));
-                }
-                if !waiting {
-                    trees
-                        .push(json!({"pid":42,"pidToken":if case=="wrong-birth" {9999}else{4200}}));
-                }
-                Ok(Report {
-                    trees,
-                    complete: case != "many-pending" || !waiting,
-                    problem: None,
-                })
-            },
-            |duration| {
-                let nanoseconds = u64::try_from(duration.as_nanos())?;
-                assert!(nanoseconds > 0 && nanoseconds <= 10_000_000);
-                pauses.borrow_mut().push(nanoseconds);
-                clock.set(clock.get() + nanoseconds);
-                Ok(())
-            },
-            |_| {
-                verified.set(verified.get() + 1);
-                if case == "verification-error" {
-                    return Err(
-                        io::Error::new(io::ErrorKind::PermissionDenied, "Tree refused").into(),
-                    );
-                }
-                if case == "late-tree" {
-                    clock.set(2_000_000_000);
-                }
-                Ok(case != "wrong-tree")
-            },
-        );
-        if matches!(
-            case,
-            "many-pending" | "complete-without-self" | "prior-reused-pid"
-        ) {
-            let expected = if case == "prior-reused-pid" {
-                BTreeSet::from([(41, 4100), (42, 4199), (42, 4200)])
-            } else {
-                BTreeSet::from([(41, 4100), (42, 4200)])
-            };
-            assert_eq!(result?, expected);
-            assert_eq!(reads.get(), if case == "prior-reused-pid" { 1 } else { 5 });
-            assert_eq!(verified.get(), 1);
-            assert_eq!(
-                clock.get(),
-                if case == "prior-reused-pid" {
-                    0
-                } else {
-                    40_000_000
-                }
-            );
-        } else {
-            let error = result.expect_err("Invalid or late parent registration was accepted");
-            if matches!(case, "read-error" | "verification-error") {
-                assert_eq!(
-                    error.downcast_ref::<io::Error>().map(io::Error::kind),
-                    Some(io::ErrorKind::PermissionDenied)
-                );
-            }
-        }
-        match case {
-            "missing" => {
-                assert_eq!(clock.get(), 2_000_000_000);
-                assert_eq!(reads.get(), 200);
-            }
-            "short-wall" => {
-                assert_eq!(&*pauses.borrow(), &[10_000_000, 5_000_000]);
-                assert_eq!(clock.get(), 15_000_000);
-            }
-            "expired" => {
-                assert_eq!(reads.get(), 0);
-                assert_eq!(verified.get(), 0);
-            }
-            "wrong-birth" | "late-read" => {
-                assert_eq!(reads.get(), 1);
-                assert_eq!(verified.get(), 0);
-            }
-            "wrong-tree" | "late-tree" | "verification-error" => assert_eq!(verified.get(), 1),
-            _ => {}
-        }
-    }
-    Ok(())
-}
-fn parent_publication(publication: &str) -> TestResult {
-    // This is the real post-OS-spawn/pre-receipt hook. The observer must not
-    // mistake its parent's still-pending transfer for a missing identity.
-    let temp = Temp::new("observer parent publication")?;
-    let source = r#"
-// Both the observer and its application receive explicit stdio pipes from
-// their owners. A Windows console is unnecessary and can add a conhost to
-// the very Job whose natural exit the fixture must prove.
-#![cfg_attr(windows, windows_subsystem = "windows")]
-use numera_xtask::ci::{self,browser_benchmark::{Native,observe}};
-use numera_core::ownership::{test_support::{self,Backend},unit_report};
-use serde_json::json;
-use std::{fs,io::{self,Write},path::{Path,PathBuf},process::Command,sync::Arc,time::{Duration,Instant}};
-struct Delay { root:PathBuf, mode:String }
-impl Backend for Delay {
- fn spawned(&self,record:&serde_json::Value)->Option<io::Result<()>> {
-  Some((|| {
-   let report=PathBuf::from(std::env::var_os(unit_report::ENV).ok_or_else(||io::Error::other("Parent receipt missing"))?);
-   let lock=numera_core::storage::locks::DataLock::for_file(&report)?;
-   let held=if self.mode=="held-lock" {Some(lock.acquire(Duration::from_secs(1))?)}else{None};
-   let original=if matches!(self.mode.as_str(),"malformed"|"wrong-birth") {
-    let _guard=lock.acquire(Duration::from_secs(1))?;
-    let original=fs::read(&report)?;
-    if self.mode=="malformed" {
-     fs::OpenOptions::new().append(true).open(&report)?.write_all(b"{broken receipt\n")?;
-    }
-    Some(original)
-   }else{None};
-   if self.mode=="wrong-birth" {
-    let pending=String::from_utf8(original.as_ref().ok_or_else(||io::Error::other("Original receipt missing"))?.clone()).map_err(io::Error::other)?;
-    let attempt=pending.lines().filter_map(|line|serde_json::from_str::<serde_json::Value>(line).ok()).filter(|row|row["event"]=="pending").last().and_then(|row|row["attempt"].as_str().map(str::to_owned)).ok_or_else(||io::Error::other("Actual pending attempt missing"))?;
-    let mut wrong=record.clone();
-    wrong["token"]=(record["token"].as_u64().ok_or_else(||io::Error::other("Actual birth missing"))?+1).into();
-    unit_report::record_at(&report,&wrong,&attempt)?;
-   }
-   let deadline=Instant::now()+Duration::from_secs(3);
-   while !self.root.join("observer-started").is_file() {
-    if Instant::now()>=deadline {return Err(io::Error::other("Observer did not enter registration"));}
-    std::thread::sleep(Duration::from_millis(1));
-   }
-   std::thread::sleep(Duration::from_millis(80));
-   if self.mode!="delayed" {
-    let deadline=Instant::now()+Duration::from_millis(400);
-    while !self.root.join("observer-refused").is_file() && Instant::now()<deadline {
-     std::thread::sleep(Duration::from_millis(1));
-    }
-   }
-   if self.root.join("observer-refused").is_file() {
-    fs::write(self.root.join("refused-before-publication"),b"actual observer refused while publication held")?;
-   }
-   drop(held);
-   if let Some(original)=original {
-    let _guard=lock.acquire(Duration::from_secs(1))?;
-    fs::write(&report,original)?;
-   }
-   Ok(())
-  })())
- }
-}
-fn main()->ci::Result<()> {
- let args=std::env::args_os().skip(1).collect::<Vec<_>>();
- let mode=args[0].to_str().ok_or("Mode missing")?;
- let root=Path::new(&args[1]);
- let publication=args[2].to_str().ok_or("Publication mode missing")?;
- if mode=="app" {
-  fs::write(root.join("application-started"),b"actual application executed")?;
-  println!("{{\"ok\":true}}");return Ok(());
- }
- if mode=="observer" {
-  fs::write(root.join("observer-started"),b"actual observer entered")?;
-  let mut command=Command::new(std::env::current_exe()?);
-  command.arg("app").arg(root).arg(publication);
-  let report=std::env::var_os(unit_report::ENV).ok_or("Parent receipt missing")?;
-  let mut native=Native::new(command,report.into(),false)?;
-  let wall=if publication=="delayed" {Duration::from_secs(2)}else{Duration::from_millis(30)};
-  let result=observe(&mut native,wall);
-  match result {
-   Ok(sample)=>println!("{}",json!({"sample":sample.summary(),"payload":sample.payload})),
-   Err(error)=>{fs::write(root.join("observer-refused"),b"refused before application spawn")?;println!("{}",json!({"refused":true}));eprintln!("{error}");std::process::exit(1);}
-  }
-  return Ok(());
- }
- let mut command=Command::new(std::env::current_exe()?);
- command.arg("observer").arg(root).arg(publication);
- let output=test_support::with_backend(Arc::new(Delay{root:root.into(),mode:publication.into()}),||
-  ci::owned::run(root,&mut command,ci::owned::limits(Duration::from_secs(5),Duration::from_secs(5),16384)))?.command;
- println!("{}",json!({"exit":output.exit,"stdout":String::from_utf8(output.stdout)?,"stderr":String::from_utf8(output.stderr)?}));
- Ok(())
-}
-"#;
-    let executable = super::migration::compile(&temp, source)?;
-    fs::create_dir(temp.0.join("jobs"))?;
-    let report = temp.0.join("jobs/registration.units");
-    numera_core::ownership::unit_report::initialize(&report)?;
-    let output = ci::capture(
-        std::process::Command::new(executable)
-            .arg("parent")
-            .arg(&temp.0)
-            .arg(publication)
-            .env(numera_core::ownership::unit_report::ENV, &report),
-        Duration::from_secs(8),
-        Duration::from_secs(8),
-        32768,
-    )?;
-    assert_eq!(
-        output.exit,
-        0,
-        "Parent publication helper failed ({publication})\nstdout:\n{}\nstderr:\n{}",
-        numera_core::ownership::resources::redact_diagnostics(&String::from_utf8_lossy(
-            &output.stdout
-        )),
-        numera_core::ownership::resources::redact_diagnostics(&String::from_utf8_lossy(
-            &output.stderr
-        )),
-    );
-    let answer = ci::decode(&output.stdout)?;
-    if publication == "delayed" && answer["exit"] != 0 {
-        assert!(
-            answer["stderr"].as_str()
-                == Some("Browser observer receipt registration or birth identity missing\n"),
-            "Observer refused outside the expected parent receipt boundary"
-        );
-        assert!(!temp.0.join("application-started").exists());
-    }
-    let observed = ci::decode(
-        answer["stdout"]
-            .as_str()
-            .ok_or("Observer stdout missing")?
-            .as_bytes(),
-    )?;
-    if publication == "delayed" {
-        assert_eq!(
-            answer["exit"], 0,
-            "Observer refused a genuine delayed parent publication"
-        );
-        assert!(temp.0.join("application-started").is_file());
-        assert_eq!(observed["payload"], json!({"ok":true}));
-        assert!(answer["stderr"].as_str().is_some_and(str::is_empty));
-    } else {
-        assert_eq!(answer["exit"], 1);
-        assert_eq!(observed["refused"], true);
-        assert!(!temp.0.join("application-started").exists());
-        assert!(temp.0.join("refused-before-publication").is_file());
-    }
-    Ok(())
-}
+include!("browser_observer_controls.rs");
+
+include!("browser_parent_controls.rs");
 source_cases!("tests/test_browser_benchmark.py::test_browser_sample_requires_natural_nested_settlement_before_peak",lifecycle,[browser_lifecycle_normal=>("normal","normal"),browser_lifecycle_pending=>("pending-self","pending-self"),browser_lifecycle_absent=>("absent","absent"),browser_lifecycle_missing=>("missing-self","missing-self"),browser_lifecycle_wrong=>("wrong-self","wrong-self"),browser_lifecycle_incomplete_before=>("incomplete-before","incomplete-before"),browser_lifecycle_incomplete=>("incomplete","incomplete"),browser_lifecycle_live=>("live","live"),browser_lifecycle_cleanup=>("cleanup","cleanup"),browser_lifecycle_wait=>("wait","wait"),browser_lifecycle_diagnostics=>("diagnostics","diagnostics")]);
+
 fn history(damage: &str) -> TestResult {
     let mut native = workflow::parse(&fs::read_to_string(
         root().join(".github/workflows/native-ci.yml"),

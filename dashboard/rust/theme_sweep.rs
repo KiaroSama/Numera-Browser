@@ -7,8 +7,7 @@ use web_sys::{
     Document, HtmlCanvasElement, HtmlElement, WebGlRenderingContext as Gl, WebGlShader, Window,
 };
 
-const SWEEP_MS: f64 = 1100.0;
-const OUTRO_MS: f64 = 220.0;
+const SWEEP_MS: f64 = 680.0;
 const ATTRIBUTE: &str = "data-theme-sweep";
 const CUT_PROPERTY: &str = "--theme-sweep-cut";
 type Commit = Rc<RefCell<Option<Box<dyn FnOnce()>>>>;
@@ -72,14 +71,16 @@ pub fn play(
     }
 }
 
+fn reduced_motion(window: &Window) -> bool {
+    window
+        .match_media("(prefers-reduced-motion: reduce)")
+        .ok()
+        .flatten()
+        .is_none_or(|query| query.matches())
+}
+
 fn start(window: &Window, document: &Document, from_dark: bool, commit: &Commit) -> bool {
-    if document.hidden()
-        || window
-            .match_media("(prefers-reduced-motion: reduce)")
-            .ok()
-            .flatten()
-            .is_some_and(|query| query.matches())
-    {
+    if document.hidden() || reduced_motion(window) {
         return false;
     }
     let Some((start, root, canvas, gl)) = setup(document, from_dark) else {
@@ -219,17 +220,14 @@ async fn animate(
     };
     let resolution = gl.get_uniform_location(&program, "resolution");
     let progress_uniform = gl.get_uniform_location(&program, "progress");
-    let alpha = gl.get_uniform_location(&program, "alpha");
+
     let time = gl.get_uniform_location(&program, "seconds");
     let mut first = None;
     while let Some(frame) = frame(window).await {
-        if !is_active(commit) || gl.is_context_lost() {
+        if !is_active(commit) || gl.is_context_lost() || reduced_motion(window) {
             break;
         }
         let elapsed = frame - *first.get_or_insert(frame);
-        if elapsed >= SWEEP_MS + OUTRO_MS {
-            break;
-        }
         let factor = (elapsed / SWEEP_MS).clamp(0.0, 1.0);
         let progress = ease(factor);
         let cut = (progress * 1.4 - 0.2).clamp(0.0, 1.0);
@@ -238,7 +236,10 @@ async fn animate(
             .set_property(CUT_PROPERTY, &format!("{}%", 100.0 * cut));
         let width = root.client_width().max(1);
         let height = root.client_height().max(1);
-        let scale = (1920.0 / f64::from(width.max(height))).min(1.0);
+        let scale = window
+            .device_pixel_ratio()
+            .clamp(1.0, 2.0)
+            .min(1920.0 / f64::from(width.max(height)));
         let size = (
             (f64::from(width) * scale).round().max(1.0) as u32,
             (f64::from(height) * scale).round().max(1.0) as u32,
@@ -250,12 +251,11 @@ async fn animate(
             gl.uniform2f(resolution.as_ref(), size.0 as f32, size.1 as f32);
         }
         gl.uniform1f(progress_uniform.as_ref(), progress as f32);
-        gl.uniform1f(
-            alpha.as_ref(),
-            (1.0 - (elapsed - SWEEP_MS).max(0.0) / OUTRO_MS) as f32,
-        );
         gl.uniform1f(time.as_ref(), (elapsed / 1000.0) as f32);
         gl.draw_arrays(Gl::TRIANGLE_STRIP, 0, 4);
+        if factor == 1.0 {
+            break;
+        }
     }
 }
 
@@ -272,6 +272,9 @@ async fn frame(window: &Window) -> Option<f64> {
 
 // Invert the x component of the CSS ease curve (0.25, 0.1, 0.25, 1).
 fn ease(progress: f64) -> f64 {
+    if progress <= 0.0 || progress >= 1.0 {
+        return progress.clamp(0.0, 1.0);
+    }
     let (mut low, mut high) = (0.0, 1.0);
     for _ in 0..12 {
         let t = (low + high) / 2.0;
@@ -295,7 +298,7 @@ void main() { gl_Position = vec4(position, 0.0, 1.0); }
 const SILVER: &str = r#"
 precision mediump float;
 uniform vec2 resolution;
-uniform float direction, brightness, progress, alpha, seconds;
+uniform float direction, brightness, progress, seconds;
 
 vec3 silver(float t) {
     return vec3(0.74, 0.75, 0.78) + 0.24 * cos(6.2831853 * (vec3(t) + vec3(0.0, 0.02, 0.05)));
@@ -304,7 +307,8 @@ vec3 silver(float t) {
 void main() {
     vec2 uv = gl_FragCoord.xy / resolution;
     float center = 0.5 + direction * (1.4 * progress - 0.7);
-    float d = uv.x - center;
+    float wave = sin(uv.y * 4.2 + seconds * 0.08 + 0.3) * 0.0016;
+    float d = uv.x - center - wave;
     float band = exp(-d * d * 14.0);
     vec3 normal = normalize(vec3(5.04 * d * band, 0.0, 1.0));
     float behind = max(-d * direction, 0.0);
@@ -313,12 +317,12 @@ void main() {
     float halo = exp(-d * d * 2.5) * 0.05 * focus;
     float intensity = clamp(max(band, wake) + halo * (1.0 - band), 0.0, 1.0);
     float ripple = sin(uv.y * 12.0 + uv.x * 3.0 + seconds * 0.40) * 0.015;
-    float t = normal.x * 0.12 + uv.x * 0.90 + uv.y * 0.16 + ripple + seconds * 0.04;
+    float t = normal.x * 0.12 + uv.x * 0.90 + uv.y * 0.16 + ripple + 0.08 + seconds * 0.04;
     vec3 color = (silver(t) * 0.50 + silver(t - 0.18) * 0.25 + silver(t + 0.18) * 0.25) * brightness;
     vec3 halfLight = normalize(normalize(vec3(0.35, 0.55, 0.9)) + vec3(0.0, 0.0, 1.0));
     float fresnel = pow(1.0 - clamp(normal.z, 0.0, 1.0), 3.0);
     float specular = pow(clamp(dot(normal, halfLight), 0.0, 1.0), 80.0);
-    float visibility = alpha * mix(0.2, 1.0, focus);
+    float visibility = mix(0.2, 1.0, focus);
     float body = intensity * visibility;
     float highlight = band * visibility * 0.55;
     vec3 light = (color * fresnel * 0.55 + vec3(specular) * 1.1) * highlight;

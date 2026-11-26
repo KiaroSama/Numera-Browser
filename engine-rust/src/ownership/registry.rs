@@ -252,6 +252,33 @@ impl Registry {
         }
         Ok(claims::state(&claims::read(&self.root, id), &self.host) != claims::State::Free)
     }
+    pub(crate) fn with_owned_page<T, F: FnOnce(&mut Adapter) -> io::Result<T>>(
+        &self,
+        id: &str,
+        operation: F,
+    ) -> io::Result<Result<T, F>> {
+        let decision = self.decision(id)?;
+        let _guard = decision.lock().map_err(|_| poisoned())?;
+        if *self.closed.lock().map_err(|_| poisoned())? {
+            return Err(io::Error::other("Session registry is shutting down"));
+        }
+        if !self.reap_one(id)? {
+            return Ok(Err(operation));
+        }
+        let mut entries = self.entries.lock().map_err(|_| poisoned())?;
+        match entries.get_mut(id) {
+            Some(Entry {
+                owner: Owner::Browser(adapter),
+                kind: Kind::Launch | Kind::Attach,
+                ..
+            }) => operation(adapter).map(Ok),
+            _ => Err(io::Error::new(
+                io::ErrorKind::WouldBlock,
+                "Profile is busy with a different operation",
+            )),
+        }
+    }
+
     pub fn owns(&self, id: &str) -> io::Result<bool> {
         Ok(self
             .entries

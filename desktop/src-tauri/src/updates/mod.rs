@@ -2,6 +2,8 @@
 pub mod acceptance;
 pub mod archive;
 pub mod bridge;
+mod channels;
+mod cleanup;
 mod custody;
 pub mod download;
 pub mod files;
@@ -202,18 +204,7 @@ impl Service {
         if !self.status().current.portable {
             return Ok(());
         }
-        self.start(|service|{
-        service.set("checking","Checking authenticated release generations…");
-        {let mut state=service.state.lock().map_err(|_|io::Error::other("Update state poisoned"))?;
-        state.status.offer=None;state.offer=None;}
-        let current=service.status().current;
-        let generation=transaction::generation_floor(&service.root,current.generation)?;
-        let offer=download::discover(generation,&service.platform,&service.key,transaction::now()?,&service.cancelled)?;
-        if service.cancelled.load(Ordering::Acquire){return Err(io::Error::new(io::ErrorKind::ConnectionAborted,"Update check cancelled"));}
-        let mut state=service.state.lock().map_err(|_|io::Error::other("Update state poisoned"))?;
-        state.status.offer=offer.as_ref().map(|offer|OfferView{id:offer.id.clone(),version:offer.manifest.version.clone(),source_sha:offer.manifest.source_sha.clone(),generation:offer.manifest.generation,download_bytes:offer.asset.size,expanded_bytes:offer.asset.expanded_size,components:offer.manifest.components[&service.platform].clone(),restart_required:true});
-        state.status.state=if offer.is_some(){"available"}else{"current"}.into();state.status.message=if offer.is_some(){"A signed application and compatible browser update is available. Download requires your approval."}else{"No newer compatible signed generation was found."}.into();state.status.can_cancel=false;state.offer=offer;Ok(())
-    })
+        self.start(|service| service.check_now())
     }
     pub fn download(self: &Arc<Self>, offer_id: &str, approve: bool) -> io::Result<()> {
         if !approve {
@@ -223,94 +214,96 @@ impl Service {
             ));
         }
         let id = offer_id.to_owned();
-        self.start(move |service| {
-            let offer = {
-                let state = service
-                    .state
-                    .lock()
-                    .map_err(|_| io::Error::other("Update state poisoned"))?;
-                state
-                    .offer
-                    .as_ref()
-                    .filter(|offer| offer.id == id)
-                    .cloned()
-                    .ok_or_else(|| manifest::error("Update offer is no longer current"))?
+        self.start(move |service| service.download_now(&id))
+    }
+    fn download_now(&self, id: &str) -> io::Result<()> {
+        let service = self;
+        let offer = {
+            let state = service
+                .state
+                .lock()
+                .map_err(|_| io::Error::other("Update state poisoned"))?;
+            state
+                .offer
+                .as_ref()
+                .filter(|offer| offer.id == id)
+                .cloned()
+                .ok_or_else(|| manifest::error("Update offer is no longer current"))?
+        };
+        if !service.status().current.portable {
+            return Err(io::Error::new(
+                io::ErrorKind::Unsupported,
+                "This installation is not a signed portable generation",
+            ));
+        }
+        let _lock = files::lock(&service.root)?;
+        if recovery::pending(&service.root)?.is_some() {
+            return Err(manifest::error(
+                "An unfinished update requires recovery before another download",
+            ));
+        }
+        let old = transaction::installed(&service.root, &service.key, &service.platform)?;
+        transaction::validate_files(&service.root, &old)?;
+        manifest::signed_manifest(
+            &offer.bytes,
+            &offer.signature,
+            &service.key,
+            &service.platform,
+            transaction::generation_floor(&service.root, old.generation)?,
+            transaction::now()?,
+        )?;
+        let previous = old
+            .files
+            .iter()
+            .map(|file| match file {
+                manifest::InstalledFile::Regular(file) => file.size,
+                _ => 0,
+            })
+            .sum();
+        download::check_space(&service.root, &offer.asset, previous)?;
+        let journal = transaction::create(&service.root, &offer.id)?;
+        files::write(&journal.directory.join("manifest.json"), &offer.bytes)?;
+        files::write(&journal.directory.join("manifest.sig"), &offer.signature)?;
+        service.set("downloading", "Downloading the approved signed generation…");
+        {
+            let mut state = service
+                .state
+                .lock()
+                .map_err(|_| io::Error::other("Update state poisoned"))?;
+            state.status.progress = Progress {
+                received_bytes: 0,
+                total_bytes: offer.asset.size,
             };
-            if !service.status().current.portable {
-                return Err(io::Error::new(
-                    io::ErrorKind::Unsupported,
-                    "This installation is not a signed portable generation",
-                ));
-            }
-            let _lock = files::lock(&service.root)?;
-            if recovery::pending(&service.root)?.is_some() {
-                return Err(manifest::error(
-                    "An unfinished update requires recovery before another download",
-                ));
-            }
-            let old = transaction::installed(&service.root, &service.key, &service.platform)?;
-            transaction::validate_files(&service.root, &old)?;
-            manifest::signed_manifest(
-                &offer.bytes,
-                &offer.signature,
-                &service.key,
-                &service.platform,
-                transaction::generation_floor(&service.root, old.generation)?,
-                transaction::now()?,
-            )?;
-            let previous = old
-                .files
-                .iter()
-                .map(|file| match file {
-                    manifest::InstalledFile::Regular(file) => file.size,
-                    _ => 0,
-                })
-                .sum();
-            download::check_space(&service.root, &offer.asset, previous)?;
-            let journal = transaction::create(&service.root, &offer.id)?;
-            files::write(&journal.directory.join("manifest.json"), &offer.bytes)?;
-            files::write(&journal.directory.join("manifest.sig"), &offer.signature)?;
-            service.set("downloading", "Downloading the approved signed generation…");
-            {
-                let mut state = service
-                    .state
-                    .lock()
-                    .map_err(|_| io::Error::other("Update state poisoned"))?;
-                state.status.progress = Progress {
-                    received_bytes: 0,
-                    total_bytes: offer.asset.size,
-                };
-                state.journal = Some(journal.clone());
-            }
-            let path = journal.directory.join("archive.part");
-            download::stream(
-                &download::client()?,
-                &download::asset_url(&offer.manifest.source_sha, &offer.asset.name),
-                &offer.asset,
-                &path,
-                &service.cancelled,
-                |received| {
-                    if let Ok(mut state) = service.state.lock() {
-                        state.status.progress.received_bytes = received;
-                    }
-                },
-            )?;
-            let build = archive::extract(
-                &path,
-                &journal.staged(),
-                &offer.asset,
-                &service.key,
-                &service.cancelled,
-            )?;
-            offer.manifest.validate_build(
-                &build,
-                &manifest::digest(&files::read(
-                    &journal.staged().join("BUILD.json"),
-                    manifest::BUILD_LIMIT,
-                )?),
-            )?;
-            service.finish_download()
-        })
+            state.journal = Some(journal.clone());
+        }
+        let path = journal.directory.join("archive.part");
+        download::stream(
+            &download::client()?,
+            &download::offer_asset_url(&offer),
+            &offer.asset,
+            &path,
+            &service.cancelled,
+            |received| {
+                if let Ok(mut state) = service.state.lock() {
+                    state.status.progress.received_bytes = received;
+                }
+            },
+        )?;
+        let build = archive::extract(
+            &path,
+            &journal.staged(),
+            &offer.asset,
+            &service.key,
+            &service.cancelled,
+        )?;
+        offer.manifest.validate_build(
+            &build,
+            &manifest::digest(&files::read(
+                &journal.staged().join("BUILD.json"),
+                manifest::BUILD_LIMIT,
+            )?),
+        )?;
+        service.finish_download()
     }
     fn finish_download(&self) -> io::Result<()> {
         let mut state = self
@@ -336,46 +329,173 @@ impl Service {
             ));
         }
         let id = offer_id.to_owned();
-        self.start(move|service|{
-            let mut journal={let mut state=service.state.lock().map_err(|_|io::Error::other("Update state poisoned"))?;
-                if !matches!(state.status.state.as_str(),"ready"|"deferred")||state.offer.as_ref().is_none_or(|offer|offer.id!=id){return Err(manifest::error("No verified approved update is ready"));}
-                let journal=state.journal.clone().ok_or_else(||manifest::error("Update transaction missing"))?;
-                if journal.manifest_digest!=id{return Err(manifest::error("Staged generation differs from the approved offer"));}
-                state.status.state="activating".into();state.status.can_cancel=false;
-                state.status.message="Preparing the approved update; active work will defer installation.".into();
-                journal};
-            let _lock=files::lock(&service.root)?;
-            let installed=transaction::installed(&service.root,&service.key,&service.platform)?;
-            let metadata=files::read(&journal.directory.join("manifest.json"),manifest::METADATA_LIMIT)?;
-            manifest::signed_manifest(&metadata,&files::read(&journal.directory.join("manifest.sig"),64)?,&service.key,&service.platform,transaction::generation_floor(&service.root,installed.generation)?,transaction::now()?)?;
-            let client=reqwest::blocking::Client::builder().no_proxy().timeout(Duration::from_secs(15)).build().map_err(io::Error::other)?;
-            let prepared=client.post(format!("http://127.0.0.1:{}/api/updates/prepare",service.engine_port)).bearer_auth(&service.engine_token).json(&json!({})).send().map_err(|_|io::Error::other("Could not prepare update recovery"))?;
-            if !prepared.status().is_success(){return Err(io::Error::other("Engine could not prepare update recovery"));}
-            let prepared=private_receipt(prepared)?;
-            journal.data_root=PathBuf::from(prepared["root"].as_str().ok_or_else(||manifest::error("Update data root missing"))?);
-            if !journal.data_root.is_absolute() || prepared["gate"]!=".updates/admission.json" {return Err(manifest::error("Update data root or admission path is invalid"));}
-            let root_meta=std::fs::symlink_metadata(&journal.data_root)?;
-            if !root_meta.is_dir() || files::linked(&root_meta) {return Err(manifest::error("Prepared update data root is linked or invalid"));}
-            journal.ticket=files::nonce()?;journal.phase="quiescing".into();journal.save()?;
-            let response=client.post(format!("http://127.0.0.1:{}/api/updates/quiesce",service.engine_port)).bearer_auth(&service.engine_token).json(&json!({"ticket":journal.ticket})).send().map_err(|_|io::Error::other("Could not prove application quiescence; recovery journal retained"))?;
-            if response.status().as_u16()==409{
-                if recovery::quiesced(&journal)?{return Err(manifest::error("Quiescence is uncertain; matching recovery evidence retained"));}
-                journal.phase="staging".into();journal.ticket.clear();journal.save()?;service.set("deferred","Active or uncertain work prevents installation. Stop it normally and try again.");return Ok(());
-            }
-            if !response.status().is_success(){return Err(io::Error::other("Engine cannot prove update admission is closed"));}
-            let receipt=private_receipt(response)?;
-            let ticket=receipt["ticket"].as_str().ok_or_else(||manifest::error("Quiescence ticket missing"))?;manifest::decode_hex::<32>(ticket)?;
-            if ticket!=journal.ticket||receipt["root"].as_str()!=journal.data_root.to_str(){return Err(manifest::error("Quiescence receipt belongs to another prepared transaction"));}
-            journal.phase="ready".into();journal.save()?;
-            #[cfg(feature = "update-acceptance")]
-            acceptance::checkpoint("quiesced")?;
-            match worker::spawn(&journal){Ok(child)=>{*service.worker.lock().map_err(|_|io::Error::other("Update worker owner poisoned"))?=Some(child);service.set("activating","Restarting into the approved verified generation…");(service.exit)();Ok(())},Err(error)=>{
-                let resumed=client.post(format!("http://127.0.0.1:{}/api/updates/resume",service.engine_port)).bearer_auth(&service.engine_token).json(&json!({"ticket":journal.ticket})).send().map_err(|_|io::Error::other("Failed update worker retains its admission gate"))?;
-                if !resumed.status().is_success(){return Err(io::Error::other("Failed update worker retains its admission gate"));}
-                journal.phase="cancelled".into();journal.ticket.clear();journal.save()?;
-                Err(error)
-            }}
+        self.start(move |service| {
+            let clean_old = service.preferences()?.clean_old_versions_on_update;
+            service.install_now(&id, clean_old)
         })
+    }
+    fn install_now(&self, id: &str, clean_old: bool) -> io::Result<()> {
+        let service = self;
+        let mut journal = {
+            let mut state = service
+                .state
+                .lock()
+                .map_err(|_| io::Error::other("Update state poisoned"))?;
+            if !matches!(state.status.state.as_str(), "ready" | "deferred")
+                || state.offer.as_ref().is_none_or(|offer| offer.id != id)
+            {
+                return Err(manifest::error("No verified approved update is ready"));
+            }
+            let journal = state
+                .journal
+                .clone()
+                .ok_or_else(|| manifest::error("Update transaction missing"))?;
+            if journal.manifest_digest != id {
+                return Err(manifest::error(
+                    "Staged generation differs from the approved offer",
+                ));
+            }
+            state.status.state = "activating".into();
+            state.status.can_cancel = false;
+            state.status.message =
+                "Preparing the approved update; active work will defer installation.".into();
+            journal
+        };
+        let _lock = files::lock(&service.root)?;
+        let installed = transaction::installed(&service.root, &service.key, &service.platform)?;
+        let metadata = files::read(
+            &journal.directory.join("manifest.json"),
+            manifest::METADATA_LIMIT,
+        )?;
+        manifest::signed_manifest(
+            &metadata,
+            &files::read(&journal.directory.join("manifest.sig"), 64)?,
+            &service.key,
+            &service.platform,
+            transaction::generation_floor(&service.root, installed.generation)?,
+            transaction::now()?,
+        )?;
+        let client = reqwest::blocking::Client::builder()
+            .no_proxy()
+            .timeout(Duration::from_secs(15))
+            .build()
+            .map_err(io::Error::other)?;
+        let prepared = client
+            .post(format!(
+                "http://127.0.0.1:{}/api/updates/prepare",
+                service.engine_port
+            ))
+            .bearer_auth(&service.engine_token)
+            .json(&json!({}))
+            .send()
+            .map_err(|_| io::Error::other("Could not prepare update recovery"))?;
+        if !prepared.status().is_success() {
+            return Err(io::Error::other("Engine could not prepare update recovery"));
+        }
+        let prepared = private_receipt(prepared)?;
+        journal.data_root = PathBuf::from(
+            prepared["root"]
+                .as_str()
+                .ok_or_else(|| manifest::error("Update data root missing"))?,
+        );
+        if !journal.data_root.is_absolute() || prepared["gate"] != ".updates/admission.json" {
+            return Err(manifest::error(
+                "Update data root or admission path is invalid",
+            ));
+        }
+        let root_meta = std::fs::symlink_metadata(&journal.data_root)?;
+        if !root_meta.is_dir() || files::linked(&root_meta) {
+            return Err(manifest::error(
+                "Prepared update data root is linked or invalid",
+            ));
+        }
+        journal.clean_old = clean_old;
+        journal.ticket = files::nonce()?;
+        journal.phase = "quiescing".into();
+        journal.save()?;
+        let response = client
+            .post(format!(
+                "http://127.0.0.1:{}/api/updates/quiesce",
+                service.engine_port
+            ))
+            .bearer_auth(&service.engine_token)
+            .json(&json!({"ticket":journal.ticket}))
+            .send()
+            .map_err(|_| {
+                io::Error::other(
+                    "Could not prove application quiescence; recovery journal retained",
+                )
+            })?;
+        if response.status().as_u16() == 409 {
+            if recovery::quiesced(&journal)? {
+                return Err(manifest::error(
+                    "Quiescence is uncertain; matching recovery evidence retained",
+                ));
+            }
+            journal.phase = "staging".into();
+            journal.ticket.clear();
+            journal.save()?;
+            service.set(
+                "deferred",
+                "Active or uncertain work prevents installation. Stop it normally and try again.",
+            );
+            return Ok(());
+        }
+        if !response.status().is_success() {
+            return Err(io::Error::other(
+                "Engine cannot prove update admission is closed",
+            ));
+        }
+        let receipt = private_receipt(response)?;
+        let ticket = receipt["ticket"]
+            .as_str()
+            .ok_or_else(|| manifest::error("Quiescence ticket missing"))?;
+        manifest::decode_hex::<32>(ticket)?;
+        if ticket != journal.ticket || receipt["root"].as_str() != journal.data_root.to_str() {
+            return Err(manifest::error(
+                "Quiescence receipt belongs to another prepared transaction",
+            ));
+        }
+        journal.phase = "ready".into();
+        journal.save()?;
+        #[cfg(feature = "update-acceptance")]
+        acceptance::checkpoint("quiesced")?;
+        match worker::spawn(&journal) {
+            Ok(child) => {
+                *service
+                    .worker
+                    .lock()
+                    .map_err(|_| io::Error::other("Update worker owner poisoned"))? = Some(child);
+                service.set(
+                    "activating",
+                    "Restarting into the approved verified generation…",
+                );
+                (service.exit)();
+                Ok(())
+            }
+            Err(error) => {
+                let resumed = client
+                    .post(format!(
+                        "http://127.0.0.1:{}/api/updates/resume",
+                        service.engine_port
+                    ))
+                    .bearer_auth(&service.engine_token)
+                    .json(&json!({"ticket":journal.ticket}))
+                    .send()
+                    .map_err(|_| {
+                        io::Error::other("Failed update worker retains its admission gate")
+                    })?;
+                if !resumed.status().is_success() {
+                    return Err(io::Error::other(
+                        "Failed update worker retains its admission gate",
+                    ));
+                }
+                journal.phase = "cancelled".into();
+                journal.ticket.clear();
+                journal.save()?;
+                Err(error)
+            }
+        }
     }
     pub fn cancel(&self, id: &str) -> io::Result<()> {
         let mut state = self

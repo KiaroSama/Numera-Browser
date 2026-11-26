@@ -1,4 +1,5 @@
 #![cfg(not(target_arch = "wasm32"))]
+#![allow(clippy::unwrap_used)]
 //! The 71 original non-DOM cases. The 124 original DOM cases run in Chromium.
 //! Each parameterized Vitest row is a separate Rust test, including all 33
 //! forbidden status control characters. Browser execution is in browser::tests.

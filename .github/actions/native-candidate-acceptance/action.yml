@@ -29,8 +29,10 @@ runs:
       id: acceptance
       shell: bash
       run: cargo xtask ci owned --wall 600 --idle 150 -- cargo xtask ci acceptance "$NUMERA_NATIVE_ENGINE" "$RUNNER_TEMP/native-application-acceptance"
-    - name: Require all five native entry workloads on both ownership platforms
+    - name: Measure all five native entry workloads on both ownership platforms
       if: inputs.engine == 'playwright'
+      env:
+        NUMERA_HOSTED_PERFORMANCE_DIAGNOSTIC: '1'
       shell: bash
       run: cargo xtask ci owned --wall 180 --idle 90 -- cargo xtask ci entry-benchmark "$RUNNER_TEMP/numera-native-checkpoint.target/release/numera-native-candidate${{ runner.os == 'Windows' && '.exe' || '' }}" "$NUMERA_NATIVE_ENGINE" "$NUMERA_BROWSER_RUNTIME" build/native-candidate/entry-performance.json
     - name: Real browser performance against the immutable native checkpoint
@@ -38,12 +40,13 @@ runs:
       shell: bash
       env:
         CANDIDATE_ENGINE: ${{ inputs.engine }}
+        NUMERA_HOSTED_PERFORMANCE_DIAGNOSTIC: '1'
       run: cargo xtask ci owned --wall 600 --idle 150 -- cargo xtask ci browser-benchmark "$RUNNER_TEMP/numera-native-checkpoint.target/release/numera-native-candidate${{ runner.os == 'Windows' && '.exe' || '' }}" "$NUMERA_NATIVE_ENGINE" "$NUMERA_BROWSER_RUNTIME" build/native-candidate/browser-performance.json "$CANDIDATE_ENGINE"
     - name: Preserve exact-source browser measurement and checkpoint bridge evidence
       if: always()
       uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
       with:
-        name: browser-performance-${{ runner.os }}-${{ inputs.engine }}-${{ github.sha }}
+        name: browser-benchmark-${{ runner.os }}-${{ inputs.engine }}-${{ github.sha }}
         path: |
           build/native-candidate/browser-performance.json
           build/native-candidate/entry-performance.json

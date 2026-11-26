@@ -10,16 +10,19 @@ use std::{
     env,
     error::Error,
     ffi::OsString,
-    fs::{self, File, OpenOptions},
+    fs::{self, OpenOptions},
     io::{self, Write},
     path::{Path, PathBuf},
     process::{Command, Stdio},
 };
-use zip::{CompressionMethod, System, ZipWriter, write::SimpleFileOptions};
+#[path = "product_artifacts.rs"]
+mod artifacts;
+use artifacts::write_json;
+pub use artifacts::{StageInputs, archive, inventory, stage};
 
 pub struct Options {
     pub output: PathBuf,
-    pub resources: PathBuf,
+    pub resources: Option<PathBuf>,
     pub server_only: bool,
     pub bundles: Option<String>,
 }
@@ -28,6 +31,7 @@ impl Options {
     pub fn parse(mut args: impl Iterator<Item = OsString>) -> Result<Self, Box<dyn Error>> {
         let output = PathBuf::from(args.next().ok_or("new output directory required")?);
         let mut resources = None;
+        let mut no_bundled_browsers = false;
         let mut server_only = false;
         let mut bundles = None;
         while let Some(arg) = args.next() {
@@ -38,6 +42,7 @@ impl Options {
                             .ok_or("--resources requires an explicitly provisioned directory")?,
                     ))
                 }
+                Some("--no-bundled-browsers") if !no_bundled_browsers => no_bundled_browsers = true,
                 Some("--server-only") if !server_only => server_only = true,
                 Some("--bundles") if bundles.is_none() => {
                     bundles = Some(
@@ -52,11 +57,14 @@ impl Options {
         if server_only && bundles.is_some() {
             return Err("--bundles cannot be combined with --server-only".into());
         }
+        if resources.is_some() == no_bundled_browsers {
+            return Err(
+                "provide exactly one of --resources <path> or --no-bundled-browsers".into(),
+            );
+        }
         Ok(Self {
             output,
-            resources: resources.ok_or(
-                "--resources is required; no SDK/browser acquisition occurs during a build",
-            )?,
+            resources,
             server_only,
             bundles,
         })
@@ -194,7 +202,11 @@ pub fn build(root: &Path, options: Options) -> Result<(), Box<dyn Error>> {
     let identity = BuildIdentity::from_environment()?;
     verify_source(root, &identity)?;
     let bundles = native_bundles(&identity.platform, options.bundles.as_deref())?;
-    let receipt = Receipt::validate(&options.resources, &identity)?;
+    let receipt = options
+        .resources
+        .as_deref()
+        .map(|path| Receipt::validate(path, &identity).map(|receipt| (path, receipt)))
+        .transpose()?;
     if !options.server_only {
         let cli = Command::new(cargo())
             .args(["tauri", "--version"])
@@ -258,7 +270,13 @@ pub fn build(root: &Path, options: Options) -> Result<(), Box<dyn Error>> {
     }
     fs::create_dir(&options.output)?;
     let result = build_inner(
-        root, &options, &identity, &receipt, &engine, &browser, &bundles,
+        root,
+        &options,
+        &identity,
+        receipt.as_ref().map(|(path, receipt)| (*path, receipt)),
+        &engine,
+        &browser,
+        &bundles,
     );
     if let Err(error) = result {
         return Err(rollback_failed_build(root, &options.output, error));
@@ -338,99 +356,11 @@ fn source_archive(
     Ok(path)
 }
 
-pub struct StageInputs<'a> {
-    pub root: &'a Path,
-    pub source: &'a Path,
-    pub dashboard: &'a Path,
-    pub resources_root: &'a Path,
-    pub receipt: &'a Receipt,
-    pub engine: &'a Path,
-    pub browser: &'a Path,
-    pub identity: &'a BuildIdentity,
-}
-
-pub fn stage(stage: &Path, inputs: &StageInputs<'_>) -> Result<(), Box<dyn Error>> {
-    let StageInputs {
-        root,
-        source,
-        dashboard,
-        resources_root,
-        receipt,
-        engine,
-        browser,
-        identity,
-    } = *inputs;
-    fs::create_dir(stage)?;
-    let runtime = stage.join("engine");
-    let suffix = if identity.platform == "windows" {
-        ".exe"
-    } else {
-        ""
-    };
-    resources::copy_file(engine, &runtime.join(format!("numera-engine{suffix}")))?;
-    resources::copy_file(
-        browser,
-        &runtime.join(format!("numera-browser-runtime{suffix}")),
-    )?;
-    resources::copy_tree(dashboard, &runtime.join("web"))?;
-    receipt.copy(resources_root, &runtime)?;
-    resources::copy_file(
-        source,
-        &runtime
-            .join("sources")
-            .join(source.file_name().ok_or("source filename missing")?),
-    )?;
-    for relative in [
-        "LICENSE",
-        "docs/licensing.md",
-        "docs/browser-notices.txt",
-        "docs/migration-random-notices.txt",
-        "engine-rust/src/http/documentation-assets/NOTICE.md",
-    ] {
-        resources::copy_file(&root.join(relative), &runtime.join(relative))?;
-    }
-    resources::copy_file(&root.join("LICENSE"), &stage.join("LICENSE"))?;
-    write_json(
-        &runtime.join("PROVENANCE.json"),
-        &json!({
-            "schema":1, "identity":identity, "application_runtime":"native", "dashboard":"rust-wasm",
-            "signing":"unsigned", "release_authorized":false, "migration_acceptance":"required",
-            "source_archive":source.file_name().and_then(|name| name.to_str()), "source_sha256":hash(source)?,
-            "engine_sha256":hash(engine)?, "browser_runtime_sha256":hash(browser)?,
-            "resource_receipt_sha256":hash(&resources_root.join(resources::RECEIPT))?,
-            "resources_assurance":"operator-provisioned hash inventory; upstream authenticity is not asserted",
-            "source_offers":receipt.source_offers,
-            "cloak_binary_included":false,
-            "runtime_prerequisites": {
-                "windows":"Microsoft WebView2 (desktop)",
-                "linux":"compatible glibc; WebKitGTK 4.1 and GTK3 (desktop)",
-                "macos":"compatible macOS; application is unsigned and not notarized"
-            }
-        }),
-    )?;
-    fs::write(
-        runtime.join("README.txt"),
-        concat!(
-            "Numera Browser native product build\n\n",
-            "Run numera-engine serve --host 127.0.0.1 --port 8787 from this directory.\n",
-            "The native engine serves its Rust/WASM dashboard from web/. Set NUMERA_DATA_DIR\n",
-            "to choose persistent storage. Vendor SDKs and browsers are provisioned resources;\n",
-            "the build performs no SDK/browser downloads. Cloak binaries are not redistributed.\n",
-            "Provision an appropriately licensed Cloak binary separately when using that backend.\n\n",
-            "This artifact is unsigned and is not an authenticated release or update.\n",
-            "SHA256SUMS and PROVENANCE.json provide integrity/source receipts, not signatures.\n",
-            "Signed release/update publication and full migration acceptance remain required.\n"
-        ),
-    )?;
-    inventory(&runtime)?;
-    Ok(())
-}
-
 fn build_inner(
     root: &Path,
     options: &Options,
     identity: &BuildIdentity,
-    receipt: &Receipt,
+    vendor: Option<(&Path, &Receipt)>,
     engine: &Path,
     browser: &Path,
     bundles: &[String],
@@ -443,8 +373,7 @@ fn build_inner(
             root,
             source: &source,
             dashboard: &root.join("dashboard/dist"),
-            resources_root: &options.resources,
-            receipt,
+            vendor,
             engine,
             browser,
             identity,
@@ -685,60 +614,6 @@ fn build_desktop(
         }
     }
     fs::remove_dir_all(&work)?;
-    Ok(())
-}
-
-pub fn inventory(root: &Path) -> Result<(), Box<dyn Error>> {
-    let mut entries = Vec::new();
-    for path in resources::files(root)? {
-        let name = resources::portable_name(&path)?;
-        if name == "FILES.json" {
-            continue;
-        }
-        entries.push(json!({"path":name, "size":fs::metadata(root.join(&path))?.len(), "sha256":hash(&root.join(path))?}));
-    }
-    write_json(
-        &root.join("FILES.json"),
-        &json!({"schema":1,"signing":"unsigned","files":entries}),
-    )
-}
-
-fn write_json(path: &Path, value: &Value) -> Result<(), Box<dyn Error>> {
-    let mut file = OpenOptions::new().write(true).create_new(true).open(path)?;
-    serde_json::to_writer_pretty(&mut file, value)?;
-    file.write_all(b"\n")?;
-    file.sync_all()?;
-    Ok(())
-}
-
-pub fn archive(root: &Path, output: &Path, prefix: &str) -> Result<(), Box<dyn Error>> {
-    resources::public_path(prefix, true)?;
-    let file = OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(output)?;
-    let mut archive = ZipWriter::new(file);
-    let options = SimpleFileOptions::default()
-        .system(System::Unix)
-        .compression_method(CompressionMethod::Deflated);
-    for relative in resources::files(root)? {
-        let name = resources::portable_name(&relative)?;
-        resources::public_path(&name, true)?;
-        let path = root.join(&relative);
-        #[cfg(unix)]
-        let executable = {
-            use std::os::unix::fs::PermissionsExt;
-            fs::metadata(&path)?.permissions().mode() & 0o111 != 0
-        };
-        #[cfg(not(unix))]
-        let executable = path.extension().is_some_and(|extension| extension == "exe");
-        archive.start_file(
-            format!("{prefix}/{name}"),
-            options.unix_permissions(if executable { 0o755 } else { 0o644 }),
-        )?;
-        crate::progress::copy(&mut File::open(path)?, &mut archive)?;
-    }
-    archive.finish()?.sync_all()?;
     Ok(())
 }
 

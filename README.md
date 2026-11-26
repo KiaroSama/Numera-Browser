@@ -1,97 +1,69 @@
-<div align="center">
-
-<img src="docs/brand/logo-256.png" alt="Numera Browser logo" width="240" height="240">
+<p align="center">
+  <img src="docs/brand/Logo.png" width="240" alt="Numera Browser logo" />
+</p>
 
 # Numera Browser
 
-### Local-first browser profile manager
+<div align="center">
 
-Manage separate browser profiles, proxy settings and sessions from a desktop window,
-web dashboard or CLI. Choose Playwright, Patchright, Camoufox or CloakBrowser for
-workflows you are authorized to run.
-
-[![Native CI](https://github.com/KiaroSama/Numera-Browser/actions/workflows/native-ci.yml/badge.svg)](https://github.com/KiaroSama/Numera-Browser/actions/workflows/native-ci.yml)
-[![Rust candidate builds](https://github.com/KiaroSama/Numera-Browser/actions/workflows/rust-candidate.yml/badge.svg)](https://github.com/KiaroSama/Numera-Browser/actions/workflows/rust-candidate.yml)
-[![License: noncommercial](https://img.shields.io/badge/License-noncommercial-d04a9a)](LICENSE)
-[![Version: 0.36.0](https://img.shields.io/badge/Version-0.36.0-blue)](CHANGELOG.md)
-[![Rust: 1.100.0](https://img.shields.io/badge/Rust-1.100.0-dea584)](rust-toolchain.toml)
-
-[![Desktop build targets](https://img.shields.io/badge/Targets-Windows%20x64%20%7C%20Linux%20x64-555)](.github/workflows/native-ci.yml)
-[![Documentation](https://img.shields.io/badge/Docs-setup%20%26%20usage-4c9a2a)](docs/setup.md)
-[![Dashboard: Rust + WebAssembly](https://img.shields.io/badge/Dashboard-Rust%20%2B%20WebAssembly-654ff0)](dashboard/Cargo.toml)
-[![Tauri: 2](https://img.shields.io/badge/Tauri-2-24c8d8)](desktop/src-tauri/Cargo.toml)
-[![HTTP API: Axum](https://img.shields.io/badge/API-Axum-009688)](engine-rust/Cargo.toml)
-[![Browser SDK: Playwright](https://img.shields.io/badge/Browser%20SDK-Playwright-45ba4b)](#browser-backends)
+[![Native CI](https://img.shields.io/github/actions/workflow/status/KiaroSama/Numera-Browser/native-ci.yml?style=flat-square&color=2563eb)](https://github.com/KiaroSama/Numera-Browser/actions/workflows/native-ci.yml)
+[![License: noncommercial](https://img.shields.io/badge/License-noncommercial-64748b)](LICENSE)
+[![Latest tag](https://img.shields.io/github/v/tag/KiaroSama/Numera-Browser?style=flat-square&color=16a34a)](https://github.com/KiaroSama/Numera-Browser/tags)
+[![Latest release](https://img.shields.io/github/v/release/KiaroSama/Numera-Browser?style=flat-square&color=a21caf)](https://github.com/KiaroSama/Numera-Browser/releases)
+[![Native tests](https://img.shields.io/github/actions/workflow/status/KiaroSama/Numera-Browser/rust-candidate.yml?style=flat-square&color=65a30d)](#development-and-verification)
+[![Rust 1.100.0](https://img.shields.io/badge/Rust-1.100.0-8b5cf6)](rust-toolchain.toml)
+[![Windows and Linux: x64 and arm64](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%28x64%20%26%20arm64%29-0891b2)](#install)
+[![MSI, AppImage, DEB and CLI-only](https://img.shields.io/badge/Installer-MSI%20%7C%20AppImage%20%7C%20DEB%20%7C%20CLI--only-ea580c)](#install)
+[![Documentation](https://img.shields.io/badge/Docs-setup-0d9488)](docs/setup.md)
+[![Repository size](https://img.shields.io/github/repo-size/KiaroSama/Numera-Browser?style=flat-square&color=ca8a04)](#development-and-verification)
+[![Architecture](https://img.shields.io/badge/Architecture-native-475569)](docs/architecture.md)
+[![Built with Tauri and Rust/WASM](https://img.shields.io/badge/Built%20with-Tauri%20%7C%20Rust%2FWASM-c2410c)](dashboard/README.md)
+[![MCP: stdio and HTTP](https://img.shields.io/badge/MCP-stdio%20%7C%20HTTP-1d4ed8)](#ai-agent--mcp-integration)
 [![Support donations](https://img.shields.io/badge/Support-donations-d04a9a)](#donate)
-
-[Download releases](https://github.com/KiaroSama/Numera-Browser/releases) ·
-[Installation and setup](docs/setup.md) · [Updates](docs/updates.md) ·
-[CLI and MCP](docs/agents.md)
-
-![Numera Browser dashboard](docs/screenshot-dashboard.png)
 
 </div>
 
-The manager service, HTTP API, CLI, MCP, web dashboard, desktop integration and
-build tools are implemented in Rust. The dashboard runs as WebAssembly. The
-manager launches compatible third-party Chromium and Firefox binaries through an
-owned Rust worker and provisioned vendor drivers. Numera Core Browser is planned
-as a separate browser runtime. See [product and runtime architecture](docs/architecture.md#product-and-runtime-boundary).
-
-Browser identity and diagnostic logic is also authored in
-[Rust](browser-page-rust/README.md). Its checked compiler-generated browser
-artifact preserves strict page CSP and needs no compiler at runtime.
-
-The [rewrite PR](https://github.com/KiaroSama/Numera-Browser/pull/76) continues the
-native checkpoint. The previous application interpreters and the application's
-authored browser page scripts have been retired. Follow the
-[checks on the latest PR commit](https://github.com/KiaroSama/Numera-Browser/pull/76/checks)
-and the [acceptance record](docs/rust-rewrite.md) for verified builds and tests.
-
-## What it does
-
-- **Profiles and sessions:** persistent browser storage, editable profile settings,
-  folders, tags, search, bulk creation/editing, configuration import/export and
-  individual profile/session backups.
-- **Browser backends:** select a backend per profile, manage extensions, launch a
-  browser or attach automation to an owned session.
-- **Proxy management:** import and assign proxies, inspect health, request provider
-  rotation and run diagnostic IP/WebRTC/DNS/TLS checks.
-- **Dashboard and automation:** profile editor, health overview, scheduled tasks,
-  CLI JSON output, HTTP API and MCP. Optional vault protection encrypts stored
-  proxy credentials; it does not encrypt every browser file.
-- **Portable updates:** review a signed release generation, approve downloading,
-  then separately approve installation/restart. SDKs and their managed browser
-  binaries update as a compatible unit; see [limits and recovery](docs/updates.md).
-
-The consistency meter checks profile settings against the project's rules. It is
-**not** proof of anonymity, undetectability, account isolation at a remote service,
-or permission to bypass that service's controls. Browser engines apply different
-settings; Camoufox generates parts of its own Firefox identity.
+Numera Browser is a local browser profile manager. It keeps sessions, cookies,
+proxy settings and browser identity settings separate per profile. The core,
+CLI, HTTP API and MCP server use Rust 1.100.0. Tauri hosts the Rust/WASM dashboard,
+which uses the Glimm transition when switching between light and dark themes.
+For reduced motion, the dashboard switches themes without the sweep.
 
 ## Install
 
-### Portable desktop
+Download only assets listed under [Releases & Tags](#releases-and-tags). Pick the
+asset that matches the operating system and CPU. Verify it before running or
+extracting it. A CI artifact is not a signed release.
 
-Download a completed matching archive from
-[GitHub Releases](https://github.com/KiaroSama/Numera-Browser/releases), verify its
-published signature/checksums, and extract the **entire** `Numera Browser` folder.
-Run `numera.exe` on Windows or `numera` on Linux. Keep its engine and browser
-resources beside it.
+| Target | Desktop packages | Headless server |
+| --- | --- | --- |
+| Windows x64 (`windows-x64`) | MSI or portable ZIP | CLI-only ZIP |
+| Windows arm64 (`windows-arm64`) | MSI or portable ZIP | CLI-only ZIP |
+| Linux x64 (`linux-x64`) | AppImage, DEB or portable ZIP | CLI-only tar.gz |
+| Linux arm64 (`linux-arm64`) | AppImage, DEB or portable ZIP | CLI-only tar.gz |
 
-| Build target | Host prerequisites |
-|---|---|
-| Windows x64 | Compatible Windows and WebView2 runtime. |
-| Linux x64 | Compatible glibc distribution, GTK 3/WebKitGTK 4.1 and the browser's system libraries. |
+Windows desktop builds need WebView2. Linux desktop builds need WebKitGTK 4.1
+and GTK 3. For portable installs, extract the whole `Numera Browser` directory
+and run `numera.exe` on Windows or `numera` on Linux. Keep the adjacent engine
+files in place. The Windows publisher certificate is self-signed; do not disable
+platform security or install an unknown root to get around a warning.
 
-A complete portable bundle needs no separate Python or Node installation. OS
-warnings can still apply: native signing is **self-signed/private-trust**, not a
-publicly trusted publisher certificate. Do not disable OS
-security or install an unknown root certificate to bypass a warning.
+### Headless Server (CLI-Only) Installation
 
-Only assets actually present in a completed release are available downloads. The
-release pipeline is under verification; a workflow definition or build-target
-badge is not evidence that the latest tree has passed or an asset has shipped.
+Download `numera-browser-cli-<version>-<target>.zip` on Windows or
+`numera-browser-cli-<version>-<target>.tar.gz` on Linux. Verify and extract the
+archive, then add the extracted directory to your `PATH`. Keep `numera-engine` and
+`numera-browser-runtime` together. The CLI needs no Tauri shell, WebView or
+windowing session. Launching a browser still requires that browser's SDK, binary
+and platform libraries; the headless package does not bundle them.
+
+Run `numera-engine --help` or start the loopback HTTP service:
+
+```bash
+numera-engine --data-dir ./numera-data serve --host 127.0.0.1 --port 8787
+```
+
+Source builds and browser resource setup are in [docs/setup.md](docs/setup.md).
 
 ### Source installation
 
@@ -115,82 +87,79 @@ in a second terminal. The Rust development server proxies `/api` to port 8787.
 Detailed platform prerequisites, alternative browser setup, Docker, headless
 configuration and troubleshooting are in [docs/setup.md](docs/setup.md).
 
-## Use
+## AI Agent & MCP Integration
 
-Create a profile:
-
-```bash
-numera-engine create qa-profile --os windows --locale en-US --engine playwright
-```
-
-List saved profiles:
+Start `numera-engine mcp` for newline-delimited JSON-RPC over stdio. If your agent
+runs beside an existing Numera service, use the HTTP bridge:
 
 ```bash
-numera-engine list --json
+numera-engine mcp --bridge http://127.0.0.1:8787
 ```
 
-Launch the selected profile:
+The bridge forwards calls to `POST /api/mcp` on the configured service. Add
+`--token <bearer>` when the service requires it. Keep management and CDP ports
+private, and leave the bridge on loopback unless you have explicitly configured
+remote authenticated access. For direct CLI calls, use `--json` to receive a
+machine-readable result and check the process exit code. Some commands expose
+profile data or secrets, so keep raw output out of shared logs.
 
-```bash
-numera-engine launch qa-profile
-```
+### CLI / MCP / GUI Feature Parity
 
-Inspect installed browser backends:
+The GUI calls the same Rust manager as the CLI and MCP. That keeps profile edits,
+proxy checks, cookie exports and workflow actions on the same validation and
+storage paths. See [the agent command guide](docs/agents.md) and the installed
+binary's `--help` for exact commands.
 
-```bash
-numera-engine engines
-```
-
-Set the default deliberately:
-
-```bash
-numera-engine default-engine playwright
-```
-
-`playwright` is the initial default. Explicit engine choices on creation or
-engine-changing edits can update it; editing unrelated fields does not. The
-server is authoritative, and Settings shows its saved default.
-
-For command help, use `numera-engine --help`. See
-[engine-rust/README.md](engine-rust/README.md) for native commands and development,
-[docs/agents.md](docs/agents.md) for JSON/MCP workflows, and
-[dashboard/README.md](dashboard/README.md) for frontend development.
+| Feature | What you can do |
+| --- | --- |
+| Browser automation | Navigate, fill forms, take a snapshot or screenshot, and read console or network results through the Rust Playwright/CDP layer. |
+| Profile identity | Set a Dolphin-style MAC address and device name for a profile. This changes browser-visible profile metadata, never the host network interface. |
+| Proxy checks | Review the apparent exit IP, country name and flag when a country match is available. |
+| Cookie export | Export a profile's cookies in JSON or Netscape format. Treat both files as credentials. |
+| Local workflows | Save and run local steps. Use multi-window sync to send the same supported action to selected profile sessions. |
 
 ## Browser backends
 
-| Backend | Browser and distribution boundary |
-|---|---|
-| `playwright` | Playwright's matched Chromium and explicitly provisioned SDK transport. |
-| `patchright` | A separate Patchright SDK and matched Chromium; not Playwright's shared binary. |
-| `camoufox` | Camoufox's Firefox build, addons and associated data. Its own generated identity differs from Chromium settings. |
-| `cloak` | Native Cloak preparation plus a separately licensed vendor browser. The proprietary binary is excluded from public bundles. |
+| Backend | Resources |
+| --- | --- |
+| `playwright` | Playwright SDK and its matched Chromium. |
+| `patchright` | Its own SDK and matched Chromium. |
+| `camoufox` | Firefox build, add-ons and data. Camoufox generates parts of its own identity. |
+| `cloak` | Native preparation plus a separately licensed vendor browser. Public packages exclude the proprietary binary. |
 
-Portable builds bundle Playwright, Patchright and Camoufox resources with their
-matching SDK versions. Cloak acquisition requires explicit consent and permitted
-vendor access. A vendor tier that cannot supply the requested exact generation
-cannot be presented as a tested managed pin. External browser-path overrides
-remain user-managed. Third-party licenses, notices and source obligations are
-listed in [docs/licensing.md](docs/licensing.md) and
-[docs/browser-notices.txt](docs/browser-notices.txt).
+Full x64 desktop packages include reviewed browser resources; ARM64 desktop packages and CLI-only archives do not. Use the
+[setup guide](docs/setup.md) for platform-specific prerequisites. Cloak requires
+explicit consent, a license and access to the selected vendor generation.
 
-## Data, access and updates
+`BrowserEngineProvider` is the interface for plugging in browser engines and
+update behavior. Numera Core Browser is a planned provider. It is not included
+in this release workflow.
 
-**Back up your data, not just the executable.** Settings → Storage shows the actual
-data root. Portable data normally lives beside the app when writable; explicit
-`--data-dir`/`NUMERA_DATA_DIR` selection takes precedence. Profiles, sessions, proxy
-configuration and token records are sensitive. A profile configuration export is
-not a full browser-session backup.
+## Data and updates
 
-Keep the API and CDP endpoints private. `numera-engine serve` binds to localhost by
-default; use bearer authentication and a controlled tunnel/reverse proxy for
-remote access. A non-loopback bind requires authentication. `NUMERA_ALLOWED_ORIGINS`
-restricts browser callers; CORS is not a substitute for authentication.
+Use **Settings → Storage** to find the actual data directory. Back up that
+entire directory before upgrading; a profile export is not a backup of browser
+sessions. `--data-dir` and `NUMERA_DATA_DIR` take precedence over the default.
 
-The portable updater checks the configured project release feed, verifies signed
-metadata and asks before downloading or restarting. Active or uncertain work
-**defers** activation instead of being force-killed. Source checkouts and containers
-use their package/deployment workflow. See [docs/updates.md](docs/updates.md) for
-signature verification, recovery, filesystem and trust limits.
+The portable updater handles application and browser-core updates. Its settings
+control what can update automatically. The updater verifies signed metadata,
+defers while owned work is active or uncertain, and leaves the `data/` directory
+alone. See [updates and signature verification](docs/updates.md) for supported
+feeds, manual approval, recovery and the distinction between a release download
+and an updater-compatible generation.
+
+## Releases & Tags
+
+<a id="releases-and-tags"></a>
+
+- [Releases](https://github.com/KiaroSama/Numera-Browser/releases): signed downloads, detached signatures and checksums once a run publishes them.
+- [Tags](https://github.com/KiaroSama/Numera-Browser/tags): version references, including tags without published assets.
+- [Changelog](CHANGELOG.md): current changes and links to older versions.
+
+Before extracting or running a package, verify `SHA256SUMS.sig` and the matching
+asset's `.sig` using a separately trusted copy of the publisher certificate.
+[Release verification commands](docs/updates.md#verify-a-versioned-download) show
+how to verify the signatures and compare the package hash.
 
 ## Logs
 
@@ -213,33 +182,34 @@ permission to publish raw cookies, tokens or profile data.
 
 ## Development and verification
 
-| Directory | Responsibility |
-|---|---|
-| `engine-rust/` | Native application, storage, browser preparation, CLI, Axum API and MCP. |
-| `dashboard/` | Rust/WebAssembly dashboard, native unit tests and browser interaction tests. |
-| `desktop/` | Tauri window, owned engine lifecycle and portable updater. |
-| `tools/xtask/` | Rust CI, vendor provisioning, provenance, signing and distribution tools. |
+| Directory | Contains |
+| --- | --- |
+| [`engine-rust/`](engine-rust/) | Profile storage, CLI, Axum HTTP API, MCP, browser worker |
+| [`dashboard/`](dashboard/) | Rust/WASM dashboard and tests |
+| [`desktop/`](desktop/) | Tauri shell, engine lifecycle and updater |
+| [`tools/xtask/`](tools/xtask/) | CI, resource provisioning, package and signature tools |
 
-[Native CI](.github/workflows/native-ci.yml) runs on pushes and pull requests.
-Independent jobs compile the real engine and worker on x86-64 Linux and Windows before test gates. Full-product jobs build the dashboard, desktop installers and
-portable server archives. Other required jobs cover the maintained suite counts,
-functional and real-browser behavior, ownership, dependencies and security.
-Current exact-source results are in
-[PR checks](https://github.com/KiaroSama/Numera-Browser/pull/76/checks) and
-[branch commits](https://github.com/KiaroSama/Numera-Browser/commits/rewrite/rust-complete-20261110/).
-
-The original inventory retains **3,418 source cases**, **195 dashboard cases in
-26 suites**, and **294 preexisting native cases**. Port maps record individual
-case identities, types and platform applicability. The migration and complete
-CI remain under verification; see [rewrite status](docs/rust-rewrite.md),
-[architecture](docs/architecture.md) and [changelog](CHANGELOG.md).
+[Native CI](.github/workflows/native-ci.yml) builds the desktop and CLI-only
+packages on all four 64-bit targets. Its required checks cover the maintained
+suite inventory, CLI/MCP/dashboard contracts, real browser behavior, relocation,
+process ownership, dependencies and CodeQL (`actions` and `rust`). Live Cloak
+needs the vendor license; its offline and contract tests do not. Hosted timing
+and memory comparisons are published in the `browser-benchmark` artifact for
+diagnosis. A functional, ownership or cleanup failure still fails CI.
 
 ## Responsible use
 
-Use Numera only for authorized QA, automation development, privacy research and
-other lawful noncommercial work permitted by its license. Do not use it for
-fraud, credential abuse, spam or bypassing access controls. You are responsible
-for your targets, accounts, permissions and applicable service terms.
+Use Numera only on systems and accounts you are authorized to test, and within
+the terms of its [license](LICENSE). Do not use it for fraud, credential abuse,
+spam or bypassing access controls.
+
+## Author
+
+[KiaroSama](https://github.com/KiaroSama) · [Kiaro.Sama.Dev@gmail.com](mailto:Kiaro.Sama.Dev@gmail.com)
+
+## License
+
+Copyright (c) 2026 KiaroSama. Numera Browser is licensed under the [Noncommercial Network Share-Alike License 1.0](LICENSE).
 
 ## Donate
 
@@ -255,13 +225,3 @@ If this project helps you, donations are appreciated.
 | Litecoin (LTC) | LTC | `ltc1qntqnnrunadurnw4cshv3qgspywrueyyeyngwuy` |
 | Solana (SOL) | Solana | `7B2wkczUjmkDhETwQuknBL8sUsbuV7nErxc317TmQuwR` |
 | Polygon (POL) | Polygon | `0x0Bd0BA443a8B9cf15922bf7f0Bb0a4b495fD06Ef` |
-
-## License
-
-[Noncommercial Network Share-Alike License 1.0](LICENSE): ordinary noncommercial
-use, modification and no-charge redistribution are permitted under its conditions.
-Sale, business use and commercial exploitation of covered copies, modifications
-and derivatives are not licensed. Redistribution requires matching Complete Source;
-modified network versions have source-offer obligations. This is source-available,
-not OSI-approved open source. Third-party licenses and prior valid grants remain
-unchanged; see [licensing and notices](docs/licensing.md).

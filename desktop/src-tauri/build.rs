@@ -68,5 +68,8 @@ fn main() {
     }
     println!("cargo:rustc-env=NUMERA_BUILD_SOURCE_SHA={sha}");
     println!("cargo:rustc-env=NUMERA_BUILD_GENERATION={number}");
-    tauri_build::build()
+    println!("cargo:rerun-if-changed=icons/icon.ico");
+    let windows = tauri_build::WindowsAttributes::new().window_icon_path("icons/icon.ico");
+    tauri_build::try_build(tauri_build::Attributes::new().windows_attributes(windows))
+        .expect("Tauri build configuration or Windows icon embedding failed");
 }

@@ -40,7 +40,9 @@ fn fields(v: &Value, spec: &str) -> Result<(), String> {
         return Err(invalid("object"));
     }
     for entry in spec.split_whitespace() {
-        let (name, kind) = entry.split_once(':').unwrap();
+        let (name, kind) = entry
+            .split_once(':')
+            .ok_or_else(|| invalid("field contract"))?;
         let optional = name.ends_with('?');
         let name = name.trim_end_matches('?');
         if optional && v.get(name).is_none() {

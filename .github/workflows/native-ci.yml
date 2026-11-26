@@ -2,8 +2,17 @@ name: Native CI
 
 on:
   push:
+    branches: ['**']
   pull_request:
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      release_artifacts:
+        type: boolean
+        default: false
+    secrets:
+      CLOAKBROWSER_LICENSE_KEY:
+        required: false
 
 permissions:
   contents: read
@@ -29,10 +38,18 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: linux
+          - platform: windows-x64
+            os: windows-2025
+            arch: X64
+          - platform: windows-arm64
+            os: windows-11-arm
+            arch: ARM64
+          - platform: linux-x64
             os: ubuntu-24.04
-          - platform: windows
-            os: windows-latest
+            arch: X64
+          - platform: linux-arm64
+            os: ubuntu-24.04-arm
+            arch: ARM64
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -54,9 +71,9 @@ jobs:
             tools/xtask
           save-if: ${{ runner.os != 'Windows' }}
           cache-workspace-crates: false
-      - name: Require an x86-64 native runner
+      - name: Verify native runner architecture
         shell: bash
-        run: test "$RUNNER_ARCH" = X64
+        run: test "$RUNNER_ARCH" = "${{ matrix.arch }}"
       - name: Always compile both real native application binaries first
         run: cargo build --manifest-path engine-rust/Cargo.toml --locked --release --no-default-features --features native-product,native-browser --bin numera-engine --bin numera-browser-runtime
       - name: Compile native build and ownership tooling
@@ -74,7 +91,7 @@ jobs:
         if: always() && runner.os == 'Windows'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
-          name: windows-native-signing-${{ github.sha }}
+          name: windows-native-signing-${{ matrix.platform }}-${{ github.sha }}
           path: build/windows-native-signing*
           if-no-files-found: error
           retention-days: 7
@@ -86,10 +103,26 @@ jobs:
       - name: Install reviewed native desktop packaging tools
         uses: ./.github/actions/native-packaging-tools
       - name: Explicitly acquire the reviewed vendor resources and source offers
+        if: runner.arch == 'X64'
         run: cargo xtask ci owned --wall 1800 --idle 300 -- cargo xtask provision-resources "${{ runner.temp }}/numera-resources"
       - name: Build unsigned native desktop installers and portable server
-        # Give the nested Windows bundler time to retain its diagnostics first.
-        run: cargo xtask ci owned --wall ${{ runner.os == 'Windows' && 2400 || 1800 }} --idle ${{ runner.os == 'Windows' && 960 || 300 }} -- cargo xtask build-product build/native-product --resources "${{ runner.temp }}/numera-resources"
+        shell: bash
+        run: |
+          set -euo pipefail
+          args=(--no-bundled-browsers)
+          if [[ "$RUNNER_ARCH" == X64 ]]; then args=(--resources "$RUNNER_TEMP/numera-resources"); fi
+          cargo xtask ci owned --wall ${{ runner.os == 'Windows' && 2400 || 1800 }} --idle ${{ runner.os == 'Windows' && 960 || 300 }} -- cargo xtask build-product build/native-product "${args[@]}"
+      - name: Package the CLI for this host without the desktop runtime
+        shell: bash
+        run: |
+          suffix=''
+          if [[ "$RUNNER_OS" == Windows ]]; then suffix=.exe; fi
+          for bin in numera-engine numera-browser-runtime; do
+            cargo xtask verify-binary --executable "engine-rust/target/release/$bin$suffix" --target "${{ matrix.platform }}"
+          done
+          cargo xtask verify-binary --executable "build/native-product/Numera Browser/numera$suffix" --target "${{ matrix.platform }}"
+          version=$(jq -er '.version' desktop/src-tauri/tauri.conf.json)
+          cargo xtask cli-package --target "${{ matrix.platform }}" --version "$version" --bin-dir engine-rust/target/release --out build/native-product/cli
       - name: Preserve complete failed native packaging evidence
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
@@ -115,6 +148,7 @@ jobs:
           name: native-product-${{ matrix.platform }}-${{ github.sha }}
           path: |
             build/native-product/*.zip
+            build/native-product/cli/*
             build/native-product/*.json
             build/native-product/SHA256SUMS
           compression-level: 0
@@ -132,6 +166,27 @@ jobs:
           compression-level: 0
           if-no-files-found: error
           retention-days: 7
+
+      - name: Save release signing inputs with original file modes
+        if: inputs.release_artifacts
+        shell: bash
+        working-directory: build/native-product
+        run: |
+          set -euo pipefail
+          items=('Numera Browser' numera-source-*.zip)
+          if [[ "$RUNNER_OS" == Linux ]]; then
+            items+=( *.deb *.AppImage )
+          fi
+          tar -cf "$RUNNER_TEMP/native-signing-input.tar" -- "${items[@]}"
+      - name: Upload exact unsigned release inputs
+        if: inputs.release_artifacts
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: release-input-${{ matrix.platform }}-${{ github.sha }}
+          path: ${{ runner.temp }}/native-signing-input.tar
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 2
 
   coverage:
     name: Maintained native suite inventory
@@ -257,6 +312,8 @@ jobs:
       - name: Compile the actual native supervisor and browser fixtures
         run: cargo xtask ci owned --wall 900 --idle 300 -- cargo build --manifest-path engine-rust/Cargo.toml --locked --features native-product,native-browser,test-support --bin numera-engine --bin numera-browser-runtime
       - run: cargo xtask ci owned --wall 1800 --idle 180 -- cargo xtask ci native-phase test
+      - name: Require the same behavior across CLI, MCP and the dashboard API
+        run: cargo xtask ci owned --wall 240 --idle 90 -- cargo test --manifest-path engine-rust/Cargo.toml --locked --test surface_parity --features "test-support native-product"
       - name: Preserve complete failed functional test evidence
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
@@ -314,9 +371,17 @@ jobs:
         env:
           NUMERA_TEST_ENGINE: camoufox
         run: cargo xtask ci owned --wall 600 --idle 570 -- cargo xtask ci camoufox-runtime "${{ runner.temp }}/numera-live-resources"
+      - name: Record why the licensed browser was not run
+        if: matrix.engine == 'cloak' && env.CLOAKBROWSER_LICENSE_KEY == ''
+        shell: bash
+        run: |
+          mkdir -p build
+          printf '%s\n' 'Live Cloak selection skipped: CLOAKBROWSER_LICENSE_KEY is unavailable. Offline and contract tests are independent.' | tee build/selected-sdk.log
       - name: Require the selected backend and its exact consent-controlled resources
+        if: matrix.engine != 'cloak' || env.CLOAKBROWSER_LICENSE_KEY != ''
         run: cargo xtask ci owned --wall 1200 --idle 180 -- cargo xtask ci prepare-live "engine-rust/target/release/numera-browser-runtime${{ runner.os == 'Windows' && '.exe' || '' }}" "engine-rust/target/release/numera-engine${{ runner.os == 'Windows' && '.exe' || '' }}" "${{ runner.temp }}/numera-live-resources" "${{ matrix.engine }}" "${{ runner.temp }}/numera-live-data" "${{ github.env }}"
-      - name: Require native SDK, independent application acceptance and native checkpoint comparison
+      - name: Require native SDK and relocated application; retain checkpoint comparisons
+        if: matrix.engine != 'cloak' || env.CLOAKBROWSER_LICENSE_KEY != ''
         uses: ./.github/actions/native-candidate-acceptance
         with:
           engine: ${{ matrix.engine }}

@@ -53,10 +53,11 @@ impl BuildIdentity {
     pub fn from_environment() -> Result<Self, Box<dyn Error>> {
         if !matches!(
             (env::consts::OS, env::consts::ARCH),
-            ("linux" | "windows", "x86_64")
+            ("linux" | "windows", "x86_64" | "aarch64")
         ) {
             return Err(
-                "native distributions require an x86-64 Linux or Windows build host".into(),
+                "native distributions require a 64-bit Linux or Windows build host (x86_64 or aarch64)"
+                    .into(),
             );
         }
         Self::parse(

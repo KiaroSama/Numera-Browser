@@ -25,6 +25,7 @@ pub mod job_supervisor;
 pub mod jobs;
 mod log_redaction;
 pub mod mcp;
+pub mod mcp_bridge;
 pub mod mcp_command;
 pub mod models;
 pub mod native_build;

@@ -2,6 +2,29 @@ use reqwest::{Url, header::HeaderMap};
 use serde_json::Value;
 use std::{io, time::Duration};
 
+pub(crate) fn qa_url(text: &str) -> io::Result<Url> {
+    let invalid = || {
+        io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "Use an HTTP(S) URL on a loopback IP with an explicit port",
+        )
+    };
+    let url = Url::parse(text).map_err(|_| invalid())?;
+    if !matches!(url.scheme(), "http" | "https")
+        || !url.username().is_empty()
+        || url.password().is_some()
+        || url.port().filter(|port| *port > 0).is_none()
+        || !url.host_str().is_some_and(|host| {
+            host.trim_matches(['[', ']'])
+                .parse::<std::net::IpAddr>()
+                .is_ok_and(|ip| ip.is_loopback())
+        })
+    {
+        return Err(invalid());
+    }
+    Ok(url)
+}
+
 pub fn info(port: u16, budget: Duration) -> io::Result<Value> {
     if port == 0 || budget.is_zero() {
         return Err(io::Error::new(

@@ -78,10 +78,13 @@ pub fn check(
         .as_object()
         .expect("source schema fields are an object");
     let client = client_fields()?;
+    const NETWORK_IDENTITY_FIELDS: [&str; 3] = ["mac_address_mode", "mac_address", "device_name"];
     let mut unknown = record
         .keys()
         .filter(|key| {
-            !extra.contains(&key.as_str()) && !client.iter().any(|field| field == key.as_str())
+            !extra.contains(&key.as_str())
+                && !NETWORK_IDENTITY_FIELDS.contains(&key.as_str())
+                && !client.iter().any(|field| field == key.as_str())
         })
         .collect::<Vec<_>>();
     unknown.sort();
@@ -94,6 +97,43 @@ pub fn check(
             )
         })
         .collect::<Vec<_>>();
+    for key in NETWORK_IDENTITY_FIELDS {
+        let Some(value) = record.get(key).filter(|value| !value.is_null()) else {
+            continue;
+        };
+        let Some(raw) = value.as_str() else {
+            found.push(format!(
+                "{where_}: '{}' must be str, got {}",
+                key,
+                validation::kind(value)
+            ));
+            continue;
+        };
+        let trimmed = raw.trim();
+        match key {
+            "mac_address_mode"
+                if !matches!(
+                    trimmed.to_ascii_lowercase().as_str(),
+                    "" | "off" | "manual" | "generate" | "noise"
+                ) =>
+            {
+                found.push(format!(
+                    "{where_}: 'mac_address_mode' must be off, manual, generate, or noise"
+                ));
+            }
+            "mac_address" if !trimmed.is_empty() && !validation::valid_mac_address(trimmed) => {
+                found.push(format!(
+                    "{where_}: 'mac_address' must be a valid unicast MAC address (AA:BB:CC:DD:EE:FF)"
+                ));
+            }
+            "device_name" if !trimmed.is_empty() && !validation::valid_device_name(trimmed) => {
+                found.push(format!(
+                    "{where_}: 'device_name' must be 1-63 safe ASCII characters"
+                ));
+            }
+            _ => {}
+        }
+    }
     for (field, kinds) in fields {
         let Some(value) = record.get(field).filter(|value| !value.is_null()) else {
             continue;

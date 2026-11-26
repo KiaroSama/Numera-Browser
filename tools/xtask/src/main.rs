@@ -1,4 +1,5 @@
 //! Rust build/packaging commands. Candidate artifacts do not select a runtime.
+mod cli_package;
 mod package;
 mod product;
 mod resources;
@@ -41,6 +42,8 @@ fn run() -> Result<(), Box<dyn Error>> {
             build_candidate(&root(), Path::new(&output))
         }
         Some("build-product") => product::build(&root(), product::Options::parse(args)?),
+        Some("cli-package") => cli_package::package(&root(), args),
+        Some("verify-binary") => cli_package::verify(args),
         Some("ci") => numera_xtask::ci::run(&root(), args).map_err(|error| error as Box<dyn Error>),
         Some("prepare-resources") => {
             let directory = args
@@ -66,8 +69,10 @@ fn run() -> Result<(), Box<dyn Error>> {
         }
         _ => Err(concat!(
             "usage: cargo xtask build-candidate <new-output-directory>\n",
-            "       cargo xtask build-product <new-output-directory> --resources <directory> ",
-            "[--server-only] [--bundles <none|comma-separated-native-targets>]",
+            "       cargo xtask build-product <new-output-directory> (--resources <directory> | --no-bundled-browsers) ",
+            "[--server-only] [--bundles <none|comma-separated-native-targets>]\n",
+            "       cargo xtask cli-package --target <target> --version <version> [--bin-dir <directory>] --out <directory>\n",
+            "       cargo xtask verify-binary --executable <path> --target <target>",
             "\n       cargo xtask prepare-resources <provisioned-directory> <source-offers.json>"
         )
         .into()),

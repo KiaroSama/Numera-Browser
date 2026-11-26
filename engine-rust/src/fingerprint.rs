@@ -102,6 +102,20 @@ pub fn user_agent(
 }
 
 /// Explicit seed is required at this pure seam; entropy belongs at the CLI boundary.
+pub(crate) fn local_mac_address(seed: &str, domain: &str) -> String {
+    use sha2::{Digest, Sha256};
+    let mut hash = Sha256::new();
+    hash.update(domain.as_bytes());
+    hash.update([0]);
+    hash.update(seed.as_bytes());
+    let digest = hash.finalize();
+    let [a, b, c, d, e, f] = [
+        digest[0], digest[1], digest[2], digest[3], digest[4], digest[5],
+    ];
+    let a = (a | 0x02) & 0xFE;
+    format!("{a:02X}:{b:02X}:{c:02X}:{d:02X}:{e:02X}:{f:02X}")
+}
+
 pub fn generate<S: Into<serde_json::Number>>(
     options: GenerateOptions<'_, S>,
 ) -> Result<Fingerprint, GenerationError> {
@@ -197,4 +211,16 @@ pub fn generate<S: Into<serde_json::Number>>(
         "locale":locale,"timezone":locales[&locale][0],"languages":locales[&locale][1],"is_mobile":mobile,"seed":seed,
         "fonts":fonts,"cameras":cameras,"microphones":microphones,"speakers":speakers,"os_version":version,"device_model":model,
         "max_touch_points":touch,"device_pixel_ratio":dpr})).map_err(|_| GenerationError("Generated identity is invalid"))
+}
+
+#[cfg(test)]
+#[test]
+fn generated_mac_is_stable_and_locally_administered_unicast() -> Result<(), std::num::ParseIntError>
+{
+    let mac = local_mac_address("42", "mac-generate");
+    assert!(crate::validation::valid_mac_address(&mac));
+    assert_eq!(u8::from_str_radix(&mac[..2], 16)? & 0b11, 0b10);
+    assert_eq!(mac, local_mac_address("42", "mac-generate"));
+    assert_ne!(mac, local_mac_address("42", "mac-noise"));
+    Ok(())
 }

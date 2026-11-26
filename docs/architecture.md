@@ -153,8 +153,9 @@ rollback boundaries.
 ## Builds and verification
 
 [Native CI](../.github/workflows/native-ci.yml) compiles the real engine and worker
-independently on x86-64 Linux and Windows before test gates. Full-product jobs
-also build the Rust/WASM dashboard, Tauri installers and portable server archives.
+independently on Linux and Windows, on x64 and arm64. Product jobs build the
+Rust/WASM dashboard, Tauri installers and portable archives. CLI-only archives
+carry the manager and browser worker without the desktop shell.
 Each package records its exact Git source, generation, component identities,
 resource inventory, notices and checksums. Unsigned CI artifacts are not releases.
 

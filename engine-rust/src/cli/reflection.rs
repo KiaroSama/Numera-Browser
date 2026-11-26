@@ -22,7 +22,15 @@ fn scalar(arg: &Arg) -> &'static str {
         "string"
     }
 }
-fn schema(command: &Command) -> Value {
+pub(crate) fn strict_tool(name: &str) -> bool {
+    name.starts_with("page_")
+        || name.starts_with("workflow_")
+        || matches!(
+            name,
+            "profile_ip_check" | "fleet_sync" | "capabilities" | "cookies_export"
+        )
+}
+fn schema(command: &Command, tool: &str) -> Value {
     let mut properties = Map::new();
     let mut required = Vec::new();
     for arg in command.get_arguments().filter(|arg| !managed(arg)) {
@@ -32,11 +40,35 @@ fn schema(command: &Command) -> Value {
         } else if multiple(arg) {
             json!({"type":"array", "items":{"type":"string"}})
         } else {
-            if arg.is_positional() && arg.is_required_set() {
-                required.push(name);
-            }
             json!({"type":scalar(arg)})
         };
+        if arg.is_required_set() && (arg.is_positional() || strict_tool(tool)) {
+            required.push(name);
+        }
+        if tool == "workflow_save" && name == "workflow" {
+            property = json!({"type":"object","additionalProperties":false,"required":["id","name","steps"],"properties":{
+                "id":{"type":"string","description":"Portable lowercase workflow slug"},
+                "name":{"type":"string","description":"Workflow label"},
+                "steps":{"type":"array","minItems":1,"maxItems":16,"items":{"type":"object","additionalProperties":false,"required":["action"],"properties":{
+                    "action":{"enum":["navigate","click","fill","wait_ms","wait_selector","snapshot","screenshot"],"description":"QA step; navigate must be first"},
+                    "target":{"type":["string","null"],"description":"Loopback URL or selector, depending on action"},
+                    "value":{"type":["string","integer","null"],"description":"Text to fill or wait duration in milliseconds"}
+                }}}
+            }});
+        }
+        if tool == "page_wait" && matches!(name, "ms" | "timeout_ms") {
+            property["minimum"] = 1.into();
+            property["maximum"] = 10000.into();
+        }
+        if strict_tool(tool) && name == "detach" {
+            property["description"] =
+                "Use a local stdio MCP job; the HTTP transport runs these tools inline".into();
+        }
+        if name == "profile_ids" {
+            property["minItems"] = 1.into();
+            property["maxItems"] = 4.into();
+            property["uniqueItems"] = true.into();
+        }
         if !matches!(arg.get_action(), ArgAction::SetTrue | ArgAction::SetFalse)
             && let Some(values) = arg.get_value_parser().possible_values()
         {
@@ -54,8 +86,15 @@ fn schema(command: &Command) -> Value {
         }
         properties.insert(name.into(), property);
     }
-    properties.insert("detach".into(), json!({"type":"boolean", "description":"Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."}));
-    json!({"type":"object", "properties":properties, "required":required})
+    properties.entry("detach").or_insert_with(|| json!({"type":"boolean", "description":"Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."}));
+    let mut schema = json!({"type":"object", "properties":properties, "required":required});
+    if strict_tool(tool) {
+        schema["additionalProperties"] = false.into();
+        if tool == "page_wait" {
+            schema["oneOf"] = json!([{"required":["selector"]},{"required":["ms"]}]);
+        }
+    }
+    schema
 }
 fn walk<'a>(command: &'a Command, path: Vec<String>, output: &mut Vec<(Vec<String>, &'a Command)>) {
     if !command.has_subcommands() {
@@ -77,11 +116,10 @@ pub fn tools() -> Vec<Value> {
     command.build();
     let mut leaves = Vec::new();
     walk(&command, Vec::new(), &mut leaves);
-    leaves.into_iter().map(|(path, command)| json!({
-        "name":path.join("_").replace('-', "_"),
-        "description":command.get_about().map(ToString::to_string).unwrap_or_else(|| format!("numera {}", path.join(" "))),
-        "inputSchema":schema(command),
-    })).collect()
+    leaves.into_iter().map(|(path, command)| {
+        let name = path.join("_").replace('-', "_");
+        json!({"name":name, "description":command.get_about().map(ToString::to_string).unwrap_or_else(|| format!("numera {}", path.join(" "))), "inputSchema":schema(command, &name)})
+    }).collect()
 }
 
 pub fn argv(name: &str, arguments: &Map<String, Value>) -> io::Result<Vec<String>> {
@@ -100,6 +138,18 @@ pub(crate) fn argv_with_path(
         .into_iter()
         .find(|(path, _)| path.join("_").replace('-', "_") == name)
         .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, format!("no such tool '{name}'")))?;
+    if strict_tool(name)
+        && arguments.keys().any(|key| {
+            !command
+                .get_arguments()
+                .any(|arg| !managed(arg) && arg.get_id().as_str() == key.as_str())
+        })
+    {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "Unexpected tool parameter; check tools/list for the input schema",
+        ));
+    }
     let mut positional = Vec::new();
     let mut flags = Vec::new();
     for arg in command.get_arguments().filter(|arg| !managed(arg)) {
@@ -109,7 +159,32 @@ pub(crate) fn argv_with_path(
         else {
             continue;
         };
+        if strict_tool(name) {
+            let key = arg.get_id().as_str();
+            let valid = if matches!(arg.get_action(), ArgAction::SetTrue | ArgAction::SetFalse) {
+                value.is_boolean()
+            } else if multiple(arg) {
+                value
+                    .as_array()
+                    .is_some_and(|values| values.iter().all(Value::is_string))
+            } else if key == "workflow" && name == "workflow_save" {
+                value.is_object()
+            } else if scalar(arg) == "integer" {
+                value.is_i64() || value.is_u64()
+            } else {
+                value
+                    .as_str()
+                    .is_some_and(|text| !arg.is_positional() || !text.starts_with('-'))
+            };
+            if !valid {
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    format!("Invalid {key}; check the tool's input schema"),
+                ));
+            }
+        }
         let text = |value: &Value| match value {
+            Value::Object(_) if name == "workflow_save" => value.to_string(),
             Value::Array(_) | Value::Object(_) => crate::validation::repr(value),
             _ => crate::conversion::value_text(value),
         };
@@ -127,8 +202,14 @@ pub(crate) fn argv_with_path(
                 }
             } else if let Some(values) = value.as_array() {
                 for value in values {
-                    flags.extend([flag.clone(), text(value)]);
+                    if strict_tool(name) {
+                        flags.push(format!("{flag}={}", text(value)));
+                    } else {
+                        flags.extend([flag.clone(), text(value)]);
+                    }
                 }
+            } else if strict_tool(name) {
+                flags.push(format!("{flag}={}", text(value)));
             } else {
                 flags.extend([flag, text(value)]);
             }

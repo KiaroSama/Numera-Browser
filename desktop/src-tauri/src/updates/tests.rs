@@ -1,7 +1,7 @@
 use super::*;
 use ed25519_dalek::{Signer, SigningKey};
 use serde_json::json;
-use std::{fs, path::PathBuf};
+use std::{fs, io, path::PathBuf};
 
 struct Scratch(PathBuf);
 impl Scratch {
@@ -50,6 +50,7 @@ fn build(root: &std::path::Path, generation: u64, bytes: &[u8]) -> manifest::Bui
         platform: manifest::platform().expect("Platform").into(),
         minimum_protocol: 1,
         components: json!({"sdk":{},"browsers":{}}),
+        bundled_browsers: None,
         files: vec![file(
             if cfg!(windows) {
                 "numera.exe"
@@ -112,6 +113,28 @@ fn signed_manifest_rejects_tamper_wrong_key_replay_and_unsupported_platform() {
     );
     assert!(manifest::signed_manifest(&bytes, &signature, &public, platform, 1, 2001).is_err());
 }
+#[test]
+fn signed_windows_arm64_inventory_accepts_explicit_or_legacy_browser_metadata() -> io::Result<()> {
+    let key = key();
+    for bundled in [None, Some(false), Some(true)] {
+        let mut value = json!({"schema":1,"owner":"KiaroSama","product":manifest::PRODUCT,
+            "version":"0.36.0","source_sha":"a".repeat(40),"generation":2,"platform":"windows-arm64",
+            "minimum_protocol":1,"components":{},"files":[file("numera.exe", b"shell")]});
+        if let Some(bundled) = bundled {
+            value["bundled_browsers"] = bundled.into();
+        }
+        let bytes = serde_json::to_vec(&value).map_err(io::Error::other)?;
+        let build = manifest::signed_build(
+            &bytes,
+            &key.sign(&bytes).to_bytes(),
+            &key.verifying_key().to_bytes(),
+            "windows-arm64",
+        )?;
+        assert_eq!(build.bundled_browsers, bundled);
+    }
+    Ok(())
+}
+
 #[test]
 fn signed_build_must_match_the_exact_approved_offer_identity_and_inventory() {
     let public = key().verifying_key().to_bytes();
@@ -352,6 +375,46 @@ fn recovery_discovery_retains_each_unfinished_phase_and_refuses_multiple_journal
     assert_eq!([fs::read(&first_path)?, fs::read(&second_path)?], before);
     Ok(())
 }
+#[test]
+fn cleanup_removes_only_owned_cache_and_preserves_data() -> Result<(), Box<dyn std::error::Error>> {
+    let fixture = Scratch::new();
+    let root = &fixture.0;
+    let data = root.join("data");
+    for name in ["profiles", "vault", "settings", "extensions"] {
+        fs::create_dir_all(data.join(name))?;
+        fs::write(data.join(name).join("keep"), name)?;
+    }
+    let mut journal = transaction::create(root, &"a".repeat(64))?;
+    journal.data_root = data.clone();
+    journal.phase = "complete".into();
+    journal.save()?;
+    fs::create_dir(journal.backup())?;
+    fs::write(journal.backup().join("numera"), b"old")?;
+    fs::write(journal.directory.join("archive.part"), b"cache")?;
+    assert_eq!(super::cleanup::prune(root, &data)?, 8);
+    assert_eq!(super::cleanup::prune(root, &data)?, 0);
+    assert!(journal.directory.join("journal.json").is_file());
+    for name in ["profiles", "vault", "settings", "extensions"] {
+        assert_eq!(fs::read(data.join(name).join("keep"))?, name.as_bytes());
+    }
+    Ok(())
+}
+
+#[test]
+fn cleanup_refuses_a_cache_containing_the_selected_data_root(
+) -> Result<(), Box<dyn std::error::Error>> {
+    let fixture = Scratch::new();
+    let mut journal = transaction::create(&fixture.0, &"a".repeat(64))?;
+    let data = journal.backup().join("custom");
+    fs::create_dir_all(&data)?;
+    fs::write(data.join("vault"), b"keep")?;
+    journal.phase = "complete".into();
+    journal.save()?;
+    assert!(super::cleanup::prune(&fixture.0, &data).is_err());
+    assert_eq!(fs::read(data.join("vault"))?, b"keep");
+    Ok(())
+}
+
 #[test]
 fn accepted_generation_state_is_not_an_interrupted_transaction(
 ) -> Result<(), Box<dyn std::error::Error>> {

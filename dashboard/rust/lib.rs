@@ -6,6 +6,7 @@ pub mod contracts;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod development;
 pub mod model;
+mod release_controls;
 pub mod render;
 #[cfg(target_arch = "wasm32")]
 mod theme_sweep;

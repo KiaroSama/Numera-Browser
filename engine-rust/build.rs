@@ -58,6 +58,7 @@ fn windows_resources() {
         for binary in binaries {
             let mut resource = WindowsResource::new();
             resource
+                .set_icon("../desktop/src-tauri/icons/icon.ico")
                 .set_language(0x0409)
                 .set("CompanyName", "KiaroSama")
                 .set("ProductName", "Numera Browser")

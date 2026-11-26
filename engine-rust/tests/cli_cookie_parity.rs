@@ -460,8 +460,17 @@ fn cookie_cli_services_preserve_source_refusals_output_and_owned_sdk_policy()
             |_| panic!("Proxy confirmation"),
         )?;
         assert!(outcome.payload["latencyMs"].as_u64().is_some());
+        assert!(outcome.payload["country_flag"].as_str().is_some());
         outcome.payload["latencyMs"] = json!(125);
-        assert_eq!(outcome.payload, case["expected"]);
+        let mut legacy_payload = outcome.payload.clone();
+        if let Some(obj) = legacy_payload.as_object_mut() {
+            for key in ["country_code", "country_name", "country_flag"] {
+                if case["expected"].get(key).is_none() {
+                    obj.remove(key);
+                }
+            }
+        }
+        assert_eq!(legacy_payload, case["expected"]);
         assert_eq!(outcome.exit, i32::from(case["expected"]["ok"] != true));
         let calls: Value = serde_json::from_slice(&std::fs::read(script.with_extension("seen"))?)?;
         let calls = calls.as_array().ok_or("Network calls missing")?;
@@ -512,7 +521,16 @@ fn cookie_cli_services_preserve_source_refusals_output_and_owned_sdk_policy()
     assert_eq!(expected["error"], "Synthetic IP SDK failure");
     // Raw SDK messages may contain credentials; compare the deliberate safe error.
     expected["error"] = "Browser IP evaluation failed".into();
-    assert_eq!(outcome.payload, expected);
+    assert!(outcome.payload["country_flag"].as_str().is_some());
+    let mut legacy_failed = outcome.payload.clone();
+    if let Some(obj) = legacy_failed.as_object_mut() {
+        for key in ["country_code", "country_name", "country_flag"] {
+            if expected.get(key).is_none() {
+                obj.remove(key);
+            }
+        }
+    }
+    assert_eq!(legacy_failed, expected);
     let calls: Value = serde_json::from_slice(&std::fs::read(script.with_extension("seen"))?)?;
     assert_eq!(
         calls

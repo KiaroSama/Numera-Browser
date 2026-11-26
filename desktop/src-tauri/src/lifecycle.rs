@@ -20,6 +20,7 @@ pub(crate) type Log = Arc<Mutex<VecDeque<String>>>;
 pub(crate) fn start_engine(
     log: Log,
     update_token: &str,
+    update_port: u16,
     resources: Option<&std::path::Path>,
 ) -> Result<(Child, u16, Option<std::thread::JoinHandle<()>>), String> {
     let port = free_port().map_err(|e| format!("could not reserve a local port: {e}"))?;
@@ -36,6 +37,7 @@ pub(crate) fn start_engine(
     // that works everywhere.
     cmd.env("NUMERA_PARENT_PID", std::process::id().to_string());
     cmd.env("NUMERA_UPDATE_TOKEN", update_token);
+    cmd.env("NUMERA_UPDATE_BRIDGE_PORT", update_port.to_string());
     cmd.env_remove("NUMERA_UPDATE_TICKET");
     if let Some(path) = std::env::var_os("NUMERA_UPDATE_RECOVERY") {
         let journal =

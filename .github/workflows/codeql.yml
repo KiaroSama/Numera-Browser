@@ -20,7 +20,7 @@ jobs:
       fail-fast: false
       max-parallel: 2
       matrix:
-        language: [rust]
+        language: [actions, rust]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -45,7 +45,7 @@ jobs:
           threads: 2
           db-location: ${{ runner.temp }}/numera-codeql-databases
           # Use the action's cgroup-aware RAM sizing, including its OS reserve.
-      - name: Analyze the checkout and retain every Rust result
+      - name: Analyze the checkout and retain every result
         uses: github/codeql-action/analyze@cee97f86b972a3ded3c58d04148362b193ddc518 # v4.38.3
         with:
           category: /language:${{ matrix.language }}
@@ -58,29 +58,31 @@ jobs:
         if: always() && steps.init.outcome == 'success'
         env:
           CODEQL: ${{ steps.init.outputs.codeql-path }}
+          LANGUAGE: ${{ matrix.language }}
         run: |
           "$CODEQL" version --format=json > "$RUNNER_TEMP/numera-codeql-evidence/codeql-version.json"
-          "$CODEQL" resolve queries --format=bylanguage codeql/rust-queries:codeql-suites/rust-security-extended.qls > "$RUNNER_TEMP/numera-codeql-evidence/resolved-security-queries.json"
+          "$CODEQL" resolve queries --format=bylanguage "codeql/$LANGUAGE-queries:codeql-suites/$LANGUAGE-security-extended.qls" > "$RUNNER_TEMP/numera-codeql-evidence/resolved-security-queries.json"
       - name: Record evaluated queries and the complete SARIF digest
         if: always()
+        env:
+          LANGUAGE: ${{ matrix.language }}
         run: |
           set -euo pipefail
-          if [ -d "$RUNNER_TEMP/numera-codeql-databases/rust/results" ]; then
-            find "$RUNNER_TEMP/numera-codeql-databases/rust/results" -type f -name '*.bqrs' -print | sort > "$RUNNER_TEMP/numera-codeql-evidence/evaluated-queries.txt"
+          if [ -d "$RUNNER_TEMP/numera-codeql-databases/$LANGUAGE/results" ]; then
+            find "$RUNNER_TEMP/numera-codeql-databases/$LANGUAGE/results" -type f -name '*.bqrs' -print | sort > "$RUNNER_TEMP/numera-codeql-evidence/evaluated-queries.txt"
           fi
-          if [ -f "$RUNNER_TEMP/numera-codeql-results/rust.sarif" ]; then
-            sha256sum "$RUNNER_TEMP/numera-codeql-results/rust.sarif" > "$RUNNER_TEMP/numera-codeql-evidence/sarif.sha256"
-          fi
+          test -s "$RUNNER_TEMP/numera-codeql-results/$LANGUAGE.sarif"
+          sha256sum "$RUNNER_TEMP/numera-codeql-results/$LANGUAGE.sarif" > "$RUNNER_TEMP/numera-codeql-evidence/sarif.sha256"
       - name: Preserve full findings, extraction diagnostics and source evidence
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
-          name: codeql-rust-${{ github.run_id }}-${{ github.run_attempt }}
+          name: codeql-${{ matrix.language }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             ${{ runner.temp }}/numera-codeql-evidence
             ${{ runner.temp }}/numera-codeql-results
-            ${{ runner.temp }}/numera-codeql-databases/rust/log
-            ${{ runner.temp }}/numera-codeql-databases/rust/codeql-database.yml
+            ${{ runner.temp }}/numera-codeql-databases/${{ matrix.language }}/log
+            ${{ runner.temp }}/numera-codeql-databases/${{ matrix.language }}/codeql-database.yml
             ${{ runner.temp }}/user-config.yaml
           if-no-files-found: error
           retention-days: 7

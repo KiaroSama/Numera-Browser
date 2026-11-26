@@ -220,10 +220,25 @@ pub(super) fn commands() -> Vec<Command> {
                 )),
             ],
         ),
-        leaf(
-            "mcp",
-            "Speak MCP on stdin/stdout, exposing every command as a tool",
-        ),
+        leaf("mcp", "Speak MCP JSON-RPC on stdin/stdout")
+            .after_help("Example: numera-engine mcp --bridge http://127.0.0.1:8787 --token <token>")
+            .arg(
+                option(
+                    "bridge",
+                    "bridge",
+                    "Forward messages to the running HTTP service",
+                )
+                .conflicts_with("detach"),
+            )
+            .arg(option("token", "token", "Bearer token for the HTTP bridge").requires("bridge"))
+            .arg(
+                flag(
+                    "allow_remote_bridge",
+                    "allow-remote-bridge",
+                    "Allow a non-loopback HTTPS bridge",
+                )
+                .requires_all(["bridge", "token"]),
+            ),
         leaf("serve", "Run Numera (serves the dashboard and the API)")
             .arg(option("host", "host", "").default_value("127.0.0.1"))
             .arg(whole("port", "port", "").default_value("8787"))

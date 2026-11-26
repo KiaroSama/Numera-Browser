@@ -582,13 +582,35 @@ fn check_native_layout(platform: &str) -> Result<(), Box<dyn Error>> {
         root: &root.0,
         source: &source,
         dashboard: &dashboard.0,
-        resources_root: &vendor.0,
-        receipt: &receipt,
+        vendor: Some((&vendor.0, &receipt)),
         engine: &engine,
         browser: &browser,
         identity: &identity,
     };
-    stage(&target, &inputs)?;
+    let parsed = Options::parse(
+        ["output", "--no-bundled-browsers"]
+            .into_iter()
+            .map(OsString::from),
+    )?;
+    assert!(parsed.resources.is_none());
+    for args in [
+        ["output", "--no-bundled-browsers", "--resources", "vendor"],
+        ["output", "--resources", "vendor", "--no-bundled-browsers"],
+    ] {
+        assert!(Options::parse(args.into_iter().map(OsString::from)).is_err());
+    }
+    let vendorless = output.0.join("Vendorless");
+    stage(
+        &vendorless,
+        &StageInputs {
+            vendor: None,
+            ..inputs
+        },
+    )?;
+    for directory in [vendorless.clone(), vendorless.join("engine")] {
+        let manifest: Value = serde_json::from_slice(&fs::read(directory.join("BUILD.json"))?)?;
+        assert_eq!(manifest["bundled_browsers"], false);
+    }
     let engine_name = if platform == "windows" {
         "numera-engine.exe"
     } else {
@@ -599,6 +621,11 @@ fn check_native_layout(platform: &str) -> Result<(), Box<dyn Error>> {
     } else {
         "numera-browser-runtime"
     };
+    assert!(vendorless.join("engine/web/assets/ui.wasm").is_file());
+    assert!(vendorless.join("engine").join(engine_name).is_file());
+    assert!(!vendorless.join("engine").join(resources::RECEIPT).exists());
+
+    stage(&target, &inputs)?;
     assert_eq!(
         fs::read(target.join("engine").join(engine_name))?,
         fs::read(&engine)?
@@ -624,12 +651,12 @@ fn check_native_layout(platform: &str) -> Result<(), Box<dyn Error>> {
     assert!(!target.join("BUILD.sig").exists());
     let packed = output.0.join("product.zip");
     archive(&target, &packed, "Numera Browser")?;
-    let mut zip = zip::ZipArchive::new(File::open(&packed)?)?;
+    let mut zip = zip::ZipArchive::new(fs::File::open(&packed)?)?;
     let mut bytes = Vec::new();
     zip.by_name(&format!("Numera Browser/engine/{engine_name}"))?
         .read_to_end(&mut bytes)?;
     assert_eq!(bytes, b"exact native engine bytes");
-    let mut source_zip = zip::ZipArchive::new(File::open(&source)?)?;
+    let mut source_zip = zip::ZipArchive::new(fs::File::open(&source)?)?;
     let mut license = String::new();
     source_zip
         .by_name("LICENSE")?
@@ -642,7 +669,7 @@ fn check_native_layout(platform: &str) -> Result<(), Box<dyn Error>> {
             &root.0,
             Options {
                 output: target.clone(),
-                resources: vendor.0.clone(),
+                resources: Some(vendor.0.clone()),
                 server_only: true,
                 bundles: None
             }

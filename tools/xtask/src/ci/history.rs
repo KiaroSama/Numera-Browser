@@ -344,7 +344,12 @@ pub fn prove_cases_with_cleanup(
     }
     Ok(())
 }
-fn retain_semantic_failure(root: &Path, case: &Case, stage: &str, output: &super::capture::Output) {
+fn retain_semantic_failure(
+    root: &Path,
+    case: &Case,
+    stage: &str,
+    output: &numera_core::ownership::capture::Output,
+) {
     let path = root.join("build/history").join(format!(
         "{stage}-{}.log",
         super::sha(format!("{}:{}", case.target, case.test).as_bytes())
@@ -366,7 +371,11 @@ fn retain_semantic_failure(root: &Path, case: &Case, stage: &str, output: &super
     }
 }
 
-fn retain_compile_failure(root: &Path, case: &Case, output: &super::capture::Output) -> Result<()> {
+fn retain_compile_failure(
+    root: &Path,
+    case: &Case,
+    output: &numera_core::ownership::capture::Output,
+) -> Result<()> {
     let path = root.join("build/history").join(format!(
         "compile-{}.log",
         super::sha(format!("{}:{}", case.target, case.test).as_bytes())

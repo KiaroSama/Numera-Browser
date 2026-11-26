@@ -2,6 +2,7 @@
 pub mod adapter;
 pub mod admission;
 pub mod alignment;
+pub mod automation;
 pub mod bundled;
 pub mod camoufox_fonts;
 pub mod container_smoke;
@@ -18,6 +19,7 @@ pub mod network_probe;
 pub mod options;
 pub mod probe_grades;
 pub mod probes;
+pub mod provider;
 pub mod registry;
 pub mod resources;
 pub mod runtime;
@@ -30,3 +32,4 @@ pub mod warmup;
 pub mod warmup_policy;
 #[cfg(test)]
 mod warmup_tests;
+pub mod workflows;

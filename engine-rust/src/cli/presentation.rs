@@ -201,6 +201,20 @@ impl Application<'_> {
                 output,
             );
         }
+        if matches!(
+            command,
+            "page" | "workflow" | "fleet" | "profile" | "capabilities"
+        ) {
+            let outcome = self.execute_controlled(args, time, confirm, cancelled)?;
+            if !output.json_mode() {
+                output.say(
+                    &serde_json::to_string_pretty(&outcome.payload)
+                        .map_err(std::io::Error::other)?,
+                    None,
+                )?;
+            }
+            return Ok(outcome);
+        }
         let supported = match command {
             "pool" | "jobs" | "engines" | "default-engine" | "config" | "folder" | "vault"
             | "token" => true,

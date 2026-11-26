@@ -214,12 +214,17 @@ fn dashboard_files_and_spa_fallback_match_original_without_swallowing_api()
                     case["body"].as_str().ok_or("Protected SPA body missing")?
                 );
             } else {
-                assert_eq!(
-                    serde_json::from_str::<serde_json::Value>(&text)?,
-                    serde_json::from_str::<serde_json::Value>(
-                        case["body"].as_str().ok_or("Protected API body missing")?
-                    )?
-                );
+                let mut expected: serde_json::Value = serde_json::from_str(
+                    case["body"].as_str().ok_or("Protected API body missing")?,
+                )?;
+                if expected
+                    .get("version")
+                    .and_then(serde_json::Value::as_str)
+                    .is_some()
+                {
+                    expected["version"] = env!("CARGO_PKG_VERSION").into();
+                }
+                assert_eq!(serde_json::from_str::<serde_json::Value>(&text)?, expected);
             }
         }
         Ok::<(), Box<dyn std::error::Error>>(())

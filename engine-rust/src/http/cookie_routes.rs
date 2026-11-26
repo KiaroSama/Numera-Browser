@@ -1,6 +1,7 @@
 use super::{profile_errors, profile_routes::Profiles, request_body::ObjectBody};
 use crate::{
     browser::{cookie_normalize, cookies},
+    cli::cookie_commands::{CookieExport, CookieFormat},
     conversion::truth,
     storage::repo::RepoError,
 };
@@ -116,6 +117,62 @@ fn import_sync(
         Err(error) => helper_error(error),
     })
 }
+pub(super) fn routes(state: Arc<Profiles>) -> axum::Router {
+    axum::Router::new()
+        .route(
+            "/api/profiles/{id}/cookies/export",
+            axum::routing::get(download).head(super::application::method_not_allowed),
+        )
+        .with_state(state)
+}
+
+fn export_format(query: &str) -> std::io::Result<CookieFormat> {
+    let url = reqwest::Url::parse(&format!("http://localhost/?{query}"))
+        .map_err(std::io::Error::other)?;
+    let mut values = url.query_pairs().filter(|(key, _)| key == "format");
+    let first = values.next();
+    if values.next().is_some() {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::InvalidInput,
+            "Pass only one cookie export format",
+        ));
+    }
+    CookieFormat::parse(first.as_ref().map(|(_, value)| value.as_ref()), None)
+}
+
+async fn download(
+    State(state): State<Arc<Profiles>>,
+    Path(id): Path<String>,
+    axum::extract::RawQuery(query): axum::extract::RawQuery,
+) -> Response {
+    let format = match export_format(query.as_deref().unwrap_or_default()) {
+        Ok(format) => format,
+        Err(error) => return profile_errors::detail(StatusCode::BAD_REQUEST, error.to_string()),
+    };
+    let mut response = match super::admission::blocking(move || {
+        if let Some(refusal) = prepare(&state, &id)? {
+            return Ok(refusal);
+        }
+        Ok::<_, RepoError>(
+            match with_browser(&state, &id, |adapter| CookieExport::read(adapter, format)) {
+                Ok(export) => Json(export.response(&id, format)).into_response(),
+                Err(error) => helper_error(error),
+            },
+        )
+    })
+    .await
+    {
+        Ok(Ok(response)) => response,
+        Ok(Err(error)) => profile_errors::storage(error),
+        _ => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+    };
+    response.headers_mut().insert(
+        axum::http::header::CACHE_CONTROL,
+        axum::http::HeaderValue::from_static("no-store"),
+    );
+    response
+}
+
 pub(super) async fn export(State(state): State<Arc<Profiles>>, Path(id): Path<String>) -> Response {
     match super::admission::blocking(move || export_sync(&state, &id)).await {
         Ok(Ok(response)) => response,
@@ -132,5 +189,24 @@ pub(super) async fn import(
         Ok(Ok(response)) => response,
         Ok(Err(error)) => profile_errors::storage(error),
         _ => (StatusCode::INTERNAL_SERVER_ERROR, "Internal Server Error").into_response(),
+    }
+}
+
+#[cfg(test)]
+mod export_tests {
+    use super::*;
+
+    #[test]
+    fn format_query_rejects_ambiguous_or_unknown_values() {
+        assert!(matches!(
+            export_format("format=netscape"),
+            Ok(CookieFormat::Netscape)
+        ));
+        assert!(matches!(
+            export_format("format=%6ason"),
+            Ok(CookieFormat::Json)
+        ));
+        assert!(export_format("format=csv").is_err());
+        assert!(export_format("format=json&format=netscape").is_err());
     }
 }

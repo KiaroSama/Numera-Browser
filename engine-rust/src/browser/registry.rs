@@ -1,5 +1,6 @@
 //! Explicit embedding-owned browser registrations. No profile or environment
 //! input can manufacture a custom backend capability.
+use super::provider::BUILTINS;
 use crate::models::Profile;
 use std::{
     collections::BTreeMap,
@@ -87,10 +88,10 @@ impl DriverRegistration {
             available: Some(Arc::new(available)),
         })
     }
-    fn builtin(name: &str) -> Self {
+    fn builtin(name: &str, family: OptionsFamily) -> Self {
         Self {
             wire_backend: name.into(),
-            family: OptionsFamily::builtin(name).expect("builtin family"),
+            family,
             requires: Some(
                 if name == "cloak" {
                     "cloakbrowser"
@@ -173,9 +174,11 @@ impl Default for DriverRegistry {
     fn default() -> Self {
         Self {
             entries: RwLock::new(
-                ["playwright", "patchright", "camoufox", "cloak"]
+                BUILTINS
                     .into_iter()
-                    .map(|name| (name.into(), DriverRegistration::builtin(name)))
+                    .map(|(name, _, family)| {
+                        (name.into(), DriverRegistration::builtin(name, family))
+                    })
                     .collect(),
             ),
         }

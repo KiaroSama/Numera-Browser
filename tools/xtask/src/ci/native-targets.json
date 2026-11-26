@@ -111,6 +111,7 @@
   "session_stop_http",
   "storage_parity",
   "store_open_parity",
+  "surface_parity",
   "test_temp_cleanup",
   "token_create_parity",
   "token_routes_parity",

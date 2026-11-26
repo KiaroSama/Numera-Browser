@@ -43,6 +43,18 @@ replacing, clearing and removing a proxy credential. Conflict previews hide secr
 Software updates and Cloak downloads each require approval of the exact reviewed
 target; browser launches never grant download consent.
 
+In a saved profile, use **Advanced → Session cookies** to download JSON or
+Netscape cookies. Keep these files private: they can contain active sessions.
+The Profiles table can check IP readiness for one profile or stop selected
+running windows. The proxy pool labels known countries and shows `--` when the
+engine cannot identify the country.
+
+In Settings, check the app and browser cores separately, or choose **App + Browsers**
+for a signed release that updates both. You can turn on automatic updates from
+the desktop app. The MCP bridge panel shows the local
+command without copying any credentials. Supply a valid API token separately
+when connecting from another client.
+
 The original 195-case inventory is retained in
 [`tests/vitest-case-inventory.json`](tests/vitest-case-inventory.json), with the
 original suite, case description, parameters, source hash, test kind and Rust test

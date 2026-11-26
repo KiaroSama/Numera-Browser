@@ -16,6 +16,50 @@ fn metadata(source: &str, generation: u64) -> serde_json::Value {
 }
 
 #[test]
+#[cfg(not(feature = "update-acceptance"))]
+fn latest_release_requires_an_authentic_manifest_matching_its_tag() -> io::Result<()> {
+    let key = SigningKey::from_bytes(&[7; 32]);
+    let source = "a".repeat(40);
+    let manifest = serde_json::to_vec(&metadata(&source, 2)).map_err(io::Error::other)?;
+    let signed = key.sign(&manifest).to_bytes();
+    for (tag, signature, success) in [
+        ("v0.36.0", Some(signed), true),
+        ("v0.37.0", Some(signed), false),
+        ("v0.36.0", Some([0; 64]), false),
+        ("v0.36.0", None, false),
+    ] {
+        let result = discover_latest_with(
+            1,
+            "linux-x64",
+            &key.verifying_key().to_bytes(),
+            1200,
+            |url, _| {
+                if url == latest_release_url() {
+                    serde_json::to_vec(&json!({"tag_name":tag, "body":"Release notes"}))
+                        .map_err(io::Error::other)
+                } else if url == release_asset_url(tag, "update-manifest.json") {
+                    Ok(manifest.clone())
+                } else if url == release_asset_url(tag, "update-manifest.sig") {
+                    signature
+                        .map(|sig| sig.to_vec())
+                        .ok_or_else(|| io::Error::from(io::ErrorKind::NotFound))
+                } else {
+                    Err(io::Error::other("Unexpected release request"))
+                }
+            },
+        );
+        if success {
+            let offer = result?.ok_or_else(|| io::Error::other("No verified update"))?;
+            assert_eq!(offer.tag, tag);
+            assert_eq!(offer.notes, "Release notes");
+        } else {
+            assert!(result.is_err(), "unverified tag {tag} must fail closed");
+        }
+    }
+    Ok(())
+}
+
+#[test]
 fn discovery_distinguishes_unavailable_untrusted_and_authenticated_unsuitable_candidates() {
     let key = SigningKey::from_bytes(&[7; 32]);
     let source = "a".repeat(40);

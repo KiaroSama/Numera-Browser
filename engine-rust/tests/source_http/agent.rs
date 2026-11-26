@@ -380,6 +380,76 @@ fn capabilities() -> Vec<Capability> {
             commands: &["collisions"],
             transport: false,
         },
+        Capability {
+            name: "fleetSync",
+            method: "POST",
+            path: "/api/fleet/sync",
+            commands: &["fleet_sync"],
+            transport: false,
+        },
+        Capability {
+            name: "listWorkflows",
+            method: "GET",
+            path: "/api/workflows",
+            commands: &["workflow_list"],
+            transport: false,
+        },
+        Capability {
+            name: "saveWorkflow",
+            method: "POST",
+            path: "/api/workflows",
+            commands: &["workflow_save"],
+            transport: false,
+        },
+        Capability {
+            name: "deleteWorkflow",
+            method: "DELETE",
+            path: "/api/workflows/${id}",
+            commands: &["workflow_delete"],
+            transport: false,
+        },
+        Capability {
+            name: "runWorkflow",
+            method: "POST",
+            path: "/api/workflows/${id}/run",
+            commands: &["workflow_run"],
+            transport: false,
+        },
+        Capability {
+            name: "profileIpCheck",
+            method: "GET",
+            path: "/api/profiles/${id}/ip-check",
+            commands: &["profile_ip_check"],
+            transport: false,
+        },
+        Capability {
+            name: "checkUpdates",
+            method: "GET",
+            path: "/api/updates/check",
+            commands: &["update_check"],
+            transport: false,
+        },
+        Capability {
+            name: "applyUpdates",
+            method: "POST",
+            path: "/api/updates/apply",
+            commands: &["update_apply"],
+            transport: false,
+        },
+        Capability {
+            name: "updatePreferences",
+            method: "PUT",
+            path: "/api/updates/preferences",
+            commands: &["update_config"],
+            transport: false,
+        },
+        Capability {
+            name: "mcpBridge",
+            method: "POST",
+            path: "/api/mcp",
+            commands: &[],
+            transport: true,
+        },
     ]
 }
 fn tools() -> std::collections::BTreeSet<String> {
@@ -389,12 +459,22 @@ fn tools() -> std::collections::BTreeSet<String> {
         .collect()
 }
 fn native_routes() -> std::collections::BTreeSet<String> {
-    let source = include_str!("../../../dashboard/rust/browser.rs");
+    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../dashboard/rust");
     let pattern = regex::Regex::new(r#""(/api/[^"\\]*)""#).expect("native request inventory");
-    pattern
-        .captures_iter(source)
-        .map(|c| shape(&c[1]))
-        .collect()
+    let mut routes = std::collections::BTreeSet::new();
+    for entry in fs::read_dir(&dir).expect("dashboard rust directory") {
+        let path = entry.expect("dashboard entry").path();
+        if path.file_name().and_then(|n| n.to_str()).is_some_and(|n| {
+            n.starts_with("browser")
+                && n.ends_with(".rs")
+                && !n.ends_with("_tests.rs")
+                && n != "browser_cases.rs"
+        }) && let Ok(source) = fs::read_to_string(&path)
+        {
+            routes.extend(pattern.captures_iter(&source).map(|c| shape(&c[1])));
+        }
+    }
+    routes
 }
 fn shape(path: &str) -> String {
     regex::Regex::new(r"\$\{[^}]+\}|\{[^}]*\}")

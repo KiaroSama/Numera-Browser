@@ -317,6 +317,9 @@ impl Application<'_> {
             ),
             "stop" => profiles.stop(self.root, reference, time),
             "jobs" => job_commands::run(self.root, self.host, args, time),
+            "page" | "workflow" | "fleet" | "profile" | "update" | "capabilities" => {
+                super::automation_commands::run(self, args, time)
+            }
             "engines" => settings.engines(),
             "default-engine" => settings.default_engine(text(args, "name")),
             "config" => settings.config(args, self.home),
@@ -490,7 +493,9 @@ impl Application<'_> {
                     "list" => cookies.list(reference, text(args, "engine"), time),
                     "export" => cookies.export(
                         reference,
-                        Path::new(required(args, "file")?),
+                        text(args, "out")
+                            .or_else(|| text(args, "file"))
+                            .map(Path::new),
                         text(args, "format"),
                         text(args, "engine"),
                         time,

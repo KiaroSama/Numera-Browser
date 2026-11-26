@@ -26,6 +26,8 @@ pub struct Journal {
     pub installed: Vec<String>,
     pub pending: Option<String>,
     pub started: u64,
+    #[serde(default)]
+    pub clean_old: bool,
 }
 pub fn now() -> io::Result<u64> {
     Ok(SystemTime::now()
@@ -71,6 +73,7 @@ pub fn create(root: &Path, offer: &str) -> io::Result<Journal> {
         installed: Vec::new(),
         pending: None,
         started: now()?,
+        clean_old: false,
     };
     journal.save()?;
     Ok(journal)
@@ -180,6 +183,16 @@ pub fn activate(journal: &mut Journal, old: &Build, next: &Build) -> io::Result<
     let mut target = inventory(next);
     for file in metadata_files(&journal.staged())? {
         target.insert(file.path().into(), file);
+    }
+    for name in previous.keys().chain(target.keys()) {
+        let path = files::member(&journal.root, name)?;
+        if !journal.data_root.as_os_str().is_empty()
+            && (path.starts_with(&journal.data_root) || journal.data_root.starts_with(&path))
+        {
+            return Err(manifest::error(
+                "Signed generation overlaps the active data root",
+            ));
+        }
     }
     for name in target.keys() {
         let path = files::member(&journal.root, name)?;

@@ -39,10 +39,11 @@ impl RequestAuth {
         if super::update_routes::private_path(path) {
             return Ok(false);
         }
+        let mcp = path == "/api/mcp";
         if method == "OPTIONS"
             || !path.starts_with("/api/")
             || path.trim_end_matches('/') == "/api/ready"
-            || !self.required()
+            || (!mcp && !self.required())
         {
             return Ok(true);
         }
@@ -52,10 +53,15 @@ impl RequestAuth {
             .is_some_and(|prefix| prefix.eq_ignore_ascii_case("bearer "))
         {
             &authorization[7..]
+        } else if mcp {
+            return Ok(false);
         } else {
             alternate.unwrap_or("")
         }
         .trim();
+        if mcp && sent.is_empty() {
+            return Ok(false);
+        }
         if !self.environment.is_empty()
             && sent
                 .as_bytes()

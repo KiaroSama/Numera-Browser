@@ -74,12 +74,18 @@ pub fn native_automatic(workflow: &Value) -> Result<()> {
         .keys()
         .cloned()
         .collect::<BTreeSet<_>>();
-    if events
-        != BTreeSet::from([
-            "push".into(),
-            "pull_request".into(),
-            "workflow_dispatch".into(),
-        ])
+    let required_events = BTreeSet::from([
+        "push".into(),
+        "pull_request".into(),
+        "workflow_dispatch".into(),
+    ]);
+    let reusable_events = BTreeSet::from([
+        "push".into(),
+        "pull_request".into(),
+        "workflow_dispatch".into(),
+        "workflow_call".into(),
+    ]);
+    if (events != required_events && events != reusable_events)
         || workflow["permissions"] != serde_json::json!({"contents":"read"})
     {
         return fail(
@@ -106,13 +112,16 @@ pub fn native_automatic(workflow: &Value) -> Result<()> {
             ))
         })
         .collect::<BTreeSet<_>>();
-    if matrix.len() != 2
-        || !platforms.contains(&("linux", "ubuntu-24.04"))
-        || ![("windows", "windows-latest"), ("windows", "windows-2025")]
-            .iter()
-            .any(|platform| platforms.contains(platform))
+    if matrix.len() != 4
+        || platforms
+            != BTreeSet::from([
+                ("windows-x64", "windows-2025"),
+                ("windows-arm64", "windows-11-arm"),
+                ("linux-x64", "ubuntu-24.04"),
+                ("linux-arm64", "ubuntu-24.04-arm"),
+            ])
     {
-        return fail("Automatic native build requires Linux and Windows x86-64 runners");
+        return fail("Automatic native build requires the four approved 64-bit runners");
     }
     if build.to_string().contains("secrets.") {
         return fail("Independent compilation cannot receive signing credentials");
@@ -158,6 +167,35 @@ pub fn native_failure_evidence(workflow: &Value) -> Result<()> {
         );
     }
     Ok(())
+}
+pub fn versioned_release(workflow: &Value) -> Result<()> {
+    let jobs = &workflow["jobs"];
+    let signing = &jobs["signing"];
+    let publish = &jobs["publish"];
+    if workflow["on"]["push"]["tags"] != serde_json::json!(["v*"])
+        || workflow["on"].get("workflow_dispatch").is_none()
+        || workflow["permissions"]["contents"] != "read"
+        || jobs["acceptance"]["needs"] != "source"
+        || jobs["acceptance"]["uses"] != "./.github/workflows/native-ci.yml"
+        || signing["needs"] != "acceptance"
+        || signing["environment"] != "numera-signing"
+        || publish["needs"] != "signing"
+        || publish["environment"] != "numera-signing"
+        || publish["permissions"]["contents"] != "write"
+    {
+        return fail(
+            "Versioned publication must require exact-source verification and protected signing",
+        );
+    }
+    bounded_jobs(workflow)?;
+    ordered(
+        &publish["steps"],
+        &[
+            "ci release-update-feed publish",
+            "./.github/actions/numera-detached-signature",
+        ],
+        "gh release create",
+    )
 }
 pub fn branch_concurrency(workflow: &Value) -> Result<()> {
     if workflow["concurrency"]
@@ -320,6 +358,20 @@ pub fn live_license_concurrency(workflow: &Value) -> Result<()> {
             "Both Cloak ownership hosts must share one serialized vendor seat without cancelling required tests",
         );
     }
+    let steps = &job["steps"];
+    let prepare = step_once(steps, "ci prepare-live", false)?;
+    let condition = "matrix.engine != 'cloak' || env.CLOAKBROWSER_LICENSE_KEY != ''";
+    let acceptance = steps
+        .as_array()
+        .and_then(|steps| {
+            steps
+                .iter()
+                .find(|step| step["uses"] == "./.github/actions/native-candidate-acceptance")
+        })
+        .ok_or("Required real SDK acceptance missing")?;
+    if steps[prepare]["if"] != condition || acceptance["if"] != condition {
+        return fail("Only live Cloak preparation and execution may depend on its license");
+    }
     Ok(())
 }
 
@@ -375,7 +427,7 @@ pub fn coverage(root: &Path) -> Result<()> {
         "desktop-contracts",
         "build-desktop",
         "container",
-        "release",
+        "release-review",
     ] {
         documents.insert(
             name.into(),
@@ -391,6 +443,9 @@ pub fn coverage(root: &Path) -> Result<()> {
         root.join(".github/workflows/rust-candidate.yml"),
     )?)?;
     branch_concurrency(&rust)?;
+    versioned_release(&parse(&fs::read_to_string(
+        root.join(".github/workflows/release.yml"),
+    )?)?)?;
     dependency_updates(&parse(&fs::read_to_string(
         root.join(".github/dependabot.yml"),
     )?)?)?;

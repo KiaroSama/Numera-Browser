@@ -353,7 +353,7 @@ pub fn additional(root: &Path, case: &Case) -> Result<Vec<(String, Replacement)>
         )?;
         let current = fs::read(root.join("engine-rust/src/mcp_command.rs"))?;
         if super::sha(&current)
-            != "192b83bfdaee8b3a181ec7aa28adb42417e87f9ad0181ed3ac706d3e5be21a9d"
+            != "699d733f77c4f91f3454c89d179c434115f9ab8d8b23f7a50da861de89cea103"
         {
             return fail("Current finite child-command preparation changed");
         }

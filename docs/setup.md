@@ -4,16 +4,16 @@ Choose one route: a portable desktop release, a source checkout, or a server/con
 
 ## Portable desktop
 
-1. Open [GitHub Releases](https://github.com/KiaroSama/Numera-Browser/releases). Select a completed build and its matching platform asset: Windows x64 or Linux x64.
+1. Open [GitHub Releases](https://github.com/KiaroSama/Numera-Browser/releases). Select a completed build and its matching platform asset: Windows or Linux, x64 or arm64.
 2. Download the archive and its published checksums/signature metadata. Verify before extraction; see [updates and verification](updates.md). If the release has no matching asset, it is not a supported ready-build route for that machine.
 3. Extract the **whole** `Numera Browser` folder into a writable location. Keep the engine, browser resources, notices and manifests beside the shell; copying only the executable does not install the application.
 4. Start `numera.exe` on Windows or `numera` on Linux. The shell starts the `numera-engine` manager service on a free loopback port and opens the dashboard. Launch a profile to start a compatible browser. Closing the window shuts down the owned manager and its sessions.
 
-Python and Node are not prerequisites for a completed portable bundle. The operating system still supplies the WebView and native libraries: WebView2 on Windows and WebKitGTK 4.1/GTK 3 on Linux. Browser binaries also need their platform's system libraries. The CI build platform does not guarantee every Linux distribution or older OS release is compatible.
+Python and Node are not prerequisites for a completed portable bundle. The operating system still supplies the WebView and native libraries: WebView2 on Windows and WebKitGTK 4.1/GTK 3 on Linux. Browser binaries also need their platform's system libraries. The CI build platform does not guarantee compatibility with every Linux distribution or older OS release. ARM64 packages do not include vendor browsers. Provision only SDKs and browser builds that support your target.
 
-Native publisher signing uses the project's private-trust certificate. It is **self-signed**, not a publicly trusted Windows publisher certificate or Apple Developer ID/notarization. SmartScreen and Gatekeeper can still warn or block the app. Do not install an unknown root certificate or disable system security to make it run. Obtain an appropriately trusted build if local policy requires it.
+Native publisher signing uses the project's private-trust certificate. It is **self-signed**, not a publicly trusted Windows publisher certificate or Apple Developer ID/notarization. Windows SmartScreen can still warn or block the app. Do not install an unknown root certificate or disable system security to make it run. Obtain an appropriately trusted build if local policy requires it.
 
-Playwright, Patchright and Camoufox resources are bundled as compatible SDK/browser generations. CloakBrowser's proprietary browser binary is **not redistributed**: its acquisition is a separate end-user, consent-gated vendor operation, subject to its license and version availability. An installed SDK is not proof that its browser binary is ready.
+Full x64 desktop packages bundle the reviewed Playwright, Patchright and Camoufox SDK/browser generations. CloakBrowser's proprietary browser binary is **not redistributed**: its acquisition is a separate end-user, consent-gated vendor operation, subject to its license and version availability. An installed SDK is not proof that its browser binary is ready.
 
 ### First profile
 
@@ -126,6 +126,18 @@ numera-engine --help
 The [CLI and MCP guide](agents.md) describes JSON automation. Profile consistency
 checks are diagnostics; browser capabilities still differ by backend.
 
+## CLI-only headless server
+
+Download and verify the CLI-only asset for your target. Extract both executables
+into the same directory and add it to `PATH`. This route has no Tauri shell or
+WebView dependency. Install compatible browser resources only if you need to
+launch browser sessions. The archive does not include the web dashboard assets.
+
+```bash
+numera-engine --help
+numera-engine --data-dir ./numera-data serve --host 127.0.0.1 --port 8787
+```
+
 ## Server and Docker
 
 Use a complete native server package without the desktop WebView dependency.
@@ -174,15 +186,14 @@ The native engine writes UTF-8 run logs under the actual data root's `logs/`. Ch
 ## Building distributions
 
 [Native CI](../.github/workflows/native-ci.yml) runs automatic independent
-Linux and Windows x86-64 compilation and full-product builds. Portable server
-archives and desktop installer formats are produced with Rust tooling. Default
+Linux and Windows x64 and arm64 builds. Rust tooling builds portable bundles,
+CLI-only server archives and native installers. Default
 installers are AppImage/deb on Linux and MSI on Windows. The complete Windows
 browser payload exceeds the NSIS size limit. Use MSI to install the complete
 bundle. Each native platform uploads an installer artifact and a separate
 portable archive artifact. Both include the distribution checksums.
 
 Unsigned CI artifacts are review outputs. A completed signed release requires its
-separate trusted release gates. No release or merge is part of
-[PR #76](https://github.com/KiaroSama/Numera-Browser/pull/76). See
+separate protected signing workflow. See
 [build contracts](../tools/xtask/README.md), [licensing](licensing.md) and
 [rewrite verification](rust-rewrite.md).

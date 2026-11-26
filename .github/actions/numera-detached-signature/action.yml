@@ -1,0 +1,68 @@
+name: Sign release assets and checksums
+description: Verify every detached signature against the checked-in publisher certificate.
+inputs:
+  pfx:
+    description: Base64 PKCS#12 identity from the protected signing environment.
+    required: true
+  password:
+    description: Password for the PKCS#12 identity.
+    required: true
+  operation:
+    description: Sign platform assets, or verify all assets and sign the combined checksums.
+    required: true
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        NUMERA_SIGNING_PFX_BASE64: ${{ inputs.pfx }}
+        NUMERA_SIGNING_PASSWORD: ${{ inputs.password }}
+        OPERATION: ${{ inputs.operation }}
+      run: |
+        set -euo pipefail
+        if [[ -z "$NUMERA_SIGNING_PFX_BASE64" || -z "$NUMERA_SIGNING_PASSWORD" ]]; then
+          printf '%s\n' 'Protected signing credentials are missing.' >&2
+          exit 1
+        fi
+        umask 077
+        work=$(mktemp -d "$RUNNER_TEMP/numera-detached.XXXXXX")
+        trap 'rm -f -- "$work/identity.pfx" "$work/private.pem" "$work/public.pem" "$work/publisher.json" "$work/verify.err"; rmdir -- "$work"' EXIT
+        printf '%s' "$NUMERA_SIGNING_PFX_BASE64" | base64 -d > "$work/identity.pfx"
+        unset NUMERA_SIGNING_PFX_BASE64
+        openssl pkcs12 -in "$work/identity.pfx" -nocerts -noenc -passin env:NUMERA_SIGNING_PASSWORD -out "$work/private.pem"
+        unset NUMERA_SIGNING_PASSWORD
+        cd "$GITHUB_WORKSPACE"
+        openssl x509 -in docs/code-signing-cert.pem -pubkey -noout > "$work/public.pem"
+        check() { openssl dgst -sha256 -verify "$work/public.pem" -signature "$1.sig" "$1"; }
+        sign() {
+          openssl dgst -sha256 -sign "$work/private.pem" -out "$1.sig" "$1"
+          check "$1"
+          # Modify the input stream rather than copying multi-gigabyte installers.
+          local status=0
+          { printf X; command cat -- "$1"; } | openssl dgst -sha256 -verify "$work/public.pem" -signature "$1.sig" > "$work/verify.err" 2>&1 || status=$?
+          test "$status" -ne 0
+          LC_ALL=C grep -Eqi 'verification fail' "$work/verify.err"
+        }
+        cd dist
+        shopt -s nullglob
+        assets=(numera-browser-*.zip numera-browser-*.tar.gz numera-browser-*.msi numera-browser-*.deb numera-browser-*.AppImage)
+        case "$OPERATION" in
+          assets)
+            test "${#assets[@]}" -ge 4
+            for file in "${assets[@]}"; do sign "$file"; done
+            ;;
+          checksums)
+            test "${#assets[@]}" -eq 18
+            for file in "${assets[@]}"; do check "$file"; done
+            test -s update-manifest.json && test -s update-manifest.sig
+            sha256sum -- "${assets[@]}" update-manifest.json update-manifest.sig > SHA256SUMS
+            sha256sum --check --strict SHA256SUMS
+            sign SHA256SUMS
+            cp ../docs/code-signing-cert.pem publisher-cert.pem
+            cp "$work/public.pem" publisher-key.pem
+            der_sha=$(openssl x509 -in publisher-cert.pem -outform DER | sha256sum | cut -d' ' -f1)
+            jq -n --arg der "$der_sha" --rawfile cert publisher-cert.pem --rawfile key publisher-key.pem \
+              '{schema:1, certificate_der_sha256:$der, certificate_pem:$cert, public_key_pem:$key}' > publisher.json
+            ;;
+          *) exit 1 ;;
+        esac

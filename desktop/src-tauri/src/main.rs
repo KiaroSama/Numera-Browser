@@ -89,9 +89,11 @@ fn main() {
                     updates::install_lease::shared(&root)?,
                 ))));
             }
+            let update_listener = Bridge::listen()?;
             match lifecycle::start_engine(
                 log.clone(),
                 &token,
+                update_listener.local_addr()?.port(),
                 handle.path().resource_dir().ok().as_deref(),
             ) {
                 Ok((child, port, reader)) => {
@@ -121,7 +123,7 @@ fn main() {
                         token.clone(),
                         Arc::new(move || application.exit(0)),
                     )?;
-                    let bridge = Bridge::start(service, port)?;
+                    let bridge = Bridge::start(service, port, update_listener)?;
                     app.manage(DesktopUpdates(Mutex::new(Some(bridge))));
                     std::thread::spawn(move || match lifecycle::wait_healthy(&handle, port) {
                         Ok(()) => match updates::worker::recovery_ready(&root, port, &token) {

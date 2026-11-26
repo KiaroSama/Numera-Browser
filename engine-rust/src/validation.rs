@@ -352,10 +352,56 @@ pub fn flat_number_problems(record: &Value) -> Result<Vec<String>, serde_json::E
 }
 
 /// Validate the original uncoerced JSON before constructing typed models.
+pub(crate) fn valid_mac_address(value: &str) -> bool {
+    value.len() == 17
+        && value.bytes().enumerate().all(|(index, byte)| {
+            if index % 3 == 2 {
+                byte == b':'
+            } else {
+                matches!(byte, b'0'..=b'9' | b'A'..=b'F')
+            }
+        })
+}
+
+pub(crate) fn valid_device_name(value: &str) -> bool {
+    !value.is_empty()
+        && value.len() <= 64
+        && value
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'.' | b'_' | b'-'))
+}
+
 pub fn profile_problems(record: &Value, shape: &str) -> Result<Vec<String>, serde_json::Error> {
     let root = policy()?;
     let p = &root["policy"];
     let mut found = Vec::new();
+    if let Some(fp) = record.get("fingerprint").and_then(Value::as_object) {
+        let mode = fp.get("mac_address_mode");
+        let mac = fp.get("mac_address").filter(|value| !value.is_null());
+        if mode.is_some_and(|value| {
+            !matches!(
+                value.as_str(),
+                Some("off" | "manual" | "generate" | "noise")
+            )
+        }) {
+            found
+                .push("profile: invalid fingerprint.mac_address_mode. Nothing was written.".into());
+        }
+        if mac.is_some_and(|value| !value.as_str().is_some_and(valid_mac_address))
+            || (mode.and_then(Value::as_str) == Some("manual")
+                && mac.is_none()
+                && shape == "engine record")
+        {
+            found.push("profile: fingerprint.mac_address must be uppercase XX:XX:XX:XX:XX:XX. Nothing was written.".into());
+        }
+        if fp
+            .get("device_name")
+            .filter(|value| !value.is_null())
+            .is_some_and(|value| !value.as_str().is_some_and(valid_device_name))
+        {
+            found.push("profile: invalid fingerprint.device_name. Nothing was written.".into());
+        }
+    }
     if shape == "engine record" {
         if !record.is_object() {
             return Ok(vec![format!(
@@ -449,4 +495,22 @@ pub fn profile_problems(record: &Value, shape: &str) -> Result<Vec<String>, serd
         found.push("Unknown profile validation shape".into());
     }
     Ok(found)
+}
+
+#[cfg(test)]
+#[test]
+fn profile_identity_requires_canonical_values() {
+    assert!(valid_mac_address("02:AB:CD:EF:01:23"));
+    for invalid in [
+        "02:ab:CD:EF:01:23",
+        "02-AB-CD-EF-01-23",
+        "02:AB:CD:EF:01",
+        "02:AB:CD:EF:01:2G",
+    ] {
+        assert!(!valid_mac_address(invalid));
+    }
+    assert!(valid_device_name("Device_42.local"));
+    assert!(!valid_device_name(""));
+    assert!(!valid_device_name("é"));
+    assert!(!valid_device_name(&"a".repeat(65)));
 }

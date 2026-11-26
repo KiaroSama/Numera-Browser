@@ -27,11 +27,14 @@ async fn admit(State(root): State<PathBuf>, request: Request, next: Next) -> Res
             .strip_prefix("/api/profiles/")
             .and_then(|path| path.strip_suffix("/stop"))
             .is_some_and(|id| !id.is_empty() && !id.contains('/'));
+    let apply_update =
+        request.method() == "POST" && path.trim_end_matches('/') == "/api/updates/apply";
     if request.method() == "OPTIONS"
         || !path.starts_with("/api/")
         || path.trim_end_matches('/') == "/api/ready"
         || super::update_routes::private_path(path)
         || stop_profile
+        || apply_update
     {
         return next.run(request).await;
     }

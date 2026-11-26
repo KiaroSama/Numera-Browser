@@ -183,41 +183,35 @@ here; `authRequired` tells a client whether to go looking for a credential.
 
 ## MCP
 
-`numera mcp` speaks MCP over stdio. Point a client at it:
+`numera-engine mcp` speaks newline-delimited JSON-RPC over stdio. For example:
 
 ```json
 {
   "mcpServers": {
     "numera": {
-      "command": "numera",
+      "command": "numera-engine",
       "args": ["--data-dir", "/srv/numera", "mcp"]
     }
   }
 }
 ```
 
-Every command becomes a tool — `create`, `list`, `pool_assign`, `jobs_show`,
-`cookies_export`, and so on — and each tool's schema is **derived from the
-argparse parser at run time**, not written out beside it. Adding a CLI command
-adds a tool; renaming a flag renames its argument. There is no second list to
-fall out of date.
+To use an existing Numera HTTP service, run:
 
-Two things a caller should know:
+```bash
+numera-engine mcp --bridge http://127.0.0.1:8787
+```
 
-* Every tool takes `detach: true`. A call is bounded at 120 seconds, so anything
-  that opens a browser (`launch`, `warmup`, `attach`, `trust`, `align`, the
-  cookie and probe tools) should be detached and polled with `jobs_show`.
-* A non-zero exit is a *verdict*, not a failure. `check` on an incoherent
-  profile returns a normal result whose payload lists the issues, with the code
-  in `_meta.exitCode`. `isError` is reserved for a tool that could not run at
-  all.
+The bridge forwards MCP JSON-RPC to `POST /api/mcp`. If the service requires
+bearer authentication, configure the token in your client and keep it out of
+shell history and logs. The bridge refuses non-loopback targets unless you
+explicitly allow remote access and provide a bearer token.
 
-`serve` and `mcp` are deliberately not tools — they never return.
-
-No SDK is involved: MCP's stdio transport is newline-delimited JSON-RPC 2.0,
-which the standard library already speaks.
-
----
+Call `tools/list` to see the tool names and schemas that your installed build
+actually exposes. For CLI scripts, use `numera-engine --help` to check arguments
+and `--json` where supported to read structured output. The acceptance tests
+check shared CLI, MCP and dashboard API behavior without printing real account
+or session data.
 
 ## Known gaps and closed ones
 

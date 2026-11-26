@@ -1,4 +1,3 @@
-use numera_core::ownership::capture;
 use serde_json::Value;
 use std::{
     error::Error,
@@ -13,6 +12,9 @@ pub mod browser_benchmark;
 pub mod build_artifact;
 pub mod camoufox_runtime;
 pub mod candidate;
+mod codeql_source;
+mod command_capture;
+pub use command_capture::{capture, capture_streamed};
 pub mod compiler;
 pub mod container;
 pub mod coverage_inventory;
@@ -36,7 +38,7 @@ pub mod release_signing;
 pub mod scope;
 pub mod version;
 pub mod workflow;
-
+pub use codeql_source::codeql_local_source;
 pub type Result<T> = std::result::Result<T, Box<dyn Error + Send + Sync>>;
 pub fn fail<T>(message: impl Into<String>) -> Result<T> {
     Err(std::io::Error::other(message.into()).into())
@@ -73,162 +75,6 @@ pub fn canonical_sha(value: &str) -> bool {
         && value
             .bytes()
             .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
-}
-fn codeql_output(command: &mut Command, deadline: Instant, bytes: usize) -> Result<Vec<u8>> {
-    let remaining = deadline.saturating_duration_since(Instant::now());
-    if remaining.is_zero() {
-        return fail("CodeQL source verification deadline expired");
-    }
-    let output = capture(command, remaining, remaining, bytes)?;
-    if output.exit != 0 {
-        return fail("CodeQL authenticated source verification command failed");
-    }
-    Ok(output.stdout)
-}
-fn codeql_api(endpoint: &str, deadline: Instant) -> Result<Value> {
-    decode(&codeql_output(
-        Command::new("gh").args([
-            "api",
-            "--hostname",
-            "github.com",
-            "--method",
-            "GET",
-            endpoint,
-        ]),
-        deadline,
-        4 * 1024 * 1024,
-    )?)
-}
-pub fn codeql_local_source(root: &Path, deadline: Instant) -> Result<evidence::CodeqlLocalSource> {
-    let git_text = |args: &[&str]| -> Result<String> {
-        Ok(String::from_utf8(codeql_output(
-            Command::new("git")
-                .env("GIT_NO_REPLACE_OBJECTS", "1")
-                .arg("-C")
-                .arg(root)
-                .args(args),
-            deadline,
-            4 * 1024 * 1024,
-        )?)?
-        .trim()
-        .into())
-    };
-    Ok(evidence::CodeqlLocalSource {
-        commit: git_text(&["rev-parse", "--verify", "HEAD"])?,
-        tree: git_text(&["rev-parse", "--verify", "HEAD^{tree}"])?,
-        clean: git_text(&["status", "--porcelain=v1", "--untracked-files=all"])?.is_empty(),
-    })
-}
-fn codeql_pr_source(root: &Path, repository: &str, sha: &str, deadline: Instant) -> Result<Value> {
-    if std::env::var("GITHUB_ACTIONS").as_deref() != Ok("true") {
-        return fail("CodeQL PR source bridge requires the GitHub Actions context");
-    }
-    let event_path =
-        PathBuf::from(std::env::var_os("GITHUB_EVENT_PATH").ok_or("PR event is missing")?);
-    if fs::metadata(&event_path)?.len() > 4 * 1024 * 1024 {
-        return fail("CodeQL PR event exceeds its bounded input size");
-    }
-    let event = decode(&fs::read(event_path)?)?;
-    if event["repository"]["full_name"] != repository {
-        return fail("CodeQL PR event repository differs from the owning repository");
-    }
-    let context = evidence::CodeqlPrContext {
-        repository: repository.into(),
-        event: std::env::var("GITHUB_EVENT_NAME")?,
-        reference: std::env::var("GITHUB_REF")?,
-        number: event["number"].as_u64().ok_or("PR number is missing")?,
-        event_head: event["pull_request"]["head"]["sha"]
-            .as_str()
-            .ok_or("PR head is missing")?
-            .into(),
-        event_base: event["pull_request"]["base"]["sha"]
-            .as_str()
-            .ok_or("PR base is missing")?
-            .into(),
-        build_sha: sha.into(),
-    };
-    if !canonical_sha(&context.event_head) || !canonical_sha(&context.event_base) {
-        return fail("CodeQL PR event source identifiers are invalid");
-    }
-    let local = codeql_local_source(root, deadline)?;
-    let pull = codeql_api(
-        &format!("repos/{repository}/pulls/{}", context.number),
-        deadline,
-    )?;
-    let merge = codeql_api(&format!("repos/{repository}/git/commits/{sha}"), deadline)?;
-    let head = codeql_api(
-        &format!("repos/{repository}/git/commits/{}", context.event_head),
-        deadline,
-    )?;
-    Ok(serde_json::to_value(evidence::codeql_pr_subject(
-        &context, &pull, &merge, &head, &local,
-    )?)?)
-}
-fn retain_codeql_subject(subject: &Value, check: Option<u64>) -> Result<()> {
-    let receipt = serde_json::json!({
-        "schema":1, "source_subject":subject,
-        "trusted_check_id":check,
-        "trusted_verdict":if check.is_some() {"successful"} else {"pending_or_unsuccessful"}
-    });
-    let parent = std::env::var_os("RUNNER_TEMP")
-        .map(PathBuf::from)
-        .ok_or("CodeQL subject receipt requires the runner temporary directory")?
-        .join("numera-codeql-verdict");
-    fs::create_dir_all(&parent)?;
-    fs::write(
-        parent.join("source-subject.json"),
-        serde_json::to_vec_pretty(&receipt)?,
-    )?;
-    println!(
-        "CodeQL source subject: {}",
-        serde_json::to_string(&receipt)?
-    );
-    Ok(())
-}
-pub fn capture(
-    command: &mut Command,
-    wall: Duration,
-    idle: Duration,
-    bytes: usize,
-) -> Result<capture::Output> {
-    capture_streamed(command, wall, idle, bytes, |_, _| {})
-}
-pub fn capture_streamed(
-    command: &mut Command,
-    wall: Duration,
-    idle: Duration,
-    bytes: usize,
-    mut on_chunk: impl FnMut(usize, &[u8]),
-) -> Result<capture::Output> {
-    let result = capture::run_observed_streamed(
-        command,
-        capture::Limits {
-            wall,
-            idle,
-            bytes,
-            cleanup: Duration::from_secs(10),
-        },
-        || false,
-        |_, _| {},
-        |stream, bytes| {
-            crate::progress::completed(
-                if stream == 0 {
-                    "child-stdout"
-                } else {
-                    "child-stderr"
-                },
-                bytes.len(),
-            );
-            on_chunk(stream, bytes);
-        },
-    );
-    match result {
-        Ok(output) => Ok(output),
-        Err(mut error) => {
-            error.settle(Duration::from_secs(10))?;
-            Err(error.into())
-        }
-    }
 }
 pub fn git(root: &Path, args: &[&str]) -> Result<Vec<u8>> {
     let result = capture(
@@ -343,7 +189,6 @@ pub fn root() -> PathBuf {
         .canonicalize()
         .expect("Repository root")
 }
-
 pub fn run(root: &Path, mut args: impl Iterator<Item = OsString>) -> Result<()> {
     let command = args
         .next()
@@ -353,6 +198,11 @@ pub fn run(root: &Path, mut args: impl Iterator<Item = OsString>) -> Result<()> 
     let rest = args.collect::<Vec<_>>();
     match command.as_str() {
         "acceptance" => crate::acceptance::command(&rest),
+        "release-portable-archive" if rest.len() == 2 => {
+            release::archive_portable(Path::new(&rest[0]), Path::new(&rest[1]))
+        }
+        "release-stage-inventory" => release::signing_inventory(&one_path(&rest)?),
+        "release-update-feed" => release::update_feed(root, &rest),
         "release" => release_signing::run(root, &rest),
         "product-sign" => {
             if rest.len() != 2 {
@@ -465,7 +315,12 @@ pub fn run(root: &Path, mut args: impl Iterator<Item = OsString>) -> Result<()> 
             }
             let deadline = Instant::now() + Duration::from_secs(45);
             let subject = if std::env::var("GITHUB_EVENT_NAME").as_deref() == Ok("pull_request") {
-                Some(codeql_pr_source(root, &repository, &sha, deadline)?)
+                Some(codeql_source::codeql_pr_source(
+                    root,
+                    &repository,
+                    &sha,
+                    deadline,
+                )?)
             } else {
                 None
             };
@@ -474,9 +329,9 @@ pub fn run(root: &Path, mut args: impl Iterator<Item = OsString>) -> Result<()> 
                 .and_then(|subject| subject["analysis_commit"].as_str())
                 .unwrap_or(&sha);
             if let Some(subject) = &subject {
-                retain_codeql_subject(subject, None)?;
+                codeql_source::retain_codeql_subject(subject, None)?;
             }
-            let output = codeql_output(
+            let output = codeql_source::codeql_output(
                 Command::new("gh").args([
                     "api",
                     "--hostname",
@@ -492,7 +347,7 @@ pub fn run(root: &Path, mut args: impl Iterator<Item = OsString>) -> Result<()> 
             )?;
             let check = evidence::codeql(&decode(&output)?, analysis_sha)?;
             if let Some(subject) = &subject {
-                retain_codeql_subject(subject, Some(check))?;
+                codeql_source::retain_codeql_subject(subject, Some(check))?;
             }
             println!(
                 "Independent CodeQL verdict verified check={check} build_sha={sha} analysis_sha={analysis_sha}"

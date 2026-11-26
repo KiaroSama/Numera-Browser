@@ -1,5 +1,5 @@
 name: Install native packaging tools
-description: Install the checksum-pinned upstream Rust tools for Linux and Windows x86-64.
+description: Install the checksum-pinned upstream Rust tools for 64-bit Linux and Windows.
 runs:
   using: composite
   steps:
@@ -7,21 +7,32 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
-        test "$RUNNER_ARCH" = X64
         directory="$RUNNER_TEMP/numera-packaging-tools"
         mkdir -p "$directory/bin"
 
-        case "$RUNNER_OS" in
-          Linux)
+        case "$RUNNER_OS/$RUNNER_ARCH" in
+          Linux/X64)
             tauri_archive=cargo-tauri-x86_64-unknown-linux-gnu.tgz
             tauri_sha=79f9596308f74e41753d1d30688a3f41914187b1bc7eea5dbd20cc0cd6acd640
             bindgen_target=x86_64-unknown-linux-musl
             bindgen_sha=82d12bb940e2d4e72e0d5605387fc1b8ca179044e012b620f0ce4e7440e8320e
             suffix=
             ;;
-          Windows)
+          Linux/ARM64)
+            tauri_archive=cargo-tauri-aarch64-unknown-linux-gnu.tgz
+            tauri_sha=1dacce76a0358e5180791007535cb199e4212ff0cff9b88f5d6070cb91066c12
+            bindgen_target=aarch64-unknown-linux-musl
+            bindgen_sha=2ed4351c35dd9440308bbb02767d47ea278efe851a52465300f3c94f5b6c2a87
+            suffix=
+            ;;
+          Windows/X64|Windows/ARM64)
             tauri_archive=cargo-tauri-x86_64-pc-windows-msvc.zip
             tauri_sha=ff7bb69eb0e102eb84825fd7e3e73a6ee9ca23826c405c781ee727081472246d
+            if [[ "$RUNNER_ARCH" == ARM64 ]]; then
+              tauri_archive=cargo-tauri-aarch64-pc-windows-msvc.zip
+              tauri_sha=5c77e018ca82a570bcc1909244325495e678bcc19e0052ce59420de965ec46a6
+            fi
+            # wasm-bindgen v0.2.129 ships only the x64 Windows CLI; it runs under emulation.
             bindgen_target=x86_64-pc-windows-msvc
             bindgen_sha=79e348c169d0c10c0b287647f1e753d0985353ca96800bc29be8f4261baf13e6
             suffix=.exe

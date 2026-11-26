@@ -34,6 +34,22 @@ fn now() -> f64 {
     }
 }
 
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum MacAddressMode {
+    #[default]
+    Off,
+    Manual,
+    Generate,
+    Noise,
+}
+
+impl MacAddressMode {
+    pub fn is_off(&self) -> bool {
+        *self == Self::Off
+    }
+}
+
 /// Persisted identity. Unknown storage fields are ignored, not rejected as writes.
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Fingerprint {
@@ -87,6 +103,12 @@ pub struct Fingerprint {
     pub os_version: String,
     #[serde(default)]
     pub device_model: String,
+    #[serde(default, skip_serializing_if = "MacAddressMode::is_off")]
+    pub mac_address_mode: MacAddressMode,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mac_address: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub device_name: Option<String>,
     #[serde(default)]
     pub max_touch_points: i64,
     #[serde(default = "one_float")]

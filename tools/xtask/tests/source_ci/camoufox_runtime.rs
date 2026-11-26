@@ -372,11 +372,20 @@ source_test!(
                     .contains("ci owned --wall 600 --idle 570 -- cargo xtask ci camoufox-runtime")
             );
         }
-        workflow::step_once(
+        let acceptance_idx = workflow::step_once(
             &job["steps"],
             "./.github/actions/native-candidate-acceptance",
-            true,
+            false,
         )?;
+        if let Some(cond) = job["steps"][acceptance_idx]
+            .get("if")
+            .and_then(|v| v.as_str())
+        {
+            assert!(
+                cond.contains("matrix.engine != 'cloak'"),
+                "Acceptance condition must never skip Camoufox/Playwright/Patchright: {cond}"
+            );
+        }
         let evidence = job["steps"]
             .as_array()
             .ok_or("Live steps missing")?

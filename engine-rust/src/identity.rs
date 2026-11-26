@@ -124,10 +124,46 @@ pub fn webgl_plausible(os: &str, vendor: &str, renderer: &str) -> Result<bool, s
     })
 }
 
+pub(crate) fn profile_mac_address(fp: &Fingerprint) -> Option<String> {
+    use crate::models::MacAddressMode;
+    match fp.mac_address_mode {
+        MacAddressMode::Off => None,
+        MacAddressMode::Manual => fp
+            .mac_address
+            .as_deref()
+            .filter(|value| crate::validation::valid_mac_address(value))
+            .map(str::to_owned),
+        MacAddressMode::Generate => Some(crate::fingerprint::local_mac_address(
+            &fp.seed.to_string(),
+            "mac-generate",
+        )),
+        MacAddressMode::Noise => Some(crate::fingerprint::local_mac_address(
+            &fp.seed.to_string(),
+            "mac-noise",
+        )),
+    }
+}
+
 pub fn validate(fp: &Fingerprint) -> Result<Vec<String>, serde_json::Error> {
     let root = catalog()?;
     let d = &root["catalog"];
     let mut issues = Vec::new();
+    if fp
+        .mac_address
+        .as_deref()
+        .is_some_and(|value| !crate::validation::valid_mac_address(value))
+        || (fp.mac_address_mode == crate::models::MacAddressMode::Manual
+            && fp.mac_address.is_none())
+    {
+        issues.push("invalid MAC address".into());
+    }
+    if fp
+        .device_name
+        .as_deref()
+        .is_some_and(|value| !crate::validation::valid_device_name(value))
+    {
+        issues.push("invalid device name".into());
+    }
     if d["NAV_PLATFORM"][&fp.os] != fp.platform {
         issues.push(format!(
             "platform '{}' does not match os '{}'",

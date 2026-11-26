@@ -330,13 +330,38 @@ pub fn to_engine(d: &Value, now: f64) -> Result<Profile, ConversionError> {
     let ratio = finite_number(&d["devicePixelRatio"])
         .filter(|value| *value != 0.0)
         .map_or_else(|| c["PIXEL_RATIOS"][os][0].clone(), |value| json!(value));
-    let fp=Fingerprint::from_record(&json!({"os":os,"user_agent":ua,"platform":c["NAV_PLATFORM"][os],"ch_platform":c["CH_PLATFORM"][os],"chrome_version":chrome,
+    let mut fp = Fingerprint::from_record(&json!({"os":os,"user_agent":ua,"platform":c["NAV_PLATFORM"][os],"ch_platform":c["CH_PLATFORM"][os],"chrome_version":chrome,
         "screen_width":sw,"screen_height":sh,"viewport_width":sw,"viewport_height":(sh-if os=="ios"{113}else if mobile{80}else{88}).max(1),
         "hardware_concurrency":number(&d["cores"],8.0,true),"device_memory":if os=="ios"{json!(0)}else{number(&d["memory"],16.0,false)},
         "fonts":fonts,"cameras":number(&d["mediaVideo"],1.0,true),"microphones":number(&d["mediaAudio"],1.0,true),"speakers":number(&d["mediaSpeakers"],1.0,true),
         "webrtc":mode("webrtc","altered"),"canvas":mode("canvas","noise"),"audio":mode("audio","noise"),"client_rects":mode("clientRects","noise"),"webgl_image":mode("webglImage","noise"),"media_mode":mode("mediaDevices","masked"),"font_mode":mode("fonts","masked"),"geolocation":mode("geo","prompt"),"do_not_track":truth(&d["dnt"]),
         "webgl_vendor":vendor,"webgl_renderer":renderer,"locale":locale,"timezone":if truth(&d["timezone"]){d["timezone"].clone()}else{language[0].clone()},"languages":language[1],"is_mobile":mobile,"os_version":version,"device_model":model,"max_touch_points":number(&d["maxTouchPoints"],c["TOUCH_POINTS"][os][0].as_f64().unwrap_or(0.0),true),
         "device_pixel_ratio":ratio,"seed":seed})).map_err(|_|ConversionError("Converted fingerprint is invalid".into()))?;
+    if let Some(raw_mode) = d.get("mac_address_mode").and_then(Value::as_str) {
+        fp.mac_address_mode = match trim(raw_mode).to_ascii_lowercase().as_str() {
+            "" | "off" => crate::models::MacAddressMode::Off,
+            "manual" => crate::models::MacAddressMode::Manual,
+            "generate" => crate::models::MacAddressMode::Generate,
+            "noise" => crate::models::MacAddressMode::Noise,
+            other => {
+                return Err(ConversionError(format!(
+                    "unsupported mac_address_mode '{other}'"
+                )));
+            }
+        };
+    }
+    if let Some(raw_mac) = d.get("mac_address").and_then(Value::as_str) {
+        let mac = trim(raw_mac).to_ascii_uppercase();
+        if !mac.is_empty() {
+            fp.mac_address = Some(mac);
+        }
+    }
+    if let Some(raw_dev) = d.get("device_name").and_then(Value::as_str) {
+        let dev = trim(raw_dev);
+        if !dev.is_empty() {
+            fp.device_name = Some(dev.to_owned());
+        }
+    }
     let px = &d["proxy"];
     let proxy = if px.is_object() && truth(&px["host"]) {
         let kind = text(&px["type"], "HTTP").to_uppercase();
@@ -448,6 +473,18 @@ pub fn to_dashboard(profile: &Profile) -> Value {
             if let Value::Object(fields) = block {
                 object.extend(fields);
             }
+        }
+        if !fp.mac_address_mode.is_off() {
+            object.insert(
+                "mac_address_mode".into(),
+                serde_json::to_value(fp.mac_address_mode).unwrap_or(Value::Null),
+            );
+        }
+        if let Some(mac) = &fp.mac_address {
+            object.insert("mac_address".into(), mac.clone().into());
+        }
+        if let Some(device_name) = &fp.device_name {
+            object.insert("device_name".into(), device_name.clone().into());
         }
     }
     output

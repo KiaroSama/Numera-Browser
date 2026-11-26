@@ -127,7 +127,7 @@ source_test!(
             }
             for spec in properties.values() {
                 assert!(
-                    ["string", "boolean", "integer", "number", "array"]
+                    ["string", "boolean", "integer", "number", "array", "object"]
                         .contains(&spec["type"].as_str().expect("type"))
                 );
             }
@@ -152,7 +152,7 @@ source_test!(
         assert_eq!(by_name["show"]["inputSchema"]["required"], json!(["ref"]));
         assert_eq!(
             by_name["cookies_export"]["inputSchema"]["required"],
-            json!(["ref", "file"])
+            json!(["ref"])
         );
         assert_eq!(
             by_name["default_engine"]["inputSchema"]["required"],

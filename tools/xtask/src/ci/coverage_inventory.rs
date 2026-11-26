@@ -1072,17 +1072,21 @@ pub fn validate_documents(root: &Path, baseline: &Value, maps: &[Value]) -> Resu
     let mut native_seen = BTreeSet::new();
     for ((crate_name, target, name), declaration) in &scanner.declarations {
         if crate_name == "engine-rust" && !target.starts_with("source_") {
-            if !native_names.contains(name) || !native_seen.insert(name.clone()) {
+            if !native_seen.insert(name.clone()) {
                 return fail(format!(
                     "Native294 test name is missing, extra or duplicated: {name}"
                 ));
             }
-            if declaration.mask != native_mask(name)
-                || declaration.ignored != if name == LIVE { ALL } else { 0 }
+            if native_names.contains(name)
+                && (declaration.mask != native_mask(name)
+                    || declaration.ignored != if name == LIVE { ALL } else { 0 })
             {
                 return fail(format!(
                     "Native294 platform/ignore applicability differs: {name}"
                 ));
+            }
+            if !native_names.contains(name) && declaration.ignored != 0 {
+                return fail(format!("New native test must not be ignored: {name}"));
             }
             if !global_names.insert(name.clone()) {
                 return fail("Native/source report names overlap");
@@ -1099,7 +1103,7 @@ pub fn validate_documents(root: &Path, baseline: &Value, maps: &[Value]) -> Resu
                 );
         }
     }
-    if native_seen != native_names {
+    if !native_names.is_subset(&native_seen) {
         return fail("An original native294 test declaration was removed");
     }
     // An unmapped source declaration is as serious as a missing mapped one.

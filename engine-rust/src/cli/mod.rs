@@ -4,6 +4,7 @@ mod administration;
 pub mod align_commands;
 pub mod application;
 pub mod attach_commands;
+mod automation_commands;
 pub mod automation_output;
 mod browser;
 mod bulk_commands;
@@ -70,10 +71,45 @@ pub fn registry() -> Command {
     for command in browser::commands() {
         root = root.subcommand(command);
     }
-    for command in administration::commands() {
+    for command in administration::commands()
+        .into_iter()
+        .chain(automation_commands::commands())
+    {
         root = root.subcommand(command);
     }
-    root
+    attach_examples(root, &[])
+}
+
+fn attach_examples(command: Command, prefix: &[String]) -> Command {
+    let name = command.get_name().to_owned();
+    let mut path = prefix.to_vec();
+    if !prefix.is_empty() || name != "numera" {
+        path.push(name);
+    }
+    if command.has_subcommands() {
+        command.mut_subcommands(|sub| attach_examples(sub, &path))
+    } else if command.get_after_help().is_some() || path.is_empty() {
+        command
+    } else {
+        let mut example = format!("Example: numera-engine {}", path.join(" "));
+        for arg in command.get_arguments() {
+            if !arg.is_required_set() {
+                continue;
+            }
+            if arg.is_positional() {
+                example.push_str(&format!(" <{}>", arg.get_id()));
+            } else if let Some(long) = arg.get_long() {
+                example.push_str(&format!(" --{long} <value>"));
+            }
+        }
+        if command
+            .get_arguments()
+            .any(|arg| arg.get_long() == Some("json"))
+        {
+            example.push_str(" --json");
+        }
+        command.after_help(example)
+    }
 }
 
 pub fn parse<I, T>(arguments: I) -> Result<clap::ArgMatches, clap::Error>

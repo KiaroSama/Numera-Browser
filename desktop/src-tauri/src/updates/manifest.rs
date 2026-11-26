@@ -85,6 +85,8 @@ pub struct Build {
     pub platform: String,
     pub minimum_protocol: u32,
     pub components: Value,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub bundled_browsers: Option<bool>,
     pub files: Vec<InstalledFile>,
 }
 pub fn error(message: &str) -> io::Error {
@@ -173,7 +175,14 @@ pub(super) fn authenticated_manifest(
     let mut platforms = BTreeSet::new();
     for asset in &value.assets {
         if !platforms.insert(&asset.platform)
-            || !["windows-x64", "linux-x64", "macos-arm64"].contains(&asset.platform.as_str())
+            || ![
+                "windows-x64",
+                "windows-arm64",
+                "linux-x64",
+                "linux-arm64",
+                "macos-arm64",
+            ]
+            .contains(&asset.platform.as_str())
             || asset.name.is_empty()
             || !asset.name.starts_with("numera-")
             || !asset
@@ -279,7 +288,7 @@ pub fn signed_build(
             return Err(error("Inventory includes its own signature"));
         }
     }
-    if !paths.contains(if platform == "windows-x64" {
+    if !paths.contains(if platform.starts_with("windows-") {
         "numera.exe"
     } else {
         "numera"
@@ -341,6 +350,10 @@ pub fn safe_path(text: &str) -> io::Result<()> {
         "user-data",
         "profiles",
         "dashboard",
+        "extensions",
+        "settings",
+        "settings.json",
+        "update-preferences.json",
         "vault",
         ".updates",
         ".git",
@@ -384,7 +397,9 @@ pub fn safe_link(path: &str, link: &str) -> io::Result<()> {
 pub fn platform() -> io::Result<&'static str> {
     match (std::env::consts::OS, std::env::consts::ARCH) {
         ("windows", "x86_64") => Ok("windows-x64"),
+        ("windows", "aarch64") => Ok("windows-arm64"),
         ("linux", "x86_64") => Ok("linux-x64"),
+        ("linux", "aarch64") => Ok("linux-arm64"),
         ("macos", "aarch64") => Ok("macos-arm64"),
         _ => Err(error("This platform has no signed portable update")),
     }

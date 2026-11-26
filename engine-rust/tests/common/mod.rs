@@ -65,6 +65,7 @@ impl TempDirectory {
     pub fn path(&self) -> &Path {
         &self.path
     }
+    #[allow(dead_code)]
     pub fn cleanup(mut self) -> io::Result<()> {
         fs::remove_dir_all(&self.path)?;
         self.removed = true;

@@ -68,12 +68,17 @@ pub fn render(
                 }
             }
         }
+        "export" if payload["content"].is_string() => {
+            if let Some(content) = payload["content"].as_str() {
+                output.say(content, None)?;
+            }
+        }
         "export" => {
             let text = output.style(
                 &format!(
                     "Exported {} cookie(s) to {}  ",
                     value_text(&payload["count"]),
-                    value_text(&args["file"])
+                    value_text(&payload["file"])
                 ),
                 Tone::Green,
             );

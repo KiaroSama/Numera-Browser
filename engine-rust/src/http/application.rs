@@ -180,8 +180,21 @@ pub async fn router_with_recovery(
     })
     .await
     .map_err(|_| io::Error::other("Authentication startup task failed"))??;
+    let profiles = Arc::new(profile_routes::Profiles {
+        dashboard: crate::storage::dashboard::DashboardStore::new(root.clone(), password.clone()),
+        engine: crate::storage::repo::ProfileRepo::new(root.clone(), password.clone()),
+        root: root.clone(),
+        host: host.into(),
+        installed: installed.clone(),
+        sessions: sessions.clone(),
+        browser: browser.clone(),
+    });
     let routes = diagnostics::routes(auth.clone())
         .merge(super::documentation::routes())
+        .merge(super::server::mcp_routes(profiles.clone()))
+        .merge(super::cookie_routes::routes(profiles.clone()))
+        .merge(super::automation_routes::routes(profiles.clone()))
+        .merge(super::workflow_routes::routes(profiles))
         .merge(token_routes::routes(root.clone(), environment))
         .merge(folder_routes::routes(root.clone()))
         .merge(fingerprint_routes::routes())

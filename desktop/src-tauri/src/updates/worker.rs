@@ -214,6 +214,15 @@ pub fn run(path: &Path) -> io::Result<()> {
     transaction::commit_floor(&journal.root, next.generation)?;
     journal.phase = "complete".into();
     journal.save()?;
+    if journal.clean_old {
+        match super::cleanup::prune(&journal.root, &journal.data_root) {
+            Ok(bytes) => log.event("INFO", &format!("Old update cache removed bytes={bytes}")),
+            Err(error) => log.event(
+                "WARNING",
+                &format!("Old update cache retained kind={:?}", error.kind()),
+            ),
+        }
+    }
     log.event("INFO", "Generation activated and readiness verified");
     Ok(())
 }

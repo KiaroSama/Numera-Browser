@@ -18,6 +18,8 @@ use std::{
 #[path = "../../test-support/cargo_artifacts.rs"]
 mod cargo_artifacts;
 
+type TestResult = Result<()>;
+
 macro_rules! source_test {($name:ident,$id:literal,$body:block)=>{#[test]#[doc=$id]fn $name()->Result<()> $body};}
 struct Temp {
     path: PathBuf,

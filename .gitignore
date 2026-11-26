@@ -83,5 +83,7 @@ node_modules/
 
 /plans/
 /scripts/logs/
+/bin/
+**/target/
 /engine-rust/target/
 /tools/xtask/target/

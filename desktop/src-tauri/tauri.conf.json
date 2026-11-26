@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Numera Browser",
-  "version": "0.36.0",
+  "version": "0.37.0",
   "identifier": "com.numera.desktop",
   "build": {
     "frontendDist": "../../dashboard/dist"
@@ -26,7 +26,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": ["msi"],
     "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.png", "icons/icon.ico"],
     "publisher": "KiaroSama",
     "copyright": "KiaroSama",

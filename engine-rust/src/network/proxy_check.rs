@@ -73,17 +73,129 @@ fn decode(bytes: &[u8]) -> Option<Value> {
     if !truth(&ip) {
         return None;
     }
-    Some(
-        json!({"ok":true,"ip":ip,"country":choose(&["country_code", "country", "countryCode"]),"city":object.get("city").unwrap_or(&Value::Null)}),
-    )
+    let mut result = json!({"ok":true,"ip":ip,"country":choose(&["country_code", "country", "countryCode"]),"city":object.get("city").unwrap_or(&Value::Null)});
+    if let Some(name) = ["country_name", "countryName", "country"]
+        .into_iter()
+        .filter_map(|key| object.get(key).and_then(Value::as_str))
+        .find(|name| name.len() > 2)
+    {
+        result["country_name"] = name.into();
+    }
+    Some(result)
+}
+
+fn country_code(value: &str) -> Option<String> {
+    const ISO: &str = concat!(
+        "AD AE AF AG AI AL AM AO AQ AR AS AT AU AW AX AZ BA BB BD BE BF BG BH BI BJ BL BM BN BO BQ BR BS BT BV BW BY BZ ",
+        "CA CC CD CF CG CH CI CK CL CM CN CO CR CU CV CW CX CY CZ DE DJ DK DM DO DZ EC EE EG EH ER ES ET FI FJ FK FM FO FR ",
+        "GA GB GD GE GF GG GH GI GL GM GN GP GQ GR GS GT GU GW GY HK HM HN HR HT HU ID IE IL IM IN IO IQ IR IS IT ",
+        "JE JM JO JP KE KG KH KI KM KN KP KR KW KY KZ LA LB LC LI LK LR LS LT LU LV LY MA MC MD ME MF MG MH MK ML MM MN MO ",
+        "MP MQ MR MS MT MU MV MW MX MY MZ NA NC NE NF NG NI NL NO NP NR NU NZ OM PA PE PF PG PH PK PL PM PN PR PS PT PW PY ",
+        "QA RE RO RS RU RW SA SB SC SD SE SG SH SI SJ SK SL SM SN SO SR SS ST SV SX SY SZ TC TD TF TG TH TJ TK TL TM TN TO ",
+        "TR TT TV TW TZ UA UG UM US UY UZ VA VC VG VI VN VU WF WS YE YT ZA ZM ZW"
+    );
+    if value.len() != 2 || !value.bytes().all(|byte| byte.is_ascii_alphabetic()) {
+        return None;
+    }
+    let code = value.to_ascii_uppercase();
+    ISO.split_ascii_whitespace()
+        .any(|item| item == code)
+        .then_some(code)
+}
+
+fn fallback_country_name(code: &str) -> Option<&'static str> {
+    Some(match code {
+        "AR" => "Argentina",
+        "AT" => "Austria",
+        "AU" => "Australia",
+        "BE" => "Belgium",
+        "BR" => "Brazil",
+        "CA" => "Canada",
+        "CH" => "Switzerland",
+        "CN" => "China",
+        "DE" => "Germany",
+        "DK" => "Denmark",
+        "ES" => "Spain",
+        "FI" => "Finland",
+        "FR" => "France",
+        "GB" => "United Kingdom",
+        "HK" => "Hong Kong",
+        "IE" => "Ireland",
+        "IN" => "India",
+        "IT" => "Italy",
+        "JP" => "Japan",
+        "KR" => "South Korea",
+        "MX" => "Mexico",
+        "NL" => "Netherlands",
+        "NO" => "Norway",
+        "NZ" => "New Zealand",
+        "PL" => "Poland",
+        "PT" => "Portugal",
+        "SE" => "Sweden",
+        "SG" => "Singapore",
+        "TW" => "Taiwan",
+        "UA" => "Ukraine",
+        "US" => "United States",
+        "ZA" => "South Africa",
+        _ => return None,
+    })
+}
+
+#[cfg(test)]
+#[test]
+fn fills_missing_country_names_without_overwriting_upstream_names() {
+    for (code, name) in [
+        ("us", "United States"),
+        ("DE", "Germany"),
+        ("NL", "Netherlands"),
+        ("JP", "Japan"),
+        ("SG", "Singapore"),
+    ] {
+        let result = with_country_metadata(json!({"country": code, "country_name": null}));
+        assert_eq!(result["country_name"], name);
+    }
+    let result = with_country_metadata(
+        json!({"country": "GB", "country_name": "United Kingdom of Great Britain and Northern Ireland"}),
+    );
+    assert_eq!(
+        result["country_name"],
+        "United Kingdom of Great Britain and Northern Ireland"
+    );
+    let result = with_country_metadata(json!({"country": "AQ"}));
+    assert!(result["country_name"].is_null());
+    assert_ne!(result["country_flag"], "--");
+}
+
+pub(crate) fn with_country_metadata(mut result: Value) -> Value {
+    let code = ["country_code", "country"]
+        .into_iter()
+        .filter_map(|key| result[key].as_str())
+        .find_map(country_code);
+    let flag: String = code.as_ref().map_or_else(
+        || "--".into(),
+        |code| {
+            code.bytes()
+                .filter_map(|byte| char::from_u32(0x1F1E6 + u32::from(byte - b'A')))
+                .collect()
+        },
+    );
+    if let Some(object) = result.as_object_mut() {
+        let name = object.entry("country_name").or_insert(Value::Null);
+        if !name.as_str().is_some_and(|name| !name.trim().is_empty()) {
+            *name = json!(code.as_deref().and_then(fallback_country_name));
+        }
+        object.insert("country_code".into(), json!(code));
+        object.insert("country_flag".into(), json!(flag));
+    }
+    result
 }
 
 pub async fn check(proxy: &Value, budget: Duration) -> Value {
     #[cfg(feature = "test-support")]
     if let Some(result) = testing::replacement(proxy) {
-        return result;
+        return with_country_metadata(result);
     }
-    check_at(proxy, budget, &ECHO).await
+    with_country_metadata(check_at(proxy, budget, &ECHO).await)
 }
 
 pub(crate) async fn check_at(proxy: &Value, budget: Duration, endpoints: &[&str]) -> Value {
@@ -180,7 +292,7 @@ async fn check_client(
     json!({"ok":false,"error":last.filter(|error| !error.is_empty()).unwrap_or_else(|| "no IP service answered".into())})
 }
 
-fn profile_entry(proxy: &crate::proxy::Proxy) -> io::Result<Value> {
+pub(crate) fn profile_entry(proxy: &crate::proxy::Proxy) -> io::Result<Value> {
     let server = if proxy.server.contains("://") {
         proxy.server.clone()
     } else {
@@ -325,5 +437,23 @@ pub mod testing {
     }
     pub async fn check_at(proxy: &Value, budget: Duration, endpoints: &[&str]) -> Value {
         super::check_at(proxy, budget, endpoints).await
+    }
+}
+
+#[cfg(test)]
+#[test]
+fn flags_require_an_assigned_iso_code() {
+    for (input, code, flag) in [
+        (Some("us"), Some("US"), "\u{1F1FA}\u{1F1F8}"),
+        (Some("DE"), Some("DE"), "\u{1F1E9}\u{1F1EA}"),
+        (Some("NL"), Some("NL"), "\u{1F1F3}\u{1F1F1}"),
+        (Some("JP"), Some("JP"), "\u{1F1EF}\u{1F1F5}"),
+        (Some("ZZ"), None, "--"),
+        (Some("USA"), None, "--"),
+        (None, None, "--"),
+    ] {
+        let result = with_country_metadata(json!({"country":input}));
+        assert_eq!(result["country_code"].as_str(), code);
+        assert_eq!(result["country_flag"], flag);
     }
 }

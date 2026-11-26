@@ -20,9 +20,17 @@ pub struct Bridge {
     thread: Option<JoinHandle<()>>,
 }
 impl Bridge {
-    pub fn start(service: Arc<Service>, engine_port: u16) -> io::Result<Self> {
+    pub fn listen() -> io::Result<TcpListener> {
         let listener = TcpListener::bind(("127.0.0.1", 0))?;
         listener.set_nonblocking(true)?;
+        Ok(listener)
+    }
+
+    pub fn start(
+        service: Arc<Service>,
+        engine_port: u16,
+        listener: TcpListener,
+    ) -> io::Result<Self> {
         let endpoint = format!("http://127.0.0.1:{}", listener.local_addr()?.port());
         let origin = format!("http://127.0.0.1:{engine_port}");
         let token = files::nonce()?;
@@ -46,8 +54,8 @@ impl Bridge {
                 if readiness.load(Ordering::Acquire)
                     && last_check
                         .is_none_or(|checked| checked.elapsed() >= Duration::from_secs(86400))
+                    && service.auto_check().is_ok()
                 {
-                    let _ = service.check();
                     last_check = Some(std::time::Instant::now());
                 }
                 thread::park_timeout(Duration::from_millis(25));
@@ -145,27 +153,46 @@ fn answer(
             return Err(io::Error::other("Duplicate updater bridge header"));
         }
     }
-    if seen.get("origin").map(String::as_str) != Some(origin) {
-        return response(
-            stream,
-            403,
-            None,
-            &json!({"error":"Untrusted update origin"}),
-        );
-    }
-    if method == "OPTIONS" {
-        return response(stream, 204, Some(origin), &json!({}));
-    }
-    if !seen
-        .get("authorization")
-        .is_some_and(|value| equal(value, &format!("Bearer {token}")))
-    {
-        return response(
-            stream,
-            403,
-            Some(origin),
-            &json!({"error":"Untrusted update caller"}),
-        );
+    let from_engine = matches!(
+        route.as_str(),
+        "/api/check" | "/api/apply" | "/api/approval"
+    );
+    if from_engine {
+        if seen.contains_key("origin")
+            || !seen
+                .get("authorization")
+                .is_some_and(|value| equal(value, &format!("Bearer {}", service.engine_token)))
+        {
+            return response(
+                stream,
+                403,
+                None,
+                &json!({"error":"Engine update capability required"}),
+            );
+        }
+    } else {
+        if seen.get("origin").map(String::as_str) != Some(origin) {
+            return response(
+                stream,
+                403,
+                None,
+                &json!({"error":"Untrusted update origin"}),
+            );
+        }
+        if method == "OPTIONS" {
+            return response(stream, 204, Some(origin), &json!({}));
+        }
+        if !seen
+            .get("authorization")
+            .is_some_and(|value| equal(value, &format!("Bearer {token}")))
+        {
+            return response(
+                stream,
+                403,
+                Some(origin),
+                &json!({"error":"Untrusted update caller"}),
+            );
+        }
     }
     let size = seen
         .get("content-length")
@@ -194,6 +221,69 @@ fn answer(
     };
     let id = payload["offerId"].as_str().unwrap_or("");
     let approve = payload["approve"] == true;
+    if from_engine {
+        return match (method.as_str(), route.as_str()) {
+            ("POST", "/api/approval") => {
+                let approved = payload["approval"]
+                    .as_str()
+                    .is_some_and(|approval| equal(approval, token));
+                response(
+                    stream,
+                    if approved { 200 } else { 403 },
+                    None,
+                    &json!({"approved":approved}),
+                )
+            }
+            ("POST", "/api/check") => {
+                let channel =
+                    serde_json::from_value::<super::channels::Channel>(payload["channel"].clone())
+                        .map_err(io::Error::other)?;
+                if payload["refresh"] == true
+                    && !matches!(
+                        service.status().state.as_str(),
+                        "checking" | "ready" | "deferred" | "activating"
+                    )
+                {
+                    let _ = service.check();
+                }
+                response(stream, 200, None, &service.channel_view(channel)?)
+            }
+            ("POST", "/api/apply") => {
+                let channel =
+                    serde_json::from_value::<super::channels::Channel>(payload["channel"].clone())
+                        .map_err(io::Error::other)?;
+                let clean_old = payload["clean_old"]
+                    .as_bool()
+                    .ok_or_else(|| io::Error::other("Missing cleanup preference"))?;
+                let approved = payload["approval"]
+                    .as_str()
+                    .is_some_and(|approval| equal(approval, token));
+                let (code, message) = if !approved {
+                    (
+                        403,
+                        "Approve installation from the local desktop to continue.".into(),
+                    )
+                } else {
+                    match service.queue_apply(channel, clean_old) {
+                        Ok(()) => (202, "Update queued. The desktop will verify the archive and restart only after it is safe to install.".into()),
+                        Err(error) => (409, error.to_string()),
+                    }
+                };
+                response(
+                    stream,
+                    code,
+                    None,
+                    &json!({"ok":code == 202,"channel":channel,"cleaned_bytes":0,"data_preserved":true,"message":message}),
+                )
+            }
+            _ => response(
+                stream,
+                405,
+                None,
+                &json!({"error":"Invalid engine update request"}),
+            ),
+        };
+    }
     let result = match (method.as_str(), route.as_str()) {
         ("GET", "/status") => Ok(()),
         ("POST", "/check") => service.check(),

@@ -1,63 +1,32 @@
 //! Real whole-command browser measurements with natural nested settlement.
 use super::{Result, fail};
-use numera_core::ownership::{
-    capture::Pipe, identity, recorded_tree, tree::OwnedTree, unit_report,
-};
+use numera_core::ownership::unit_report;
 use serde_json::{Value, json};
 use std::{
     collections::{BTreeMap, BTreeSet},
     fs,
     io::{self, Write},
     path::{Path, PathBuf},
-    process::{Command, Stdio},
+    process::Command,
     time::{Duration, Instant},
 };
+#[path = "browser_benchmark_contract.rs"]
+mod browser_benchmark_contract;
+#[path = "browser_observer.rs"]
+mod browser_observer;
+pub use browser_benchmark_contract::{workflow_history, workflow_measurement};
+pub use browser_observer::{
+    Native, Observer, Sample, failure_projection, linux_peak, registration, verdict,
+};
+#[path = "browser_benchmark_fixture.rs"]
+mod browser_benchmark_fixture;
+pub use browser_benchmark_fixture::{
+    Baseline, baseline, fixture_expiry, require_cookie_persistence,
+};
+pub(super) fn hosted_diagnostic() -> bool {
+    std::env::var("NUMERA_HOSTED_PERFORMANCE_DIAGNOSTIC").as_deref() == Ok("1")
+}
 pub const SENTINEL: &[u8] = b"\0\xffretained session\r\n";
-pub fn linux_peak(platform: &str, rss_kib: &Value) -> Result<Value> {
-    if platform != "linux" {
-        return fail("Lifetime child RSS requires Linux");
-    }
-    let bytes = rss_kib
-        .as_u64()
-        .filter(|v| *v > 0)
-        .and_then(|v| v.checked_mul(1024))
-        .ok_or("Linux lifetime RSS must be a positive integer")?;
-    Ok(json!({"metric":"peak-child-rss-bytes","bytes":bytes}))
-}
-#[derive(Clone, Debug)]
-pub struct Sample {
-    pub elapsed_ns: u64,
-    pub metric: String,
-    pub bytes: u64,
-    pub payload: Value,
-    pub diagnostics: Option<Value>,
-}
-impl Sample {
-    pub fn summary(&self) -> Value {
-        json!({"elapsed_ns":self.elapsed_ns,"memory":{"metric":self.metric,"bytes":self.bytes}})
-    }
-}
-pub trait Observer {
-    fn register(&mut self) -> Result<()>;
-    fn register_before(&mut self, _deadline: u64) -> Result<()> {
-        self.register()
-    }
-    fn ticks(&mut self) -> u64;
-    fn spawn(&mut self) -> Result<()>;
-    fn owned(&self) -> bool {
-        true
-    }
-    fn communicate(&mut self, deadline: u64) -> Result<Value>;
-    fn natural(&mut self, deadline: u64) -> Result<bool>;
-    fn pause(&mut self) -> Result<()>;
-    fn peak(&mut self) -> Result<(String, u64)>;
-    fn diagnostic(&mut self) -> Result<Option<Value>> {
-        Ok(None)
-    }
-    fn cleanup(&mut self) -> Result<()>;
-    fn reap(&mut self) -> Result<()>;
-    fn close(&mut self) -> Result<()>;
-}
 pub fn observe(host: &mut impl Observer, wall: Duration) -> Result<Sample> {
     let deadline = host
         .ticks()
@@ -122,364 +91,7 @@ pub fn observe(host: &mut impl Observer, wall: Duration) -> Result<Sample> {
     result
 }
 pub fn positive_samples(value: &Value) -> Result<Vec<u64>> {
-    value
-        .as_array()
-        .filter(|v| !v.is_empty())
-        .ok_or("Benchmark samples must be positive integers")?
-        .iter()
-        .map(|v| {
-            v.as_u64().filter(|v| *v > 0).ok_or_else(|| {
-                io::Error::other("Benchmark samples must be positive integers").into()
-            })
-        })
-        .collect()
-}
-pub fn verdict(native: &Value, reference: &Value) -> Result<&'static str> {
-    let n = positive_samples(native)?;
-    let r = positive_samples(reference)?;
-    Ok(if n.iter().max() < r.iter().min() {
-        "no-regression"
-    } else if n.iter().min() > r.iter().max() {
-        "regression"
-    } else {
-        "inconclusive"
-    })
-}
-pub fn failure_projection(stderr: &str) -> String {
-    let pattern=regex::Regex::new(r"^\[[^\r\n]+ UTC\] \[ERROR\] \[numera\.migration-benchmark-sample\] Observation failed phase=(spawn|capture|receipt|settle|memory|reap|close) type=(OSError|ValueError|RuntimeError|TimeoutError|NativeSdkError) winerror=(None|[0-9]{1,10})$").expect("constant regex");
-    stderr
-        .lines()
-        .find_map(|line| {
-            pattern
-                .captures(line)
-                .map(|v| format!("phase={} type={} winerror={}", &v[1], &v[2], &v[3]))
-        })
-        .unwrap_or_else(|| "phase=unknown type=unknown winerror=None".into())
-}
-fn key(record: &Value) -> (u64, u64) {
-    (
-        record["pid"].as_u64().unwrap_or(0),
-        record["pidToken"]
-            .as_u64()
-            .or_else(|| record["token"].as_u64())
-            .unwrap_or(0),
-    )
-}
-pub fn registration(
-    pid: u32,
-    birth: u64,
-    command_deadline: u64,
-    mut ticks: impl FnMut() -> u64,
-    mut read: impl FnMut(u64) -> Result<unit_report::Report>,
-    mut pause: impl FnMut(Duration) -> Result<()>,
-    mut own_tree: impl FnMut(&Value) -> Result<bool>,
-) -> Result<BTreeSet<(u64, u64)>> {
-    let deadline = command_deadline.min(
-        ticks()
-            .checked_add(2_000_000_000)
-            .ok_or("Browser observer registration deadline overflow")?,
-    );
-    loop {
-        if ticks() >= deadline {
-            return fail("Browser observer receipt registration or birth identity missing");
-        }
-        let report = read(deadline)?;
-        let now = ticks();
-        if now >= deadline {
-            return fail("Browser observer receipt registration or birth identity missing");
-        }
-        if report.complete
-            && report
-                .trees
-                .iter()
-                .any(|record| record["pid"].as_u64() == Some(u64::from(pid)))
-        {
-            let mut matched = false;
-            for observer in report
-                .trees
-                .iter()
-                .filter(|record| key(record) == (u64::from(pid), birth))
-            {
-                if own_tree(observer)? {
-                    matched = true;
-                    break;
-                }
-            }
-            if !matched {
-                return fail("Browser observer ownership identity differs from its receipt");
-            }
-            if ticks() >= deadline {
-                return fail(
-                    "Browser observer registration exceeded its original command deadline",
-                );
-            }
-            return Ok(report.trees.iter().map(key).collect());
-        }
-        pause(Duration::from_nanos((deadline - now).min(10_000_000)))?;
-    }
-}
-pub struct Native {
-    command: Command,
-    report: PathBuf,
-    prior: BTreeSet<(u64, u64)>,
-    tree: Option<OwnedTree>,
-    pipes: [Option<Pipe>; 2],
-    started: Instant,
-    diagnostics: bool,
-    recorder: Option<super::memory::Recorder>,
-    payload: Option<Value>,
-}
-impl Native {
-    pub fn new(command: Command, report: PathBuf, diagnostics: bool) -> Result<Self> {
-        #[cfg(target_os = "linux")]
-        if numera_core::ownership::memory::child_peak_rss_bytes()? != 0 {
-            return fail("Browser sample requires a fresh isolated lifetime peak observer");
-        }
-        Ok(Self {
-            command,
-            report,
-            prior: BTreeSet::new(),
-            tree: None,
-            pipes: [None, None],
-            started: Instant::now(),
-            diagnostics,
-            recorder: None,
-            payload: None,
-        })
-    }
-    fn nested(&self) -> Result<Vec<Value>> {
-        let report = unit_report::read(&self.report)?;
-        if !report.complete {
-            return fail("Browser sample nested receipt is incomplete");
-        }
-        Ok(report
-            .trees
-            .into_iter()
-            .filter(|r| !self.prior.contains(&key(r)))
-            .collect())
-    }
-}
-impl Observer for Native {
-    fn owned(&self) -> bool {
-        self.tree.is_some()
-    }
-    fn register(&mut self) -> Result<()> {
-        let deadline = self
-            .ticks()
-            .checked_add(2_000_000_000)
-            .ok_or("Browser observer registration deadline overflow")?;
-        self.register_before(deadline)
-    }
-    fn register_before(&mut self, command_deadline: u64) -> Result<()> {
-        let deadline = command_deadline.min(
-            self.ticks()
-                .checked_add(2_000_000_000)
-                .ok_or("Browser observer registration deadline overflow")?,
-        );
-        let end = self
-            .started
-            .checked_add(Duration::from_nanos(deadline))
-            .ok_or("Browser observer registration deadline overflow")?;
-        unit_report::validate(&self.report)?;
-        let pid = u64::from(std::process::id());
-        let birth = identity::started_at(std::process::id())?
-            .ok_or("Browser observer birth identity missing")?;
-        let started = self.started;
-        let registration = registration(
-            pid as u32,
-            birth,
-            deadline,
-            || u64::try_from(started.elapsed().as_nanos()).unwrap_or(u64::MAX),
-            |_| Ok(unit_report::read_before(&self.report, end)?),
-            |duration| {
-                std::thread::sleep(duration);
-                Ok(())
-            },
-            |record| Ok(recorded_tree::current_record_matches(record)?),
-        );
-        match registration {
-            Ok(prior) => self.prior = prior,
-            Err(error) => {
-                let diagnostic = unit_report::diagnostic(&self.report, Duration::ZERO, None)
-                    .unwrap_or_else(
-                        |error| json!({"available":false,"query_error_code":error.raw_os_error()}),
-                    );
-                eprintln!(
-                    "Browser observer registration refusal {}",
-                    json!({"pid":pid,"birth":birth,"receipt":diagnostic})
-                );
-                return Err(error);
-            }
-        }
-        Ok(())
-    }
-    fn ticks(&mut self) -> u64 {
-        u64::try_from(self.started.elapsed().as_nanos()).unwrap_or(u64::MAX)
-    }
-    fn spawn(&mut self) -> Result<()> {
-        self.command
-            .stdin(Stdio::null())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped());
-        let mut tree = OwnedTree::spawn(&mut self.command)?;
-        self.pipes = [
-            tree.child_mut().stdout.take().map(Pipe::Out),
-            tree.child_mut().stderr.take().map(Pipe::Err),
-        ];
-        self.tree = Some(tree);
-        for pipe in self.pipes.iter().flatten() {
-            pipe.prepare()?;
-        }
-        if self.diagnostics {
-            let owner = super::memory::Owner::from_record(
-                &self.tree.as_ref().ok_or("Browser owner missing")?.record(),
-            )?;
-            self.recorder = Some(super::memory::Recorder::new(
-                owner,
-                Default::default(),
-                cfg!(windows),
-            ));
-        }
-        Ok(())
-    }
-    fn communicate(&mut self, deadline: u64) -> Result<Value> {
-        let mut output = [Vec::new(), Vec::new()];
-        let mut buf = [0; 8192];
-        let exit = loop {
-            let tree = self.tree.as_mut().ok_or("Browser owner missing")?;
-            let exit = tree.child_mut().try_wait()?;
-            if self.pipes.iter().all(Option::is_none)
-                && let Some(exit) = exit
-            {
-                break exit.code().unwrap_or(-1);
-            }
-            if self.started.elapsed().as_nanos() >= u128::from(deadline) {
-                return fail("Browser sample communication deadline exceeded");
-            }
-            let mut progress = false;
-            for (index, slot) in self.pipes.iter_mut().enumerate() {
-                let Some(pipe) = slot.as_mut() else { continue };
-                match pipe.available(&mut buf)? {
-                    Some(0) => {
-                        *slot = None;
-                        progress = true;
-                    }
-                    Some(count) => {
-                        if output[0].len() + output[1].len() + count > 131072 {
-                            return fail("Browser sample output bound exceeded");
-                        }
-                        output[index].extend_from_slice(&buf[..count]);
-                        progress = true;
-                    }
-                    None => {}
-                }
-            }
-            if let Some(recorder) = self.recorder.as_mut() {
-                recorder.sample_native(
-                    self.started.elapsed().as_secs_f64(),
-                    tree,
-                    Some(&self.report),
-                )?;
-            }
-            if !progress {
-                std::thread::sleep(Duration::from_millis(1));
-            }
-        };
-        if exit != 0 || !output[1].is_empty() {
-            return fail(format!(
-                "Browser sample observation failed exit={exit} {}",
-                failure_projection(&String::from_utf8_lossy(&output[1]))
-            ));
-        }
-        let value = super::decode(&output[0])?;
-        self.payload = Some(value.clone());
-        Ok(value)
-    }
-    fn natural(&mut self, _: u64) -> Result<bool> {
-        let direct = self.tree.as_mut().ok_or("Browser owner missing")?.empty()?;
-        let mut empty = direct;
-        for record in self.nested()? {
-            empty = recorded_tree::empty(&record)? && empty;
-        }
-        Ok(empty)
-    }
-    fn pause(&mut self) -> Result<()> {
-        std::thread::sleep(Duration::from_millis(1));
-        Ok(())
-    }
-    fn peak(&mut self) -> Result<(String, u64)> {
-        #[cfg(target_os = "linux")]
-        {
-            let peak = linux_peak(
-                "linux",
-                &json!(numera_core::ownership::memory::child_peak_rss_bytes()? / 1024),
-            )?;
-            Ok((
-                "peak-child-rss-bytes".into(),
-                peak["bytes"]
-                    .as_u64()
-                    .ok_or("Linux lifetime peak missing")?,
-            ))
-        }
-        #[cfg(windows)]
-        {
-            Ok((
-                "peak-job-committed-bytes".into(),
-                self.tree
-                    .as_ref()
-                    .ok_or("Browser owner missing")?
-                    .peak_job_memory()?,
-            ))
-        }
-        #[cfg(not(any(target_os = "linux", windows)))]
-        {
-            fail("Browser benchmark supports hosted Linux and Windows lifetime OS peaks")
-        }
-    }
-    fn diagnostic(&mut self) -> Result<Option<Value>> {
-        Ok(self.recorder.take().map(|r| r.result()))
-    }
-    fn cleanup(&mut self) -> Result<()> {
-        let direct = self
-            .tree
-            .as_mut()
-            .ok_or("Browser owner missing")?
-            .settle(Duration::from_secs(5));
-        let report = unit_report::read(&self.report)?;
-        let mut complete = report.complete;
-        for record in report
-            .trees
-            .iter()
-            .filter(|r| !self.prior.contains(&key(r)))
-        {
-            complete = recorded_tree::settle(record, Duration::from_secs(5))? && complete;
-        }
-        direct?;
-        if !complete {
-            return fail("Browser sample nested cleanup is incomplete");
-        }
-        Ok(())
-    }
-    fn reap(&mut self) -> Result<()> {
-        let end = Instant::now() + Duration::from_secs(5);
-        let tree = self.tree.as_mut().ok_or("Browser owner missing")?;
-        while tree.child_mut().try_wait()?.is_none() {
-            if Instant::now() >= end {
-                return fail("Browser sample leader reap exceeded deadline");
-            }
-            std::thread::sleep(Duration::from_millis(1));
-        }
-        Ok(())
-    }
-    fn close(&mut self) -> Result<()> {
-        self.pipes = [None, None];
-        if let Some(mut tree) = self.tree.take() {
-            drop(tree.child_mut().stdin.take());
-            drop(tree.child_mut().stdout.take());
-            drop(tree.child_mut().stderr.take());
-        }
-        Ok(())
-    }
+    browser_observer::positive_samples(value)
 }
 pub fn environment(
     parent: &BTreeMap<String, String>,
@@ -641,6 +253,17 @@ pub fn run_pairs(
     destination: &Path,
     engine: &str,
     baseline: &Value,
+    observe: impl FnMut(&str, &Path, i32, bool) -> Result<(Sample, Value)>,
+) -> Result<Value> {
+    run_pairs_with_policy(parent, destination, engine, baseline, false, observe)
+}
+
+pub fn run_pairs_with_policy(
+    parent: &Path,
+    destination: &Path,
+    engine: &str,
+    baseline: &Value,
+    diagnostic: bool,
     mut observe: impl FnMut(&str, &Path, i32, bool) -> Result<(Sample, Value)>,
 ) -> Result<Value> {
     fs::create_dir_all(parent)?;
@@ -693,7 +316,7 @@ pub fn run_pairs(
     };
     let time = verdict(&values("native", false), &values("reference", false))?;
     let memory = verdict(&values("native", true), &values("reference", true))?;
-    let report = json!({"schema":1,"comparison":"native-checkpoint-to-native-product","reference_source_sha":super::reference::SOURCE,"engine":engine,"repetitions":7,"warmup_pairs":1,"results":[{"scenario":"browser-cookie-export","time":time,"memory":memory,"latency_scope":"foreground command through natural SDK settlement","memory_scope":"lifetime OS peak; Linux largest waited child, not concurrent tree RSS","samples":samples}]});
+    let report = json!({"schema":1,"performance_policy":if diagnostic {"diagnostic"} else {"required"},"comparison":"native-checkpoint-to-native-product","reference_source_sha":super::reference::SOURCE,"engine":engine,"repetitions":7,"warmup_pairs":1,"results":[{"scenario":"browser-cookie-export","time":time,"memory":memory,"latency_scope":"foreground command through natural SDK settlement","memory_scope":"lifetime OS peak; Linux largest waited child, not concurrent tree RSS","samples":samples}]});
     if let Some(parent) = destination.parent() {
         fs::create_dir_all(parent)?;
     }
@@ -725,344 +348,15 @@ pub fn run_pairs(
             eprintln!("{event}");
         }
         diagnosis?;
-        return fail("Browser performance inconclusive or regression; input evidence retained");
+        if !diagnostic {
+            return fail("Browser performance inconclusive or regression; input evidence retained");
+        }
+        eprintln!("Browser performance comparison is diagnostic: time={time} memory={memory}");
     }
     fs::remove_dir_all(run)?;
     Ok(report)
 }
 
-pub struct Baseline {
-    pub root: PathBuf,
-    pub id: String,
-    pub payload: Value,
-}
-pub fn fixture_expiry(now: u64) -> Result<u64> {
-    // Chromium caps persistent cookies at400 days. Keep a single fixture
-    // deadline inside that range so the browser need not rewrite its value.
-    now.checked_add(30 * 24 * 60 * 60).ok_or_else(|| {
-        io::Error::other("Browser fixture expiry exceeds its timestamp bound").into()
-    })
-}
-/// Keep full, type-sensitive parity while reporting only bounded field/type
-/// metadata. Cookie names, values, domains and arbitrary vendor keys stay private.
-pub fn require_cookie_persistence(observed: &Value, expected: &Value) -> Result<()> {
-    if crate::acceptance::require_equal(observed, expected, "Native checkpoint cookie persistence")
-        .is_ok()
-    {
-        return Ok(());
-    }
-    fn kind(value: Option<&Value>) -> &'static str {
-        match value {
-            None => "missing",
-            Some(Value::Null) => "null",
-            Some(Value::Bool(_)) => "boolean",
-            Some(Value::String(_)) => "string",
-            Some(Value::Array(_)) => "array",
-            Some(Value::Object(_)) => "object",
-            Some(Value::Number(number)) if number.to_string().contains(['.', 'e', 'E']) => "float",
-            Some(Value::Number(_)) => "integer",
-        }
-    }
-    let (Some(actual), Some(wanted)) = (observed.as_array(), expected.as_array()) else {
-        return fail(format!(
-            "Native checkpoint cookie persistence differs expected={} actual={} (values redacted)",
-            kind(Some(expected)),
-            kind(Some(observed))
-        ));
-    };
-    let mut changes = Vec::new();
-    for index in 0..actual.len().max(wanted.len()).min(4) {
-        let (row, seed) = (actual.get(index), wanted.get(index));
-        if row == seed {
-            continue;
-        }
-        if kind(row) != kind(seed) {
-            changes.push(format!(
-                "row={index} expected={} actual={}",
-                kind(seed),
-                kind(row)
-            ));
-        } else {
-            let mut described = false;
-            for field in [
-                "name",
-                "value",
-                "domain",
-                "path",
-                "expires",
-                "secure",
-                "httpOnly",
-                "sameSite",
-                "partitionKey",
-            ] {
-                let before = seed.and_then(|row| row.get(field));
-                let after = row.and_then(|row| row.get(field));
-                if before != after && changes.len() < 8 {
-                    changes.push(format!(
-                        "row={index} field={field} expected={} actual={}",
-                        kind(before),
-                        kind(after)
-                    ));
-                    described = true;
-                }
-            }
-            if !described && changes.len() < 8 {
-                changes.push(format!(
-                    "row={index} other-fields differ (keys and values redacted)"
-                ));
-            }
-        }
-        if changes.len() >= 8 {
-            break;
-        }
-    }
-    fail(format!(
-        "Native checkpoint cookie persistence differs expected_rows={} actual_rows={} changes=[{}] (values redacted)",
-        wanted.len(),
-        actual.len(),
-        changes.join("; ")
-    ))
-}
-pub fn baseline(
-    parent: &Path,
-    engine: &str,
-    mut execute: impl FnMut(&Path, &[String]) -> Result<crate::acceptance::Captured>,
-) -> Result<Baseline> {
-    let root = parent.join("baseline");
-    let mut command = |args: Vec<String>| -> Result<Value> {
-        let result = execute(&root, &args)?;
-        if result.exit != 0 || !result.stderr.is_empty() {
-            let allow = [
-                "ValueError",
-                "RuntimeError",
-                "OSError",
-                "FileNotFoundError",
-                "PermissionError",
-                "TimeoutError",
-                "Error",
-                "TargetClosedError",
-                "ImportError",
-                "ModuleNotFoundError",
-                "NativeSdkError",
-            ];
-            let kind = result
-                .stderr
-                .lines()
-                .take(512)
-                .filter_map(|l| l.split_once(':').map(|(kind, _)| kind))
-                .filter(|kind| allow.contains(kind))
-                .last()
-                .unwrap_or("unknown");
-            let operation = if args.first().is_some_and(|a| a == "cookies") {
-                format!("cookies-{}", args[1])
-            } else {
-                "create".into()
-            };
-            return fail(format!(
-                "Native checkpoint browser baseline failed operation={operation} exit={} type={kind} stdout_bytes={} stderr_bytes={}",
-                result.exit,
-                result.stdout.len(),
-                result.stderr.len()
-            ));
-        }
-        super::decode(result.stdout.as_bytes())
-    };
-    let created = command(vec![
-        "create".into(),
-        "Browser benchmark fixture".into(),
-        "--seed".into(),
-        "42".into(),
-        "--engine".into(),
-        engine.into(),
-        "--json".into(),
-    ])?;
-    let id = created["profile"]["id"]
-        .as_str()
-        .filter(|v| {
-            v.len() == 12
-                && v.bytes()
-                    .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
-        })
-        .ok_or("Native checkpoint profile identity invalid")?
-        .to_owned();
-    let expiry = fixture_expiry(
-        std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)?
-            .as_secs(),
-    )?;
-    // The checkpoint's CLI normalizes epoch values to floats before export.
-    // Seed that canonical type rather than relaxing the strict comparison.
-    let cookie = json!({"name":"persistent-fixture","value":"synthetic","domain":".fixture.test","path":"/","expires":expiry as f64,"secure":false,"httpOnly":true,"sameSite":"Lax"});
-    let mut second = cookie.clone();
-    second["name"] = json!("second-fixture");
-    second["httpOnly"] = json!(false);
-    let cookies = json!([cookie, second]);
-    let input = parent.join("cookie input.json");
-    fs::write(&input, serde_json::to_vec(&json!({"cookies":cookies}))?)?;
-    let seeded = command(vec![
-        "cookies".into(),
-        "import".into(),
-        id.clone(),
-        input.to_string_lossy().into_owned(),
-        "--clear".into(),
-        "--json".into(),
-    ])?;
-    crate::acceptance::require_equal(
-        &seeded,
-        &json!({"ok":true,"imported":2,"cleared":true}),
-        "Native checkpoint cookie seeding",
-    )?;
-    let destination = parent.join("baseline cookies.json");
-    let exported = command(vec![
-        "cookies".into(),
-        "export".into(),
-        id.clone(),
-        destination.to_string_lossy().into_owned(),
-        "--format".into(),
-        "json".into(),
-        "--json".into(),
-    ])?;
-    let expected_export = json!({"ok":true,"count":2,"file":destination,"format":"json"});
-    if let Err(error) = crate::acceptance::require_equal(
-        &exported,
-        &expected_export,
-        "Native checkpoint export metadata",
-    ) {
-        // Report only fixed comparisons and a bounded count, never output values or paths.
-        let count = match exported["count"].as_u64() {
-            Some(count @ 0..=2) => count.to_string(),
-            Some(_) => ">2".into(),
-            None => "non-unsigned-integer".into(),
-        };
-        return fail(format!(
-            "{error} expected_count=2 actual_count={count} ok_matches={} file_matches={} format_matches={} field_count_matches={}",
-            exported["ok"] == expected_export["ok"],
-            exported["file"] == expected_export["file"],
-            exported["format"] == expected_export["format"],
-            exported.as_object().is_some_and(|fields| fields.len() == 4),
-        ));
-    }
-    let payload = super::decode(&fs::read(destination)?)?;
-    let mut observed = payload["cookies"]
-        .as_array()
-        .cloned()
-        .ok_or("Native checkpoint cookies missing")?;
-    observed.sort_by_key(|row| row["name"].as_str().unwrap_or("").to_owned());
-    require_cookie_persistence(&Value::Array(observed), &cookies)?;
-    if payload["origins"] != json!([]) {
-        return fail("Native checkpoint cookie persistence origins differ");
-    }
-    let marker = root.join("user-data").join(&id).join("sentinel.bin");
-    fs::create_dir_all(marker.parent().ok_or("Session parent missing")?)?;
-    fs::write(marker, SENTINEL)?;
-    Ok(Baseline { root, id, payload })
-}
-pub fn workflow_history(workflow: &Value, native: &Value) -> Result<()> {
-    let live = &workflow["jobs"]["live"];
-    if live["strategy"]["matrix"]["os"] != json!(["ubuntu-24.04", "windows-latest"]) {
-        return fail("Browser comparisons require supported native ownership platforms");
-    }
-    let steps = live["steps"]
-        .as_array()
-        .ok_or("Browser workflow steps missing")?;
-    let checkouts = steps
-        .iter()
-        .enumerate()
-        .filter(|(_, s)| {
-            s["uses"]
-                .as_str()
-                .is_some_and(|v| v.starts_with("actions/checkout@"))
-        })
-        .collect::<Vec<_>>();
-    if checkouts.len() != 1
-        || checkouts[0].1["with"]["fetch-depth"] != 0
-        || checkouts[0].1.get("if").is_some()
-        || checkouts[0].0 != 0
-    {
-        return fail(
-            "Browser comparison requires unconditional original history before acceptance",
-        );
-    }
-    let steps = &native["jobs"]["tooling"]["steps"];
-    let checks = steps
-        .as_array()
-        .ok_or("Native SDK steps missing")?
-        .iter()
-        .filter(|step| {
-            step["run"].as_str().is_some_and(|run| {
-                run.contains("cargo clippy")
-                    && run.contains("--features native-browser")
-                    && run.contains("--all-targets")
-            })
-        })
-        .collect::<Vec<_>>();
-    if checks.len() != 1
-        || checks[0].get("if").is_some()
-        || checks[0]
-            .get("continue-on-error")
-            .is_some_and(|v| v != false)
-    {
-        return fail("Native Rust checks must include required SDK all-target Clippy");
-    }
-    Ok(())
-}
-pub fn workflow_measurement(action: &Value) -> Result<()> {
-    let steps = &action["runs"]["steps"];
-    let build = super::workflow::step_once(steps, "build-candidate", true)?;
-    if !steps[build]["run"]
-        .as_str()
-        .is_some_and(|run| run.contains("--release"))
-    {
-        return fail("Browser acceptance requires optimized candidate compilation");
-    }
-    let acceptance = super::workflow::step_once(steps, "ci acceptance ", true)?;
-    let measure = super::workflow::step_once(steps, "ci browser-benchmark", false)?;
-    if steps[acceptance]["id"] != "acceptance"
-        || steps[measure]["if"] != "${{ !cancelled() && steps.acceptance.outcome == 'success' }}"
-    {
-        return fail("Each benchmark requires actual application acceptance");
-    }
-    if !steps[measure]["run"]
-        .as_str()
-        .is_some_and(|run| run.contains("\"$NUMERA_NATIVE_ENGINE\""))
-    {
-        return fail("Browser comparison must measure the actual native product binary");
-    }
-    let entry = super::workflow::step_once(steps, "ci entry-benchmark", false)?;
-    if steps[entry]["if"] != "inputs.engine == 'playwright'"
-        || entry <= acceptance
-        || entry >= measure
-        || !steps[entry]["run"]
-            .as_str()
-            .is_some_and(|run| run.contains("--wall 180 --idle 90"))
-    {
-        return fail(
-            "All five entry workloads require their bounded owning Windows/Linux acceptance legs",
-        );
-    }
-    if build >= measure {
-        return fail("Browser measurement cannot precede candidate compilation");
-    }
-    let uploads = steps
-        .as_array()
-        .ok_or("Browser evidence steps missing")?
-        .iter()
-        .filter(|step| {
-            step["uses"]
-                .as_str()
-                .is_some_and(|u| u.starts_with("actions/upload-artifact@"))
-        })
-        .collect::<Vec<_>>();
-    if uploads.len() != 1
-        || uploads[0]["with"]["if-no-files-found"] != "error"
-        || !uploads[0]["with"]["path"]
-            .as_str()
-            .is_some_and(|path| path.contains("browser-performance.json"))
-    {
-        return fail("Browser measurements must retain exact-source evidence");
-    }
-    Ok(())
-}
 pub fn sample_command(arguments: &[std::ffi::OsString]) -> Result<()> {
     let boundary = arguments
         .iter()
@@ -1155,11 +449,12 @@ pub fn run(
         crate::acceptance::execute(&mut command, None)
     })?;
     let observer = std::env::current_exe()?;
-    run_pairs(
+    run_pairs_with_policy(
         &parent,
         destination,
         engine,
         &seed.payload,
+        hosted_diagnostic(),
         |runtime, workspace, _, diagnostic| {
             observation(&seed.root, workspace, &seed.id, |data, destination| {
                 let report = std::env::var_os(unit_report::ENV)

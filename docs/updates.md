@@ -41,7 +41,7 @@ The current native certificate is self-signed. No Apple Developer ID/notarizatio
 
 `update-manifest.sig` is a raw **64-byte Ed25519 signature** over the exact UTF-8 bytes of `update-manifest.json`. This is not a base64 Tauri/minisign signature. Do not reformat JSON before verification.
 
-The manifest authenticates repository/product, version, full source SHA, positive monotonic release generation, creation/expiry times, minimum protocol, per-platform SDK/browser metadata and each approved archive's size/SHA-256, expanded bounds, member limit, root and BUILD hash. The generation uses the producing GitHub run identity, not lexicographic SHA comparison. Build prereleases are intentionally considered; `/releases/latest` alone would miss them.
+The manifest authenticates repository/product, version, full source SHA, positive monotonic release generation, creation/expiry times, minimum protocol, per-platform SDK/browser metadata and each approved archive's size/SHA-256, expanded bounds, member limit, root and BUILD hash. The generation uses the producing GitHub run identity, not lexicographic SHA comparison. The updater considers both version tags and legacy `build-<sha>` releases. `/releases/latest` alone would miss build prereleases.
 
 Inside a portable archive, `BUILD.json` and raw `BUILD.sig` authenticate the initial installed file inventory and identity. Regular-file records include path/size/SHA-256/executable status; permitted symbolic links carry contained destinations. `PROVENANCE.json` holds extended build/browser/license information. BUILD cannot hash itself or its signature; the outer signed archive/BUILD hashes close that cycle. After extraction and again immediately before activation, the staged BUILD version/source/generation/platform, SDK/browser components and exact inventory digest must match the authenticated offer. A second valid signature alone does not authorize substituting another signed inventory.
 
@@ -69,6 +69,25 @@ Get-AuthenticodeSignature -LiteralPath '.\Numera Browser\numera.exe'
 
 A self-signed chain can be untrusted even when the designated signer and cryptographic file signature are correct. Do not describe that as public OS trust. The native signing path checks the designated certificate, requires an intact binary to reject a different expected signer, and separately requires a modified copy to report signature damage. A timeout, missing tool or unrelated verification error is not evidence of rejection. These checks remain subject to the hosted acceptance described above; end-user policy may still require a publicly trusted build.
 
+## Verify a versioned download
+
+Download your package, its `.sig`, `SHA256SUMS` and `SHA256SUMS.sig` from the same
+versioned release. Use a separately trusted copy of the checked-in
+[publisher certificate](code-signing-cert.pem). A public key downloaded with an
+archive is not an independent trust source.
+
+```bash
+openssl x509 -in code-signing-cert.pem -pubkey -noout > publisher-key.pem
+openssl dgst -sha256 -verify publisher-key.pem -signature SHA256SUMS.sig SHA256SUMS
+asset=numera-browser-0.36.0-linux-x64-portable.zip
+openssl dgst -sha256 -verify publisher-key.pem -signature "$asset.sig" "$asset"
+grep -F "  $asset" SHA256SUMS | sha256sum --check --strict
+```
+
+Change `asset` to the exact filename you downloaded. Stop if a signature or
+checksum fails. The Authenticode signature on Windows does not make the
+project's self-signed certificate publicly trusted.
+
 ## Data safety and recovery
 
 Mutable data, browser profile storage, vault/configuration and explicit external resource overrides are not update-owned files. The updater stages beside the installation on the same volume and replaces only authenticated owned files, with an exclusive transaction and durable recovery journal. It does not rename an arbitrary nonempty application/data directory and assume the operation is atomic.
@@ -83,7 +102,7 @@ A durable admission commit is a one-way boundary: after it, recovery validates a
 
 ## Maintainer publication
 
-The owning repository's manually dispatched CI validates one exact reviewed SHA. Final platform bytes are signed **after** their last content mutation and before archiving. BUILD signatures, archive hashes, provenance and negative signature checks travel with that build. The same batch's publisher runs only after required validation succeeds and only for its trusted main-branch publication target. It reuses verified artifacts, never rebuilds a different source after the gate.
+The versioned release workflow runs Native CI on the exact version tag before signing. All four Windows and Linux build legs must pass. The protected `numera-signing` environment must provide `NUMERA_SIGNING_PFX_BASE64`, `NUMERA_SIGNING_PASSWORD` and `NUMERA_RELEASE_SIGNING_KEY`. The publisher verifies the complete asset set before creating the release. The separate manual artifact review cannot publish.
 
 Production-feature shell formatting, lint and unit contracts run in a separate Linux and Windows x86-64 hosted tier before signing/distribution, without release keys. Required verification and distribution both depend on that tier; those unit tests are not repeated during packaging. Actual desktop activation/recovery and signing still require every original pre-distribution gate, including the public CodeQL verdict.
 

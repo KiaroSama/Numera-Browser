@@ -52,7 +52,7 @@ jobs:
         run: cargo test --manifest-path tools/xtask/Cargo.toml --locked --no-fail-fast
       - name: Compile and lint every native Rust test target
         run: cargo clippy --manifest-path engine-rust/Cargo.toml --locked --features native-browser,test-support --all-targets -- -D warnings
-      - name: Rust SDK protocol inertness and failure cleanup
+      - name: Offline Cloak and SDK protocol refusal and cleanup
         run: cargo test --manifest-path engine-rust/Cargo.toml --locked --features native-browser,test-support --test browser_adapter_protocol actual_sdk_adapter_stays_inert_before_open_and_cleans_protocol_failure -- --exact
       - name: Rust SDK registry ownership and shutdown
         run: cargo test --manifest-path engine-rust/Cargo.toml --locked --features native-browser,test-support --test browser_adapter_protocol registry_retains_sdk_transport_and_closes_only_its_admitted_session -- --exact
@@ -66,10 +66,18 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: linux
-            runner: ubuntu-24.04
-          - platform: windows
+          - platform: windows-x64
             runner: windows-2025
+            arch: X64
+          - platform: windows-arm64
+            runner: windows-11-arm
+            arch: ARM64
+          - platform: linux-x64
+            runner: ubuntu-24.04
+            arch: X64
+          - platform: linux-arm64
+            runner: ubuntu-24.04-arm
+            arch: ARM64
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 30
     steps:
@@ -86,6 +94,9 @@ jobs:
           workspaces: |
             engine-rust
             tools/xtask
+      - name: Verify native runner architecture
+        shell: bash
+        run: test "$RUNNER_ARCH" = "${{ matrix.arch }}"
       - name: Build, inspect and package the native application and SDK runtime
         id: candidate
         shell: bash

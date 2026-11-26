@@ -62,9 +62,17 @@ jobs:
         env:
           NUMERA_TEST_ENGINE: camoufox
         run: cargo xtask ci owned --wall 600 --idle 570 -- cargo xtask ci camoufox-runtime "${{ runner.temp }}/numera-live-resources"
+      - name: Record why the licensed browser was not run
+        if: matrix.engine == 'cloak' && env.CLOAKBROWSER_LICENSE_KEY == ''
+        shell: bash
+        run: |
+          mkdir -p build
+          printf '%s\n' 'Live Cloak selection skipped: CLOAKBROWSER_LICENSE_KEY is unavailable. Offline and contract tests are independent.' | tee build/selected-sdk.log
       - name: Require the selected backend and its exact consent-controlled resources
+        if: matrix.engine != 'cloak' || env.CLOAKBROWSER_LICENSE_KEY != ''
         run: cargo xtask ci owned --wall 1200 --idle 180 -- cargo xtask ci prepare-live "engine-rust/target/release/numera-browser-runtime${{ runner.os == 'Windows' && '.exe' || '' }}" "engine-rust/target/release/numera-engine${{ runner.os == 'Windows' && '.exe' || '' }}" "${{ runner.temp }}/numera-live-resources" "${{ matrix.engine }}" "${{ runner.temp }}/numera-live-data" "${{ github.env }}"
-      - name: Require native SDK, independent application acceptance and native checkpoint comparison
+      - name: Require native SDK and relocated application; retain checkpoint comparisons
+        if: matrix.engine != 'cloak' || env.CLOAKBROWSER_LICENSE_KEY != ''
         uses: ./.github/actions/native-candidate-acceptance
         with:
           engine: ${{ matrix.engine }}

@@ -461,7 +461,11 @@ source_test!(
             assert!(text.contains(notice));
             assert!(root().join(notice).is_file());
         }
-        let product = fs::read_to_string(root().join("tools/xtask/src/product.rs"))?;
+        let product = format!(
+            "{}\n{}",
+            fs::read_to_string(root().join("tools/xtask/src/product.rs"))?,
+            fs::read_to_string(root().join("tools/xtask/src/product_artifacts.rs"))?
+        );
         assert!(product.contains("receipt.copy(resources_root, &runtime)"));
         let ignored = fs::read_to_string(root().join(".dockerignore"))?;
         assert!(ignored.contains("!build/container/Numera Browser/engine/**"));
@@ -487,7 +491,11 @@ source_test!(
     docker_dashboard_path,
     "tests/test_docker.py::test_the_dashboard_lands_where_the_engine_serves_it",
     {
-        let product = fs::read_to_string(root().join("tools/xtask/src/product.rs"))?;
+        let product = format!(
+            "{}\n{}",
+            fs::read_to_string(root().join("tools/xtask/src/product.rs"))?,
+            fs::read_to_string(root().join("tools/xtask/src/product_artifacts.rs"))?
+        );
         assert!(product.contains("runtime.join(\"web\")"));
         let serving = fs::read_to_string(root().join("engine-rust/src/http/dashboard.rs"))?;
         assert!(serving.contains("web"));

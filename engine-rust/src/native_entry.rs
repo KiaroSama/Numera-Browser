@@ -107,6 +107,54 @@ fn execute(
     argv: &[String],
     output: &mut Output<impl Write, impl Write>,
 ) -> io::Result<i32> {
+    if args.get("command").and_then(Value::as_str) == Some("mcp")
+        && let Some(url) = args.get("bridge").and_then(Value::as_str)
+    {
+        let remote = args.get("allow_remote_bridge") == Some(&Value::Bool(true));
+        let environment_token = (!remote)
+            .then(|| std::env::var("NUMERA_API_TOKEN").ok())
+            .flatten();
+        let token = args
+            .get("token")
+            .and_then(Value::as_str)
+            .or(environment_token.as_deref());
+        let bridge = crate::mcp_bridge::Bridge::new(url, token, remote)?;
+        let cancelled = Arc::new(AtomicBool::new(false));
+        let signal = cancelled.clone();
+        ctrlc::try_set_handler(move || signal.store(true, Ordering::Release))
+            .map_err(io::Error::other)?;
+        let result = crate::mcp_command::serve_bridge(
+            bridge,
+            &mut io::BufReader::new(crate::native_input::Input::new(
+                io::stdin(),
+                cancelled.clone(),
+            )),
+            &mut crate::native_stdio::TextWriter::new(io::stdout().lock()),
+            || cancelled.load(Ordering::Acquire),
+        );
+        return if cancelled.load(Ordering::Acquire) {
+            Ok(130)
+        } else {
+            result.map(|()| 0)
+        };
+    }
+    if args.get("command").and_then(Value::as_str) == Some("fleet") {
+        return match fleet_service(args) {
+            Ok(payload) => {
+                if !output.json_mode() {
+                    output.say(
+                        &serde_json::to_string_pretty(&payload).map_err(io::Error::other)?,
+                        None,
+                    )?;
+                }
+                output.emit(&payload, 0)
+            }
+            Err(error) => {
+                output.say(&error.to_string(), Some(Tone::Red))?;
+                output.emit(&serde_json::json!({"ok":false,"error":error.to_string(),"hint":"Run numera-engine serve and set NUMERA_API_URL and NUMERA_API_TOKEN"}), 1)
+            }
+        };
+    }
     let started = std::time::Instant::now();
     let mut environment = Environment::discover()?;
     let explicit = args.get("data_dir").and_then(Value::as_str).map(Path::new);
@@ -529,6 +577,33 @@ pub fn dispatch(
         "Shutdown",
     );
     result
+}
+
+fn fleet_service(args: &Map<String, Value>) -> io::Result<Value> {
+    let endpoint =
+        std::env::var("NUMERA_API_URL").unwrap_or_else(|_| "http://127.0.0.1:8787".into());
+    let token = std::env::var("NUMERA_API_TOKEN").ok();
+    let bridge = crate::mcp_bridge::Bridge::new(&endpoint, token.as_deref(), false)?;
+    let request = serde_json::json!({"jsonrpc":"2.0","id":1,"method":"tools/call","params": {
+        "name":"fleet_sync","arguments":{"profile_ids":args["profile_ids"],"action":args["action"],"url":args["url"]}
+    }});
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?;
+    let response = runtime
+        .block_on(bridge.request(&request))?
+        .ok_or_else(|| io::Error::other("Fleet response is missing"))?;
+    if response["id"] != 1 {
+        return Err(io::Error::other("Fleet response ID does not match"));
+    }
+    let result = &response["result"];
+    let payload = &result["structuredContent"];
+    if result["isError"] == true || payload.is_null() {
+        return Err(io::Error::other(
+            payload["error"].as_str().unwrap_or("Fleet command failed"),
+        ));
+    }
+    Ok(payload.clone())
 }
 
 fn serve(

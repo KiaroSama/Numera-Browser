@@ -13,6 +13,7 @@ pub mod container_smoke;
 mod driver;
 pub mod fingerprint;
 mod options;
+mod page_automation;
 mod policy;
 #[cfg(feature = "test-support")]
 mod testing;
@@ -170,6 +171,7 @@ fn operation(request: &Value) -> &'static str {
         Some("route") => "route",
         Some("evaluate") => "evaluate",
         Some("inspect") => "inspect",
+        Some("page-action") => "page-action",
         Some("cookies-read") => "cookies-read",
         Some("cookies-clear") => "cookies-clear",
         Some("cookies-add") => "cookies-add",
@@ -196,6 +198,8 @@ struct Worker {
     driver: Option<Driver>,
     context: Option<BrowserContext>,
     page: Option<Page>,
+    page_qa: page_automation::QaPage,
+    qa_supported: bool,
     policy: Option<Arc<policy::Policy>>,
     patchright: bool,
     camoufox: Option<camoufox::Prepared>,
@@ -219,6 +223,8 @@ impl Worker {
                 }
                 self.patchright = backend == "patchright";
                 let options = request["options"].as_object().ok_or_else(invalid)?;
+                self.qa_supported =
+                    backend == "playwright" && options.get("proxy").is_none_or(Value::is_null);
                 let scripts = request
                     .get("init_scripts")
                     .map_or(Ok(Vec::new()), |scripts| {
@@ -419,8 +425,13 @@ impl Worker {
                 let raw = evaluate_raw(page, &expression, &Value::Null, self.patchright).await?;
                 Ok(values::decode(&raw)?)
             }
-            // Preserve vendor cookie fields (including partition keys) instead
-            // of projecting them through the binding's smaller Cookie struct.
+            "page-action" if self.qa_supported => {
+                self.page_qa.execute(context, page, request).await
+            }
+            "page-action" => {
+                Ok(json!({"error":"QA actions require an ordinary Playwright session"}))
+            }
+            // Preserve fields the binding's cookie struct omits, including partition keys.
             "cookies-read" => context.channel().send("cookies", json!({"urls":[]})).await,
             "cookies-clear" => {
                 context

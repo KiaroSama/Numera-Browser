@@ -63,7 +63,13 @@ fn request(client: &Client, url: &str, budget: Duration) -> io::Result<Response>
         .header("Accept", "application/vnd.github+json")
         .send()
         .and_then(Response::error_for_status)
-        .map_err(|_| io::Error::other("Update service unavailable, offline or rate limited"))
+        .map_err(|error| {
+            if error.status() == Some(reqwest::StatusCode::NOT_FOUND) {
+                io::Error::new(io::ErrorKind::NotFound, "Update resource not found")
+            } else {
+                io::Error::other("Update service unavailable, offline or rate limited")
+            }
+        })
 }
 pub fn bytes(client: &Client, url: &str, limit: u64) -> io::Result<Vec<u8>> {
     bounded_bytes(client, url, limit, Duration::from_secs(20))
@@ -98,6 +104,30 @@ pub fn asset_url(source: &str, name: &str) -> String {
         manifest::REPOSITORY
     )
 }
+#[cfg(not(feature = "update-acceptance"))]
+fn latest_release_url() -> String {
+    format!(
+        "https://api.github.com/repos/{}/releases/latest",
+        manifest::REPOSITORY
+    )
+}
+pub(super) fn offer_asset_url(offer: &Offer) -> String {
+    #[cfg(feature = "update-acceptance")]
+    {
+        asset_url(&offer.manifest.source_sha, &offer.asset.name)
+    }
+    #[cfg(not(feature = "update-acceptance"))]
+    {
+        release_asset_url(&offer.tag, &offer.asset.name)
+    }
+}
+#[cfg(not(feature = "update-acceptance"))]
+fn release_asset_url(tag: &str, name: &str) -> String {
+    format!(
+        "https://github.com/{}/releases/download/{tag}/{name}",
+        manifest::REPOSITORY
+    )
+}
 fn discovery_url(page: u32) -> io::Result<String> {
     #[cfg(feature = "update-acceptance")]
     {
@@ -111,6 +141,101 @@ fn discovery_url(page: u32) -> io::Result<String> {
         ))
     }
 }
+#[cfg(not(feature = "update-acceptance"))]
+fn discover_latest(
+    client: &Client,
+    current: u64,
+    platform: &str,
+    key: &[u8; 32],
+    now: u64,
+    cancelled: &AtomicBool,
+) -> io::Result<Option<Offer>> {
+    let check = |url: &str, limit| {
+        if cancelled.load(Ordering::Acquire) {
+            return Err(io::Error::new(
+                io::ErrorKind::ConnectionAborted,
+                "Update discovery cancelled",
+            ));
+        }
+        bounded_bytes(client, url, limit, Duration::from_secs(10))
+    };
+    discover_latest_with(current, platform, key, now, check)
+}
+
+#[cfg(not(feature = "update-acceptance"))]
+fn discover_latest_with(
+    current: u64,
+    platform: &str,
+    key: &[u8; 32],
+    now: u64,
+    mut fetch: impl FnMut(&str, u64) -> io::Result<Vec<u8>>,
+) -> io::Result<Option<Offer>> {
+    let data = match fetch(&latest_release_url(), manifest::METADATA_LIMIT) {
+        Ok(data) => data,
+        Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(None),
+        Err(error) => return Err(error),
+    };
+    let release: serde_json::Value = serde_json::from_slice(&data)
+        .map_err(|_| manifest::error("Latest GitHub release is malformed"))?;
+    let tag = release["tag_name"]
+        .as_str()
+        .ok_or_else(|| manifest::error("Latest GitHub tag is missing"))?;
+    if tag.starts_with("build-") || release["draft"] == true || release["prerelease"] == true {
+        return Ok(None);
+    }
+    let version = tag.strip_prefix('v').unwrap_or(tag);
+    if version.len() > 64
+        || !version.as_bytes().first().is_some_and(u8::is_ascii_digit)
+        || !version
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || b"-._+".contains(&byte))
+    {
+        return Err(manifest::error(
+            "Latest GitHub tag does not name a release version",
+        ));
+    }
+    let bytes = fetch(
+        &release_asset_url(tag, "update-manifest.json"),
+        manifest::METADATA_LIMIT,
+    )?;
+    let signature = fetch(&release_asset_url(tag, "update-manifest.sig"), 64)?;
+    let manifest = manifest::authenticated_manifest(&bytes, &signature, key)?;
+    if version != manifest.version {
+        return Err(manifest::error(
+            "Signed manifest does not match the latest release tag",
+        ));
+    }
+    if !manifest.suitable(current, now) {
+        return Ok(None);
+    }
+    let Some(asset) = manifest
+        .assets
+        .iter()
+        .find(|asset| asset.platform == platform)
+        .cloned()
+    else {
+        return Ok(None);
+    };
+    Ok(Some(Offer {
+        id: manifest::digest(&bytes),
+        manifest,
+        asset,
+        bytes,
+        signature,
+        notes: release_notes(&release),
+        tag: tag.to_owned(),
+    }))
+}
+
+fn release_notes(release: &serde_json::Value) -> String {
+    release["body"]
+        .as_str()
+        .unwrap_or_default()
+        .chars()
+        .take(1024)
+        .collect()
+}
+
 pub fn manifest_urls(source: &str) -> (String, String) {
     (
         asset_url(source, "update-manifest.json"),
@@ -164,6 +289,9 @@ pub struct Offer {
     pub asset: Asset,
     pub bytes: Vec<u8>,
     pub signature: Vec<u8>,
+    pub notes: String,
+    #[cfg(not(feature = "update-acceptance"))]
+    pub tag: String,
 }
 pub fn discover(
     current: u64,
@@ -173,6 +301,10 @@ pub fn discover(
     cancelled: &AtomicBool,
 ) -> io::Result<Option<Offer>> {
     let client = client()?;
+    #[cfg(not(feature = "update-acceptance"))]
+    if let Some(offer) = discover_latest(&client, current, platform, key, now, cancelled)? {
+        return Ok(Some(offer));
+    }
     discover_with(
         current,
         platform,
@@ -301,6 +433,9 @@ fn discover_with(
                 asset,
                 bytes: metadata,
                 signature,
+                notes: release_notes(&release),
+                #[cfg(not(feature = "update-acceptance"))]
+                tag: tag.to_owned(),
             });
         }
         if count < 20 {

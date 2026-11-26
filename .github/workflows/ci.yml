@@ -102,7 +102,7 @@ jobs:
   review:
     needs: [required, attest]
     if: needs.required.result == 'success' && needs.attest.result == 'success'
-    uses: ./.github/workflows/release.yml
+    uses: ./.github/workflows/release-review.yml
     with:
       source_sha: ${{ inputs.trusted_sha }}
       run_id: ${{ github.run_id }}
