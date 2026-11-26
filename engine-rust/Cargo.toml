@@ -140,7 +140,7 @@ playwright-rs = { version = "=0.21.1", default-features = false, features = ["aw
 ruzstd = { version = "=0.9.1", optional = true }
 maxminddb = { version = "0.27", optional = true }
 serde_yaml = { version = "0.9.34", optional = true }
-num-bigint = "0.4"
+num-bigint = "0.5"
 ed25519-dalek = "3.0.0"
 tar = { version = "0.4.46", default-features = false }
 flate2 = "1.1.10"
