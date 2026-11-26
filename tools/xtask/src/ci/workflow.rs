@@ -632,10 +632,13 @@ pub fn source_module_action(action: &Value) -> Result<()> {
         let command = run["run"]
             .as_str()
             .ok_or("Source module checkpoint command missing")?;
+        let env_valid = run["env"]["CHECKPOINT_SHARD"] == "${{ inputs.shard }}"
+            && run["env"]["CHECKPOINT_SHARDS"] == "${{ inputs.shards }}"
+            && run["env"]["CHECKPOINT_OUTPUT"] == "${{ inputs.output }}";
         let expected = format!(
-            "cargo xtask ci owned --wall 600 --idle 120 -- cargo xtask ci source-checkpoint ${{{{ inputs.shard }}}} ${{{{ inputs.shards }}}} 2 4 {index} '${{{{ inputs.output }}}}'\nif ($LASTEXITCODE -ne 0) {{ exit $LASTEXITCODE }}\ncargo xtask ci owned --wall 30 --idle 15 -- cargo xtask ci settled-index '${{{{ inputs.output }}}}/checkpoint.json' {index}\nif ($LASTEXITCODE -ne 0) {{ exit $LASTEXITCODE }}\n$state = Get-Content '${{{{ inputs.output }}}}/checkpoint.json' -Raw | ConvertFrom-Json\n$testExit = $state.slot_results[{index}]\n\"settled=true\" >> $env:GITHUB_OUTPUT\nexit [int]$testExit\n"
+            "cargo xtask ci owned --wall 600 --idle 120 -- cargo xtask ci source-checkpoint $env:CHECKPOINT_SHARD $env:CHECKPOINT_SHARDS 2 4 {index} \"$env:CHECKPOINT_OUTPUT\"\nif ($LASTEXITCODE -ne 0) {{ exit $LASTEXITCODE }}\ncargo xtask ci owned --wall 30 --idle 15 -- cargo xtask ci settled-index \"$env:CHECKPOINT_OUTPUT/checkpoint.json\" {index}\nif ($LASTEXITCODE -ne 0) {{ exit $LASTEXITCODE }}\n$state = Get-Content \"$env:CHECKPOINT_OUTPUT/checkpoint.json\" -Raw | ConvertFrom-Json\n$testExit = $state.slot_results[{index}]\n\"settled=true\" >> $env:GITHUB_OUTPUT\nexit [int]$testExit\n"
         );
-        if command != expected {
+        if !env_valid || command != expected {
             return fail(
                 "Source module checkpoint command lost cleanup proof or complete test verdict",
             );

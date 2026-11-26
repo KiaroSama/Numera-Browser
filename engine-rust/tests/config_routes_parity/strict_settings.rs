@@ -77,8 +77,13 @@ fn settings_http_preserves_original_text_refusals_and_short_circuits()
                 assert_eq!(value["root"], json!(root));
                 value["root"] = "fixture-root".into();
             }
+            let mut expected = case["result"].clone();
+            if expected.get("version").and_then(Value::as_str) == Some("0.36.0") {
+                assert_eq!(value["version"], env!("CARGO_PKG_VERSION"));
+                expected["version"] = env!("CARGO_PKG_VERSION").into();
+            }
             assert_eq!(
-                value, case["result"],
+                value, expected,
                 "HTTP body differs: case={index} {}",
                 case["url"]
             );

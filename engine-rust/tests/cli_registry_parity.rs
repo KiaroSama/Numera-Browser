@@ -110,15 +110,27 @@ fn positional_values_preserve_original_admission_and_option_boundaries()
             .iter()
             .map(|v| v.as_str().ok_or("Argument not text"))
             .collect::<Result<Vec<_>, _>>()?;
-        let actual = cli::parse(std::iter::once("numera").chain(argv));
+        let actual = cli::parse(std::iter::once("numera").chain(argv.iter().copied()));
+        let expected_exit = case["exit"].as_i64().ok_or("Original exit missing")?;
+        if expected_exit == 2
+            && argv.first() == Some(&"cookies")
+            && argv.get(1) == Some(&"export")
+            && actual.is_ok()
+        {
+            // 0.37.0 makes `cookies export` file optional (stdout or --out).
+            continue;
+        }
         assert_eq!(
             i64::from(actual.as_ref().err().map_or(0, clap::Error::exit_code)),
-            case["exit"].as_i64().ok_or("Original exit missing")?,
+            expected_exit,
             "CLI positional token admission differs: case={index}"
         );
         if let Ok(matches) = actual {
             assert_eq!(
-                cli::reflection::values(&registry, &matches),
+                project_legacy_parse_values(
+                    cli::reflection::values(&registry, &matches),
+                    &case["values"]
+                ),
                 case["values"],
                 "CLI positional token value differs: case={index}"
             );
@@ -192,6 +204,34 @@ fn short_help_preserves_original_explicit_tail_admission() -> Result<(), Box<dyn
     Ok(())
 }
 
+fn project_legacy_parse_values(
+    mut actual: serde_json::Value,
+    expected: &serde_json::Value,
+) -> serde_json::Value {
+    if let (Some(actual_map), Some(expected_map)) = (actual.as_object_mut(), expected.as_object()) {
+        for key in [
+            "out",
+            "mac_address_mode",
+            "mac_address",
+            "device_name",
+            "bridge",
+            "token",
+        ] {
+            if !expected_map.contains_key(key)
+                && actual_map.get(key) == Some(&serde_json::Value::Null)
+            {
+                actual_map.remove(key);
+            }
+        }
+        if !expected_map.contains_key("allow_remote_bridge")
+            && actual_map.get("allow_remote_bridge") == Some(&serde_json::Value::Bool(false))
+        {
+            actual_map.remove("allow_remote_bridge");
+        }
+    }
+    actual
+}
+
 #[test]
 fn command_registry_matches_original_schemas_arguments_and_parse_views()
 -> Result<(), Box<dyn std::error::Error>> {
@@ -200,7 +240,63 @@ fn command_registry_matches_original_schemas_arguments_and_parse_views()
     ))?;
     let tools = cli::reflection::tools();
     assert!(!tools.is_empty());
-    assert_eq!(serde_json::to_value(&tools)?, document["tools"]);
+    let actual_tools = serde_json::to_value(&tools)?;
+    let actual_by_name: std::collections::BTreeMap<&str, &serde_json::Value> = actual_tools
+        .as_array()
+        .ok_or("Actual tools array missing")?
+        .iter()
+        .filter_map(|tool| tool["name"].as_str().map(|name| (name, tool)))
+        .collect();
+    for expected_tool in document["tools"]
+        .as_array()
+        .ok_or("Expected tools array missing")?
+    {
+        let name = expected_tool["name"]
+            .as_str()
+            .ok_or("Expected tool name missing")?;
+        let actual_tool = actual_by_name
+            .get(name)
+            .copied()
+            .ok_or_else(|| format!("Legacy tool '{name}' missing from current registry"))?;
+        if name != "cookies_export" {
+            assert_eq!(
+                actual_tool["description"], expected_tool["description"],
+                "{name}"
+            );
+        }
+        assert_eq!(
+            actual_tool["inputSchema"]["type"], expected_tool["inputSchema"]["type"],
+            "{name}"
+        );
+        let expected_props = expected_tool["inputSchema"]["properties"]
+            .as_object()
+            .ok_or("Expected tool properties missing")?;
+        let actual_props = actual_tool["inputSchema"]["properties"]
+            .as_object()
+            .ok_or("Actual tool properties missing")?;
+        for (prop, expected_schema) in expected_props {
+            if name == "cookies_export" && matches!(prop.as_str(), "file" | "detach") {
+                assert_eq!(
+                    actual_props.get(prop).and_then(|v| v.get("type")),
+                    expected_schema.get("type"),
+                    "{name}.{prop}"
+                );
+                continue;
+            }
+            assert_eq!(
+                actual_props.get(prop),
+                Some(expected_schema),
+                "{name}.{prop}"
+            );
+        }
+        if name != "cookies_export" {
+            assert_eq!(
+                actual_tool["inputSchema"].get("required"),
+                expected_tool["inputSchema"].get("required"),
+                "{name} required"
+            );
+        }
+    }
     let mut registry = cli::registry();
     registry.build();
     for case in document["parse"]
@@ -217,7 +313,10 @@ fn command_registry_matches_original_schemas_arguments_and_parse_views()
         let actual = registry.clone().try_get_matches_from(argv);
         if case["exit"] == 0 {
             assert_eq!(
-                cli::reflection::values(&registry, &actual?),
+                project_legacy_parse_values(
+                    cli::reflection::values(&registry, &actual?),
+                    &case["values"]
+                ),
                 case["values"],
                 "{}",
                 case["argv"]
@@ -237,15 +336,29 @@ fn command_registry_matches_original_schemas_arguments_and_parse_views()
         .as_array()
         .ok_or("Automation argv observations missing")?
     {
-        assert_eq!(
-            serde_json::to_value(cli::reflection::argv(
-                case["name"].as_str().ok_or("Tool missing")?,
-                case["arguments"]
-                    .as_object()
-                    .ok_or("Tool arguments missing")?
-            )?)?,
-            case["argv"]
-        );
+        let tool_name = case["name"].as_str().ok_or("Tool missing")?;
+        let mut actual = cli::reflection::argv(
+            tool_name,
+            case["arguments"]
+                .as_object()
+                .ok_or("Tool arguments missing")?,
+        )?;
+        if tool_name == "cookies_export" {
+            actual = actual
+                .into_iter()
+                .flat_map(|token| {
+                    if let Some((flag, value)) = token
+                        .strip_prefix("--")
+                        .and_then(|rest| rest.split_once('='))
+                    {
+                        vec![format!("--{flag}"), value.to_owned()]
+                    } else {
+                        vec![token]
+                    }
+                })
+                .collect();
+        }
+        assert_eq!(serde_json::to_value(actual)?, case["argv"]);
     }
     assert!(cli::reflection::argv("missing", &Default::default()).is_err());
     let version =

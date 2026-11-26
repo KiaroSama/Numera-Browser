@@ -10,6 +10,7 @@ use std::{
     time::Duration,
 };
 pub const SOURCE: &str = "3bf1d839fd33e42a10b982bd8607a7052ea7c4cd";
+pub const VERSION: &str = "0.36.0";
 pub const ORIGINAL_BASELINE: &str = "13b6d9c6973281fe123353eaec05b29d65781a2d";
 pub const ORIGINAL_TREE: &str = "760f9873ded13c5ebfecae1f16b385e34f695124";
 pub const BRIDGE_FILES: [(&str, &str); 2] = [

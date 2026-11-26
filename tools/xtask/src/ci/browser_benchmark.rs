@@ -404,6 +404,11 @@ pub fn run(
         super::build_artifact::verify(binary, worker, &sha, acceptance)?;
         let output = crate::acceptance::execute(Command::new(binary).arg("--build-info"), None)?;
         let identity = super::decode(output.stdout.as_bytes())?;
+        let expected_version = if acceptance {
+            super::reference::VERSION
+        } else {
+            env!("CARGO_PKG_VERSION")
+        };
         if output.exit != 0
             || !output.stderr.is_empty()
             || identity["source_sha"] != sha
@@ -411,7 +416,7 @@ pub fn run(
             || identity["schema"] != 1
             || identity["owner"] != "KiaroSama"
             || identity["product"] != "Numera Browser"
-            || identity["version"] != env!("CARGO_PKG_VERSION")
+            || identity["version"] != expected_version
             || identity["acceptance"] != acceptance
             || identity["application_runtime"]
                 != if acceptance {

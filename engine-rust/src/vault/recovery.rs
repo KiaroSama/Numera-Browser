@@ -278,37 +278,47 @@ pub fn recover(
         return Err(incomplete(blocked));
     }
     let leftover = observed.iter().find(|p| p.code == "plaintext_left");
-    if let Some(leftover) = leftover {
+    let active_password = if let Some(leftover) = leftover {
         let count = leftover
             .detail
             .split_whitespace()
             .next()
             .unwrap_or("unknown");
-        if password.is_none_or(str::is_empty) {
+        let Some(active_password) = password.filter(|value| !value.is_empty()) else {
             return Err(refusal(format!(
                 "A `vault enable` was interrupted with {count} credential(s) still unencrypted, so this data root is half migrated. Open it with the master password that migration was using (NUMERA_PASSWORD, or `--password`) and it will be finished. Nothing is lost; the vault is not on until it is complete."
             )));
-        }
-        if !check_password(
-            password.unwrap_or(""),
-            new["salt"].as_str().unwrap_or(""),
-            new["verifier"].as_str().unwrap_or(""),
-        ) {
+        };
+        let verifier_ok = new["salt"]
+            .as_str()
+            .filter(|value| !value.is_empty())
+            .zip(new["verifier"].as_str().filter(|value| !value.is_empty()))
+            .is_some_and(|(salt, verifier)| check_password(active_password, salt, verifier));
+        if !verifier_ok {
             let mut error = refusal(
                 "that is not the master password the interrupted migration was using, so it cannot be finished with it",
             );
             error.kind = RecoveryErrorKind::VaultLocked;
             return Err(error);
         }
+        active_password
     } else if !observed.is_empty() {
         return Err(incomplete(observed));
-    }
+    } else {
+        password.ok_or_else(|| {
+            refusal("Vault recovery requires the active master password; nothing was written")
+        })?
+    };
     #[cfg(feature = "test-support")]
     super::testing::event("before-recovery", root)?;
     let mut step = Migration::new(root.to_owned());
     let result = (|| -> Result<(), RecoveryError> {
         if leftover.is_some() {
-            step.encrypt_all(password.unwrap_or(""), new["salt"].as_str().unwrap_or(""))
+            let new_salt = new["salt"]
+                .as_str()
+                .filter(|value| !value.is_empty())
+                .ok_or_else(|| refusal("Vault recovery descriptor is missing salt"))?;
+            step.encrypt_all(active_password, new_salt)
                 .map_err(migration_failure)?;
         }
         commit_and_verify(
@@ -316,7 +326,7 @@ pub fn recover(
             &mut step,
             config,
             &new,
-            password.unwrap_or(""),
+            active_password,
             "`vault enable`",
         )
     })();

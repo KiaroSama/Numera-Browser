@@ -74,21 +74,33 @@ pub(crate) fn finish(
         });
         return Err(error);
     };
-    if !check_password(
-        password,
-        new["salt"].as_str().unwrap_or(""),
-        new["verifier"].as_str().unwrap_or(""),
-    ) {
+    let Some((new_salt, new_verifier)) = new["salt"]
+        .as_str()
+        .filter(|value| !value.is_empty())
+        .zip(new["verifier"].as_str().filter(|value| !value.is_empty()))
+    else {
+        return Err(super::recovery::locked(
+            "new",
+            "that is not the new master password the rotation was moving to",
+        ));
+    };
+    if !check_password(password, new_salt, new_verifier) {
         return Err(super::recovery::locked(
             "new",
             "that is not the new master password the rotation was moving to",
         ));
     }
-    if !check_password(
-        old_password,
-        old["salt"].as_str().unwrap_or(""),
-        old["verifier"].as_str().unwrap_or(""),
-    ) {
+    let Some((old_salt, old_verifier)) = old["salt"]
+        .as_str()
+        .filter(|value| !value.is_empty())
+        .zip(old["verifier"].as_str().filter(|value| !value.is_empty()))
+    else {
+        return Err(super::recovery::locked(
+            "old",
+            "that is not the master password the rotation was moving away from",
+        ));
+    };
+    if !check_password(old_password, old_salt, old_verifier) {
         return Err(super::recovery::locked(
             "old",
             "that is not the master password the rotation was moving away from",
@@ -98,16 +110,10 @@ pub(crate) fn finish(
     super::testing::event("before-recovery", root)?;
     let mut step = Migration::new(root.to_owned());
     let result = (|| {
-        step.rekey_all(
-            old_password,
-            old["salt"].as_str().unwrap_or(""),
-            password,
-            new["salt"].as_str().unwrap_or(""),
-            true,
-        )
-        .map_err(super::recovery::migration_failure)?;
+        step.rekey_all(old_password, old_salt, password, new_salt, true)
+            .map_err(super::recovery::migration_failure)?;
         // Recovery also covers plaintext left by a prior incomplete enable.
-        step.encrypt_all(password, new["salt"].as_str().unwrap_or(""))
+        step.encrypt_all(password, new_salt)
             .map_err(super::recovery::migration_failure)?;
         commit_and_verify(
             root,

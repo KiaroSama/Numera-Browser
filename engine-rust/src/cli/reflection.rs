@@ -42,7 +42,7 @@ fn schema(command: &Command, tool: &str) -> Value {
         } else {
             json!({"type":scalar(arg)})
         };
-        if arg.is_required_set() && (arg.is_positional() || strict_tool(tool)) {
+        if arg.is_required_set() && ((!multiple(arg) && arg.is_positional()) || strict_tool(tool)) {
             required.push(name);
         }
         if tool == "workflow_save" && name == "workflow" {
@@ -77,16 +77,22 @@ fn schema(command: &Command, tool: &str) -> Value {
                 property["enum"] = json!(values);
             }
         }
-        if let Some(help) = arg
-            .get_help()
-            .map(ToString::to_string)
-            .filter(|s| !s.is_empty())
+        if !(strict_tool(tool) && name == "detach")
+            && let Some(help) = arg
+                .get_help()
+                .map(ToString::to_string)
+                .filter(|s| !s.is_empty())
         {
             property["description"] = help.into();
         }
         properties.insert(name.into(), property);
     }
-    properties.entry("detach").or_insert_with(|| json!({"type":"boolean", "description":"Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."}));
+    if !strict_tool(tool) {
+        properties.insert(
+            "detach".into(),
+            json!({"type":"boolean", "description":"Run in the background and return a job handle instead of the result. Use it for anything that opens a browser, then poll with jobs_show."}),
+        );
+    }
     let mut schema = json!({"type":"object", "properties":properties, "required":required});
     if strict_tool(tool) {
         schema["additionalProperties"] = false.into();

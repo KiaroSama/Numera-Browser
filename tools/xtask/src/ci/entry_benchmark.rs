@@ -351,13 +351,18 @@ fn identity(
         &receipt["identity"],
         "Entry actual binary build identity",
     )?;
+    let expected_version = if reference {
+        super::reference::VERSION
+    } else {
+        env!("CARGO_PKG_VERSION")
+    };
     if receipt["generation"] != generation
         || observed["generation"] != generation
         || observed["schema"] != 1
         || observed["source_sha"] != source
         || observed["owner"] != "KiaroSama"
         || observed["product"] != "Numera Browser"
-        || observed["version"] != env!("CARGO_PKG_VERSION")
+        || observed["version"] != expected_version
     {
         return fail("Entry benchmark source, generation or product identity differs");
     }

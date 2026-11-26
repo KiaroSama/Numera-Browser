@@ -97,6 +97,9 @@ pub fn problems(
             detail: "the descriptor has no usable salt and verifier".into(),
         }]);
     }
+    let salt = descriptor["salt"]
+        .as_str()
+        .filter(|value| !value.is_empty());
     let mut damaged = Vec::new();
     let mut plaintext = 0;
     let mut plaintext_files = BTreeSet::new();
@@ -142,9 +145,9 @@ pub fn problems(
             if !is_envelope(text) {
                 plaintext += 1;
                 plaintext_files.insert(name.clone());
-            } else if password.is_some_and(|p| {
-                decrypt(p, descriptor["salt"].as_str().unwrap_or(""), text).is_err()
-            }) {
+            } else if password
+                .is_some_and(|p| salt.is_none_or(|salt| decrypt(p, salt, text).is_err()))
+            {
                 stale_files.insert(site.path.clone());
             }
         }
@@ -171,11 +174,14 @@ pub fn problems(
         found.push(Problem{code:"no_password",detail:"no master password was supplied, so whether the stored secrets open with this descriptor cannot be established".into()});
         return Ok(found);
     };
-    if !check_password(
-        password,
-        descriptor["salt"].as_str().unwrap_or(""),
-        descriptor["verifier"].as_str().unwrap_or(""),
-    ) {
+    let verifier_ok = salt
+        .zip(
+            descriptor["verifier"]
+                .as_str()
+                .filter(|value| !value.is_empty()),
+        )
+        .is_some_and(|(salt, verifier)| check_password(password, salt, verifier));
+    if !verifier_ok {
         found.push(Problem{code:"verifier_mismatch",detail:"the descriptor's verifier does not open with this password, so the descriptor does not describe this data".into()});
         return Ok(found);
     }

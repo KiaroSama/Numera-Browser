@@ -102,10 +102,11 @@ fn documentation_routes_match_source_without_sdk_or_api_unlock()
             let text = std::str::from_utf8(&bytes)?;
             let expected = case["body"].as_str().ok_or("Body missing")?;
             if case["name"] == "openapi.json" && case["method"] == "GET" {
-                assert_eq!(
-                    serde_json::from_str::<Value>(text)?,
-                    serde_json::from_str::<Value>(expected)?
-                );
+                let actual = serde_json::from_str::<Value>(text)?;
+                let mut expected_json = serde_json::from_str::<Value>(expected)?;
+                assert_eq!(actual["info"]["version"], env!("CARGO_PKG_VERSION"));
+                expected_json["info"]["version"] = env!("CARGO_PKG_VERSION").into();
+                assert_eq!(actual, expected_json);
             } else {
                 assert_eq!(text, expected, "{} {}", case["method"], case["path"]);
             }
@@ -214,7 +215,12 @@ fn application_composes_auth_once_and_keeps_legacy_protection_after_token_loss()
                 assert_eq!(body["root"], root.to_string_lossy().as_ref());
                 body["root"] = "<fixture-root>".into();
             }
-            assert_eq!(body, case["body"], "{}", case["name"]);
+            let mut expected = case["body"].clone();
+            if expected.get("version").and_then(Value::as_str) == Some("0.36.0") {
+                assert_eq!(body["version"], env!("CARGO_PKG_VERSION"));
+                expected["version"] = env!("CARGO_PKG_VERSION").into();
+            }
+            assert_eq!(body, expected, "{}", case["name"]);
             let mut policy = match fs::read(root.join("auth-policy.json")) {
                 Ok(bytes) => serde_json::from_slice::<Value>(&bytes)?,
                 Err(error) if error.kind() == std::io::ErrorKind::NotFound => Value::Null,

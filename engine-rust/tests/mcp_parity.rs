@@ -33,9 +33,21 @@ fn stdio_text_boundaries_match_original_responses() -> Result<(), Box<dyn std::e
                 .filter(|line| !line.is_empty())
                 .map(serde_json::from_slice)
                 .collect::<Result<_, _>>()?;
+            let mut expected = row["responses"].clone();
+            if let Some(items) = expected.as_array_mut() {
+                for item in items {
+                    if item
+                        .pointer("/result/serverInfo/version")
+                        .and_then(Value::as_str)
+                        == Some("0.36.0")
+                    {
+                        item["result"]["serverInfo"]["version"] = env!("CARGO_PKG_VERSION").into();
+                    }
+                }
+            }
             assert_eq!(
                 json!(responses),
-                row["responses"],
+                expected,
                 "MCP stdio text response differs: case={index} capacity={capacity}"
             );
             assert!(output.is_empty() || output.last() == Some(&b'\n'));
@@ -213,7 +225,15 @@ fn native_mcp_preserves_original_messages_verdicts_and_bounded_framing()
             })
         })?;
         let actual = mcp::decode(&output)?;
-        assert_eq!(actual.clone().unwrap_or(Value::Null), case["expected"]);
+        let mut expected = case["expected"].clone();
+        if expected
+            .pointer("/result/serverInfo/version")
+            .and_then(Value::as_str)
+            == Some("0.36.0")
+        {
+            expected["result"]["serverInfo"]["version"] = env!("CARGO_PKG_VERSION").into();
+        }
+        assert_eq!(actual.clone().unwrap_or(Value::Null), expected);
         assert_eq!(
             called,
             matches!(case["message"]["id"].as_u64(), Some(5 | 6))

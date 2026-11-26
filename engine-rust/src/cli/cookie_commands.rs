@@ -201,15 +201,15 @@ impl Cookies<'_> {
             json!({"total":rows.len(),"domains":domains}),
         ))
     }
-    pub fn export(
+    pub fn export<'a>(
         &self,
         reference: &str,
-        file: Option<&Path>,
+        file: impl Into<Option<&'a Path>>,
         format: Option<&str>,
         engine: Option<&str>,
         time: f64,
     ) -> Result<Outcome, RepoError> {
-        self.export_started(reference, file, format, engine, time, |_| Ok(()))
+        self.export_started(reference, file.into(), format, engine, time, |_| Ok(()))
     }
     fn export_started(
         &self,

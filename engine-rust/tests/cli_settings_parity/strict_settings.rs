@@ -78,8 +78,13 @@ fn settings_commands_preserve_original_decoding_refusals_and_early_errors()
                     "CLI exit differs: {}",
                     case["argv"]
                 );
+                let mut expected = case["payload"].clone();
+                if expected.get("version").and_then(Value::as_str) == Some("0.36.0") {
+                    assert_eq!(outcome.payload["version"], env!("CARGO_PKG_VERSION"));
+                    expected["version"] = env!("CARGO_PKG_VERSION").into();
+                }
                 assert_eq!(
-                    outcome.payload, case["payload"],
+                    outcome.payload, expected,
                     "CLI payload differs: {}",
                     case["argv"]
                 );

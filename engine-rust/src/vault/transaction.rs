@@ -150,10 +150,14 @@ pub fn enable(root: &Path, password: &str) -> Result<usize, RecoveryError> {
     #[cfg(feature = "test-support")]
     super::testing::event("before-migration", root)?;
     log.event("INFO", "vault", "Enable journal published");
+    let salt = descriptor["salt"]
+        .as_str()
+        .filter(|value| !value.is_empty())
+        .ok_or_else(|| refusal("Vault descriptor is missing salt"))?;
     let mut step = Migration::new(root.to_owned());
     let result = (|| {
         let count = step
-            .encrypt_all(password, descriptor["salt"].as_str().unwrap_or(""))
+            .encrypt_all(password, salt)
             .map_err(super::recovery::migration_failure)?;
         commit_and_verify(
             root,

@@ -174,9 +174,10 @@ fn identity(path: &Path, expected_version: &str) -> io::Result<()> {
             "Native executable has no version-resource translation",
         ));
     }
-    // SAFETY: the checked four bytes hold two WORD values; unaligned reads support any resource offset.
-    let language = unsafe { translated.cast::<u16>().read_unaligned() };
-    let codepage = unsafe { translated.cast::<u16>().add(1).read_unaligned() };
+    let offset = (translated as usize) - (data.as_ptr() as usize);
+    let pair = &data[offset..offset + 4];
+    let language = u16::from_ne_bytes([pair[0], pair[1]]);
+    let codepage = u16::from_ne_bytes([pair[2], pair[3]]);
     let query = |key: &str| -> io::Result<String> {
         let key: Vec<u16> = key.encode_utf16().chain([0]).collect();
         let mut pointer = null_mut();

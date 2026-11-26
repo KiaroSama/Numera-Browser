@@ -42,6 +42,7 @@ jobs:
           languages: ${{ matrix.language }}
           build-mode: none
           queries: security-extended
+          config-file: ./.github/codeql/codeql-config.yml
           threads: 2
           db-location: ${{ runner.temp }}/numera-codeql-databases
           # Use the action's cgroup-aware RAM sizing, including its OS reserve.

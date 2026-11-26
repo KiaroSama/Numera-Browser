@@ -83,10 +83,11 @@ fn version_flag_matches_original_root_scope_and_value_admission()
                     );
                 }
                 if let Some(version) = row["version"].as_str() {
+                    let expected = version.replace("0.36.0", env!("CARGO_PKG_VERSION"));
                     assert_eq!(error.kind(), clap::error::ErrorKind::DisplayVersion);
                     assert_eq!(
                         error.to_string(),
-                        version,
+                        expected,
                         "CLI version output differs: case={index}"
                     );
                 }

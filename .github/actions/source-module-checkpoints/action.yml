@@ -21,12 +21,16 @@ runs:
     - id: module_0
       if: ${{ !cancelled() }}
       shell: pwsh
+      env:
+        CHECKPOINT_SHARD: ${{ inputs.shard }}
+        CHECKPOINT_SHARDS: ${{ inputs.shards }}
+        CHECKPOINT_OUTPUT: ${{ inputs.output }}
       run: |
-        cargo xtask ci owned --wall 600 --idle 120 -- cargo xtask ci source-checkpoint ${{ inputs.shard }} ${{ inputs.shards }} 2 4 0 '${{ inputs.output }}'
+        cargo xtask ci owned --wall 600 --idle 120 -- cargo xtask ci source-checkpoint $env:CHECKPOINT_SHARD $env:CHECKPOINT_SHARDS 2 4 0 "$env:CHECKPOINT_OUTPUT"
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-        cargo xtask ci owned --wall 30 --idle 15 -- cargo xtask ci settled-index '${{ inputs.output }}/checkpoint.json' 0
+        cargo xtask ci owned --wall 30 --idle 15 -- cargo xtask ci settled-index "$env:CHECKPOINT_OUTPUT/checkpoint.json" 0
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-        $state = Get-Content '${{ inputs.output }}/checkpoint.json' -Raw | ConvertFrom-Json
+        $state = Get-Content "$env:CHECKPOINT_OUTPUT/checkpoint.json" -Raw | ConvertFrom-Json
         $testExit = $state.slot_results[0]
         "settled=true" >> $env:GITHUB_OUTPUT
         exit [int]$testExit
@@ -40,12 +44,16 @@ runs:
     - id: module_1
       if: ${{ !cancelled() && steps.module_0.outputs.settled == 'true' && steps.checkpoint_0.outcome == 'success' }}
       shell: pwsh
+      env:
+        CHECKPOINT_SHARD: ${{ inputs.shard }}
+        CHECKPOINT_SHARDS: ${{ inputs.shards }}
+        CHECKPOINT_OUTPUT: ${{ inputs.output }}
       run: |
-        cargo xtask ci owned --wall 600 --idle 120 -- cargo xtask ci source-checkpoint ${{ inputs.shard }} ${{ inputs.shards }} 2 4 1 '${{ inputs.output }}'
+        cargo xtask ci owned --wall 600 --idle 120 -- cargo xtask ci source-checkpoint $env:CHECKPOINT_SHARD $env:CHECKPOINT_SHARDS 2 4 1 "$env:CHECKPOINT_OUTPUT"
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-        cargo xtask ci owned --wall 30 --idle 15 -- cargo xtask ci settled-index '${{ inputs.output }}/checkpoint.json' 1
+        cargo xtask ci owned --wall 30 --idle 15 -- cargo xtask ci settled-index "$env:CHECKPOINT_OUTPUT/checkpoint.json" 1
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-        $state = Get-Content '${{ inputs.output }}/checkpoint.json' -Raw | ConvertFrom-Json
+        $state = Get-Content "$env:CHECKPOINT_OUTPUT/checkpoint.json" -Raw | ConvertFrom-Json
         $testExit = $state.slot_results[1]
         "settled=true" >> $env:GITHUB_OUTPUT
         exit [int]$testExit
@@ -59,12 +67,16 @@ runs:
     - id: module_2
       if: ${{ !cancelled() && steps.module_1.outputs.settled == 'true' && steps.checkpoint_1.outcome == 'success' }}
       shell: pwsh
+      env:
+        CHECKPOINT_SHARD: ${{ inputs.shard }}
+        CHECKPOINT_SHARDS: ${{ inputs.shards }}
+        CHECKPOINT_OUTPUT: ${{ inputs.output }}
       run: |
-        cargo xtask ci owned --wall 600 --idle 120 -- cargo xtask ci source-checkpoint ${{ inputs.shard }} ${{ inputs.shards }} 2 4 2 '${{ inputs.output }}'
+        cargo xtask ci owned --wall 600 --idle 120 -- cargo xtask ci source-checkpoint $env:CHECKPOINT_SHARD $env:CHECKPOINT_SHARDS 2 4 2 "$env:CHECKPOINT_OUTPUT"
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-        cargo xtask ci owned --wall 30 --idle 15 -- cargo xtask ci settled-index '${{ inputs.output }}/checkpoint.json' 2
+        cargo xtask ci owned --wall 30 --idle 15 -- cargo xtask ci settled-index "$env:CHECKPOINT_OUTPUT/checkpoint.json" 2
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-        $state = Get-Content '${{ inputs.output }}/checkpoint.json' -Raw | ConvertFrom-Json
+        $state = Get-Content "$env:CHECKPOINT_OUTPUT/checkpoint.json" -Raw | ConvertFrom-Json
         $testExit = $state.slot_results[2]
         "settled=true" >> $env:GITHUB_OUTPUT
         exit [int]$testExit
@@ -78,12 +90,16 @@ runs:
     - id: module_3
       if: ${{ !cancelled() && steps.module_2.outputs.settled == 'true' && steps.checkpoint_2.outcome == 'success' }}
       shell: pwsh
+      env:
+        CHECKPOINT_SHARD: ${{ inputs.shard }}
+        CHECKPOINT_SHARDS: ${{ inputs.shards }}
+        CHECKPOINT_OUTPUT: ${{ inputs.output }}
       run: |
-        cargo xtask ci owned --wall 600 --idle 120 -- cargo xtask ci source-checkpoint ${{ inputs.shard }} ${{ inputs.shards }} 2 4 3 '${{ inputs.output }}'
+        cargo xtask ci owned --wall 600 --idle 120 -- cargo xtask ci source-checkpoint $env:CHECKPOINT_SHARD $env:CHECKPOINT_SHARDS 2 4 3 "$env:CHECKPOINT_OUTPUT"
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-        cargo xtask ci owned --wall 30 --idle 15 -- cargo xtask ci settled-index '${{ inputs.output }}/checkpoint.json' 3
+        cargo xtask ci owned --wall 30 --idle 15 -- cargo xtask ci settled-index "$env:CHECKPOINT_OUTPUT/checkpoint.json" 3
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-        $state = Get-Content '${{ inputs.output }}/checkpoint.json' -Raw | ConvertFrom-Json
+        $state = Get-Content "$env:CHECKPOINT_OUTPUT/checkpoint.json" -Raw | ConvertFrom-Json
         $testExit = $state.slot_results[3]
         "settled=true" >> $env:GITHUB_OUTPUT
         exit [int]$testExit
@@ -97,12 +113,16 @@ runs:
     - id: module_4
       if: ${{ !cancelled() && steps.module_3.outputs.settled == 'true' && steps.checkpoint_3.outcome == 'success' }}
       shell: pwsh
+      env:
+        CHECKPOINT_SHARD: ${{ inputs.shard }}
+        CHECKPOINT_SHARDS: ${{ inputs.shards }}
+        CHECKPOINT_OUTPUT: ${{ inputs.output }}
       run: |
-        cargo xtask ci owned --wall 600 --idle 120 -- cargo xtask ci source-checkpoint ${{ inputs.shard }} ${{ inputs.shards }} 2 4 4 '${{ inputs.output }}'
+        cargo xtask ci owned --wall 600 --idle 120 -- cargo xtask ci source-checkpoint $env:CHECKPOINT_SHARD $env:CHECKPOINT_SHARDS 2 4 4 "$env:CHECKPOINT_OUTPUT"
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-        cargo xtask ci owned --wall 30 --idle 15 -- cargo xtask ci settled-index '${{ inputs.output }}/checkpoint.json' 4
+        cargo xtask ci owned --wall 30 --idle 15 -- cargo xtask ci settled-index "$env:CHECKPOINT_OUTPUT/checkpoint.json" 4
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-        $state = Get-Content '${{ inputs.output }}/checkpoint.json' -Raw | ConvertFrom-Json
+        $state = Get-Content "$env:CHECKPOINT_OUTPUT/checkpoint.json" -Raw | ConvertFrom-Json
         $testExit = $state.slot_results[4]
         "settled=true" >> $env:GITHUB_OUTPUT
         exit [int]$testExit
@@ -116,12 +136,16 @@ runs:
     - id: module_5
       if: ${{ !cancelled() && steps.module_4.outputs.settled == 'true' && steps.checkpoint_4.outcome == 'success' }}
       shell: pwsh
+      env:
+        CHECKPOINT_SHARD: ${{ inputs.shard }}
+        CHECKPOINT_SHARDS: ${{ inputs.shards }}
+        CHECKPOINT_OUTPUT: ${{ inputs.output }}
       run: |
-        cargo xtask ci owned --wall 600 --idle 120 -- cargo xtask ci source-checkpoint ${{ inputs.shard }} ${{ inputs.shards }} 2 4 5 '${{ inputs.output }}'
+        cargo xtask ci owned --wall 600 --idle 120 -- cargo xtask ci source-checkpoint $env:CHECKPOINT_SHARD $env:CHECKPOINT_SHARDS 2 4 5 "$env:CHECKPOINT_OUTPUT"
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-        cargo xtask ci owned --wall 30 --idle 15 -- cargo xtask ci settled-index '${{ inputs.output }}/checkpoint.json' 5
+        cargo xtask ci owned --wall 30 --idle 15 -- cargo xtask ci settled-index "$env:CHECKPOINT_OUTPUT/checkpoint.json" 5
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-        $state = Get-Content '${{ inputs.output }}/checkpoint.json' -Raw | ConvertFrom-Json
+        $state = Get-Content "$env:CHECKPOINT_OUTPUT/checkpoint.json" -Raw | ConvertFrom-Json
         $testExit = $state.slot_results[5]
         "settled=true" >> $env:GITHUB_OUTPUT
         exit [int]$testExit
@@ -135,12 +159,16 @@ runs:
     - id: module_6
       if: ${{ !cancelled() && steps.module_5.outputs.settled == 'true' && steps.checkpoint_5.outcome == 'success' }}
       shell: pwsh
+      env:
+        CHECKPOINT_SHARD: ${{ inputs.shard }}
+        CHECKPOINT_SHARDS: ${{ inputs.shards }}
+        CHECKPOINT_OUTPUT: ${{ inputs.output }}
       run: |
-        cargo xtask ci owned --wall 600 --idle 120 -- cargo xtask ci source-checkpoint ${{ inputs.shard }} ${{ inputs.shards }} 2 4 6 '${{ inputs.output }}'
+        cargo xtask ci owned --wall 600 --idle 120 -- cargo xtask ci source-checkpoint $env:CHECKPOINT_SHARD $env:CHECKPOINT_SHARDS 2 4 6 "$env:CHECKPOINT_OUTPUT"
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-        cargo xtask ci owned --wall 30 --idle 15 -- cargo xtask ci settled-index '${{ inputs.output }}/checkpoint.json' 6
+        cargo xtask ci owned --wall 30 --idle 15 -- cargo xtask ci settled-index "$env:CHECKPOINT_OUTPUT/checkpoint.json" 6
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-        $state = Get-Content '${{ inputs.output }}/checkpoint.json' -Raw | ConvertFrom-Json
+        $state = Get-Content "$env:CHECKPOINT_OUTPUT/checkpoint.json" -Raw | ConvertFrom-Json
         $testExit = $state.slot_results[6]
         "settled=true" >> $env:GITHUB_OUTPUT
         exit [int]$testExit
@@ -154,12 +182,16 @@ runs:
     - id: module_7
       if: ${{ !cancelled() && steps.module_6.outputs.settled == 'true' && steps.checkpoint_6.outcome == 'success' }}
       shell: pwsh
+      env:
+        CHECKPOINT_SHARD: ${{ inputs.shard }}
+        CHECKPOINT_SHARDS: ${{ inputs.shards }}
+        CHECKPOINT_OUTPUT: ${{ inputs.output }}
       run: |
-        cargo xtask ci owned --wall 600 --idle 120 -- cargo xtask ci source-checkpoint ${{ inputs.shard }} ${{ inputs.shards }} 2 4 7 '${{ inputs.output }}'
+        cargo xtask ci owned --wall 600 --idle 120 -- cargo xtask ci source-checkpoint $env:CHECKPOINT_SHARD $env:CHECKPOINT_SHARDS 2 4 7 "$env:CHECKPOINT_OUTPUT"
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-        cargo xtask ci owned --wall 30 --idle 15 -- cargo xtask ci settled-index '${{ inputs.output }}/checkpoint.json' 7
+        cargo xtask ci owned --wall 30 --idle 15 -- cargo xtask ci settled-index "$env:CHECKPOINT_OUTPUT/checkpoint.json" 7
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-        $state = Get-Content '${{ inputs.output }}/checkpoint.json' -Raw | ConvertFrom-Json
+        $state = Get-Content "$env:CHECKPOINT_OUTPUT/checkpoint.json" -Raw | ConvertFrom-Json
         $testExit = $state.slot_results[7]
         "settled=true" >> $env:GITHUB_OUTPUT
         exit [int]$testExit
@@ -173,12 +205,16 @@ runs:
     - id: module_8
       if: ${{ !cancelled() && steps.module_7.outputs.settled == 'true' && steps.checkpoint_7.outcome == 'success' }}
       shell: pwsh
+      env:
+        CHECKPOINT_SHARD: ${{ inputs.shard }}
+        CHECKPOINT_SHARDS: ${{ inputs.shards }}
+        CHECKPOINT_OUTPUT: ${{ inputs.output }}
       run: |
-        cargo xtask ci owned --wall 600 --idle 120 -- cargo xtask ci source-checkpoint ${{ inputs.shard }} ${{ inputs.shards }} 2 4 8 '${{ inputs.output }}'
+        cargo xtask ci owned --wall 600 --idle 120 -- cargo xtask ci source-checkpoint $env:CHECKPOINT_SHARD $env:CHECKPOINT_SHARDS 2 4 8 "$env:CHECKPOINT_OUTPUT"
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-        cargo xtask ci owned --wall 30 --idle 15 -- cargo xtask ci settled-index '${{ inputs.output }}/checkpoint.json' 8
+        cargo xtask ci owned --wall 30 --idle 15 -- cargo xtask ci settled-index "$env:CHECKPOINT_OUTPUT/checkpoint.json" 8
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-        $state = Get-Content '${{ inputs.output }}/checkpoint.json' -Raw | ConvertFrom-Json
+        $state = Get-Content "$env:CHECKPOINT_OUTPUT/checkpoint.json" -Raw | ConvertFrom-Json
         $testExit = $state.slot_results[8]
         "settled=true" >> $env:GITHUB_OUTPUT
         exit [int]$testExit

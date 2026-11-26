@@ -160,7 +160,24 @@ fn cookie_http_uses_native_format_policy_and_owned_sdk() -> Result<(), Box<dyn s
                 }
                 assert_eq!(actual, expected, "Aligned HTTP output");
             } else {
-                assert_eq!(actual, case["body"], "{}", case["name"]);
+                let mut observed = actual;
+                if case["name"] == "proxy-healthy"
+                    && let Some(object) = observed.as_object_mut()
+                {
+                    assert_eq!(object.remove("country_code"), Some(json!("DE")));
+                    assert_eq!(object.remove("country_name"), Some(json!("Germany")));
+                    assert_eq!(
+                        object.remove("country_flag"),
+                        Some(json!("\u{1F1E9}\u{1F1EA}"))
+                    );
+                } else if case["name"] == "proxy-unhealthy"
+                    && let Some(object) = observed.as_object_mut()
+                {
+                    assert_eq!(object.remove("country_code"), Some(Value::Null));
+                    assert_eq!(object.remove("country_name"), Some(Value::Null));
+                    assert_eq!(object.remove("country_flag"), Some(json!("--")));
+                }
+                assert_eq!(observed, case["body"], "{}", case["name"]);
             }
             Ok::<_, Box<dyn std::error::Error>>(())
         })?;

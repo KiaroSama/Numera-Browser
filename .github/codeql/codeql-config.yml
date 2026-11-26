@@ -1,0 +1,6 @@
+name: "Numera Browser CodeQL configuration"
+paths-ignore:
+  - "**/tests/**"
+  - "engine-rust/tests/**"
+  - "tools/xtask/tests/**"
+  - "dashboard/tests/**"

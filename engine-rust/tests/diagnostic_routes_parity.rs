@@ -66,7 +66,12 @@ fn public_ready_and_protected_health_preserve_wire_and_method_contracts()
             } else {
                 serde_json::from_slice(&bytes)?
             };
-            assert_eq!(observed, case["body"], "{}", case["name"]);
+            let mut expected = case["body"].clone();
+            if expected.get("version").and_then(Value::as_str) == Some("0.36.0") {
+                assert_eq!(observed["version"], env!("CARGO_PKG_VERSION"));
+                expected["version"] = env!("CARGO_PKG_VERSION").into();
+            }
+            assert_eq!(observed, expected, "{}", case["name"]);
             temporary.cleanup()?;
         }
         Ok(())

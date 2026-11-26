@@ -75,12 +75,12 @@ fn named_home(name: &str, _: &std::path::Path) -> std::io::Result<PathBuf> {
         if code != 0 {
             return Err(std::io::Error::from_raw_os_error(code));
         }
-        if result.is_null() {
+        if result.is_null() || result != record.as_mut_ptr() {
             return Err(home_error("Could not determine home directory.".into()));
         }
-        // SAFETY: successful nonnull getpwnam_r initializes the passwd record
-        // and its NUL-terminated directory inside the retained buffer.
-        let directory = unsafe { (*result).pw_dir };
+        // SAFETY: successful nonnull getpwnam_r initializes `record` and its
+        // NUL-terminated directory pointer inside the retained buffer.
+        let directory = unsafe { record.assume_init().pw_dir };
         if directory.is_null() {
             return Err(home_error("Could not determine home directory.".into()));
         }

@@ -622,6 +622,7 @@ fn recovery_transaction(
         // Same callers with the separately reviewed salt/verifier presence
         // guard. All descriptor, admission and data operations remain intact.
         "bf895fd1b47f7281e166285306ab5dc33e9a80da2ff8ec956c1e0a5ed1ff12d1",
+        "881a313635afe3d8242a3f4d38af84fc96efc70a8e824f9b5e671407eb97e5e1",
     ]
     .contains(&hash.as_str())
     {

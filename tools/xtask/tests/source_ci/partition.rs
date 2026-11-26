@@ -721,7 +721,7 @@ source_test!(
                         run["run"]
                             .as_str()
                             .expect("command")
-                            .replace("2 4 1 '", "2 4 0 '")
+                            .replace("2 4 1 \"", "2 4 0 \"")
                     )
                 }
                 "skip-proof" => run["if"] = json!("${{ !cancelled() }}"),

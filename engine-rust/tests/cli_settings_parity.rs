@@ -92,7 +92,12 @@ fn settings_folder_token_and_schedule_services_match_original_verdicts()
             "{}",
             case["argv"]
         );
-        assert_eq!(outcome.payload, case["payload"], "{}", case["argv"]);
+        let mut expected = case["payload"].clone();
+        if expected.get("version").and_then(Value::as_str) == Some("0.36.0") {
+            assert_eq!(outcome.payload["version"], env!("CARGO_PKG_VERSION"));
+            expected["version"] = env!("CARGO_PKG_VERSION").into();
+        }
+        assert_eq!(outcome.payload, expected, "{}", case["argv"]);
     }
     let human = document["human"]
         .as_array()
@@ -153,7 +158,12 @@ fn settings_folder_token_and_schedule_services_match_original_verdicts()
                 assert_eq!(outcome.payload["root"], json!(human_root));
                 outcome.payload["root"] = case["payload"]["root"].clone();
             }
-            assert_eq!(outcome.payload, case["payload"], "{}", case["argv"]);
+            let mut expected = case["payload"].clone();
+            if expected.get("version").and_then(Value::as_str) == Some("0.36.0") {
+                assert_eq!(outcome.payload["version"], env!("CARGO_PKG_VERSION"));
+                expected["version"] = env!("CARGO_PKG_VERSION").into();
+            }
+            assert_eq!(outcome.payload, expected, "{}", case["argv"]);
             payload = outcome.payload;
             assert!(sessions.shutdown(Duration::from_secs(5)).is_empty());
         }
@@ -167,11 +177,13 @@ fn settings_folder_token_and_schedule_services_match_original_verdicts()
             &payload
         )?);
         let (stdout, stderr) = output.into_parts();
+        let expected_stdout = case["stdout"]
+            .as_str()
+            .ok_or("Source human settings output missing")?
+            .replace("0.36.0", env!("CARGO_PKG_VERSION"));
         assert_eq!(
             String::from_utf8(stdout)?,
-            case["stdout"]
-                .as_str()
-                .ok_or("Source human settings output missing")?,
+            expected_stdout,
             "{}",
             case["argv"]
         );
@@ -269,7 +281,12 @@ fn settings_folder_token_and_schedule_services_match_original_verdicts()
             || panic!("Extension read stdin"),
             &mut output,
         )?;
-        assert_eq!(outcome.payload, case["payload"], "{}", case["argv"]);
+        let mut expected = case["payload"].clone();
+        if expected.get("version").and_then(Value::as_str) == Some("0.36.0") {
+            assert_eq!(outcome.payload["version"], env!("CARGO_PKG_VERSION"));
+            expected["version"] = env!("CARGO_PKG_VERSION").into();
+        }
+        assert_eq!(outcome.payload, expected, "{}", case["argv"]);
         assert_eq!(
             i64::from(outcome.exit),
             case["exit"].as_i64().ok_or("Extension exit missing")?

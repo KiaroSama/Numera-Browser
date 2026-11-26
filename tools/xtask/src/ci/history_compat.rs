@@ -236,7 +236,7 @@ fn atomic_callers(root: &Path, case: &Case) -> Result<Vec<(String, Replacement)>
         root,
         case,
         path,
-        "812c6ba4971a60b0dfad2a6cf1f4b79f688335828c710423d98cbe8344b377e1",
+        "369456d882fd790aa2df5e6e388b94b89f4c806d3ff882c5ece9336b4482ac17",
     )?;
     let imported = format!(
         "use crate::storage::locks::DataLock;\nuse historical_atomic::RollbackFailed;\n// Preserve the later caller's exact error ABI outside the frozen atomic defect.\npub(crate) mod historical_atomic {{\nuse std::{{io, path::PathBuf}};\n{definition}\n}}"
