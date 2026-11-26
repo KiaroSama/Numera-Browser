@@ -37,7 +37,7 @@ jobs:
           printf 'github.sha=%s\npr.head.sha=%s\npr.merge.sha=%s\nworkflow.sha=%s\ngithub.ref=%s\nevent=%s\nrepository=%s\nrun.id=%s\nrun.attempt=%s\n' "$GITHUB_SHA" "$PR_HEAD_SHA" "$PR_MERGE_SHA" "$WORKFLOW_SHA" "$GITHUB_REF" "$GITHUB_EVENT_NAME" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" > "$RUNNER_TEMP/numera-codeql-evidence/workflow-subjects.txt"
       - name: Initialize supported language analysis without duplicate builds
         id: init
-        uses: github/codeql-action/init@cee97f86b972a3ded3c58d04148362b193ddc518 # v4.38.3
+        uses: github/codeql-action/init@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
         with:
           languages: ${{ matrix.language }}
           build-mode: none
