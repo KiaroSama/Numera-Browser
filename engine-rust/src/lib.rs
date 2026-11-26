@@ -50,6 +50,7 @@ pub mod read_view;
 pub mod runtime_log;
 pub mod storage;
 pub mod validation;
+pub(crate) mod validation_identity;
 pub mod vault;
 pub mod write_contract;
 

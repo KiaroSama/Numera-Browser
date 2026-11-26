@@ -121,12 +121,18 @@ pub fn check(
                     "{where_}: 'mac_address_mode' must be off, manual, generate, or noise"
                 ));
             }
-            "mac_address" if !trimmed.is_empty() && !validation::valid_mac_address(trimmed) => {
+            "mac_address"
+                if !trimmed.is_empty()
+                    && !crate::validation_identity::valid_mac_address(trimmed) =>
+            {
                 found.push(format!(
                     "{where_}: 'mac_address' must be a valid unicast MAC address (AA:BB:CC:DD:EE:FF)"
                 ));
             }
-            "device_name" if !trimmed.is_empty() && !validation::valid_device_name(trimmed) => {
+            "device_name"
+                if !trimmed.is_empty()
+                    && !crate::validation_identity::valid_device_name(trimmed) =>
+            {
                 found.push(format!(
                     "{where_}: 'device_name' must be 1-63 safe ASCII characters"
                 ));

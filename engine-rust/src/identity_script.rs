@@ -53,7 +53,7 @@ pub fn config(fp: &Fingerprint) -> Result<Value, serde_json::Error> {
     if let Some(name) = fp
         .device_name
         .as_deref()
-        .filter(|value| crate::validation::valid_device_name(value))
+        .filter(|value| crate::validation_identity::valid_device_name(value))
     {
         config.insert("deviceName".into(), name.into());
     }

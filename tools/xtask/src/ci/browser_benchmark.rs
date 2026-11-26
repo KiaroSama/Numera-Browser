@@ -451,7 +451,7 @@ pub fn run(
             .arg("--data-dir")
             .arg(data)
             .args(args);
-        crate::acceptance::execute(&mut command, None)
+        crate::acceptance::execute_within(&mut command, None, Duration::from_secs(90))
     })?;
     let observer = std::env::current_exe()?;
     run_pairs_with_policy(

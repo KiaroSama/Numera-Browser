@@ -131,7 +131,7 @@ pub(crate) fn profile_mac_address(fp: &Fingerprint) -> Option<String> {
         MacAddressMode::Manual => fp
             .mac_address
             .as_deref()
-            .filter(|value| crate::validation::valid_mac_address(value))
+            .filter(|value| crate::validation_identity::valid_mac_address(value))
             .map(str::to_owned),
         MacAddressMode::Generate => Some(crate::fingerprint::local_mac_address(
             &fp.seed.to_string(),
@@ -151,7 +151,7 @@ pub fn validate(fp: &Fingerprint) -> Result<Vec<String>, serde_json::Error> {
     if fp
         .mac_address
         .as_deref()
-        .is_some_and(|value| !crate::validation::valid_mac_address(value))
+        .is_some_and(|value| !crate::validation_identity::valid_mac_address(value))
         || (fp.mac_address_mode == crate::models::MacAddressMode::Manual
             && fp.mac_address.is_none())
     {
@@ -160,7 +160,7 @@ pub fn validate(fp: &Fingerprint) -> Result<Vec<String>, serde_json::Error> {
     if fp
         .device_name
         .as_deref()
-        .is_some_and(|value| !crate::validation::valid_device_name(value))
+        .is_some_and(|value| !crate::validation_identity::valid_device_name(value))
     {
         issues.push("invalid device name".into());
     }

@@ -56,6 +56,23 @@ pub fn persistent(options: &Map<String, Value>) -> io::Result<Value> {
                     })
                     .collect::<io::Result<Vec<_>>>()?,
             )
+        } else if matches!(target, "userDataDir" | "executablePath") {
+            #[cfg(windows)]
+            {
+                if let Some(raw) = value.as_str() {
+                    Value::String(
+                        dunce::simplified(std::path::Path::new(raw))
+                            .to_string_lossy()
+                            .into_owned(),
+                    )
+                } else {
+                    value.clone()
+                }
+            }
+            #[cfg(not(windows))]
+            {
+                value.clone()
+            }
         } else {
             value.clone()
         };

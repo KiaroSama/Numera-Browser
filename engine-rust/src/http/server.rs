@@ -93,45 +93,51 @@ mod mcp_http_tests {
     use std::io;
     use tower::ServiceExt;
 
-    #[tokio::test]
-    async fn mcp_http_requires_a_valid_bearer_and_dispatches_like_stdio()
+    #[test]
+    fn mcp_http_requires_a_valid_bearer_and_dispatches_like_stdio()
     -> Result<(), Box<dyn std::error::Error>> {
-        let root = crate::storage::archive_paths::Staging::new(
-            &std::env::temp_dir(),
-            "numera-mcp-http-test-",
-        )?;
-        let data = root.path()?.to_owned();
-        let app = super::application::router(
-            data,
-            "fixture-only",
-            "",
-            None,
-            "fixture-host",
-            Default::default(),
-        )
-        .await?;
-        let frame = json!({"jsonrpc":"2.0","id":"fixture","method":"ping"});
-        let request = |auth: Option<&str>| {
-            let mut request = Request::post("/api/mcp").header("content-type", "application/json");
-            if let Some(auth) = auth {
-                request = request.header("authorization", auth);
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?;
+        runtime.block_on(async {
+            let root = crate::storage::archive_paths::Staging::new(
+                &std::env::temp_dir(),
+                "numera-mcp-http-test-",
+            )?;
+            let data = root.path()?.to_owned();
+            let app = super::application::router(
+                data,
+                "fixture-only",
+                "",
+                None,
+                "fixture-host",
+                Default::default(),
+            )
+            .await?;
+            let frame = json!({"jsonrpc":"2.0","id":"fixture","method":"ping"});
+            let request = |auth: Option<&str>| {
+                let mut request =
+                    Request::post("/api/mcp").header("content-type", "application/json");
+                if let Some(auth) = auth {
+                    request = request.header("authorization", auth);
+                }
+                request.body(Body::from(frame.to_string()))
+            };
+            for token in [None, Some("Bearer wrong")] {
+                assert_eq!(
+                    app.clone().oneshot(request(token)?).await?.status(),
+                    StatusCode::UNAUTHORIZED
+                );
             }
-            request.body(Body::from(frame.to_string()))
-        };
-        for token in [None, Some("Bearer wrong")] {
-            assert_eq!(
-                app.clone().oneshot(request(token)?).await?.status(),
-                StatusCode::UNAUTHORIZED
-            );
-        }
-        let response = app.oneshot(request(Some("Bearer fixture-only"))?).await?;
-        assert_eq!(response.status(), StatusCode::OK);
-        let body = to_bytes(response.into_body(), crate::mcp::MAX_FRAME).await?;
-        let expected = crate::mcp::handle(&frame, |_| {
-            Err(io::Error::other("Ping must not execute a tool"))
-        })?;
-        assert_eq!(Some(serde_json::from_slice::<Value>(&body)?), expected);
-        Ok(())
+            let response = app.oneshot(request(Some("Bearer fixture-only"))?).await?;
+            assert_eq!(response.status(), StatusCode::OK);
+            let body = to_bytes(response.into_body(), crate::mcp::MAX_FRAME).await?;
+            let expected = crate::mcp::handle(&frame, |_| {
+                Err(io::Error::other("Ping must not execute a tool"))
+            })?;
+            assert_eq!(Some(serde_json::from_slice::<Value>(&body)?), expected);
+            Ok(())
+        })
     }
 }
 

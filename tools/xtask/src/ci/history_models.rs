@@ -82,7 +82,7 @@ pub(super) fn additional(
         MacAddressMode::Manual => fp
             .mac_address
             .as_deref()
-            .filter(|value| crate::validation::valid_mac_address(value))
+            .filter(|value| crate::validation_identity::valid_mac_address(value))
             .map(str::to_owned),
         MacAddressMode::Generate => Some(crate::fingerprint::local_mac_address(
             &fp.seed.to_string(),
@@ -100,7 +100,7 @@ pub(super) fn additional(
                     r#"    if fp
         .mac_address
         .as_deref()
-        .is_some_and(|value| !crate::validation::valid_mac_address(value))
+        .is_some_and(|value| !crate::validation_identity::valid_mac_address(value))
         || (fp.mac_address_mode == crate::models::MacAddressMode::Manual
             && fp.mac_address.is_none())
     {
@@ -109,7 +109,7 @@ pub(super) fn additional(
     if fp
         .device_name
         .as_deref()
-        .is_some_and(|value| !crate::validation::valid_device_name(value))
+        .is_some_and(|value| !crate::validation_identity::valid_device_name(value))
     {
         issues.push("invalid device name".into());
     }"#,
@@ -130,7 +130,7 @@ pub(super) fn additional(
     if let Some(name) = fp
         .device_name
         .as_deref()
-        .filter(|value| crate::validation::valid_device_name(value))
+        .filter(|value| crate::validation_identity::valid_device_name(value))
     {
         config.insert("deviceName".into(), name.into());
     }"#,

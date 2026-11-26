@@ -161,44 +161,49 @@ mod tests {
         Ok(())
     }
 
-    #[tokio::test]
-    async fn request_forwards_bearer_header_and_preserves_json_rpc() -> io::Result<()> {
-        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
-        let bridge = Bridge::new(
-            &format!("http://{}", listener.local_addr()?),
-            Some("fixture"),
-            false,
-        )?;
-        let app = Router::new().route("/api/mcp", post(|headers: HeaderMap, Json(message): Json<Value>| async move {
-            Json(json!({"authorization":headers.get("authorization").and_then(|value| value.to_str().ok()),"message":message}))
-        }));
-        let (stop, stopped) = tokio::sync::oneshot::channel();
-        let server = tokio::spawn(async move {
-            axum::serve(listener, app)
-                .with_graceful_shutdown(async {
-                    let _ = stopped.await;
-                })
-                .await
-        });
-        let message = json!({"jsonrpc":"2.0","id":"qa-1","method":"ping"});
-        let result = tokio::time::timeout(Duration::from_secs(3), bridge.request(&message)).await;
-        let _ = stop.send(());
-        let mut server = server;
-        match tokio::time::timeout(Duration::from_secs(2), &mut server).await {
-            Ok(joined) => joined.map_err(io::Error::other)??,
-            Err(_) => {
-                server.abort();
-                let _ = server.await;
-                return Err(io::Error::new(
-                    io::ErrorKind::TimedOut,
-                    "Bridge fixture did not stop",
-                ));
+    #[test]
+    fn request_forwards_bearer_header_and_preserves_json_rpc() -> io::Result<()> {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?;
+        runtime.block_on(async {
+            let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
+            let bridge = Bridge::new(
+                &format!("http://{}", listener.local_addr()?),
+                Some("fixture"),
+                false,
+            )?;
+            let app = Router::new().route("/api/mcp", post(|headers: HeaderMap, Json(message): Json<Value>| async move {
+                Json(json!({"authorization":headers.get("authorization").and_then(|value| value.to_str().ok()),"message":message}))
+            }));
+            let (stop, stopped) = tokio::sync::oneshot::channel();
+            let server = tokio::spawn(async move {
+                axum::serve(listener, app)
+                    .with_graceful_shutdown(async {
+                        let _ = stopped.await;
+                    })
+                    .await
+            });
+            let message = json!({"jsonrpc":"2.0","id":"qa-1","method":"ping"});
+            let result = tokio::time::timeout(Duration::from_secs(3), bridge.request(&message)).await;
+            let _ = stop.send(());
+            let mut server = server;
+            match tokio::time::timeout(Duration::from_secs(2), &mut server).await {
+                Ok(joined) => joined.map_err(io::Error::other)??,
+                Err(_) => {
+                    server.abort();
+                    let _ = server.await;
+                    return Err(io::Error::new(
+                        io::ErrorKind::TimedOut,
+                        "Bridge fixture did not stop",
+                    ));
+                }
             }
-        }
-        assert_eq!(
-            result.map_err(io::Error::other)??,
-            Some(json!({"authorization":"Bearer fixture","message":message}))
-        );
-        Ok(())
+            assert_eq!(
+                result.map_err(io::Error::other)??,
+                Some(json!({"authorization":"Bearer fixture","message":message}))
+            );
+            Ok(())
+        })
     }
 }

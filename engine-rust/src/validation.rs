@@ -352,24 +352,7 @@ pub fn flat_number_problems(record: &Value) -> Result<Vec<String>, serde_json::E
 }
 
 /// Validate the original uncoerced JSON before constructing typed models.
-pub(crate) fn valid_mac_address(value: &str) -> bool {
-    value.len() == 17
-        && value.bytes().enumerate().all(|(index, byte)| {
-            if index % 3 == 2 {
-                byte == b':'
-            } else {
-                matches!(byte, b'0'..=b'9' | b'A'..=b'F')
-            }
-        })
-}
-
-pub(crate) fn valid_device_name(value: &str) -> bool {
-    !value.is_empty()
-        && value.len() <= 64
-        && value
-            .bytes()
-            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'.' | b'_' | b'-'))
-}
+pub(crate) use crate::validation_identity::{valid_device_name, valid_mac_address};
 
 pub fn profile_problems(record: &Value, shape: &str) -> Result<Vec<String>, serde_json::Error> {
     let root = policy()?;

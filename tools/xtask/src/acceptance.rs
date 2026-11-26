@@ -34,6 +34,15 @@ pub fn execute_observed(
     command: &mut Command,
     input: Option<&[u8]>,
     parent: Option<&Path>,
+    observe: impl FnMut(ExecutePhase, &Value) -> io::Result<()>,
+) -> Result<Captured> {
+    execute_observed_within(command, input, parent, Duration::from_secs(15), observe)
+}
+pub fn execute_observed_within(
+    command: &mut Command,
+    input: Option<&[u8]>,
+    parent: Option<&Path>,
+    budget: Duration,
     mut observe: impl FnMut(ExecutePhase, &Value) -> io::Result<()>,
 ) -> Result<Captured> {
     if input.is_some_and(|v| v.len() > 4096) {
@@ -85,7 +94,7 @@ pub fn execute_observed(
             drop(stdin);
         }
         let mut output = [Vec::new(), Vec::new()];
-        let end = Instant::now() + Duration::from_secs(15);
+        let end = Instant::now() + budget;
         let mut buf = [0; 8192];
         let exit = loop {
             let status = tree.child_mut().try_wait()?;
@@ -152,6 +161,13 @@ pub fn execute_observed(
 }
 pub fn execute(command: &mut Command, input: Option<&[u8]>) -> Result<Captured> {
     execute_observed(command, input, None, |_, _| Ok(()))
+}
+pub fn execute_within(
+    command: &mut Command,
+    input: Option<&[u8]>,
+    budget: Duration,
+) -> Result<Captured> {
+    execute_observed_within(command, input, None, budget, |_, _| Ok(()))
 }
 
 fn finite(value: &Value) -> bool {

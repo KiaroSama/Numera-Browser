@@ -218,7 +218,7 @@ pub fn generate<S: Into<serde_json::Number>>(
 fn generated_mac_is_stable_and_locally_administered_unicast() -> Result<(), std::num::ParseIntError>
 {
     let mac = local_mac_address("42", "mac-generate");
-    assert!(crate::validation::valid_mac_address(&mac));
+    assert!(crate::validation_identity::valid_mac_address(&mac));
     assert_eq!(u8::from_str_radix(&mac[..2], 16)? & 0b11, 0b10);
     assert_eq!(mac, local_mac_address("42", "mac-generate"));
     assert_ne!(mac, local_mac_address("42", "mac-noise"));

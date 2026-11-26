@@ -449,6 +449,11 @@ impl Worker {
                     .channel()
                     .send_no_result("addCookies", json!({"cookies":rows}))
                     .await?;
+                // Force a synchronous cookie-store round-trip before the caller closes the context.
+                let _: Value = context
+                    .channel()
+                    .send("cookies", json!({"urls":[]}))
+                    .await?;
                 Ok(json!({"added":true}))
             }
             _ => Err(invalid()),
