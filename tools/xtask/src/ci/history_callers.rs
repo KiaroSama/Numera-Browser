@@ -450,7 +450,7 @@ fn log_retention_callers(
         root,
         case,
         path,
-        "491eae3f34700f27c81c67934254310b5e6a3f56db38df4f7e9084410736ae02",
+        "b409dc9fcd5a22554dd84e97bb6400aff4c9481320f2966f46c700f9d1d9fa7c",
     )?;
     let current = fs::read(root.join(RUNTIME_LOG))?;
     let current_sha = super::sha(&current);

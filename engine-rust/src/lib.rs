@@ -1,4 +1,5 @@
 //! Native Numera application, persistence, browser preparation and ownership.
+mod automation_commands;
 pub mod benchmark_http;
 pub mod browser;
 pub mod bulk;

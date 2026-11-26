@@ -9,6 +9,7 @@ use super::{
 };
 use crate::{
     browser::runtime::Runtime,
+    cookie_export,
     ownership::registry::Registry,
     storage::{
         config::ConfigStore,
@@ -318,7 +319,7 @@ impl Application<'_> {
             "stop" => profiles.stop(self.root, reference, time),
             "jobs" => job_commands::run(self.root, self.host, args, time),
             "page" | "workflow" | "fleet" | "profile" | "update" | "capabilities" => {
-                super::automation_commands::run(self, args, time)
+                crate::automation_commands::run(self, args, time)
             }
             "engines" => settings.engines(),
             "default-engine" => settings.default_engine(text(args, "name")),
@@ -491,15 +492,23 @@ impl Application<'_> {
                 };
                 match required(args, "cookies_command")? {
                     "list" => cookies.list(reference, text(args, "engine"), time),
-                    "export" => cookies.export(
-                        reference,
-                        text(args, "out")
-                            .or_else(|| text(args, "file"))
-                            .map(Path::new),
-                        text(args, "format"),
-                        text(args, "engine"),
-                        time,
-                    ),
+                    "export" => {
+                        let format = text(args, "format");
+                        let engine = text(args, "engine");
+                        if let Some(file) = text(args, "out").or_else(|| text(args, "file")) {
+                            cookies.export(reference, Path::new(file), format, engine, time)
+                        } else {
+                            cookie_export::run(
+                                &cookies,
+                                reference,
+                                None,
+                                format,
+                                engine,
+                                time,
+                                |_| Ok(()),
+                            )
+                        }
+                    }
                     "import" => cookies.import(
                         reference,
                         Path::new(required(args, "file")?),

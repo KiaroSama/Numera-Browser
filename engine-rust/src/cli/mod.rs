@@ -4,8 +4,8 @@ mod administration;
 pub mod align_commands;
 pub mod application;
 pub mod attach_commands;
-mod automation_commands;
 pub mod automation_output;
+mod automation_registry;
 mod browser;
 mod bulk_commands;
 pub mod cookie_commands;
@@ -73,7 +73,7 @@ pub fn registry() -> Command {
     }
     for command in administration::commands()
         .into_iter()
-        .chain(automation_commands::commands())
+        .chain(automation_registry::commands())
     {
         root = root.subcommand(command);
     }

@@ -1,8 +1,8 @@
 use super::profile_commands::Outcome;
-pub(crate) use crate::cookie_export::{CookieExport, CookieFormat};
 use crate::{
     browser::{cookie_normalize, cookies, runtime::Runtime},
     conversion::value_text,
+    cookie_export::{self, missing},
     ownership::registry::Registry,
     storage::repo::{ProfileRepo, RepoError},
 };
@@ -41,7 +41,8 @@ impl Cookies<'_> {
             .and_then(serde_json::Value::as_str)
         {
             Some("list") => self.list(reference, engine, time)?,
-            Some("export") => self.export_started(
+            Some("export") => cookie_export::run(
+                self,
                 reference,
                 args.get("out")
                     .and_then(Value::as_str)
@@ -85,35 +86,10 @@ impl Cookies<'_> {
         time: f64,
         operation: impl FnOnce(&mut crate::browser::adapter::Adapter) -> std::io::Result<T>,
     ) -> Result<Option<T>, RepoError> {
-        self.run_started(reference, engine, time, |_| Ok(()), operation)
-    }
-    fn run_started<T>(
-        &self,
-        reference: &str,
-        engine: Option<&str>,
-        time: f64,
-        start: impl FnOnce(&crate::models::Profile) -> std::io::Result<()>,
-        operation: impl FnOnce(&mut crate::browser::adapter::Adapter) -> std::io::Result<T>,
-    ) -> Result<Option<T>, RepoError> {
         let Some(profile) = self.repo.resolve(reference, time)? else {
             return Ok(None);
         };
-        start(&profile)?;
-        self.sessions
-            .with_finite_browser(
-                &profile.id,
-                &value_text(&profile.name),
-                |session, mut current| {
-                    current.startup_urls.clear();
-                    if let Some(engine) = engine.filter(|v| !v.is_empty()) {
-                        current.engine = engine.into();
-                    }
-                    self.runtime.open(session, current, true, time)
-                },
-                operation,
-            )
-            .map(Some)
-            .map_err(RepoError::from)
+        cookie_export::with_profile_browser(self, &profile, engine, time, operation).map(Some)
     }
     pub fn list(
         &self,
@@ -142,51 +118,23 @@ impl Cookies<'_> {
             json!({"total":rows.len(),"domains":domains}),
         ))
     }
-    pub fn export<'a>(
+    pub fn export(
         &self,
         reference: &str,
-        file: impl Into<Option<&'a Path>>,
+        file: &Path,
         format: Option<&str>,
         engine: Option<&str>,
         time: f64,
     ) -> Result<Outcome, RepoError> {
-        self.export_started(reference, file.into(), format, engine, time, |_| Ok(()))
-    }
-    fn export_started(
-        &self,
-        reference: &str,
-        file: Option<&Path>,
-        format: Option<&str>,
-        engine: Option<&str>,
-        time: f64,
-        start: impl FnOnce(&crate::models::Profile) -> std::io::Result<()>,
-    ) -> Result<Outcome, RepoError> {
-        let format = CookieFormat::parse(format, file)?;
-        let mut id = String::new();
-        let Some(export) = self.run_started(
+        cookie_export::run(
+            self,
             reference,
+            Some(file),
+            format,
             engine,
             time,
-            |profile| {
-                id.clone_from(&profile.id);
-                start(profile)
-            },
-            |adapter| CookieExport::read(adapter, format),
-        )?
-        else {
-            return Ok(missing(reference));
-        };
-        let Some(file) = file else {
-            return Ok(Outcome::success(export.response(&id, format)));
-        };
-        let content = export.content;
-        // Retain Windows text-mode output for files without changing the API payload.
-        #[cfg(windows)]
-        let content = content.replace('\n', "\r\n");
-        crate::storage::atomic::write_bytes(file, content.as_bytes())?;
-        Ok(Outcome::success(
-            json!({"ok":true,"count":export.count,"file":file,"format":format.label()}),
-        ))
+            |_| Ok(()),
+        )
     }
     pub fn import(
         &self,
@@ -220,59 +168,11 @@ impl Cookies<'_> {
         }
         start(&profile, rows.len())?;
         cookies::preflight(&rows)?;
-        let count = self.sessions.with_finite_browser(
-            &profile.id,
-            &value_text(&profile.name),
-            |session, mut current| {
-                current.startup_urls.clear();
-                if let Some(engine) = engine.filter(|v| !v.is_empty()) {
-                    current.engine = engine.into();
-                }
-                self.runtime.open(session, current, true, time)
-            },
-            |adapter| cookies::write_open(adapter, &rows, clear),
-        )?;
+        let count = cookie_export::with_profile_browser(self, &profile, engine, time, |adapter| {
+            cookies::write_open(adapter, &rows, clear)
+        })?;
         Ok(Outcome::success(
             json!({"ok":true,"imported":count,"cleared":clear}),
         ))
-    }
-}
-fn missing(reference: &str) -> Outcome {
-    Outcome::failed(format!("no profile matching '{reference}'"))
-}
-
-#[cfg(test)]
-mod export_tests {
-    use super::*;
-    use crate::browser::cookie_format;
-    use std::io;
-
-    #[test]
-    fn shared_export_keeps_profile_and_format() -> io::Result<()> {
-        let rows = [
-            json!({"domain":".example.test","name":"qa","value":"é","path":"/","httpOnly":true,"secure":true,"expires":-1}),
-        ];
-        let json_response = CookieExport::from_rows(&rows, CookieFormat::Json)?
-            .response("fixture-a", CookieFormat::Json);
-        assert_eq!(json_response["profile_id"], "fixture-a");
-        assert_eq!(json_response["filename"], "fixture-a-cookies.json");
-        let content = json_response["content"]
-            .as_str()
-            .ok_or_else(|| io::Error::other("Expected cookie JSON"))?;
-        assert_eq!(
-            serde_json::from_str::<Value>(content).map_err(io::Error::other)?["cookies"],
-            json!(rows)
-        );
-        let response = CookieExport::from_rows(&rows, CookieFormat::Netscape)?
-            .response("fixture-a", CookieFormat::Netscape);
-        let content = response["content"]
-            .as_str()
-            .ok_or_else(|| io::Error::other("Expected Netscape text"))?;
-        let parsed = cookie_format::parse_netscape(content)?;
-        assert_eq!(parsed.len(), 1);
-        assert_eq!(parsed[0]["value"], "é");
-        assert_eq!(parsed[0]["httpOnly"], true);
-        assert_eq!(response["count"], 1);
-        Ok(())
     }
 }
