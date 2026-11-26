@@ -2,7 +2,7 @@
 # cargo xtask build-product build/container --resources /path/to/resources --server-only
 # The resource receipt inventories matched vendor drivers, browsers and notices.
 # Only that reviewed product enters the runtime image; no source interpreter runs.
-FROM ubuntu:24.04
+FROM ubuntu:26.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
