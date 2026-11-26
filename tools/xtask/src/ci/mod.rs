@@ -26,6 +26,7 @@ pub mod history;
 pub mod history_callers;
 mod history_capture;
 pub mod history_compat;
+mod history_models;
 pub mod mapping;
 pub mod memory;
 pub mod migration;

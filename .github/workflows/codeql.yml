@@ -50,9 +50,9 @@ jobs:
         with:
           category: /language:${{ matrix.language }}
           output: ${{ runner.temp }}/numera-codeql-results
-          # Repository default setup remains enabled. Competing advanced SARIF
-          # uploads are rejected; retaining results does not certify findings.
-          upload: never
+          # Repository default setup is disabled so this workflow uploads the
+          # authoritative Rust SARIF verdict directly to Code Scanning.
+          upload: always
           wait-for-processing: true
       - name: Record the actual CodeQL tool and resolved security suite
         if: always() && steps.init.outcome == 'success'

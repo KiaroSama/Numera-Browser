@@ -388,6 +388,7 @@ pub fn additional(root: &Path, case: &Case) -> Result<Vec<(String, Replacement)>
         replacement.receipt["reason"] = "Keep the frozen MCP companion unchanged. The later acquisition caller uses the identical pinned current typed child_command body, including every private environment removal; admission/capture/receipt/cleanup paths remain untouched.".into();
         result.push((path.into(), replacement));
     }
+    result.extend(super::history_models::additional(root, case, &sources)?);
     Ok(result)
 }
 

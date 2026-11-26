@@ -52,12 +52,12 @@ jobs:
           if [ -z "$driver" ] && [ -n "${CHROMEWEBDRIVER:-}" ]; then driver="$CHROMEWEBDRIVER/chromedriver"; fi
           test -x "$driver"
           echo "CHROMEDRIVER=$driver" >> "$GITHUB_ENV"
-      - name: Require all 124 actual Chromium WASM source cases
+      - name: Require all 129 actual Chromium WASM source cases
         env:
           CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER: wasm-bindgen-test-runner
           WASM_BINDGEN_TEST_WEBDRIVER_JSON: dashboard/tests/webdriver.json
           WASM_BINDGEN_TEST_TIMEOUT: "180"
-        run: cargo xtask ci counted-wasm-tests 124 build/dashboard-wasm.log -- cargo test --manifest-path dashboard/Cargo.toml --locked --color=never --lib --target wasm32-unknown-unknown
+        run: cargo xtask ci counted-wasm-tests 129 build/dashboard-wasm.log -- cargo test --manifest-path dashboard/Cargo.toml --locked --color=never --lib --target wasm32-unknown-unknown
       - name: Build and bind the dashboard to this exact source
         run: cargo xtask ci owned --wall 600 --idle 120 -- cargo run --manifest-path dashboard/Cargo.toml --locked --bin dashboard-build
       - name: Preserve exact source dashboard and test evidence

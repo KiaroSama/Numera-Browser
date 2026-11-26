@@ -272,7 +272,7 @@ jobs:
             browser-page-rust/target/browser-page-generated/compiled.js
           if-no-files-found: error
           retention-days: 7
-      - run: cargo xtask ci counted-tests 6 build/xtask-unit.log -- cargo test --manifest-path tools/xtask/Cargo.toml --locked --bin numera-xtask -- --test-threads=2 --color=never
+      - run: cargo xtask ci counted-tests 9 build/xtask-unit.log -- cargo test --manifest-path tools/xtask/Cargo.toml --locked --bin numera-xtask -- --test-threads=2 --color=never
       - run: cargo xtask ci counted-tests 643 build/source-ci.log -- cargo test --manifest-path tools/xtask/Cargo.toml --locked --test source_ci -- --test-threads=2 --color=never
       - run: cargo xtask ci counted-tests 123 build/source-acceptance.log -- cargo test --manifest-path tools/xtask/Cargo.toml --locked --test source_acceptance -- --test-threads=2 --color=never
 
