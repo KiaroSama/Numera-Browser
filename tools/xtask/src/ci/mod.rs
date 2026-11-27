@@ -346,12 +346,38 @@ pub fn run(root: &Path, mut args: impl Iterator<Item = OsString>) -> Result<()> 
                 deadline,
                 4 * 1024 * 1024,
             )?;
-            let check = evidence::codeql(&decode(&output)?, analysis_sha)?;
+            let verdict = evidence::codeql(&decode(&output)?, analysis_sha);
+            let (kind, id) = match verdict {
+                Ok(check) => ("check", check),
+                Err(error)
+                    if subject.is_none()
+                        && error.to_string()
+                            == "Independent CodeQL verdict is unavailable; signing is blocked" =>
+                {
+                    let analyses_output = codeql_source::codeql_output(
+                        Command::new("gh").args([
+                            "api",
+                            "--hostname",
+                            "github.com",
+                            &format!("repos/{repository}/code-scanning/analyses?tool_name=CodeQL&per_page=100"),
+                        ]),
+                        deadline,
+                        4 * 1024 * 1024,
+                    )?;
+                    let id = evidence::codeql_analyses(
+                        &decode(&analyses_output)?,
+                        analysis_sha,
+                        &["/language:actions", "/language:rust"],
+                    )?;
+                    ("analysis", id)
+                }
+                Err(error) => return Err(error),
+            };
             if let Some(subject) = &subject {
-                codeql_source::retain_codeql_subject(subject, Some(check))?;
+                codeql_source::retain_codeql_subject(subject, Some(id))?;
             }
             println!(
-                "Independent CodeQL verdict verified check={check} build_sha={sha} analysis_sha={analysis_sha}"
+                "Independent CodeQL verdict verified {kind}={id} build_sha={sha} analysis_sha={analysis_sha}"
             );
             Ok(())
         }

@@ -12,6 +12,9 @@ on:
 
 permissions:
   contents: read
+  actions: read
+  checks: read
+  security-events: read
 
 env:
   CARGO_BUILD_JOBS: "2"

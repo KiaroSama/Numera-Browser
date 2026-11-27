@@ -13,6 +13,7 @@ permissions:
   contents: read
   actions: read
   checks: read
+  security-events: read
 jobs:
   review:
     if: github.event_name == 'workflow_dispatch' && github.actor == 'KiaroSama' && github.repository == 'KiaroSama/Numera-Browser' && inputs.source_sha == github.sha && inputs.run_id == github.run_id && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/migration/native-runtime-checkpoint-20261012')

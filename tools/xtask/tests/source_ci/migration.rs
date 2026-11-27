@@ -2,23 +2,17 @@ use super::*;
 use ci::{browser_benchmark as browser, migration, reference};
 use numera_xtask::acceptance;
 use std::{process::Command, time::Duration};
-fn occurrence_fixture() -> ci::Result<Value> {
-    migration::discover("frozen-fixture",&[("source.rs".into(),br#"#[cfg(windows)] fn take(){} #[cfg(unix)] fn take(){} #[cfg(feature="other")] fn take(){} fn read(){#[cfg(windows)]fn pipe(){} #[cfg(unix)]fn pipe(){}}"#.to_vec())])
-}
-fn complete(temp: &Temp, source: &Value) -> ci::Result<Value> {
-    temp.write("target.rs", b"fn native(){}")?;
-    temp.write("tests.rs", b"#[test]fn acceptance(){}")?;
-    let mut ledger = source.clone();
-    for row in ledger["capabilities"]
-        .as_array_mut()
-        .ok_or("capabilities")?
-    {
-        row["status"] = json!("verified");
-        row["target"] = json!("target.rs");
-        row["test"] = json!("tests.rs");
-    }
-    Ok(ledger)
-}
+
+#[path = "migration/benchmark_controls.rs"]
+mod benchmark_controls;
+#[path = "migration/fixtures.rs"]
+mod fixtures;
+use benchmark_controls::{exact_inventory_controls, natural_deadline};
+use fixtures::{
+    complete, entry_creation_fixture, log_safety, occurrence_fixture, reference_fixture,
+    temp_bound, temp_owned,
+};
+
 fn historical_metadata(test: &str, expected: &str) -> TestResult {
     let map = ci::decode(&fs::read(root().join("docs/source-ci-test-map.json"))?)?;
     let row = map["cases"]
@@ -193,187 +187,6 @@ source_test!(
         Ok(())
     }
 );
-fn exact_inventory_controls() -> TestResult {
-    browser_compiler_controls()?;
-    let baseline = ci::decode(&fs::read(root().join("docs/rust-test-baseline.json"))?)?;
-    let mut paths = fs::read_dir(root().join("docs"))?
-        .map(|entry| entry.map(|entry| entry.path()))
-        .collect::<io::Result<Vec<_>>>()?;
-    paths.retain(|path| {
-        path.file_name()
-            .and_then(|v| v.to_str())
-            .is_some_and(|v| v.starts_with("source-") && v.ends_with("-test-map.json"))
-    });
-    paths.sort();
-    let maps = paths
-        .iter()
-        .map(|path| ci::decode(&fs::read(path)?))
-        .collect::<ci::Result<Vec<_>>>()?;
-    ci::coverage_inventory::validate_documents(&root(), &baseline, &maps)?;
-    let selected = maps
-        .iter()
-        .position(|map| map["suite"] == "source_ci")
-        .ok_or("CI source map missing")?;
-    for damage in ["missing", "duplicate", "kind", "platform"] {
-        let mut changed = maps.clone();
-        let map = &mut changed[selected];
-        match damage {
-            "missing" => {
-                let removed = map["cases"].as_array_mut().expect("cases").remove(0);
-                let count = map["source_count"].as_u64().expect("count") - 1;
-                map["source_count"] = json!(count);
-                map["implemented_count"] = json!(count);
-                let kind = removed["original_type"].as_str().expect("kind");
-                let count = map["case_types"][kind].as_u64().expect("kind count") - 1;
-                map["case_types"][kind] = json!(count);
-            }
-            "duplicate" => map["cases"][1] = map["cases"][0].clone(),
-            "kind" => map["cases"][0]["original_type"] = json!("standard"),
-            _ => map["cases"][0]["native_platforms"] = json!(["windows"]),
-        }
-        assert!(
-            ci::coverage_inventory::validate_documents(&root(), &baseline, &changed).is_err(),
-            "{damage}"
-        );
-    }
-    let expected = BTreeSet::from(["exact_original_case".into()]);
-    let valid = "running 1 test\ntest exact_original_case ... ok\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s\n";
-    assert_eq!(
-        ci::coverage_inventory::validate_expected_output(&expected, valid, 0)?,
-        1
-    );
-    for damaged in [
-        valid.replace("test exact_original_case ... ok\n", ""),
-        valid.replace("exact_original_case", "invented_replacement"),
-        valid.replace(" ... ok", " ... ignored"),
-        valid.replace("running 1 test", "running 0 tests"),
-    ] {
-        assert!(ci::coverage_inventory::validate_expected_output(&expected, &damaged, 0).is_err());
-    }
-    Ok(())
-}
-fn browser_compiler_controls() -> TestResult {
-    let native = ci::workflow::parse(&fs::read_to_string(
-        root().join(".github/workflows/native-ci.yml"),
-    )?)?;
-    let advisory = ci::workflow::parse(&fs::read_to_string(
-        root().join(".github/workflows/dependency-review.yml"),
-    )?)?;
-    ci::workflow::browser_page_compiler(&native, &advisory)?;
-    let candidate = ci::workflow::parse(&fs::read_to_string(
-        root().join(".github/workflows/rust-candidate.yml"),
-    )?)?;
-    for document in [&native, &candidate] {
-        ci::workflow::branch_concurrency(document)?;
-        for damage in ["event", "repository", "disabled"] {
-            let mut changed = document.clone();
-            match damage {
-                "event" => {
-                    changed["concurrency"]["group"] =
-                        json!("${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}")
-                }
-                "repository" => {
-                    changed["concurrency"]["group"] =
-                        json!("${{ github.workflow }}-${{ github.head_ref || github.ref_name }}")
-                }
-                _ => changed["concurrency"]["cancel-in-progress"] = json!(false),
-            }
-            assert!(
-                ci::workflow::branch_concurrency(&changed).is_err(),
-                "{damage}"
-            );
-        }
-    }
-    let dependencies =
-        ci::workflow::parse(&fs::read_to_string(root().join(".github/dependabot.yml"))?)?;
-    ci::workflow::dependency_updates(&dependencies)?;
-    for damage in ["missing", "duplicate", "pip", "npm"] {
-        let mut changed = dependencies.clone();
-        let updates = changed["updates"].as_array_mut().expect("updates");
-        match damage {
-            "missing" => {
-                updates.pop();
-            }
-            "duplicate" => updates.push(updates[0].clone()),
-            other => updates[0]["package-ecosystem"] = json!(other),
-        }
-        assert!(
-            ci::workflow::dependency_updates(&changed).is_err(),
-            "{damage}"
-        );
-    }
-    let check = ci::workflow::step_once(
-        &native["jobs"]["static"]["steps"],
-        "--bin browser-page-build -- --check",
-        true,
-    )?;
-    for damage in [
-        "missing",
-        "conditional",
-        "softened",
-        "stale",
-        "target",
-        "archive",
-        "binary",
-    ] {
-        let mut changed = native.clone();
-        let lane = &mut changed["jobs"]["static"];
-        match damage {
-            "missing" => {
-                lane["steps"].as_array_mut().expect("steps").remove(check);
-            }
-            "conditional" => lane["steps"][check]["if"] = json!("false"),
-            "softened" => lane["steps"][check]["continue-on-error"] = json!(true),
-            "stale" => {
-                lane["steps"][check]["run"] = json!(
-                    lane["steps"][check]["run"]
-                        .as_str()
-                        .expect("run")
-                        .replace("--check", "--release")
-                )
-            }
-            "target" => lane["steps"][1]["with"]["targets"] = json!("x86_64-unknown-linux-gnu"),
-            _ => {
-                let setup = ci::workflow::step_once(
-                    &lane["steps"],
-                    "binaryen-version_133-x86_64-linux.tar.gz",
-                    true,
-                )?;
-                let pin = if damage == "archive" {
-                    "2dc9c7813f5375db93d96ead4b78222fcc3e2677bbb832297af4797782a37489"
-                } else {
-                    "52597efec0ad2416f8b5c245864960e775b8ffc94c751cc0b016c4b4986d3bcb"
-                };
-                lane["steps"][setup]["run"] = json!(
-                    lane["steps"][setup]["run"]
-                        .as_str()
-                        .expect("run")
-                        .replace(pin, &"0".repeat(64))
-                );
-            }
-        }
-        assert!(
-            ci::workflow::browser_page_compiler(&changed, &advisory).is_err(),
-            "{damage}"
-        );
-    }
-    let mut missing = advisory.clone();
-    let steps = missing["jobs"]["audit"]["steps"]
-        .as_array_mut()
-        .expect("audit steps");
-    for step in steps {
-        if let Some(run) = step["run"].as_str() {
-            step["run"] = json!(
-                run.lines()
-                    .filter(|line| !line.contains("browser-page-rust/Cargo.lock"))
-                    .collect::<Vec<_>>()
-                    .join("\n")
-            );
-        }
-    }
-    assert!(ci::workflow::browser_page_compiler(&native, &missing).is_err());
-    Ok(())
-}
 source_test!(
     migration_frozen_ledger,
     "tests/test_migration_gates.py::test_mapped_occurrences_retain_frozen_inventory_and_block_selection",
@@ -541,106 +354,10 @@ source_test!(
         Ok(())
     }
 );
-struct Natural {
-    clock: u64,
-    mode: &'static str,
-    events: Vec<&'static str>,
-    queries: usize,
-}
-impl browser::Observer for Natural {
-    fn register(&mut self) -> TestResult {
-        Ok(())
-    }
-    fn ticks(&mut self) -> u64 {
-        self.clock
-    }
-    fn spawn(&mut self) -> TestResult {
-        self.events.push("spawn");
-        Ok(())
-    }
-    fn communicate(&mut self, _: u64) -> ci::Result<Value> {
-        self.clock = if self.mode == "expired" {
-            15_000_000_000
-        } else {
-            0
-        };
-        Ok(json!({"ok":true}))
-    }
-    fn natural(&mut self, _: u64) -> ci::Result<bool> {
-        self.queries += 1;
-        if self.mode == "late" {
-            self.clock = 15_000_000_000;
-            return Ok(true);
-        }
-        if self.mode == "unknown" {
-            return Ok(false);
-        }
-        Ok(self.mode == "transient" && self.clock >= 250_000_000)
-    }
-    fn pause(&mut self) -> TestResult {
-        self.clock += 10_000_000;
-        Ok(())
-    }
-    fn peak(&mut self) -> ci::Result<(String, u64)> {
-        self.events.push("peak");
-        Ok(("peak-job-committed-bytes".into(), 1234))
-    }
-    fn cleanup(&mut self) -> TestResult {
-        self.events.push("cleanup");
-        Ok(())
-    }
-    fn reap(&mut self) -> TestResult {
-        self.events.push("reap");
-        Ok(())
-    }
-    fn close(&mut self) -> TestResult {
-        self.events
-            .extend(["stdout-close", "stderr-close", "process-close", "job-close"]);
-        Ok(())
-    }
-}
 source_test!(
     migration_natural_deadline,
     "tests/test_migration_gates.py::test_benchmark_requires_natural_settlement_inside_the_original_deadline",
-    {
-        historical_metadata(
-            "migration::migration_natural_deadline",
-            "e9e65689ecff7dd714e7e1f349c442c02f4ad4992c77532d58c45a7bd2f2aaa1",
-        )?;
-        natural_settlement_mutant()?;
-        for mode in ["transient", "active", "unknown", "expired", "late"] {
-            let mut host = Natural {
-                clock: 0,
-                mode,
-                events: Vec::new(),
-                queries: 0,
-            };
-            let result = browser::observe(&mut host, Duration::from_secs(15));
-            if mode == "transient" {
-                let result = result?;
-                assert!(result.elapsed_ns >= 250_000_000);
-                assert_eq!(result.bytes, 1234);
-                assert!(
-                    host.events.iter().position(|v| *v == "peak")
-                        < host.events.iter().position(|v| *v == "cleanup")
-                );
-            } else {
-                assert!(result.is_err());
-                assert!(!host.events.contains(&"peak"));
-                if matches!(mode, "active" | "unknown") {
-                    assert!((15_000_000_000..15_050_000_000).contains(&host.clock));
-                } else {
-                    assert_eq!(host.queries, usize::from(mode == "late"));
-                }
-            }
-            assert_eq!(host.events.iter().filter(|v| **v == "cleanup").count(), 1);
-            assert_eq!(
-                &host.events[host.events.len() - 2..],
-                ["process-close", "job-close"]
-            );
-        }
-        Ok(())
-    }
+    { natural_deadline() }
 );
 source_test!(
     migration_positive_peak,
@@ -657,68 +374,6 @@ source_test!(
         Ok(())
     }
 );
-fn natural_settlement_mutant() -> TestResult {
-    // Mutate the actual shipped Rust function to accept a sample without
-    // observing whether the retained descendant tree settled naturally.
-    let current = fs::read_to_string(root().join("tools/xtask/src/ci/browser_benchmark.rs"))?;
-    let start = current
-        .find("pub fn observe(")
-        .ok_or("Observer function missing")?;
-    let end = current[start..]
-        .find("\npub fn positive_samples(")
-        .ok_or("Observer function boundary missing")?
-        + start;
-    let current = &current[start..end];
-    let query = "let empty = host.natural(deadline)?;";
-    assert_eq!(current.matches(query).count(), 1);
-    let mutant = current.replacen(query, "let empty = true;", 1);
-    let source = format!(
-        r#"
-use numera_xtask::ci::{{Result,fail,browser_benchmark::{{Observer,Sample}}}};
-use serde_json::{{Value,json}};
-use std::time::Duration;
-{mutant}
-#[derive(Default)] struct Host {{ clock:u64, queries:usize, peak:bool, cleanup:usize, reaped:bool, closed:bool }}
-impl Observer for Host {{
- fn register(&mut self)->Result<()>{{Ok(())}}
- fn ticks(&mut self)->u64{{self.clock}}
- fn spawn(&mut self)->Result<()>{{Ok(())}}
- fn communicate(&mut self,_:u64)->Result<Value>{{Ok(json!({{"complete":true}}))}}
- fn natural(&mut self,_:u64)->Result<bool>{{self.queries+=1;Ok(false)}}
- fn pause(&mut self)->Result<()>{{self.clock+=10_000_000;Ok(())}}
- fn peak(&mut self)->Result<(String,u64)>{{self.peak=true;Ok(("peak-job-committed-bytes".into(),1234))}}
- fn cleanup(&mut self)->Result<()>{{self.cleanup+=1;Ok(())}}
- fn reap(&mut self)->Result<()>{{self.reaped=true;Ok(())}}
- fn close(&mut self)->Result<()>{{self.closed=true;Ok(())}}
-}}
-fn main() {{
- let mut broken=Host::default();
- let sample=observe(&mut broken,Duration::from_secs(15)).expect("mutant accepts live descendants");
- assert_eq!(sample.elapsed_ns,0);assert_eq!(broken.queries,0);assert!(broken.peak);
- assert_eq!(broken.cleanup,1);assert!(broken.reaped&&broken.closed);
- let mut fixed=Host::default();
- assert!(numera_xtask::ci::browser_benchmark::observe(&mut fixed,Duration::from_secs(15)).is_err());
- assert!(fixed.queries>0);assert!(!fixed.peak);assert_eq!(fixed.cleanup,1);
- assert!(fixed.reaped&&fixed.closed);
-}}
-"#
-    );
-    let temp = Temp::new("Rust natural-settlement mutant")?;
-    let binary = compile(&temp, &source)?;
-    let result = ci::capture(
-        &mut Command::new(binary),
-        Duration::from_secs(5),
-        Duration::from_secs(5),
-        65536,
-    )?;
-    assert_eq!(
-        result.exit,
-        0,
-        "{}",
-        String::from_utf8_lossy(&result.stderr)
-    );
-    Ok(())
-}
 pub(super) fn compile(temp: &Temp, source: &str) -> ci::Result<PathBuf> {
     let file = temp.write("fixture.rs", source.as_bytes())?;
     let output = temp
@@ -803,64 +458,6 @@ source_test!(
         Ok(())
     }
 );
-fn entry_creation_fixture(
-    temp: &Temp,
-    settings: &Value,
-    profile: &Value,
-    dashboard: &Value,
-    newline: &str,
-    lock_content: &[u8],
-    extra_lock: bool,
-) -> ci::Result<Value> {
-    static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
-    let number = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-    let template = temp.0.join(format!("template-{number}"));
-    fs::create_dir(&template)?;
-    let initial = json!({"default_engine":"playwright","future":{"items":[42,true]}});
-    fs::write(
-        template.join("config.json"),
-        serde_json::to_string_pretty(&initial)?.replace('\n', "\r\n"),
-    )?;
-    let workspace = temp.0.join(format!("pair-{number}"));
-    fs::create_dir(&workspace)?;
-    let (_, payload) = ci::entry_benchmark::observation(
-        &template,
-        &workspace,
-        ci::entry_benchmark::Scenario::Create,
-        &Value::Null,
-        |data, _| {
-            fs::write(
-                data.join("config.json"),
-                serde_json::to_string_pretty(settings)?.replace('\n', newline),
-            )?;
-            for (directory, record) in [("profiles", profile), ("dashboard", dashboard)] {
-                let path = data.join(directory).join("new.json");
-                fs::create_dir_all(path.parent().expect("parent"))?;
-                fs::write(&path, record.to_string())?;
-                let lock = numera_core::storage::locks::DataLock::for_file(&path)?;
-                fs::create_dir_all(lock.path().parent().expect("lock parent"))?;
-                fs::write(lock.path(), lock_content)?;
-                if extra_lock {
-                    fs::write(
-                        lock.path()
-                            .parent()
-                            .expect("lock parent")
-                            .join("unrelated.lock"),
-                        b"",
-                    )?;
-                }
-            }
-            Ok(browser::Sample {
-                elapsed_ns: 1,
-                metric: "fixture".into(),
-                bytes: 1,
-                payload: json!({"ok":true,"profile":profile}),
-                diagnostics: None,
-            })
-        },
-    )?;
-    Ok(payload)
-}
 source_test!(
     migration_creation_content,
     "tests/test_migration_gates.py::test_benchmark_creation_compares_new_dashboard_content_not_just_existence",
@@ -918,29 +515,6 @@ source_test!(
         Ok(())
     }
 );
-fn reference_fixture(temp: &Temp) -> ci::Result<(PathBuf, Value)> {
-    let worker = temp
-        .write("current native SDK", b"inert worker bytes")?
-        .canonicalize()?;
-    let mut entries = Vec::new();
-    for (path, blob) in reference::BRIDGE_FILES {
-        entries.push(reference::Entry {
-            path: path.into(),
-            blob: blob.into(),
-            bytes: ci::git(&root(), &["cat-file", "blob", blob])?,
-            executable: false,
-        });
-    }
-    entries.push(reference::Entry {
-        path: "engine-rust/src/lib.rs".into(),
-        blob: "a".repeat(40),
-        bytes: b"pub const VALUE:i32=1;".to_vec(),
-        executable: false,
-    });
-    let destination = temp.0.join("frozen-source");
-    let receipt = reference::materialize(&destination, &entries, &worker)?;
-    Ok((destination, receipt))
-}
 source_test!(
     migration_reference_drift,
     "tests/test_migration_gates.py::test_frozen_reference_rejects_drift_and_keeps_current_python_modules",
@@ -1028,7 +602,8 @@ source_test!(
         let temp = Temp::new("owned command")?;
         let executable = compile(
             &temp,
-            r#"fn main(){
+            r#"#![cfg_attr(windows, windows_subsystem = "windows")]
+            fn main(){
                 match std::env::args().nth(1).as_deref(){
                     Some("idle")=>std::thread::sleep(std::time::Duration::from_secs(30)),
                     Some("temp")=>{
@@ -1134,132 +709,15 @@ source_test!(
 source_test!(
     migration_temp_bound,
     "tests/test_migration_gates.py::test_linux_temp_root_fits_chromium_socket_and_keeps_windows_contained",
-    {
-        let env = BTreeMap::from([
-            ("GITHUB_ACTIONS".into(), "true".into()),
-            ("RUNNER_TEMP".into(), "/home/runner/work/_temp".into()),
-        ]);
-        assert_eq!(
-            migration::temporary_parent(Path::new("/srv/numera"), &env, "linux")?,
-            PathBuf::from("/srv/numera/.ci-work")
-        );
-        assert_eq!(
-            migration::temporary_parent(
-                Path::new("/home/runner/work/Numera-Browser/Numera-Browser"),
-                &env,
-                "linux"
-            )?,
-            PathBuf::from("/home/runner/work/_temp")
-        );
-        let long = PathBuf::from(format!("/{}", "a".repeat(100)));
-        assert_eq!(
-            migration::temporary_parent(&long, &env, "win32")?,
-            long.join(".ci-work")
-        );
-        assert!(migration::temporary_parent(&long, &BTreeMap::new(), "linux").is_err());
-        for temp in [
-            format!("/{}", "x".repeat(100)),
-            "relative".into(),
-            r"D:\a\_temp".into(),
-        ] {
-            let invalid = BTreeMap::from([
-                ("GITHUB_ACTIONS".into(), "true".into()),
-                ("RUNNER_TEMP".into(), temp),
-            ]);
-            assert!(migration::temporary_parent(&long, &invalid, "linux").is_err());
-        }
-        let unicode = PathBuf::from(format!("/{}", "Ω".repeat(40)));
-        assert_eq!(
-            migration::temporary_parent(&unicode, &env, "linux")?,
-            PathBuf::from("/home/runner/work/_temp")
-        );
-        Ok(())
-    }
+    { temp_bound() }
 );
 source_test!(
     migration_temp_owned,
     "tests/test_migration_gates.py::test_owned_temp_is_unique_and_cleanup_removes_only_its_run",
-    {
-        let temp = Temp::new("unique temp")?;
-        let env = BTreeMap::from([
-            ("GITHUB_ACTIONS".into(), "true".into()),
-            ("RUNNER_TEMP".into(), "/tmp".into()),
-        ]);
-        let first = migration::Temporary::new(
-            &temp.0,
-            &env,
-            if cfg!(target_os = "linux") {
-                "linux"
-            } else {
-                "win32"
-            },
-        )?;
-        let second = migration::Temporary::new(
-            &temp.0,
-            &env,
-            if cfg!(target_os = "linux") {
-                "linux"
-            } else {
-                "win32"
-            },
-        )?;
-        assert_ne!(first.path(), second.path());
-        let first_path = first.path().to_owned();
-        let second_path = second.path().to_owned();
-        #[cfg(target_os = "linux")]
-        {
-            let path = first.path().join("org.chromium.Chromium.123456");
-            fs::create_dir(&path)?;
-            let socket = path.join("SingletonSocket");
-            assert!(socket.as_os_str().as_encoded_bytes().len() <= 107);
-            let listener = std::os::unix::net::UnixListener::bind(socket)?;
-            drop(listener);
-        }
-        first.finish()?;
-        assert!(!first_path.exists());
-        assert!(second_path.is_dir());
-        second.finish()?;
-        assert!(!second_path.exists());
-        Ok(())
-    }
+    { temp_owned() }
 );
 source_test!(
     migration_log_safety,
     "tests/test_migration_gates.py::test_migration_logs_are_unique_sanitized_closed_and_fallback",
-    {
-        let temp = Temp::new("safe log path with spaces")?;
-        let mut paths = Vec::new();
-        for _ in 0..2 {
-            let log = numera_core::runtime_log::RuntimeLog::new(&temp.0, "migration-fixture");
-            log.message("WARNING", "migration", "password=synthetic-fixture-value");
-            log.event("INFO", "migration", "exit=0");
-            paths.push(log.path().ok_or("Log file missing")?.to_owned());
-        }
-        assert_ne!(paths[0], paths[1]);
-        for path in paths {
-            let text = fs::read_to_string(&path)?;
-            assert!(!text.contains("synthetic-fixture-value"));
-            assert!(text.contains("[WARNING]") && text.contains("UTC]") && text.contains("exit=0"));
-            fs::remove_file(path)?;
-        }
-        let blocked = temp.write("not-a-directory", b"fixture")?;
-        let log = numera_core::runtime_log::RuntimeLog::new(&blocked, "migration-fallback");
-        assert!(log.path().is_none());
-        log.message("ERROR", "migration", "token=synthetic-fixture-value");
-        let executable = compile(
-            &temp,
-            "fn main(){let directory=std::env::args_os().nth(1).unwrap();let log=numera_core::runtime_log::RuntimeLog::new(std::path::Path::new(&directory),\"migration-fallback\");assert!(log.path().is_none());log.message(\"ERROR\",\"migration\",\"token=synthetic-fixture-value\");}",
-        )?;
-        let output = ci::capture(
-            Command::new(executable).arg(&blocked),
-            Duration::from_secs(5),
-            Duration::from_secs(5),
-            4096,
-        )?;
-        assert_eq!(output.exit, 0);
-        let console = std::str::from_utf8(&output.stderr)?;
-        assert!(console.contains("file logging unavailable"));
-        assert!(!console.contains("synthetic-fixture-value"));
-        Ok(())
-    }
+    { log_safety() }
 );

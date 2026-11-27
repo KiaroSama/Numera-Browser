@@ -52,6 +52,42 @@ pub fn codeql(pages: &Value, sha: &str) -> Result<u64> {
         .ok_or_else(|| std::io::Error::other("CodeQL check identity is invalid").into())
 }
 
+pub fn codeql_analyses(analyses: &Value, sha: &str, required_categories: &[&str]) -> Result<u64> {
+    if !canonical_sha(sha) {
+        return fail("CodeQL source SHA is invalid");
+    }
+    let rows = analyses
+        .as_array()
+        .ok_or("CodeQL analyses response is malformed")?;
+    let mut highest = 0;
+    for category in required_categories {
+        let mut latest = None;
+        for row in rows.iter().filter(|row| {
+            row["commit_sha"] == sha
+                && row["tool"]["name"] == "CodeQL"
+                && row["category"] == *category
+        }) {
+            let id = row["id"].as_u64().ok_or("CodeQL analysis ID is invalid")?;
+            if latest.is_none_or(|(current, _)| id > current) {
+                latest = Some((id, row));
+            }
+        }
+        let (id, row) =
+            latest.ok_or_else(|| format!("CodeQL analysis is missing for {category}"))?;
+        if id == 0
+            || !row["error"].as_str().unwrap_or("").is_empty()
+            || row["results_count"].as_u64() != Some(0)
+        {
+            return fail(format!("CodeQL analysis {id} is not clean for {category}"));
+        }
+        highest = highest.max(id);
+    }
+    if highest == 0 {
+        return fail("No CodeQL analysis categories were required");
+    }
+    Ok(highest)
+}
+
 #[derive(Clone)]
 pub struct CodeqlPrContext {
     pub repository: String,

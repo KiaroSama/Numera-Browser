@@ -178,12 +178,58 @@ pub(super) fn codeql_case(damage: &str) -> TestResult {
     let result = evidence::codeql(&json!([{"check_runs":checks}]), &sha);
     if damage == "None" {
         assert_eq!(result?, 42);
+        codeql_analyses_cases(&sha)?;
     } else {
         assert!(result.is_err());
     }
     codeql_source_case(damage)?;
     Ok(())
 }
+fn codeql_analyses_cases(sha: &str) -> TestResult {
+    let categories = ["/language:actions", "/language:rust"];
+    let analysis = |id, category| json!({"id":id,"commit_sha":sha,"tool":{"name":"CodeQL"},"category":category,"error":"","results_count":0});
+    let clean = json!([analysis(42, categories[0]), analysis(40, categories[1])]);
+    assert_eq!(evidence::codeql_analyses(&clean, sha, &categories)?, 42);
+    for invalid in [json!({}), json!([clean[0].clone()])] {
+        assert!(evidence::codeql_analyses(&invalid, sha, &categories).is_err());
+    }
+    for wrong_sha in ["b".repeat(40), "invalid".into()] {
+        assert!(evidence::codeql_analyses(&clean, &wrong_sha, &categories).is_err());
+    }
+    for (field, value) in [
+        ("results_count", json!(1)),
+        ("error", json!("Analysis failed")),
+        ("id", json!(0)),
+    ] {
+        let mut invalid = clean.clone();
+        invalid[1][field] = value;
+        assert!(evidence::codeql_analyses(&invalid, sha, &categories).is_err());
+    }
+    let mut newer = analysis(43, categories[0]);
+    newer["results_count"] = json!(1);
+    assert!(
+        evidence::codeql_analyses(
+            &json!([newer, clean[0].clone(), clean[1].clone()]),
+            sha,
+            &categories,
+        )
+        .is_err()
+    );
+    assert!(
+        evidence::codeql_analyses(
+            &json!([
+                {"commit_sha":sha,"tool":{"name":"CodeQL"},"category":categories[0]},
+                clean[0].clone(),
+                clean[1].clone()
+            ]),
+            sha,
+            &categories,
+        )
+        .is_err()
+    );
+    Ok(())
+}
+
 fn codeql_source_case(damage: &str) -> TestResult {
     use std::time::{Duration, Instant};
     // Real, distinct Git commit objects: the integration commit has both PR
