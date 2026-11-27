@@ -12,6 +12,9 @@ concurrency:
   group: signed-release-${{ github.ref }}
   cancel-in-progress: false
 
+env:
+  PLAYWRIGHT_SKIP_DRIVER_DOWNLOAD: "1"
+
 jobs:
   source:
     if: github.repository == 'KiaroSama/Numera-Browser' && github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
@@ -80,7 +83,11 @@ jobs:
           test "$GITHUB_REF_NAME" = "v$version"
           printf 'RELEASE_VERSION=%s\n' "$version" >> "$GITHUB_ENV"
           mkdir release-input dist
-          tar -xf "$RUNNER_TEMP/release-input/native-signing-input.tar" -C release-input
+          archive="$RUNNER_TEMP/release-input/native-signing-input.tar"
+          if command -v cygpath >/dev/null 2>&1; then
+            archive=$(cygpath -u "$archive")
+          fi
+          tar -xf "$archive" -C release-input
       - name: Build packaging and binary verification tools without signing credentials
         run: cargo build --manifest-path tools/xtask/Cargo.toml --locked
       - name: Verify approved binary identity before signing
@@ -93,7 +100,7 @@ jobs:
           suffix=''
           if [[ "$RUNNER_OS" == Windows ]]; then suffix=.exe; fi
           for file in "numera$suffix" "engine/numera-engine$suffix" "engine/numera-browser-runtime$suffix"; do
-            cargo xtask verify-binary --executable "$stage/$file" --target "$PLATFORM"
+            cargo run --manifest-path tools/xtask/Cargo.toml --locked -- verify-binary --executable "$stage/$file" --target "$PLATFORM"
             "$stage/$file" --build-info | jq -e --arg sha "$GITHUB_SHA" --arg version "$RELEASE_VERSION" \
               '.source_sha == $sha and .version == $version and .product == "Numera Browser"'
           done
@@ -150,8 +157,8 @@ jobs:
         run: |
           set -euo pipefail
           stage='release-input/Numera Browser'
-          cargo xtask ci release-stage-inventory "$stage"
-          cargo xtask ci release-update-feed stage "$stage" "$PLATFORM"
+          cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci release-stage-inventory "$stage"
+          cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci release-update-feed stage "$stage" "$PLATFORM"
       - name: Assemble packages and matching source
         shell: bash
         env:
@@ -177,8 +184,8 @@ jobs:
             mkdir "$RUNNER_TEMP/numera-appimage-icon"
             (cd "$RUNNER_TEMP/numera-appimage-icon"; "$image" --appimage-extract .DirIcon; test -e squashfs-root/.DirIcon || test -L squashfs-root/.DirIcon)
           fi
-          cargo xtask ci release-portable-archive "$stage" "dist/$base-portable.zip"
-          cargo xtask cli-package --target "$PLATFORM" --version "$RELEASE_VERSION" --bin-dir "$stage/engine" --out dist
+          cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci release-portable-archive "$stage" "dist/$base-portable.zip"
+          cargo run --manifest-path tools/xtask/Cargo.toml --locked -- cli-package --target "$PLATFORM" --version "$RELEASE_VERSION" --bin-dir "$stage/engine" --out dist
       - name: Sign and check every asset; reject a one-byte change
         uses: ./.github/actions/numera-detached-signature
         with:
@@ -241,7 +248,7 @@ jobs:
       - name: Verify installed manifests and sign the versioned update feed
         env:
           NUMERA_RELEASE_SIGNING_KEY: ${{ secrets.NUMERA_RELEASE_SIGNING_KEY }}
-        run: cargo xtask ci release-update-feed publish dist
+        run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci release-update-feed publish dist
       - name: Recheck all assets and sign the combined SHA256SUMS
         uses: ./.github/actions/numera-detached-signature
         with:

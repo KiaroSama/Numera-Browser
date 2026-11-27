@@ -18,6 +18,7 @@ permissions:
   checks: read
   security-events: read
 env:
+  PLAYWRIGHT_SKIP_DRIVER_DOWNLOAD: "1"
   CARGO_BUILD_JOBS: "2"
   CARGO_INCREMENTAL: "0"
   CARGO_PROFILE_DEV_DEBUG: "0"
@@ -58,17 +59,17 @@ jobs:
       - name: Require the independent successful CodeQL verdict for this SHA
         env:
           GH_TOKEN: ${{ github.token }}
-        run: cargo xtask ci codeql-verdict
-      - run: cargo xtask ci owned --wall 1800 --idle 300 -- cargo xtask provision-resources "${{ runner.temp }}/manual-native-resources"
+        run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci codeql-verdict
+      - run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 1800 --idle 300 -- cargo run --manifest-path tools/xtask/Cargo.toml --locked -- provision-resources "${{ runner.temp }}/manual-native-resources"
       - name: Build the actual native product and unsigned installers
         # Keep the outer Windows deadline after the nested bundler's deadline.
-        run: cargo xtask ci owned --wall ${{ runner.os == 'Windows' && 2400 || 1800 }} --idle ${{ runner.os == 'Windows' && 960 || 300 }} -- cargo xtask build-product build/manual-product --resources "${{ runner.temp }}/manual-native-resources"
+        run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall ${{ runner.os == 'Windows' && 2400 || 1800 }} --idle ${{ runner.os == 'Windows' && 960 || 300 }} -- cargo run --manifest-path tools/xtask/Cargo.toml --locked -- build-product build/manual-product --resources "${{ runner.temp }}/manual-native-resources"
       - name: Sign the portable native product with pinned owner identities
         env:
           NUMERA_RELEASE_SIGNING_KEY: ${{ secrets.NUMERA_RELEASE_SIGNING_KEY }}
           NUMERA_CODE_SIGNING_PFX: ${{ secrets.NUMERA_CODE_SIGNING_PFX }}
           NUMERA_CODE_SIGNING_PASSWORD: ${{ secrets.NUMERA_CODE_SIGNING_PASSWORD }}
-        run: cargo xtask ci owned --wall 900 --idle 300 -- cargo xtask ci product-sign build/manual-product "${{ matrix.platform }}"
+        run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 900 --idle 300 -- cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci product-sign build/manual-product "${{ matrix.platform }}"
       - name: Preserve signed archives and receipts for review
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:

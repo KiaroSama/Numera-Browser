@@ -66,6 +66,52 @@ fn browser_compiler_controls() -> TestResult {
     let advisory = ci::workflow::parse(&fs::read_to_string(
         root().join(".github/workflows/dependency-review.yml"),
     )?)?;
+    let review = &advisory["jobs"]["review"];
+    assert!(
+        review.get("if").is_none(),
+        "dependency review must run on every caller event"
+    );
+    let steps = &review["steps"];
+    let refs = ci::workflow::step_once(steps, "base=%s\\nhead=%s\\n", true)?;
+    assert_eq!(steps[refs]["id"], "refs");
+    let action = ci::workflow::step_once(
+        steps,
+        "actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294",
+        true,
+    )?;
+    assert!(refs < action);
+    assert_eq!(
+        steps[action]["with"]["base-ref"],
+        "${{ steps.refs.outputs.base }}"
+    );
+    assert_eq!(
+        steps[action]["with"]["head-ref"],
+        "${{ steps.refs.outputs.head }}"
+    );
+
+    let release = ci::workflow::parse(&fs::read_to_string(
+        root().join(".github/workflows/release.yml"),
+    )?)?;
+    for (steps, tar) in [
+        (
+            &native["jobs"]["build"]["steps"],
+            r#"tar -cf "$archive" -- "${items[@]}""#,
+        ),
+        (
+            &release["jobs"]["signing"]["steps"],
+            r#"tar -xf "$archive" -C release-input"#,
+        ),
+    ] {
+        let index = ci::workflow::step_once(steps, tar, false)?;
+        let run = steps[index]["run"]
+            .as_str()
+            .ok_or("Signing archive command missing")?;
+        let guard = "if command -v cygpath >/dev/null 2>&1; then\n  archive=$(cygpath -u \"$archive\")\nfi\n";
+        assert!(
+            run.contains(&format!("{guard}{tar}")),
+            "signing archive path must be portable"
+        );
+    }
     ci::workflow::browser_page_compiler(&native, &advisory)?;
     let candidate = ci::workflow::parse(&fs::read_to_string(
         root().join(".github/workflows/rust-candidate.yml"),

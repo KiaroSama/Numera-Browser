@@ -15,6 +15,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  PLAYWRIGHT_SKIP_DRIVER_DOWNLOAD: "1"
   CANDIDATE_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
   CARGO_BUILD_JOBS: "2"
   CARGO_TERM_COLOR: always
@@ -101,7 +102,7 @@ jobs:
         id: candidate
         shell: bash
         # Bind the binaries and archive to the checked-out source commit.
-        run: GITHUB_SHA="$CANDIDATE_SOURCE_SHA" cargo xtask build-candidate build/rust-candidate
+        run: GITHUB_SHA="$CANDIDATE_SOURCE_SHA" cargo run --manifest-path tools/xtask/Cargo.toml --locked -- build-candidate build/rust-candidate
       - name: Build native product fixtures for Windows signing tests
         if: ${{ !cancelled() && runner.os == 'Windows' }}
         shell: bash

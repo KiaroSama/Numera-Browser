@@ -9,6 +9,9 @@ on:
         options: [http-fields, profile-write, profile-overview, profile-batch, profile-http-import, ready, profile-http-delete, init-script, browser-options, browser-admission, browser-resources, browser-ip, browser-hints, browser-startup]
 permissions:
   contents: read
+env:
+  PLAYWRIGHT_SKIP_DRIVER_DOWNLOAD: "1"
+
 jobs:
   fixture:
     runs-on: ubuntu-24.04
@@ -28,7 +31,7 @@ jobs:
         with:
           toolchain: 1.100.0
       - run: cargo build --manifest-path tools/xtask/Cargo.toml --locked
-      - run: cargo xtask ci owned --wall 900 --idle 300 -- cargo xtask ci seam "$NATIVE_SEAM" test
+      - run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 900 --idle 300 -- cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci seam "$NATIVE_SEAM" test
       - name: Preserve immutable source-case mapping for review
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:

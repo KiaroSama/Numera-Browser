@@ -80,7 +80,7 @@ fn host(damage: &str) -> TestResult {
 }
 source_cases!("tests/test_macos_ownership_ci.py::test_macos_ownership_refuses_foreign_hosts_before_any_execution",host,[macos_host_repository=>("repository","repository"),macos_host_actions=>("actions","actions"),macos_host_runner=>("runner","runner"),macos_host_system=>("system","system")]);
 pub(super) fn contract_fixture() -> Value {
-    json!({"jobs":{"contracts":{"steps":[{"uses":"actions/checkout@reviewed","with":{"fetch-depth":0}},{"if":"runner.os == 'macOS'","run":"cargo xtask ci owned --wall 900 --idle 300 -- cargo xtask ci macos-ownership build"},{"if":"runner.os == 'macOS'","run":"cargo xtask ci owned --wall 600 --idle 120 -- cargo xtask ci macos-ownership test"}]}}})
+    json!({"jobs":{"contracts":{"steps":[{"uses":"actions/checkout@reviewed","with":{"fetch-depth":0}},{"if":"runner.os == 'macOS'","run":"cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 900 --idle 300 -- cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci macos-ownership build"},{"if":"runner.os == 'macOS'","run":"cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 600 --idle 120 -- cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci macos-ownership test"}]}}})
 }
 fn contract(damage: &str) -> TestResult {
     let mut workflow = contract_fixture();

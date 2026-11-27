@@ -2,17 +2,18 @@
 
 ## Status and scope
 
-The updater handles complete portable release generations after approval. Each generation contains the desktop shell, Rust manager service, browser worker, dashboard, matching browser SDK and binary resources, and required notices. Source checkouts and containers use their own deployment workflows.
+The updater handles complete, signed portable release generations. A generation contains the shell, Rust manager, browser worker, dashboard and notices. Available browser resources vary by platform. Source checkouts, containers, installer-based deployments and CLI-only archives update through their own installation routes.
 
 The [Rust verification record](rust-rewrite.md) tracks CI acceptance. Published portable releases carry the signed manifests and artifacts described below.
 
 ## End-user flow
 
-1. The desktop checks the project's GitHub release feed after readiness and at most once every 24 hours while open. **Check for updates** requests a manual check. There is no operating-system background service.
-2. **Settings → Software updates** shows the installed version/source/generation and the authenticated offer, download size, browser/SDK changes and restart requirement. An unsigned GitHub description is not an authenticated update offer.
-3. **Download update → Approve download** approves only that specific offer. **Later** closes the prompt without downloading. Downloading alone never authorizes installation.
-4. After verification, **Install and restart → Approve restart** closes admission, proves affected work idle, and starts a bounded activation worker. Active sessions, jobs or uncertain ownership defer installation; the updater does not force-stop them.
-5. The new generation must prove its exact identity/readiness before recovery is committed and work admission reopens. Cancellation, unsupported prerequisites and errors are shown rather than hidden by automatic retries.
+1. The portable desktop checks GitHub after readiness and at most once every 24 hours while open. Use **Check for updates** to check manually. No OS background service runs the updater.
+2. In **Settings > Software updates**, review the signed offer, its size, the browser changes and the restart requirement. GitHub release notes alone do not authenticate an offer.
+3. For a manual update, **Download update > Approve download** accepts only the selected offer. **Later** skips the download. Use **Install and restart > Approve restart** separately after verification.
+4. The updater starts activation only after it can prove affected work is idle. Active sessions, jobs or uncertain ownership defer installation. The new generation must prove its identity and readiness before the app accepts work again.
+
+When automatic app updates are enabled, the desktop can download and install a signed offer on its own. Turning off automatic browser-core updates also blocks automatic installation of an offer that would change the browser components. Signed standalone browser-core updates are not currently available.
 
 Keep enough writable space for the archive, expanded files and rollback. Managed files changed outside the supported release process can prevent verification. Do not bypass that refusal by deleting manifests or clearing ownership records.
 
@@ -29,13 +30,13 @@ Two trust layers have distinct purposes:
 | Layer | What it proves | What it does not prove |
 |---|---|---|
 | Ed25519 release/BUILD signatures | Exact metadata bytes were signed by the pinned project key; hashes bind owned files and archives. | Public OS publisher trust, notarization, absence of bugs. |
-| Native Windows/Apple signatures | Final executable bytes match the designated owner certificate. | Public trust for a self-signed certificate, automatic SmartScreen/Gatekeeper acceptance. |
+| Windows Authenticode | The MSI or executable matches the designated publisher certificate. | Public trust for that self-signed certificate or automatic SmartScreen acceptance. |
 
 The public manifest verification key is [release-signing-key.pem](release-signing-key.pem).
 The native private-trust certificate is [code-signing-cert.pem](code-signing-cert.pem).
 These are **public** verification material, not private keys. Obtain them from a trusted project checkout/distribution; a key downloaded from an untrusted mirror alongside an archive is not a trust anchor.
 
-The current native certificate is self-signed. No Apple Developer ID/notarization or publicly trusted Windows certificate is claimed. Do not install it as a system root to suppress warnings. Key generation does not create a public certification entitlement.
+The Windows certificate is self-signed. Do not install it as a system root to suppress warnings. The detached signature check below uses a trusted certificate copy without changing the system trust store.
 
 ## Manifest protocol 1
 
@@ -67,7 +68,8 @@ Windows can also inspect the final executable's publisher signature:
 Get-AuthenticodeSignature -LiteralPath '.\Numera Browser\numera.exe'
 ```
 
-A self-signed chain can be untrusted even when the designated signer and cryptographic file signature are correct. Do not describe that as public OS trust. The native signing path checks the designated certificate, requires an intact binary to reject a different expected signer, and separately requires a modified copy to report signature damage. A timeout, missing tool or unrelated verification error is not evidence of rejection. These checks remain subject to the hosted acceptance described above; end-user policy may still require a publicly trusted build.
+A valid file signature does not make a self-signed certificate publicly trusted.
+Windows policy may still require a publicly trusted build.
 
 ## Verify a versioned download
 
@@ -76,17 +78,40 @@ versioned release. Use a separately trusted copy of the checked-in
 [publisher certificate](code-signing-cert.pem). A public key downloaded with an
 archive is not an independent trust source.
 
+Run these from the download directory. Replace the asset filename with the one
+that you downloaded. Stop if any signature or checksum fails.
+
+Bash:
+
 ```bash
-openssl x509 -in code-signing-cert.pem -pubkey -noout > publisher-key.pem
-openssl dgst -sha256 -verify publisher-key.pem -signature SHA256SUMS.sig SHA256SUMS
-asset=numera-browser-0.36.0-linux-x64-portable.zip
-openssl dgst -sha256 -verify publisher-key.pem -signature "$asset.sig" "$asset"
-grep -F "  $asset" SHA256SUMS | sha256sum --check --strict
+set -euo pipefail
+asset=numera-browser-0.37.0-linux-x64-portable.zip
+openssl x509 -in code-signing-cert.pem -pubkey -noout -out trusted-publisher-key.pem
+openssl dgst -sha256 -verify trusted-publisher-key.pem -signature SHA256SUMS.sig SHA256SUMS
+openssl dgst -sha256 -verify trusted-publisher-key.pem -signature "$asset.sig" "$asset"
+awk -v asset="$asset" '$2 == asset { print }' SHA256SUMS | sha256sum --check --strict
 ```
 
-Change `asset` to the exact filename you downloaded. Stop if a signature or
-checksum fails. The Authenticode signature on Windows does not make the
-project's self-signed certificate publicly trusted.
+PowerShell 7 (with OpenSSL on `PATH`):
+
+```powershell
+$asset = 'numera-browser-0.37.0-windows-x64.msi'
+openssl x509 -in code-signing-cert.pem -pubkey -noout -out trusted-publisher-key.pem
+if ($LASTEXITCODE -ne 0) { throw 'Could not read the trusted certificate' }
+openssl dgst -sha256 -verify trusted-publisher-key.pem -signature SHA256SUMS.sig SHA256SUMS
+if ($LASTEXITCODE -ne 0) { throw 'Invalid checksum-list signature' }
+openssl dgst -sha256 -verify trusted-publisher-key.pem -signature "$asset.sig" "$asset"
+if ($LASTEXITCODE -ne 0) { throw 'Invalid package signature' }
+$pattern = '^([0-9a-f]{64})  ' + [regex]::Escape($asset) + '$'
+$entry = @(Select-String -LiteralPath SHA256SUMS -Pattern $pattern)
+if ($entry.Count -ne 1 -or (Get-FileHash -LiteralPath $asset -Algorithm SHA256).Hash -ne $entry[0].Matches[0].Groups[1].Value) {
+    throw 'Package checksum missing or mismatched'
+}
+Get-AuthenticodeSignature -LiteralPath $asset
+```
+
+Authenticode reports the Windows trust status separately. Even with valid
+detached signatures and checksums, follow your local publisher trust policy.
 
 ## Data safety and recovery
 
@@ -102,7 +127,17 @@ A durable admission commit is a one-way boundary: after it, recovery validates a
 
 ## Maintainer publication
 
-The versioned release workflow runs Native CI on the exact version tag before signing. All four Windows and Linux build legs must pass. The protected `numera-signing` environment must provide `NUMERA_SIGNING_PFX_BASE64`, `NUMERA_SIGNING_PASSWORD` and `NUMERA_RELEASE_SIGNING_KEY`. The publisher verifies the complete asset set before creating the release. The separate manual artifact review cannot publish.
+The [release workflow](../.github/workflows/release.yml) runs Native CI on the
+exact version tag before signing. All four Windows and Linux build legs must
+pass. The protected `numera-signing` environment provides
+`NUMERA_SIGNING_PFX_BASE64`, `NUMERA_SIGNING_PASSWORD` and
+`NUMERA_RELEASE_SIGNING_KEY`. The publisher verifies the complete asset set
+before creating the release. Manual artifact review cannot publish.
+
+Build workflows pass `PLAYWRIGHT_SKIP_DRIVER_DOWNLOAD=1` in the environment.
+From the repository root, run `cargo run --manifest-path tools/xtask/Cargo.toml --locked --`
+with the required subcommand for local build review. See [the build-tool guide](../tools/xtask/README.md).
+Local artifacts do not substitute for protected workflow signing.
 
 Production-feature shell formatting, lint and unit contracts run in a separate Linux and Windows x86-64 hosted tier before signing/distribution, without release keys. Required verification and distribution both depend on that tier; those unit tests are not repeated during packaging. Actual desktop activation/recovery and signing still require every original pre-distribution gate, including the public CodeQL verdict.
 

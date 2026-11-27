@@ -238,6 +238,7 @@ pub fn build(root: &Path, options: Options) -> Result<(), Box<dyn Error>> {
     }
     verify_dashboard(&root.join("dashboard/dist"), &identity)?;
     let built = Command::new(cargo())
+        .env("PLAYWRIGHT_SKIP_DRIVER_DOWNLOAD", "1")
         .args([
             "build",
             "--manifest-path",

@@ -1,17 +1,15 @@
 # Native application builds
 
-`cargo xtask build-product <new-output> --resources <provisioned-directory>`
-builds the native server, Rust/WASM dashboard, native browser adapter and
-Tauri desktop on the current host. Complete distributions include the compiled
-dashboard, generated browser assets and reviewed vendor SDKs.
+From the repository root, run
+`cargo run --manifest-path tools/xtask/Cargo.toml --locked -- build-product <new-output> --resources <provisioned-directory>`
+to build the native server, Rust/WASM dashboard, browser worker and Tauri desktop
+for the current host. Complete distributions include the compiled dashboard,
+generated browser assets and reviewed vendor SDKs.
 
-Use `--server-only` to omit the desktop SDK requirement, or `--bundles none` to
-produce portable server and desktop archives without installers. The native
-default installer formats are `appimage,deb` on x86-64 Linux and `msi` on
-x86-64 Windows. The complete Windows browser payload exceeds the NSIS size
-limit. `--bundles` still accepts explicit requests for supported formats,
-including `nsis` for payloads within its size limit. Build each supported
-platform on its own native CI runner.
+Use `--server-only` to omit the desktop build and its SDK requirement, or
+`--bundles none` to package the portable desktop and server without installers.
+The Windows release uses MSI; Linux uses AppImage and DEB. Build each x64 and
+arm64 target on a matching native CI runner.
 
 ## Provision the build host
 
@@ -31,12 +29,20 @@ platform on its own native CI runner.
   `build/`, `dist/` and target directories. A local build can set these two values
   explicitly; they are identity inputs, never release authorization.
 
-Example, with the reviewed pins in `provision-pins.json`:
+Workflows set `PLAYWRIGHT_SKIP_DRIVER_DOWNLOAD=1` for builds. From the repository
+root in Bash, set it explicitly and provision the reviewed pins before building:
 
-```sh
-cargo xtask provision-resources /opt/numera-resources
-cargo xtask build-product build/native-product --resources /opt/numera-resources
+```bash
+export PLAYWRIGHT_SKIP_DRIVER_DOWNLOAD=1
+export GITHUB_SHA="$(git rev-parse HEAD)"
+export GITHUB_RUN_ID=1  # Local generation; not release authorization.
+cargo run --manifest-path tools/xtask/Cargo.toml --locked -- provision-resources build/vendor-resources
+cargo run --manifest-path tools/xtask/Cargo.toml --locked -- build-product build/native-product --resources build/vendor-resources
 ```
+
+In PowerShell 7, use `$env:PLAYWRIGHT_SKIP_DRIVER_DOWNLOAD = '1'`,
+`$env:GITHUB_SHA = git rev-parse HEAD` and `$env:GITHUB_RUN_ID = '1'` in place
+of the Bash exports.
 
 ## Provisioned resource contract
 
@@ -103,13 +109,15 @@ artifacts or automatically establish redistribution rights.
 
 ## Artifacts and lifecycle
 
-The output contains a `Numera Browser/` directory with a desktop `numera`
-executable (or `numera.exe`) and `engine/` containing both native Rust binaries,
-`web/` dashboard, vendor resources, notices, matching tracked source, an unsigned
-`PROVENANCE.json` receipt and `FILES.json` hashes. The server zip exposes the
-contents of `engine/` under its `Numera Browser/` root. The desktop zip contains
-the shell and `engine/`. The matching source zip, installers, `distribution.json`
-and `SHA256SUMS` accompany these archives.
+A full output contains `Numera Browser/` with the desktop executable and `engine/`.
+The engine directory includes both native binaries, the `web/` dashboard, vendor
+resources and notices, plus a provenance receipt and file inventory. The desktop
+ZIP has the shell and `engine/`; the full server ZIP exposes the engine contents
+at the `Numera Browser/` root. The build also produces corresponding source,
+`distribution.json`, `SHA256SUMS` and any requested installers.
+
+The release workflow's separate `cli-package` command packages the two native
+executables, license and CLI instructions without the dashboard or vendor resources.
 
 Run `numera-engine serve --host 127.0.0.1 --port 8787` in a server installation.
 Its dashboard is served at `/`. Set `NUMERA_DATA_DIR` to select persistent data.
@@ -133,8 +141,7 @@ cargo test --manifest-path tools/xtask/Cargo.toml --locked
 cargo test --manifest-path tools/xtask/lifecycle-tests/Cargo.toml --locked
 ```
 
-The lifecycle harness includes the production source and original lifecycle
-tests, with inert Tauri Manager and update-journal type stubs. It checks native
-engine selection, loopback readiness, port/data behavior and platform process
-guards without WebKit. It does not substitute for native Tauri window, installer
-or authenticated updater acceptance on the three desktop hosts.
+The lifecycle harness exercises engine selection, loopback readiness, port and
+data behavior, and platform process guards without WebKit. It uses the production
+source with test stubs for Tauri and the update journal. Native window, installer
+and signed updater checks run separately.

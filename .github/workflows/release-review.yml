@@ -14,6 +14,9 @@ permissions:
   actions: read
   checks: read
   security-events: read
+env:
+  PLAYWRIGHT_SKIP_DRIVER_DOWNLOAD: "1"
+
 jobs:
   review:
     if: github.event_name == 'workflow_dispatch' && github.actor == 'KiaroSama' && github.repository == 'KiaroSama/Numera-Browser' && inputs.source_sha == github.sha && inputs.run_id == github.run_id && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/migration/native-runtime-checkpoint-20261012')
@@ -31,11 +34,11 @@ jobs:
       - name: Independently require CodeQL for the exact reviewed revision
         env:
           GH_TOKEN: ${{ github.token }}
-        run: cargo xtask ci codeql-verdict
+        run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci codeql-verdict
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
           pattern: owner-signed-*-${{ inputs.source_sha }}
           path: build/owner-review
           merge-multiple: true
       - name: Verify all platform signatures and archive identities without publication
-        run: cargo xtask ci signed-product-review build/owner-review "${{ inputs.source_sha }}"
+        run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci signed-product-review build/owner-review "${{ inputs.source_sha }}"

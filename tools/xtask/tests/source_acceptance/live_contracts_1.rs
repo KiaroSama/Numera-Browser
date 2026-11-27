@@ -5,7 +5,7 @@ fn live_contracts_1_0() -> TestResult {
     ];
     let mut steps = names
         .iter()
-        .map(|name| json!({"run":format!("cargo xtask ci acceptance {name}")}))
+        .map(|name| json!({"run":format!("cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci acceptance {name}")}))
         .collect::<Vec<_>>();
     let performance = json!({"uses":"./.github/actions/native-entry-performance"});
     steps.push(performance.clone());

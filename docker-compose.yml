@@ -2,7 +2,7 @@
 #
 #   1. generate a token:  openssl rand -base64 32
 #   2. put it in .env as  NUMERA_API_TOKEN=...
-#   3. cargo xtask build-product build/container --resources /path/to/resources --server-only
+#   3. cargo run --manifest-path tools/xtask/Cargo.toml --locked -- build-product build/container --resources /path/to/resources --server-only
 #   4. docker compose up --build -d
 #
 # The port is published to 127.0.0.1 on purpose. `8787:8787` would bind every

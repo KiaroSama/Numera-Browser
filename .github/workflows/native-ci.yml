@@ -22,6 +22,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  PLAYWRIGHT_SKIP_DRIVER_DOWNLOAD: "1"
   CARGO_BUILD_JOBS: "2"
   CARGO_INCREMENTAL: "0"
   CARGO_PROFILE_DEV_DEBUG: "0"
@@ -105,25 +106,25 @@ jobs:
         uses: ./.github/actions/native-packaging-tools
       - name: Explicitly acquire the reviewed vendor resources and source offers
         if: runner.arch == 'X64'
-        run: cargo xtask ci owned --wall 1800 --idle 300 -- cargo xtask provision-resources "${{ runner.temp }}/numera-resources"
+        run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 1800 --idle 300 -- cargo run --manifest-path tools/xtask/Cargo.toml --locked -- provision-resources "${{ runner.temp }}/numera-resources"
       - name: Build unsigned native desktop installers and portable server
         shell: bash
         run: |
           set -euo pipefail
           args=(--no-bundled-browsers)
           if [[ "$RUNNER_ARCH" == X64 ]]; then args=(--resources "$RUNNER_TEMP/numera-resources"); fi
-          cargo xtask ci owned --wall ${{ runner.os == 'Windows' && 2400 || 1800 }} --idle ${{ runner.os == 'Windows' && 960 || 300 }} -- cargo xtask build-product build/native-product "${args[@]}"
+          cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall ${{ runner.os == 'Windows' && 2400 || 1800 }} --idle ${{ runner.os == 'Windows' && 960 || 300 }} -- cargo run --manifest-path tools/xtask/Cargo.toml --locked -- build-product build/native-product "${args[@]}"
       - name: Package the CLI for this host without the desktop runtime
         shell: bash
         run: |
           suffix=''
           if [[ "$RUNNER_OS" == Windows ]]; then suffix=.exe; fi
           for bin in numera-engine numera-browser-runtime; do
-            cargo xtask verify-binary --executable "engine-rust/target/release/$bin$suffix" --target "${{ matrix.platform }}"
+            cargo run --manifest-path tools/xtask/Cargo.toml --locked -- verify-binary --executable "engine-rust/target/release/$bin$suffix" --target "${{ matrix.platform }}"
           done
-          cargo xtask verify-binary --executable "build/native-product/Numera Browser/numera$suffix" --target "${{ matrix.platform }}"
+          cargo run --manifest-path tools/xtask/Cargo.toml --locked -- verify-binary --executable "build/native-product/Numera Browser/numera$suffix" --target "${{ matrix.platform }}"
           version=$(jq -er '.version' desktop/src-tauri/tauri.conf.json)
-          cargo xtask cli-package --target "${{ matrix.platform }}" --version "$version" --bin-dir engine-rust/target/release --out build/native-product/cli
+          cargo run --manifest-path tools/xtask/Cargo.toml --locked -- cli-package --target "${{ matrix.platform }}" --version "$version" --bin-dir engine-rust/target/release --out build/native-product/cli
       - name: Preserve complete failed native packaging evidence
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
@@ -178,7 +179,11 @@ jobs:
           if [[ "$RUNNER_OS" == Linux ]]; then
             items+=( *.deb *.AppImage )
           fi
-          tar -cf "$RUNNER_TEMP/native-signing-input.tar" -- "${items[@]}"
+          archive="$RUNNER_TEMP/native-signing-input.tar"
+          if command -v cygpath >/dev/null 2>&1; then
+            archive=$(cygpath -u "$archive")
+          fi
+          tar -cf "$archive" -- "${items[@]}"
       - name: Upload exact unsigned release inputs
         if: inputs.release_artifacts
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
@@ -204,7 +209,7 @@ jobs:
         with:
           workspaces: tools/xtask
       - run: cargo build --manifest-path tools/xtask/Cargo.toml --locked
-      - run: cargo xtask ci owned --wall 120 --idle 60 -- cargo xtask ci coverage
+      - run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 120 --idle 60 -- cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci coverage
 
   static:
     name: Native static analysis and build contracts
@@ -228,18 +233,18 @@ jobs:
             tools/xtask
             browser-page-rust
       - run: cargo build --manifest-path tools/xtask/Cargo.toml --locked
-      - run: cargo xtask ci owned --wall 120 --idle 60 -- cargo fmt --manifest-path engine-rust/Cargo.toml --all --check
-      - run: cargo xtask ci owned --wall 120 --idle 60 -- cargo fmt --manifest-path tools/xtask/Cargo.toml --all --check
-      - run: cargo xtask ci owned --wall 900 --idle 300 -- cargo clippy --manifest-path engine-rust/Cargo.toml --locked --all-targets --features native-product,native-browser,test-support -- -D warnings
-      - run: cargo xtask ci owned --wall 900 --idle 300 -- cargo clippy --manifest-path tools/xtask/Cargo.toml --locked --all-targets -- -D warnings
+      - run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 120 --idle 60 -- cargo fmt --manifest-path engine-rust/Cargo.toml --all --check
+      - run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 120 --idle 60 -- cargo fmt --manifest-path tools/xtask/Cargo.toml --all --check
+      - run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 900 --idle 300 -- cargo clippy --manifest-path engine-rust/Cargo.toml --locked --all-targets --features native-product,native-browser,test-support -- -D warnings
+      - run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 900 --idle 300 -- cargo clippy --manifest-path tools/xtask/Cargo.toml --locked --all-targets -- -D warnings
       - name: Check authored browser Rust formatting
-        run: cargo xtask ci owned --wall 120 --idle 60 -- cargo fmt --manifest-path browser-page-rust/Cargo.toml --all --check
+        run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 120 --idle 60 -- cargo fmt --manifest-path browser-page-rust/Cargo.toml --all --check
       - name: Check the browser page compiler host binary
-        run: cargo xtask ci owned --wall 900 --idle 300 -- cargo clippy --manifest-path browser-page-rust/Cargo.toml --locked --bin browser-page-build -- -D warnings
+        run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 900 --idle 300 -- cargo clippy --manifest-path browser-page-rust/Cargo.toml --locked --bin browser-page-build -- -D warnings
       - name: Check the actual browser WASM library
-        run: cargo xtask ci owned --wall 900 --idle 300 -- cargo clippy --manifest-path browser-page-rust/Cargo.toml --locked --release --target wasm32-unknown-unknown --lib -- -D warnings
+        run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 900 --idle 300 -- cargo clippy --manifest-path browser-page-rust/Cargo.toml --locked --release --target wasm32-unknown-unknown --lib -- -D warnings
       - name: Install the exact browser binding compiler
-        run: cargo xtask ci owned --wall 900 --idle 300 -- cargo install wasm-bindgen-cli --version 0.2.129 --locked
+        run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 900 --idle 300 -- cargo install wasm-bindgen-cli --version 0.2.129 --locked
       - name: Acquire the checksum-verified official Binaryen compiler
         run: |
           set -euo pipefail
@@ -251,7 +256,7 @@ jobs:
           echo "52597efec0ad2416f8b5c245864960e775b8ffc94c751cc0b016c4b4986d3bcb  $directory/binaryen-version_133/bin/wasm2js" | sha256sum --check --strict
       - name: Recompile and verify committed browser code and source receipt
         id: browser-page-compile
-        run: cargo xtask ci owned --wall 900 --idle 300 -- cargo run --manifest-path browser-page-rust/Cargo.toml --locked --bin browser-page-build -- --check --wasm2js "$RUNNER_TEMP/numera-binaryen-133/binaryen-version_133/bin/wasm2js"
+        run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 900 --idle 300 -- cargo run --manifest-path browser-page-rust/Cargo.toml --locked --bin browser-page-build -- --check --wasm2js "$RUNNER_TEMP/numera-binaryen-133/binaryen-version_133/bin/wasm2js"
       - name: Record exact browser compiler failure hashes
         if: failure() && steps.browser-page-compile.outcome == 'failure'
         run: |
@@ -273,9 +278,9 @@ jobs:
             browser-page-rust/target/browser-page-generated/compiled.js
           if-no-files-found: error
           retention-days: 7
-      - run: cargo xtask ci counted-tests 9 build/xtask-unit.log -- cargo test --manifest-path tools/xtask/Cargo.toml --locked --bin numera-xtask -- --test-threads=2 --color=never
-      - run: cargo xtask ci counted-tests 643 build/source-ci.log -- cargo test --manifest-path tools/xtask/Cargo.toml --locked --test source_ci -- --test-threads=2 --color=never
-      - run: cargo xtask ci counted-tests 123 build/source-acceptance.log -- cargo test --manifest-path tools/xtask/Cargo.toml --locked --test source_acceptance -- --test-threads=2 --color=never
+      - run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci counted-tests 9 build/xtask-unit.log -- cargo test --manifest-path tools/xtask/Cargo.toml --locked --bin numera-xtask -- --test-threads=2 --color=never
+      - run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci counted-tests 643 build/source-ci.log -- cargo test --manifest-path tools/xtask/Cargo.toml --locked --test source_ci -- --test-threads=2 --color=never
+      - run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci counted-tests 123 build/source-acceptance.log -- cargo test --manifest-path tools/xtask/Cargo.toml --locked --test source_acceptance -- --test-threads=2 --color=never
 
   functional:
     name: Native functional cases (${{ matrix.os }})
@@ -309,12 +314,12 @@ jobs:
           name: dashboard-dist
           path: dashboard/dist
       - run: cargo build --manifest-path tools/xtask/Cargo.toml --locked
-      - run: cargo xtask ci owned --wall 900 --idle 300 -- cargo xtask ci native-phase build
+      - run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 900 --idle 300 -- cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci native-phase build
       - name: Compile the actual native supervisor and browser fixtures
-        run: cargo xtask ci owned --wall 900 --idle 300 -- cargo build --manifest-path engine-rust/Cargo.toml --locked --features native-product,native-browser,test-support --bin numera-engine --bin numera-browser-runtime
-      - run: cargo xtask ci owned --wall 1800 --idle 180 -- cargo xtask ci native-phase test
+        run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 900 --idle 300 -- cargo build --manifest-path engine-rust/Cargo.toml --locked --features native-product,native-browser,test-support --bin numera-engine --bin numera-browser-runtime
+      - run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 1800 --idle 180 -- cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci native-phase test
       - name: Require the same behavior across CLI, MCP and the dashboard API
-        run: cargo xtask ci owned --wall 240 --idle 90 -- cargo test --manifest-path engine-rust/Cargo.toml --locked --test surface_parity --features "test-support native-product"
+        run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 240 --idle 90 -- cargo test --manifest-path engine-rust/Cargo.toml --locked --test surface_parity --features "test-support native-product"
       - name: Preserve complete failed functional test evidence
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
@@ -366,12 +371,12 @@ jobs:
         run: cargo build --manifest-path engine-rust/Cargo.toml --locked --release --no-default-features --features native-product,native-browser --bin numera-engine --bin numera-browser-runtime
       - run: cargo build --manifest-path tools/xtask/Cargo.toml --locked
       - name: Explicitly provision reviewed drivers and matching browsers
-        run: cargo xtask ci owned --wall 1800 --idle 300 -- cargo xtask provision-resources "${{ runner.temp }}/numera-live-resources"
+        run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 1800 --idle 300 -- cargo run --manifest-path tools/xtask/Cargo.toml --locked -- provision-resources "${{ runner.temp }}/numera-live-resources"
       - name: Install Firefox system dependencies
         if: runner.os == 'Linux' && matrix.engine == 'camoufox'
         env:
           NUMERA_TEST_ENGINE: camoufox
-        run: cargo xtask ci owned --wall 600 --idle 570 -- cargo xtask ci camoufox-runtime "${{ runner.temp }}/numera-live-resources"
+        run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 600 --idle 570 -- cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci camoufox-runtime "${{ runner.temp }}/numera-live-resources"
       - name: Record why the licensed browser was not run
         if: matrix.engine == 'cloak' && env.CLOAKBROWSER_LICENSE_KEY == ''
         shell: bash
@@ -380,7 +385,7 @@ jobs:
           printf '%s\n' 'Live Cloak selection skipped: CLOAKBROWSER_LICENSE_KEY is unavailable. Offline and contract tests are independent.' | tee build/selected-sdk.log
       - name: Require the selected backend and its exact consent-controlled resources
         if: matrix.engine != 'cloak' || env.CLOAKBROWSER_LICENSE_KEY != ''
-        run: cargo xtask ci owned --wall 1200 --idle 180 -- cargo xtask ci prepare-live "engine-rust/target/release/numera-browser-runtime${{ runner.os == 'Windows' && '.exe' || '' }}" "engine-rust/target/release/numera-engine${{ runner.os == 'Windows' && '.exe' || '' }}" "${{ runner.temp }}/numera-live-resources" "${{ matrix.engine }}" "${{ runner.temp }}/numera-live-data" "${{ github.env }}"
+        run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 1200 --idle 180 -- cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci prepare-live "engine-rust/target/release/numera-browser-runtime${{ runner.os == 'Windows' && '.exe' || '' }}" "engine-rust/target/release/numera-engine${{ runner.os == 'Windows' && '.exe' || '' }}" "${{ runner.temp }}/numera-live-resources" "${{ matrix.engine }}" "${{ runner.temp }}/numera-live-data" "${{ github.env }}"
       - name: Require native SDK and relocated application; retain checkpoint comparisons
         if: matrix.engine != 'cloak' || env.CLOAKBROWSER_LICENSE_KEY != ''
         uses: ./.github/actions/native-candidate-acceptance
@@ -431,8 +436,8 @@ jobs:
           cache-workspace-crates: false
       - run: cargo build --manifest-path tools/xtask/Cargo.toml --locked
       - name: Fetch the independently pinned native dependency graph before offline historical mutation
-        run: cargo xtask ci owned --wall 900 --idle 300 -- cargo fetch --manifest-path engine-rust/Cargo.toml --locked
-      - run: cargo xtask ci owned --wall 3600 --idle 300 -- cargo xtask ci native-history
+        run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 900 --idle 300 -- cargo fetch --manifest-path engine-rust/Cargo.toml --locked
+      - run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 3600 --idle 300 -- cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci native-history
       - name: Preserve actual historical compiler diagnostics
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
@@ -472,9 +477,9 @@ jobs:
           tar -xzf "$directory/download.tar.gz" -C "$directory" gitleaks
           curl --fail --location --connect-timeout 10 --max-time 60 https://raw.githubusercontent.com/gitleaks/gitleaks/v8.30.1/config/gitleaks.toml --output "$directory/official-original.toml"
           cp "$directory/official-original.toml" "$directory/official.toml"
-      - run: cargo xtask ci owned --wall 60 --idle 30 -- cargo xtask ci secret-config "$RUNNER_TEMP/gitleaks-8.30.1/official.toml" "$RUNNER_TEMP/gitleaks-8.30.1/strict.toml"
-      - run: cargo xtask ci owned --wall 60 --idle 30 -- cargo xtask ci stage-tracked "$RUNNER_TEMP/numera-tracked-scan"
-      - run: cargo xtask ci owned --wall 300 --idle 120 -- "$RUNNER_TEMP/gitleaks-8.30.1/gitleaks" dir "$RUNNER_TEMP/numera-tracked-scan" --config "$RUNNER_TEMP/gitleaks-8.30.1/strict.toml" --redact=100 --ignore-gitleaks-allow --gitleaks-ignore-path "$RUNNER_TEMP/no-secret-exclusions" --timeout 240 --no-banner
+      - run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 60 --idle 30 -- cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci secret-config "$RUNNER_TEMP/gitleaks-8.30.1/official.toml" "$RUNNER_TEMP/gitleaks-8.30.1/strict.toml"
+      - run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 60 --idle 30 -- cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci stage-tracked "$RUNNER_TEMP/numera-tracked-scan"
+      - run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 300 --idle 120 -- "$RUNNER_TEMP/gitleaks-8.30.1/gitleaks" dir "$RUNNER_TEMP/numera-tracked-scan" --config "$RUNNER_TEMP/gitleaks-8.30.1/strict.toml" --redact=100 --ignore-gitleaks-allow --gitleaks-ignore-path "$RUNNER_TEMP/no-secret-exclusions" --timeout 240 --no-banner
       - name: Require complete history and the actual Git producer verdict
         run: env GITHUB_EVENT_NAME=workflow_dispatch cargo run --manifest-path tools/security-scan/Cargo.toml --locked -- "$GITHUB_WORKSPACE" "$RUNNER_TEMP/gitleaks-8.30.1/gitleaks" "$RUNNER_TEMP/gitleaks-8.30.1/official-original.toml" "$GITHUB_WORKSPACE/scripts/ci/gitleaks.toml"
 
@@ -517,4 +522,4 @@ jobs:
       - name: Reject every failed or skipped required tier
         env:
           NUMERA_NEEDS_JSON: ${{ toJson(needs) }}
-        run: cargo xtask ci required
+        run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci required

@@ -1,15 +1,13 @@
 # Architecture
 
-Numera Browser is the local-first profile manager. Its manager service, browser
-preparation, web dashboard, desktop shell and build tools are implemented in
-Rust. The dashboard compiles to WebAssembly. Tauri supplies the native window and
-operating-system WebView for the manager. A server installation serves the same
-dashboard over HTTP.
+Numera Browser 0.37.0 implements its manager, browser preparation, dashboard,
+desktop shell and build tools in Rust. Tauri hosts the Rust/WASM dashboard in the
+OS WebView. A full server package serves that dashboard over HTTP; a CLI-only
+archive has no dashboard assets.
 
-The rewrite continues checkpoint `3bf1d839fd33e42a10b982bd8607a7052ea7c4cd`
-in [PR #76](https://github.com/KiaroSama/Numera-Browser/pull/76). Its
-[verification record](rust-rewrite.md) tracks the Rust cutover and CI results for
-x86-64 Linux and Windows.
+[PR #76](https://github.com/KiaroSama/Numera-Browser/pull/76) merged the native
+rewrite. The [verification record](rust-rewrite.md) distinguishes historical
+cutover evidence from current release checks.
 
 ## Product and runtime boundary
 
@@ -133,11 +131,12 @@ Failures retain their structured cause codes and recoverable state.
 
 ## HTTP, dashboard and desktop
 
-The HTTP API binds to loopback by default. Non-loopback access requires explicit
-authentication policy. Bearer-token validation and CORS wrap API and dashboard
-composition; CORS is not an authentication mechanism. Requests have bounded
-bodies and strict field admission. Browser-backed probes reserve work before
-spawn and remain owned through cleanup.
+The Axum API binds to loopback by default. Keep it private and use bearer
+authentication when serving other clients. `GET /api/ready` reports readiness
+without credentials; `POST /api/mcp` always requires a bearer. CORS controls
+browser access across origins and does not replace authentication. Rust handlers
+bound request bodies and validate profile writes. Browser-backed probes own their
+work from admission through cleanup.
 
 The dashboard uses the same API from a browser or Tauri WebView. An unavailable
 API is distinguished from an authenticated live connection. The Rust development
@@ -152,12 +151,17 @@ rollback boundaries.
 
 ## Builds and verification
 
-[Native CI](../.github/workflows/native-ci.yml) compiles the real engine and worker
-independently on Linux and Windows, on x64 and arm64. Product jobs build the
-Rust/WASM dashboard, Tauri installers and portable archives. CLI-only archives
-carry the manager and browser worker without the desktop shell.
-Each package records its exact Git source, generation, component identities,
-resource inventory, notices and checksums. Unsigned CI artifacts are not releases.
+[Native CI](../.github/workflows/native-ci.yml) builds the engine and worker
+independently on Windows and Linux, on x64 and arm64. Product jobs build the
+Rust/WASM dashboard, Tauri installers and portable archives. A CLI-only archive
+contains the manager and browser worker without desktop or dashboard assets.
+Full product packages record their source, generation, components, resources,
+notices and checksums. Unsigned CI artifacts are not releases.
+
+Run `cargo run --manifest-path tools/xtask/Cargo.toml --locked --` from the
+repository root followed by the build-tool command. The workflows set
+`PLAYWRIGHT_SKIP_DRIVER_DOWNLOAD=1`; set it in the shell for local source builds.
+See the [build-tool README](../tools/xtask/README.md) for arguments and prerequisites.
 
 The original suite inventory is frozen in `rust-test-baseline.json`: 3,418 source
 cases and 195 dashboard cases in 26 suites. The 294 preexisting native cases are

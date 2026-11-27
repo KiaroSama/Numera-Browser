@@ -1,312 +1,98 @@
-# Driving Numera Browser without a GUI
+# Using Numera Browser without a GUI
 
-Numera Browser has two front doors and they are not the same size.
+In Numera Browser 0.37.0, `numera-engine` runs the Rust CLI, MCP server and Axum HTTP API. Use the CLI for a single command, the HTTP API for the same service the dashboard uses, or MCP for tools that expose input schemas. Both standalone and server modes can use the same data root; do not run two sessions against the same profile.
 
-* The **HTTP API** (`numera serve`) is what the dashboard talks to. Anything the
-  GUI can do, an HTTP client can do, because the GUI has no other way of doing
-  it either.
-* The **CLI** (`numera …`) is what a script or an agent on a headless server
-  wants: no server to start, no port to pick, an exit code that means something.
+## Structured CLI output
 
-`engine-rust/tests/source_http/agent.rs` holds the two against each other and fails
-when they drift. This page is the human version of that file.
-
----
-
-## Structured output
-
-Every command takes `--json`. It prints **one JSON document on stdout and
-nothing else** — the prose a person reads is suppressed, not merely coloured,
-so a caller never has to parse around it.
-
-```console
-$ numera list --json
-{"total": 2, "profiles": [{"id": "5c517ec3d2cb", "name": "alpha", ...}]}
-
-$ numera list
-ID            NAME                  OS       LOCALE   PROXY
-5c517ec3d2cb  alpha                 windows  tr-TR    -
-```
-
-The human output is still the default. Nothing that reads the plain form breaks.
-
-Two conventions worth knowing:
-
-* **Exit codes carry the verdict, with two exceptions.** `check`, `proxy test`,
-  `tls`, `dns` and `collisions` exit non-zero when the thing they inspected is
-  *unhealthy* — the payload is still on stdout, so
-  `numera check p --json; echo $?` is a one-liner health gate. `trust` and
-  `align` exit **0 under `--json` whatever the grade** (read `score` from the
-  payload). The native API and CLI use the shared Rust implementation, so a
-  merely-imperfect profile must not look like a broken command. Their human
-  form still reports the verdict in `$?`.
-* **`--json` never prompts.** A destructive command without `-y` fails with
-  `{"ok": false, "error": "this needs confirmation — pass -y …"}` instead of
-  waiting on a keyboard nobody is at. Same for `vault enable` without
-  `--password` / `NUMERA_PASSWORD`.
-
-`list` reports a summary row per profile; `show` and `export` are the
-full-fidelity paths and include the proxy password, so keep them off shared
-logs.
-
-## Job handles for the slow work
-
-Launching a browser, warming a profile and attaching DevTools all block for as
-long as the session is open. `--detach` runs any command in the background and
-prints a handle instead:
-
-```console
-$ numera warmup alpha --minutes 30 --headless --detach --json
-{"id": "a22ad4e3ef19", "command": "warmup", "profile": "5c517ec3d2cb",
- "pid": 49276, "log": ".../jobs/a22ad4e3ef19.log", "started": 1788031243.29}
-
-$ numera jobs show a22ad4e3ef19 --json
-{"id": "a22ad4e3ef19", "state": "running", "running": true, "tail": ["  browsing https://…"]}
-```
-
-`state` is one of `running`, `starting`, `done`, `failed`, `stopped` or `lost`
-(the process went away without recording an outcome — killed, or crashed hard).
-A finished job also carries `exit`, the command's real exit code.
-
-| | |
-|---|---|
-| `numera jobs list` | every job and its state |
-| `numera jobs show <id> [--lines N]` | one job, with the tail of its output |
-| `numera jobs stop <id>` | terminate it **and everything it started** |
-| `numera jobs clear` | forget the finished ones |
-| `numera stop <ref>` | stop every job belonging to one profile, and report a browser still running under a launcher that died |
-
-Records live in `<data-dir>/jobs/`, one JSON file plus one log per job, so a
-later process can see work an earlier one started. `jobs stop` ends the whole
-process tree and proves it empty before recording the outcome — a Windows job
-object, a POSIX process group — because a detached `numera launch` owns a
-Chromium that would otherwise outlive it.
-
-Ownership of a profile's browser is written down separately, in
-`<data-dir>/sessions/`, and it outlives the process that took it: a launcher
-killed while its browser kept running leaves no lease (the OS releases that on
-death) but does leave the claim, so another process is refused the profile
-until that browser is gone. `numera stop` reports exactly that state instead of
-"nothing running".
-
-A claim names the OS tree that holds *that session's* browser and nothing
-else - a process group on POSIX, a job object on Windows - and it is given up
-only once the OS says that tree is empty. So a browser left running past a
-clean exit keeps its profile, and a session that raised over a browser it had
-already closed does not.
-
-Every engine goes through that, with no fallback: a driver this process cannot
-identify, a tree it cannot create, and a claim it cannot point at that tree are
-each a refused launch, and anything already started is stopped. A browser
-nothing owns is one nothing can prove has stopped, which is the whole reason
-the tree exists.
-
-A claim that cannot be *evaluated* counts as owned, not as absent. That covers
-a file that will not parse, and also one written by an older version or by
-another platform - anything that does not name a durable tree this machine can
-ask about. It may be the only surviving record of a browser whose launcher
-died, so opening, deleting, backing up and restoring the profile all refuse.
-Repairing it is a deliberate act: once you know no browser is using that
-profile, remove `<data-dir>/sessions/<id>.json` by hand.
-
-The HTTP API has its own equivalent and it is not this one: `POST /launch`
-returns immediately, the profile then reads `"status": "running"` in
-`GET /api/profiles`, and `POST /stop` ends it. That registry lives in the
-server's memory, which is why the CLI needed one on disk.
-
-## A worked example
+Put `--data-dir` before the command. Add `--json` after the command and read the exit code as well as the JSON result.
 
 ```bash
-numera bulk-create --count 20 --prefix Acct --tag batch1 --json
-numera pool add proxies.txt --json
-numera pool assign --tag batch1 --json          # round-robin, locale follows country
-
-for id in $(numera list --tag batch1 --json | jq -r '.profiles[].id'); do
-  numera check "$id" --json || echo "$id is incoherent"
-  numera warmup "$id" --minutes 20 --headless --detach --json
-done
-
-numera jobs list --json | jq '[.jobs[] | select(.running)] | length'
-numera health --json | jq '.summary'
+numera-engine --data-dir ./qa-data create qa-profile --engine playwright --json
+numera-engine --data-dir ./qa-data list --json
+numera-engine --data-dir ./qa-data check qa-profile --json
 ```
 
-## HTTP instead
+- `check`, `proxy test`, `tls`, `dns` and `collisions` can return a nonzero code with a valid diagnostic payload. `trust` and `align` can return zero in JSON mode even when the grade is poor. Read the score before deciding what to do.
+- JSON mode does not prompt for destructive operations. Use `-y` only after deciding to delete the named profiles. Supply vault credentials securely before a noninteractive secret-dependent operation.
+- `list` returns summaries. `show`, profile exports and cookie exports can contain credentials. Keep their output out of shared logs.
+
+Run `numera-engine <command> --help` or see the [CLI reference](../README.md#cli-command-reference).
+
+## Detached jobs and session ownership
 
 ```bash
-numera serve --port 8787 --detach --json        # a job handle, like anything else
-curl -s localhost:8787/api/profiles | jq
+numera-engine --data-dir ./qa-data launch qa-profile --headless --detach --json
+numera-engine --data-dir ./qa-data jobs list --json
+job_id='replace-with-the-job-id'
+numera-engine --data-dir ./qa-data jobs show "$job_id" --lines 20 --json
+numera-engine --data-dir ./qa-data jobs stop "$job_id" --json
 ```
 
-Set `NUMERA_API_TOKEN` before serving to require `Authorization: Bearer <token>`
-on every request.
+Use the same data root for every command in this sequence. `--detach` returns a handle; it does not mean the browser is ready. Job records and captured output live in `<data-dir>/jobs/`. The `state` field distinguishes `starting`, `running`, `done`, `failed`, `stopped` and `lost`. The `exit` field records the command's exit status when available.
 
-**CORS is same-origin by default**, whether or not a token is set: the engine
-serves the dashboard itself, so the normal case needs no cross-origin access at
-all. `NUMERA_ALLOWED_ORIGINS` sets the list explicitly - a dev server against
-this engine wants `http://localhost:5173`. This used to default to a wildcard
-when the server started unauthenticated, and the choice was made once at
-startup, so minting the first token locked the API while it went on telling
-every web page it could send credentials to it.
+`jobs stop` settles the owned process tree before recording a stop. The profile claim in `<data-dir>/sessions/` can outlive a launcher. If the browser still runs, or Numera cannot prove ownership ended, the profile remains busy. Try `numera-engine stop <ref>` and inspect the logs before taking recovery action. Do not remove a claim merely because its launcher exited or the record is old.
 
-**Named tokens** are the better option once more than one thing calls the API.
-`numera token create "CI runner"` mints one, prints it **once**, and stores only
-its SHA-256 - so there is no file that leaking would expose and no way to read it
-back. `numera token list` shows what exists and when each was last seen;
-`numera token revoke <id>` closes one door without touching the others. The
-Settings page has the same table.
+HTTP sessions live in the server's registry. `POST /api/profiles/{pid}/launch` starts a session; use `GET /api/profiles` for its status and `POST /api/profiles/{pid}/stop` to end it. A CLI job handle does not refer to a server session.
 
-Minting the first named token turns auth on by itself, exactly as the env var
-does. The env var keeps working alongside them: it is the credential the
-dashboard and any existing script already use, and revoking every named token
-does not reopen a server that still has it set.
+## HTTP API
 
-FastAPI publishes a schema at `/openapi.json` and a browsable form at `/docs`.
-Read [the caveats below](#what-the-openapi-schema-does-not-tell-you) before
-generating a client from it.
+Start the server on loopback and query readiness from a second terminal:
 
-## Readiness
-
-`GET /api/ready` is the one endpoint that answers while the API is locked:
-
-```console
-$ curl -s localhost:8787/api/ready
-{"ok": true, "service": "numera-browser", "version": "0.8.0", "authRequired": true}
+```bash
+numera-engine --data-dir ./qa-data serve --port 8787
 ```
 
-It exists for launchers. The desktop shell polls it to know the engine is up,
-and it used to poll `/api/health` - which is behind the token, so an engine with
-one configured looked like it had failed to start and the screen that asks for a
-token was unreachable. Nothing about profiles, proxies or tokens is exposed
-here; `authRequired` tells a client whether to go looking for a credential.
+```bash
+curl --fail --silent --show-error http://127.0.0.1:8787/api/ready
+```
 
-`/api/health` stays behind the token.
+A 0.37.0 server with authentication enabled returns:
+
+```json
+{"ok": true, "service": "numera-browser", "version": "0.37.0", "authRequired": true}
+```
+
+`/api/ready` does not require a token and does not return profile data. `/api/health` requires authentication when the server is locked. Set `NUMERA_API_TOKEN` in the server environment, or use `numera-engine token create <name>` against the server's data root to mint a named token. Numera shows the token once and stores only its hash. Use `token list` and `token revoke <id>` to manage named credentials. Send them as `Authorization: Bearer <token>`. The HTTP MCP endpoint requires a valid bearer even if the other API routes are unlocked.
+
+The dashboard and API are same-origin by default. Set `NUMERA_ALLOWED_ORIGINS` to list additional browser origins, one per line. CORS does not replace authentication. Keep the API and CDP on loopback unless you have configured a private, authenticated connection.
+
+### Request and error handling
+
+Axum serves the OpenAPI document at `/openapi.json` and its interactive view at `/docs`. Use the schema as a route index; some object fields and application errors have more detail in the Rust handlers and tests under [the engine source tree](../engine-rust/).
+
+- `POST /api/profiles` accepts a minimal body such as `{"name":"qa-profile"}`; the engine fills omitted profile defaults. `PUT /api/profiles/{pid}` uses the ID in the path. The server strips its own bookkeeping fields rather than treating them as user settings.
+- Profile writes validate types and reject unknown client fields in Rust. Handle `422` for invalid input, `404` for an unknown profile, `409` for a busy session or conflicting profile state, and `423` when the vault cannot unlock a required secret. A missing or invalid credential returns `401` on protected routes.
+- `GET` and `POST /api/profiles/{pid}/cookies` read and import cookies. `GET /api/profiles/{id}/cookies/export` downloads an export. There is no shared cookie jar endpoint.
+- The CLI and API share folder and profile storage. Folder deletion reassigns profiles; it does not delete them. Use the profile ID in HTTP paths and a name or ID in the CLI where help says `<ref>`.
 
 ## MCP
 
-`numera-engine mcp` speaks newline-delimited JSON-RPC over stdio. For example:
+`numera-engine mcp` speaks newline-delimited JSON-RPC over stdio. To reach an existing authenticated service, run `numera-engine mcp --bridge http://127.0.0.1:8787`. The bridge sends `POST /api/mcp` with a bearer; set `NUMERA_API_TOKEN` in its private environment. A remote bridge requires HTTPS, explicit remote permission and a token. Keep the bridge on loopback for local work.
+
+Call `tools/list` on your connection to see the installed build's tools and input schemas. HTTP MCP runs tools inline and returns cookie exports as content instead of writing a file on the server. The stdio tool set can differ. `numera-engine capabilities --json` lists CLI and MCP capabilities without starting a service.
+
+### Project-local temp and cache
+
+Replace `<numera-dir>` with an absolute writable location, point `command` at the real binary, and create the temp and cache directories first. Omit `.exe` on Linux.
 
 ```json
 {
   "mcpServers": {
-    "numera": {
-      "command": "numera-engine",
-      "args": ["--data-dir", "/srv/numera", "mcp"]
+    "numera-browser": {
+      "command": "<numera-dir>/bin/numera-engine.exe",
+      "args": ["mcp", "--bridge", "http://127.0.0.1:8787"],
+      "env": {
+        "NUMERA_DATA_DIR": "<numera-dir>/data",
+        "NUMERA_LOG_DIR": "<numera-dir>/logs",
+        "CLOAKBROWSER_CACHE_DIR": "<numera-dir>/cache/cloak",
+        "XDG_CACHE_HOME": "<numera-dir>/cache",
+        "TMP": "<numera-dir>/temp",
+        "TEMP": "<numera-dir>/temp",
+        "TMPDIR": "<numera-dir>/temp"
+      }
     }
   }
 }
 ```
 
-To use an existing Numera HTTP service, run:
-
-```bash
-numera-engine mcp --bridge http://127.0.0.1:8787
-```
-
-The bridge forwards MCP JSON-RPC to `POST /api/mcp`. If the service requires
-bearer authentication, configure the token in your client and keep it out of
-shell history and logs. The bridge refuses non-loopback targets unless you
-explicitly allow remote access and provide a bearer token.
-
-Call `tools/list` to see the tool names and schemas that your installed build
-actually exposes. For CLI scripts, use `numera-engine --help` to check arguments
-and `--json` where supported to read structured output. The acceptance tests
-check shared CLI, MCP and dashboard API behavior without printing real account
-or session data.
-
-## Known gaps and closed ones
-
-These are asserted, not aspirational: the parity test fails if the list changes
-in either direction.
-
-### Folders and the shared store — both closed
-
-Two gaps used to live here. Both are fixed, and how they were fixed is worth
-knowing because it decides where you look when something goes wrong.
-
-**Folders** now have `numera folder list|create|rename|delete`, with `--json`.
-The rules — a rename moves the folder's profiles with it, a delete reassigns
-them to `Unfiled` rather than destroying them — live in `numera/folders.py`, and
-both the HTTP routes and the CLI call it. That is deliberate: two copies of
-behaviour this subtle would drift, and the drift would be silent, with the GUI
-and the CLI simply disagreeing about where a profile lives. Folders are stored
-in `<data-dir>/dashboard-config.json`, the same file the dashboard already used,
-so nothing had to be migrated.
-
-**The two stores are reconciled.** `DashboardStore` mirrors every write into the
-engine store, and `GET /api/profiles` adopts anything the CLI created. So:
-
-| | writes | visible to |
-|---|---|---|
-| `numera create` | `<data-dir>/profiles/<id>.json` | both, adopted on the next list |
-| `POST /api/profiles` | `<data-dir>/dashboard/<id>.json` **and** the engine store | both, immediately |
-
-The mirroring is in the store rather than in each of the five API write paths,
-so a sixth write path cannot forget it. The conversion is best-effort: a profile
-shape the dashboard can hold but `to_engine_profile()` cannot convert still
-saves, because refusing the edit would fail for a reason the user cannot see.
-
-`test_a_cli_created_profile_is_visible_to_the_dashboard` was a strict xfail while
-this was open; it passes outright now, and the strictness is what announced the
-fix rather than letting it go unnoticed.
-
-**Web Store extensions install headlessly too.** `numera ext install <url>`
-takes the same link the Extensions page takes, so an agent is not restricted to
-folders a human unpacked by hand. Chromium cannot install from the store once
-automation is enabled and `--load-extension` only accepts an unpacked directory,
-so the link is resolved to a 32-character id, fetched as a `.crx` from Google's
-update endpoint and unpacked into `<data-dir>/extensions/<id>/` — which means it
-travels with a portable install instead of pointing at one machine.
-
-Ids are exactly 32 letters from `a`–`p`. An id that is nearly right is diagnosed
-rather than reported as missing: the error names the offending letter, or the
-actual length, because "not found" would send a caller to check whether the
-extension still exists when the real problem is a truncated copy-paste.
-
-### `numera health` reports no trust grade
-
-The dashboard's Health page shows a *cached* grade, written into the dashboard
-profile by the API when a trust or align run finishes. Nothing caches one on the
-engine side, so `numera health` reports `"trust": null`. Run
-`numera trust <ref> --json` for a live grade — it opens a real browser, which is
-why the page caches it in the first place.
-
-## What the OpenAPI schema does not tell you
-
-`/openapi.json` lists every API path correctly — the SPA catch-all is
-excluded, the methods are right, nothing is missing. What it does not have is
-any *content*:
-
-* **A profile body may be as small as `{"name": "alpha"}`.** Anything you leave
-  out is filled from the engine's own defaults, so the profile the dashboard
-  draws is the identity the browser will actually wear — a coherent Windows
-  archetype, with a real user agent. Send only what you mean to control.
-  (This is not visible in the schema either; it used to store the sparse object
-  verbatim, which took the dashboard's profile list down on the next load.)
-* **Every request body is `{"type": "object", "additionalProperties": true}`.**
-  The routes take `body: dict`, so the schema cannot name a single field. From
-  the schema alone there is no way to know that `POST /api/profiles/{pid}/launch`
-  accepts `{"headless": bool}`, or what a profile object contains. The schema is
-  the misleading part here, not the API: **profile writes are strict**. An
-  unknown key is a `422` naming it, on create, update, batch and bulk alike, so
-  a typo cannot land as a field nothing reads.
-* **Fields the server owns are dropped, not refused.** `GET`/`POST` return
-  `status`, `lastActive` and the store's `_`-prefixed bookkeeping, so a client
-  that reads a profile, changes one value and `PUT`s it back is sending exactly
-  what it was given. Refusing that would make the API reject its own output.
-  The values a client sends for them are discarded either way.
-* **`PUT /api/profiles/{pid}` edits in place.** The id comes from the path; an
-  `id` in the body is ignored rather than honoured. `POST` always mints one.
-* **Every 200 response is `{}`.** The handlers have no return annotation, so
-  generated clients get `Any` everywhere.
-* **The failure modes are undocumented.** The `409` from launching or stopping
-  a profile whose session someone else holds and from a write over two stored
-  copies whose proxy passwords disagree, the `423` from a profile whose proxy
-  password the vault cannot read and from clearing *or removing* a secret while
-  locked, the `404`s, the `400` from an unparseable proxy list or a proxy
-  password that is not text — none appear. Only the automatic `422` does.
-* **Bearer auth is invisible.** `NUMERA_API_TOKEN` - or any named token - adds a
-  middleware that answers `401`; no security scheme or `401` response is
-  declared, so a generated client will not send the header.
-
-Treat the schema as a route index, not a contract. Fixing it means adding
-Pydantic models and `response_model=` in the `server/` route modules.
+For standalone stdio, use `"args": ["mcp"]`. Bridge mode uses the running server's data, logs and browser resources, regardless of the client's local overrides. See the [client configuration notes](../README.md#project-local-mcp-configuration) for Claude Code, Claude Desktop, Codex and Cursor.

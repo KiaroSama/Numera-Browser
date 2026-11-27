@@ -26,9 +26,9 @@ runs:
         CHECKPOINT_SHARDS: ${{ inputs.shards }}
         CHECKPOINT_OUTPUT: ${{ inputs.output }}
       run: |
-        cargo xtask ci owned --wall 600 --idle 120 -- cargo xtask ci source-checkpoint $env:CHECKPOINT_SHARD $env:CHECKPOINT_SHARDS 2 4 0 "$env:CHECKPOINT_OUTPUT"
+        cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 600 --idle 120 -- cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci source-checkpoint $env:CHECKPOINT_SHARD $env:CHECKPOINT_SHARDS 2 4 0 "$env:CHECKPOINT_OUTPUT"
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-        cargo xtask ci owned --wall 30 --idle 15 -- cargo xtask ci settled-index "$env:CHECKPOINT_OUTPUT/checkpoint.json" 0
+        cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 30 --idle 15 -- cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci settled-index "$env:CHECKPOINT_OUTPUT/checkpoint.json" 0
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
         $state = Get-Content "$env:CHECKPOINT_OUTPUT/checkpoint.json" -Raw | ConvertFrom-Json
         $testExit = $state.slot_results[0]
@@ -49,9 +49,9 @@ runs:
         CHECKPOINT_SHARDS: ${{ inputs.shards }}
         CHECKPOINT_OUTPUT: ${{ inputs.output }}
       run: |
-        cargo xtask ci owned --wall 600 --idle 120 -- cargo xtask ci source-checkpoint $env:CHECKPOINT_SHARD $env:CHECKPOINT_SHARDS 2 4 1 "$env:CHECKPOINT_OUTPUT"
+        cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 600 --idle 120 -- cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci source-checkpoint $env:CHECKPOINT_SHARD $env:CHECKPOINT_SHARDS 2 4 1 "$env:CHECKPOINT_OUTPUT"
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-        cargo xtask ci owned --wall 30 --idle 15 -- cargo xtask ci settled-index "$env:CHECKPOINT_OUTPUT/checkpoint.json" 1
+        cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 30 --idle 15 -- cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci settled-index "$env:CHECKPOINT_OUTPUT/checkpoint.json" 1
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
         $state = Get-Content "$env:CHECKPOINT_OUTPUT/checkpoint.json" -Raw | ConvertFrom-Json
         $testExit = $state.slot_results[1]
@@ -72,9 +72,9 @@ runs:
         CHECKPOINT_SHARDS: ${{ inputs.shards }}
         CHECKPOINT_OUTPUT: ${{ inputs.output }}
       run: |
-        cargo xtask ci owned --wall 600 --idle 120 -- cargo xtask ci source-checkpoint $env:CHECKPOINT_SHARD $env:CHECKPOINT_SHARDS 2 4 2 "$env:CHECKPOINT_OUTPUT"
+        cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 600 --idle 120 -- cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci source-checkpoint $env:CHECKPOINT_SHARD $env:CHECKPOINT_SHARDS 2 4 2 "$env:CHECKPOINT_OUTPUT"
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-        cargo xtask ci owned --wall 30 --idle 15 -- cargo xtask ci settled-index "$env:CHECKPOINT_OUTPUT/checkpoint.json" 2
+        cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 30 --idle 15 -- cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci settled-index "$env:CHECKPOINT_OUTPUT/checkpoint.json" 2
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
         $state = Get-Content "$env:CHECKPOINT_OUTPUT/checkpoint.json" -Raw | ConvertFrom-Json
         $testExit = $state.slot_results[2]
@@ -95,9 +95,9 @@ runs:
         CHECKPOINT_SHARDS: ${{ inputs.shards }}
         CHECKPOINT_OUTPUT: ${{ inputs.output }}
       run: |
-        cargo xtask ci owned --wall 600 --idle 120 -- cargo xtask ci source-checkpoint $env:CHECKPOINT_SHARD $env:CHECKPOINT_SHARDS 2 4 3 "$env:CHECKPOINT_OUTPUT"
+        cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 600 --idle 120 -- cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci source-checkpoint $env:CHECKPOINT_SHARD $env:CHECKPOINT_SHARDS 2 4 3 "$env:CHECKPOINT_OUTPUT"
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-        cargo xtask ci owned --wall 30 --idle 15 -- cargo xtask ci settled-index "$env:CHECKPOINT_OUTPUT/checkpoint.json" 3
+        cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 30 --idle 15 -- cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci settled-index "$env:CHECKPOINT_OUTPUT/checkpoint.json" 3
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
         $state = Get-Content "$env:CHECKPOINT_OUTPUT/checkpoint.json" -Raw | ConvertFrom-Json
         $testExit = $state.slot_results[3]
@@ -118,9 +118,9 @@ runs:
         CHECKPOINT_SHARDS: ${{ inputs.shards }}
         CHECKPOINT_OUTPUT: ${{ inputs.output }}
       run: |
-        cargo xtask ci owned --wall 600 --idle 120 -- cargo xtask ci source-checkpoint $env:CHECKPOINT_SHARD $env:CHECKPOINT_SHARDS 2 4 4 "$env:CHECKPOINT_OUTPUT"
+        cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 600 --idle 120 -- cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci source-checkpoint $env:CHECKPOINT_SHARD $env:CHECKPOINT_SHARDS 2 4 4 "$env:CHECKPOINT_OUTPUT"
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-        cargo xtask ci owned --wall 30 --idle 15 -- cargo xtask ci settled-index "$env:CHECKPOINT_OUTPUT/checkpoint.json" 4
+        cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 30 --idle 15 -- cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci settled-index "$env:CHECKPOINT_OUTPUT/checkpoint.json" 4
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
         $state = Get-Content "$env:CHECKPOINT_OUTPUT/checkpoint.json" -Raw | ConvertFrom-Json
         $testExit = $state.slot_results[4]
@@ -141,9 +141,9 @@ runs:
         CHECKPOINT_SHARDS: ${{ inputs.shards }}
         CHECKPOINT_OUTPUT: ${{ inputs.output }}
       run: |
-        cargo xtask ci owned --wall 600 --idle 120 -- cargo xtask ci source-checkpoint $env:CHECKPOINT_SHARD $env:CHECKPOINT_SHARDS 2 4 5 "$env:CHECKPOINT_OUTPUT"
+        cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 600 --idle 120 -- cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci source-checkpoint $env:CHECKPOINT_SHARD $env:CHECKPOINT_SHARDS 2 4 5 "$env:CHECKPOINT_OUTPUT"
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-        cargo xtask ci owned --wall 30 --idle 15 -- cargo xtask ci settled-index "$env:CHECKPOINT_OUTPUT/checkpoint.json" 5
+        cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 30 --idle 15 -- cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci settled-index "$env:CHECKPOINT_OUTPUT/checkpoint.json" 5
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
         $state = Get-Content "$env:CHECKPOINT_OUTPUT/checkpoint.json" -Raw | ConvertFrom-Json
         $testExit = $state.slot_results[5]
@@ -164,9 +164,9 @@ runs:
         CHECKPOINT_SHARDS: ${{ inputs.shards }}
         CHECKPOINT_OUTPUT: ${{ inputs.output }}
       run: |
-        cargo xtask ci owned --wall 600 --idle 120 -- cargo xtask ci source-checkpoint $env:CHECKPOINT_SHARD $env:CHECKPOINT_SHARDS 2 4 6 "$env:CHECKPOINT_OUTPUT"
+        cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 600 --idle 120 -- cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci source-checkpoint $env:CHECKPOINT_SHARD $env:CHECKPOINT_SHARDS 2 4 6 "$env:CHECKPOINT_OUTPUT"
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-        cargo xtask ci owned --wall 30 --idle 15 -- cargo xtask ci settled-index "$env:CHECKPOINT_OUTPUT/checkpoint.json" 6
+        cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 30 --idle 15 -- cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci settled-index "$env:CHECKPOINT_OUTPUT/checkpoint.json" 6
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
         $state = Get-Content "$env:CHECKPOINT_OUTPUT/checkpoint.json" -Raw | ConvertFrom-Json
         $testExit = $state.slot_results[6]
@@ -187,9 +187,9 @@ runs:
         CHECKPOINT_SHARDS: ${{ inputs.shards }}
         CHECKPOINT_OUTPUT: ${{ inputs.output }}
       run: |
-        cargo xtask ci owned --wall 600 --idle 120 -- cargo xtask ci source-checkpoint $env:CHECKPOINT_SHARD $env:CHECKPOINT_SHARDS 2 4 7 "$env:CHECKPOINT_OUTPUT"
+        cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 600 --idle 120 -- cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci source-checkpoint $env:CHECKPOINT_SHARD $env:CHECKPOINT_SHARDS 2 4 7 "$env:CHECKPOINT_OUTPUT"
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-        cargo xtask ci owned --wall 30 --idle 15 -- cargo xtask ci settled-index "$env:CHECKPOINT_OUTPUT/checkpoint.json" 7
+        cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 30 --idle 15 -- cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci settled-index "$env:CHECKPOINT_OUTPUT/checkpoint.json" 7
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
         $state = Get-Content "$env:CHECKPOINT_OUTPUT/checkpoint.json" -Raw | ConvertFrom-Json
         $testExit = $state.slot_results[7]
@@ -210,9 +210,9 @@ runs:
         CHECKPOINT_SHARDS: ${{ inputs.shards }}
         CHECKPOINT_OUTPUT: ${{ inputs.output }}
       run: |
-        cargo xtask ci owned --wall 600 --idle 120 -- cargo xtask ci source-checkpoint $env:CHECKPOINT_SHARD $env:CHECKPOINT_SHARDS 2 4 8 "$env:CHECKPOINT_OUTPUT"
+        cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 600 --idle 120 -- cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci source-checkpoint $env:CHECKPOINT_SHARD $env:CHECKPOINT_SHARDS 2 4 8 "$env:CHECKPOINT_OUTPUT"
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-        cargo xtask ci owned --wall 30 --idle 15 -- cargo xtask ci settled-index "$env:CHECKPOINT_OUTPUT/checkpoint.json" 8
+        cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 30 --idle 15 -- cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci settled-index "$env:CHECKPOINT_OUTPUT/checkpoint.json" 8
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
         $state = Get-Content "$env:CHECKPOINT_OUTPUT/checkpoint.json" -Raw | ConvertFrom-Json
         $testExit = $state.slot_results[8]

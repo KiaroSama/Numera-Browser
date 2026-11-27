@@ -68,12 +68,12 @@ fn run() -> Result<(), Box<dyn Error>> {
             resources::prepare(destination, &offers)
         }
         _ => Err(concat!(
-            "usage: cargo xtask build-candidate <new-output-directory>\n",
-            "       cargo xtask build-product <new-output-directory> (--resources <directory> | --no-bundled-browsers) ",
+            "usage: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- build-candidate <new-output-directory>\n",
+            "       cargo run --manifest-path tools/xtask/Cargo.toml --locked -- build-product <new-output-directory> (--resources <directory> | --no-bundled-browsers) ",
             "[--server-only] [--bundles <none|comma-separated-native-targets>]\n",
-            "       cargo xtask cli-package --target <target> --version <version> [--bin-dir <directory>] --out <directory>\n",
-            "       cargo xtask verify-binary --executable <path> --target <target>",
-            "\n       cargo xtask prepare-resources <provisioned-directory> <source-offers.json>"
+            "       cargo run --manifest-path tools/xtask/Cargo.toml --locked -- cli-package --target <target> --version <version> [--bin-dir <directory>] --out <directory>\n",
+            "       cargo run --manifest-path tools/xtask/Cargo.toml --locked -- verify-binary --executable <path> --target <target>",
+            "\n       cargo run --manifest-path tools/xtask/Cargo.toml --locked -- prepare-resources <provisioned-directory> <source-offers.json>"
         )
         .into()),
     }
@@ -126,6 +126,7 @@ fn build_candidate(root: &Path, output: &Path) -> Result<(), Box<dyn Error>> {
     }
     let cargo = env::var_os("CARGO").unwrap_or_else(|| "cargo".into());
     let built = Command::new(cargo)
+        .env("PLAYWRIGHT_SKIP_DRIVER_DOWNLOAD", "1")
         .args([
             "build",
             "--manifest-path",

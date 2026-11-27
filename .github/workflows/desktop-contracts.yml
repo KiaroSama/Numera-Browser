@@ -7,6 +7,7 @@ permissions:
   contents: read
 
 env:
+  PLAYWRIGHT_SKIP_DRIVER_DOWNLOAD: "1"
   NUMERA_MAX_TEST_WORKERS: "2"
   CARGO_BUILD_JOBS: "2"
   CARGO_INCREMENTAL: "0"
@@ -52,17 +53,17 @@ jobs:
       - name: Compile the native CI owner
         run: cargo build --locked --manifest-path tools/xtask/Cargo.toml
       - name: Install the pinned Rust WASM binding tool
-        run: cargo xtask ci owned --wall 600 --idle 180 -- cargo install wasm-bindgen-cli --version 0.2.129 --locked
+        run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 600 --idle 180 -- cargo install wasm-bindgen-cli --version 0.2.129 --locked
       - name: Build the real Rust dashboard assets
-        run: cargo xtask ci owned --wall 900 --idle 180 -- cargo run --locked --manifest-path dashboard/Cargo.toml --bin dashboard-build
+        run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 900 --idle 180 -- cargo run --locked --manifest-path dashboard/Cargo.toml --bin dashboard-build
       - name: Verify Tauri shell formatting
-        run: cargo xtask ci owned --wall 60 --idle 30 -- cargo fmt --manifest-path desktop/src-tauri/Cargo.toml --all --check
+        run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 60 --idle 30 -- cargo fmt --manifest-path desktop/src-tauri/Cargo.toml --all --check
       - name: Compile and lint the Tauri shell
-        run: cargo xtask ci owned --wall 900 --idle 300 -- cargo clippy --manifest-path desktop/src-tauri/Cargo.toml --locked --all-targets --no-default-features -- -D warnings
+        run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 900 --idle 300 -- cargo clippy --manifest-path desktop/src-tauri/Cargo.toml --locked --all-targets --no-default-features -- -D warnings
       - name: Prove previous updater recovery overwrite refusal
         if: runner.os == 'Linux'
-        run: cargo xtask ci owned --wall 900 --idle 300 -- cargo xtask ci desktop-history
+        run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 900 --idle 300 -- cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci desktop-history
       - name: Compile Tauri shell contract binaries
-        run: cargo xtask ci owned --wall 900 --idle 300 -- cargo test --manifest-path desktop/src-tauri/Cargo.toml --locked --no-default-features --no-run
+        run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 900 --idle 300 -- cargo test --manifest-path desktop/src-tauri/Cargo.toml --locked --no-default-features --no-run
       - name: Verify Tauri shell contracts
-        run: cargo xtask ci owned --wall 600 --idle 120 -- cargo test --manifest-path desktop/src-tauri/Cargo.toml --locked --no-default-features -- --test-threads=2
+        run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 600 --idle 120 -- cargo test --manifest-path desktop/src-tauri/Cargo.toml --locked --no-default-features -- --test-threads=2

@@ -10,6 +10,7 @@ on:
 permissions:
   contents: read
 env:
+  PLAYWRIGHT_SKIP_DRIVER_DOWNLOAD: "1"
   CARGO_BUILD_JOBS: "2"
   CARGO_INCREMENTAL: "0"
   CARGO_PROFILE_DEV_DEBUG: "0"
@@ -56,12 +57,12 @@ jobs:
         run: cargo build --manifest-path engine-rust/Cargo.toml --locked --release --no-default-features --features native-product,native-browser --bin numera-engine --bin numera-browser-runtime
       - run: cargo build --manifest-path tools/xtask/Cargo.toml --locked
       - name: Explicitly provision reviewed drivers and matching browsers
-        run: cargo xtask ci owned --wall 1800 --idle 300 -- cargo xtask provision-resources "${{ runner.temp }}/numera-live-resources"
+        run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 1800 --idle 300 -- cargo run --manifest-path tools/xtask/Cargo.toml --locked -- provision-resources "${{ runner.temp }}/numera-live-resources"
       - name: Install Firefox system dependencies
         if: runner.os == 'Linux' && matrix.engine == 'camoufox'
         env:
           NUMERA_TEST_ENGINE: camoufox
-        run: cargo xtask ci owned --wall 600 --idle 570 -- cargo xtask ci camoufox-runtime "${{ runner.temp }}/numera-live-resources"
+        run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 600 --idle 570 -- cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci camoufox-runtime "${{ runner.temp }}/numera-live-resources"
       - name: Record why the licensed browser was not run
         if: matrix.engine == 'cloak' && env.CLOAKBROWSER_LICENSE_KEY == ''
         shell: bash
@@ -70,7 +71,7 @@ jobs:
           printf '%s\n' 'Live Cloak selection skipped: CLOAKBROWSER_LICENSE_KEY is unavailable. Offline and contract tests are independent.' | tee build/selected-sdk.log
       - name: Require the selected backend and its exact consent-controlled resources
         if: matrix.engine != 'cloak' || env.CLOAKBROWSER_LICENSE_KEY != ''
-        run: cargo xtask ci owned --wall 1200 --idle 180 -- cargo xtask ci prepare-live "engine-rust/target/release/numera-browser-runtime${{ runner.os == 'Windows' && '.exe' || '' }}" "engine-rust/target/release/numera-engine${{ runner.os == 'Windows' && '.exe' || '' }}" "${{ runner.temp }}/numera-live-resources" "${{ matrix.engine }}" "${{ runner.temp }}/numera-live-data" "${{ github.env }}"
+        run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 1200 --idle 180 -- cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci prepare-live "engine-rust/target/release/numera-browser-runtime${{ runner.os == 'Windows' && '.exe' || '' }}" "engine-rust/target/release/numera-engine${{ runner.os == 'Windows' && '.exe' || '' }}" "${{ runner.temp }}/numera-live-resources" "${{ matrix.engine }}" "${{ runner.temp }}/numera-live-data" "${{ github.env }}"
       - name: Require native SDK and relocated application; retain checkpoint comparisons
         if: matrix.engine != 'cloak' || env.CLOAKBROWSER_LICENSE_KEY != ''
         uses: ./.github/actions/native-candidate-acceptance

@@ -17,6 +17,7 @@ permissions:
   security-events: read
 
 env:
+  PLAYWRIGHT_SKIP_DRIVER_DOWNLOAD: "1"
   CARGO_BUILD_JOBS: "2"
   CARGO_INCREMENTAL: "0"
   CARGO_PROFILE_DEV_DEBUG: "0"
@@ -36,8 +37,8 @@ jobs:
         with:
           toolchain: 1.100.0
       - run: cargo build --manifest-path tools/xtask/Cargo.toml --locked
-      - run: cargo xtask ci coverage
-      - run: cargo xtask ci release plan
+      - run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci coverage
+      - run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci release plan
   dashboard:
     needs: coverage
     uses: ./.github/workflows/dashboard.yml
@@ -86,7 +87,7 @@ jobs:
       - name: Require every independent prerequisite and signed build
         env:
           NUMERA_NEEDS_JSON: ${{ toJSON(needs) }}
-        run: cargo xtask ci required
+        run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci required
   attest:
     name: Attest exact reviewed source without modifying a branch
     needs: required

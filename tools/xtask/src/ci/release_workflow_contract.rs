@@ -144,11 +144,11 @@ pub fn release_workflows(workflows: &Value) -> Result<()> {
         );
     }
     let codeql = steps.iter().position(|step| {
-        step["run"]
-            .as_str()
-            .is_some_and(|run| run == "cargo xtask ci codeql-verdict")
+        step["run"].as_str().is_some_and(|run| {
+            run == "cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci codeql-verdict"
+        })
     });
-    let verification = steps.iter().position(|step| step["run"].as_str().is_some_and(|run| run == "cargo xtask ci signed-product-review build/owner-review \"${{ inputs.source_sha }}\""));
+    let verification = steps.iter().position(|step| step["run"].as_str().is_some_and(|run| run == "cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci signed-product-review build/owner-review \"${{ inputs.source_sha }}\""));
     if !matches!((codeql, verification), (Some(codeql), Some(verification)) if codeql < verification)
     {
         return fail(

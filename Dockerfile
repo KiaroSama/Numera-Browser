@@ -1,10 +1,11 @@
 # Build the exact native server first, from a clean checkout:
-# cargo xtask build-product build/container --resources /path/to/resources --server-only
+# cargo run --manifest-path tools/xtask/Cargo.toml --locked -- build-product build/container --resources /path/to/resources --server-only
 # The resource receipt inventories matched vendor drivers, browsers and notices.
 # Only that reviewed product enters the runtime image; no source interpreter runs.
 FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive
+ENV PLAYWRIGHT_SKIP_DRIVER_DOWNLOAD=1
 RUN apt-get update \
     && apt-get upgrade -y \
     && apt-get install -y --no-install-recommends \

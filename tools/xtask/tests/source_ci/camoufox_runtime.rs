@@ -369,7 +369,7 @@ source_test!(
                 step["run"]
                     .as_str()
                     .expect("command")
-                    .contains("ci owned --wall 600 --idle 570 -- cargo xtask ci camoufox-runtime")
+                    .contains("ci owned --wall 600 --idle 570 -- cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci camoufox-runtime")
             );
         }
         let acceptance_idx = workflow::step_once(

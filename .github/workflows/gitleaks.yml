@@ -15,6 +15,9 @@ concurrency:
   group: gitleaks-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  PLAYWRIGHT_SKIP_DRIVER_DOWNLOAD: "1"
+
 jobs:
   gitleaks:
     name: Gitleaks secret scan

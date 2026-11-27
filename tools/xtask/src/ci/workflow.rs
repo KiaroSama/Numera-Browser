@@ -299,11 +299,11 @@ pub fn browser_page_compiler(native: &Value, advisory: &Value) -> Result<()> {
         return fail("Browser compiler target, Rust version or strict checks changed");
     }
     let commands = [
-        "cargo xtask ci owned --wall 120 --idle 60 -- cargo fmt --manifest-path browser-page-rust/Cargo.toml --all --check",
-        "cargo xtask ci owned --wall 900 --idle 300 -- cargo clippy --manifest-path browser-page-rust/Cargo.toml --locked --bin browser-page-build -- -D warnings",
-        "cargo xtask ci owned --wall 900 --idle 300 -- cargo clippy --manifest-path browser-page-rust/Cargo.toml --locked --release --target wasm32-unknown-unknown --lib -- -D warnings",
-        "cargo xtask ci owned --wall 900 --idle 300 -- cargo install wasm-bindgen-cli --version 0.2.129 --locked",
-        "cargo xtask ci owned --wall 900 --idle 300 -- cargo run --manifest-path browser-page-rust/Cargo.toml --locked --bin browser-page-build -- --check --wasm2js \"$RUNNER_TEMP/numera-binaryen-133/binaryen-version_133/bin/wasm2js\"",
+        "cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 120 --idle 60 -- cargo fmt --manifest-path browser-page-rust/Cargo.toml --all --check",
+        "cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 900 --idle 300 -- cargo clippy --manifest-path browser-page-rust/Cargo.toml --locked --bin browser-page-build -- -D warnings",
+        "cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 900 --idle 300 -- cargo clippy --manifest-path browser-page-rust/Cargo.toml --locked --release --target wasm32-unknown-unknown --lib -- -D warnings",
+        "cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 900 --idle 300 -- cargo install wasm-bindgen-cli --version 0.2.129 --locked",
+        "cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 900 --idle 300 -- cargo run --manifest-path browser-page-rust/Cargo.toml --locked --bin browser-page-build -- --check --wasm2js \"$RUNNER_TEMP/numera-binaryen-133/binaryen-version_133/bin/wasm2js\"",
     ];
     let mut last = toolchain;
     for command in commands {
@@ -508,7 +508,7 @@ pub fn desktop_contracts(workflows: &Value) -> Result<()> {
     let history_step = &steps[history];
     if history_step["if"] != "runner.os == 'Linux'"
         || history_step["run"]
-            != "cargo xtask ci owned --wall 900 --idle 300 -- cargo xtask ci desktop-history"
+            != "cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 900 --idle 300 -- cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci desktop-history"
         || history >= step_once(steps, "--no-default-features --no-run", true)?
     {
         return fail(
@@ -561,7 +561,7 @@ pub fn macos_contract(workflow: &Value) -> Result<()> {
         .ok_or("macOS contract steps missing")?;
     for (phase, wall, idle) in [("build", 900, 300), ("test", 600, 120)] {
         let command = format!(
-            "cargo xtask ci owned --wall {wall} --idle {idle} -- cargo xtask ci macos-ownership {phase}"
+            "cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall {wall} --idle {idle} -- cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci macos-ownership {phase}"
         );
         let matches = steps
             .iter()
@@ -636,7 +636,7 @@ pub fn source_module_action(action: &Value) -> Result<()> {
             && run["env"]["CHECKPOINT_SHARDS"] == "${{ inputs.shards }}"
             && run["env"]["CHECKPOINT_OUTPUT"] == "${{ inputs.output }}";
         let expected = format!(
-            "cargo xtask ci owned --wall 600 --idle 120 -- cargo xtask ci source-checkpoint $env:CHECKPOINT_SHARD $env:CHECKPOINT_SHARDS 2 4 {index} \"$env:CHECKPOINT_OUTPUT\"\nif ($LASTEXITCODE -ne 0) {{ exit $LASTEXITCODE }}\ncargo xtask ci owned --wall 30 --idle 15 -- cargo xtask ci settled-index \"$env:CHECKPOINT_OUTPUT/checkpoint.json\" {index}\nif ($LASTEXITCODE -ne 0) {{ exit $LASTEXITCODE }}\n$state = Get-Content \"$env:CHECKPOINT_OUTPUT/checkpoint.json\" -Raw | ConvertFrom-Json\n$testExit = $state.slot_results[{index}]\n\"settled=true\" >> $env:GITHUB_OUTPUT\nexit [int]$testExit\n"
+            "cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 600 --idle 120 -- cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci source-checkpoint $env:CHECKPOINT_SHARD $env:CHECKPOINT_SHARDS 2 4 {index} \"$env:CHECKPOINT_OUTPUT\"\nif ($LASTEXITCODE -ne 0) {{ exit $LASTEXITCODE }}\ncargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 30 --idle 15 -- cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci settled-index \"$env:CHECKPOINT_OUTPUT/checkpoint.json\" {index}\nif ($LASTEXITCODE -ne 0) {{ exit $LASTEXITCODE }}\n$state = Get-Content \"$env:CHECKPOINT_OUTPUT/checkpoint.json\" -Raw | ConvertFrom-Json\n$testExit = $state.slot_results[{index}]\n\"settled=true\" >> $env:GITHUB_OUTPUT\nexit [int]$testExit\n"
         );
         if !env_valid || command != expected {
             return fail(

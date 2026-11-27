@@ -1,9 +1,8 @@
 # Rust rewrite and verification
 
-[PR #76](https://github.com/KiaroSama/Numera-Browser/pull/76) continues the complete
-history of native checkpoint `3bf1d839fd33e42a10b982bd8607a7052ea7c4cd`
-from `migration/native-runtime-checkpoint-20261012`. The open, unmerged PR
-uses Rust 1.100.0.
+[PR #76](https://github.com/KiaroSama/Numera-Browser/pull/76) merged the Rust
+rewrite into `main`. It continues native checkpoint
+`3bf1d839fd33e42a10b982bd8607a7052ea7c4cd`. Numera Browser 0.37.0 uses Rust 1.100.0.
 
 ## Implementation
 
@@ -27,13 +26,12 @@ records strict CSP, Unicode memory growth and 480 native SDK frames against
 the compiler used in that review.
 
 The [November 14 upstream review](upstream-review-20261114.json) records the
-previously accepted vendor resource pins. The current build uses [ZIP 9.6.1](https://crates.io/crates/zip/9.6.1),
-[Tauri 2.12.6](https://github.com/tauri-apps/tauri/releases/tag/tauri-v2.12.6)
-and [Tauri CLI 2.12.5](https://github.com/tauri-apps/tauri/releases/tag/tauri-cli-v2.12.5).
+vendor resource pins accepted at that checkpoint. Check the [engine lockfile](../engine-rust/Cargo.lock)
+and [desktop lockfile](../desktop/src-tauri/Cargo.lock) for the current dependency versions.
 
-The native worker uses `playwright-rs` 0.21.0 with separately provisioned
-vendor transports. Cargo sets `PLAYWRIGHT_SKIP_DRIVER_DOWNLOAD` during builds.
-[Rust SDK release](https://github.com/padamson/playwright-rust/releases/tag/v0.21.0)
+The native worker uses `playwright-rs` with separately provisioned vendor
+transports. Build workflows set `PLAYWRIGHT_SKIP_DRIVER_DOWNLOAD=1` in the
+environment; set it explicitly for a source build.
 
 Provisioning uses the independently pinned [Patchright 1.64.3 transport](https://registry.npmjs.org/patchright-core/1.64.3)
 with the existing Node carriers and matching Chromium generation. Playwright
@@ -89,23 +87,20 @@ during the rewrite; it does not substitute mapping counts for test execution.
 
 ## Build and resource provenance
 
-[Native CI](../.github/workflows/native-ci.yml) starts independent x86-64 Linux and
-Windows product builds on pushes and pull requests. The real application and
-worker compile before test gates; a failed test job does not cancel compilation
-on another platform. Full-product builds include the bundled web dashboard, Tauri installers and
-portable server archives.
+[Native CI](../.github/workflows/native-ci.yml) builds the application and browser
+worker independently on Windows and Linux x64 and arm64. Full-product builds
+include the Rust/WASM dashboard, Tauri installers and portable archives.
 
-`cargo xtask provision-resources` explicitly acquires pinned vendor transports,
-matching browsers, GeoIP data, notices and GPL/MPL corresponding source.
-`prepare-resources` inventories already acquired bytes without downloading them.
-Neither ordinary Cargo compilation nor browser launch silently acquires a vendor
-SDK or proprietary browser.
+From the repository root, run `cargo run --manifest-path tools/xtask/Cargo.toml --locked --`
+followed by the build-tool command and arguments. `provision-resources` fetches
+pinned vendor transports, matching browsers, GeoIP data, notices and GPL/MPL
+corresponding source. `prepare-resources` inventories existing bytes without
+network acquisition. Browser launch does not implicitly acquire a proprietary browser.
 
-`cargo xtask build-product` requires a clean checkout and an exact source SHA and
-build generation. It verifies Cargo's actual artifact records and each component's
-compiled identity, then packages the dashboard, engine, worker, resources,
-notices, exact tracked source and checksums. Existing output directories are
-refused. See [build tooling](../tools/xtask/README.md).
+`build-product` requires a clean checkout, exact source SHA, build generation and
+new output directory. It checks Cargo artifact paths and component identities
+before packaging the dashboard, engine, worker, resources, source and notices.
+See [build tooling](../tools/xtask/README.md).
 
 Windows executable version resources and Authenticode signing are implemented in
 Rust using explicit certificate input, ephemeral key import, pinned certificate
@@ -113,37 +108,20 @@ verification and tampered-file rejection. CI uses a public synthetic fixture to
 exercise that path; it does not authorize owner signing or establish public
 publisher trust. Default CI distributions are unsigned review artifacts.
 
-## Current acceptance boundary
+## Cutover evidence and release acceptance
 
-Local Linux evidence includes real Playwright and Patchright browser acceptance,
-and the released Camoufox158 acceptance with native preparation. The managed test
-environment requires an isolated writable browser home; its sandbox exception is
-limited to that local test and is not added to the product. Full licensed Cloak
-acceptance remains a required CI tier.
-
-Source-suite ports and interpreter retirement are one integration. Per-suite maps
-record named execution evidence. Required acceptance includes ownership checks,
-complete product packaging, actual Windows signing-fixture execution and the
-full CI result for the exact current PR revision. An ancestor's green candidate
-matrix does not establish current product acceptance.
-The [current validation record](verification/functional-ci8-20261114.json)
-distinguishes hosted results, local followup checks and remaining platform work.
-
-Repository CodeQL default setup is a separate administration setting. It still
-expects the main branch's Python configuration, so a Rust-only pull request can
-report a missing Python configuration even when Rust extraction succeeds.
-Maintain that distinction during the language transition: the advanced Rust
-workflow retains all security-extended queries and full SARIF evidence, and its
-independent verdict must not be replaced with a local successful process exit.
-Resolving the repository configuration and reviewing reported findings remain
-part of final CI acceptance.
-The [initial individual CodeQL review](verification/codeql-review-20261114.json),
+The [November 14 validation record](verification/functional-ci8-20261114.json)
+separates hosted results from local Playwright, Patchright and Camoufox checks.
+Its local sandbox exception applied only to the test environment. The
+[initial CodeQL review](verification/codeql-review-20261114.json),
 [full result review](verification/codeql-review-ci5-20261114.json) and
-[latest scan comparison](verification/codeql-review-ci7-20261114.json) record exact
-source identities, confirmed defects and the remaining test-data or FFI-model
-findings. The latest scan retains the same 124 reviewed result identities and
-no longer reports the 152 logging sinks or four proved salt-admission defects;
-these reviews are not a passing independent verdict.
+[scan comparison](verification/codeql-review-ci7-20261114.json) describe findings
+at their recorded source revisions. They are historical evidence, not a current
+CI verdict.
+
+Use the workflows for the exact release commit to check acceptance. The package,
+process ownership, browser, signing and CodeQL checks must pass before publishing.
+See [maintainer publication](updates.md#maintainer-publication).
 
 Performance compares the genuine `3bf1d8` native application checkpoint with the
 current native product, using the same current Rust SDK transport and resources.

@@ -88,10 +88,9 @@ node_modules/
 /engine-rust/target/
 /tools/xtask/target/
 
-# Rust cargo credentials and local-only cargo state (keep tracked config.toml)
-/.cargo/*
-!/.cargo/config.toml
-**/.cargo/credentials*
+# Local Cargo configuration and credentials
+**/.cargo/
+/.cargo/
 
 # Project-local runtime temp, cache and logs (for portable / MCP usage)
 /temp/

@@ -522,7 +522,7 @@ source_test!(
             })
             .ok_or("Signed product artifact download missing")?;
         let verification = steps.iter().position(|step| {
-            step["run"] == "cargo xtask ci signed-product-review build/owner-review \"${{ inputs.source_sha }}\""
+            step["run"] == "cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci signed-product-review build/owner-review \"${{ inputs.source_sha }}\""
         }).ok_or("Exact-source signed product verification missing")?;
         assert!(download < verification);
         let mut skipped = documents.clone();
@@ -549,7 +549,7 @@ source_test!(
         ];
         let mut steps = names
             .iter()
-            .map(|name| json!({"run":format!("cargo xtask ci acceptance {name}")}))
+            .map(|name| json!({"run":format!("cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci acceptance {name}")}))
             .collect::<Vec<_>>();
         let performance = json!({"uses":"./.github/actions/native-entry-performance"});
         steps.push(performance.clone());
@@ -578,7 +578,7 @@ source_test!(
         ];
         let mut steps = names
             .iter()
-            .map(|name| json!({"run":format!("cargo xtask ci acceptance {name}")}))
+            .map(|name| json!({"run":format!("cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci acceptance {name}")}))
             .collect::<Vec<_>>();
         let performance = json!({"uses":"./.github/actions/native-entry-performance"});
         steps.push(performance.clone());
@@ -609,7 +609,7 @@ source_test!(
         ];
         let mut steps = names
             .iter()
-            .map(|name| json!({"run":format!("cargo xtask ci acceptance {name}")}))
+            .map(|name| json!({"run":format!("cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci acceptance {name}")}))
             .collect::<Vec<_>>();
         let performance = json!({"uses":"./.github/actions/native-entry-performance"});
         steps.push(performance.clone());

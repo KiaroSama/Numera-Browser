@@ -10,6 +10,7 @@ on:
 permissions:
   contents: read
 env:
+  PLAYWRIGHT_SKIP_DRIVER_DOWNLOAD: "1"
   CARGO_BUILD_JOBS: "2"
   CARGO_INCREMENTAL: "0"
   CARGO_PROFILE_DEV_DEBUG: "0"
@@ -33,15 +34,15 @@ jobs:
           toolchain: 1.100.0
           components: rustfmt, clippy
       - run: cargo build --manifest-path tools/xtask/Cargo.toml --locked
-      - run: cargo xtask ci owned --wall 120 --idle 60 -- cargo fmt --manifest-path engine-rust/Cargo.toml --all --check
+      - run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 120 --idle 60 -- cargo fmt --manifest-path engine-rust/Cargo.toml --all --check
       - name: Compile the selected native seam before executing it
         env:
           NATIVE_SCOPE: ${{ inputs.scope }}
-        run: cargo xtask ci owned --wall 900 --idle 300 -- cargo xtask ci seam "$NATIVE_SCOPE" build
+        run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 900 --idle 300 -- cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci seam "$NATIVE_SCOPE" build
         shell: bash
       - name: Require every case in the selected native seam
         env:
           NATIVE_SCOPE: ${{ inputs.scope }}
-        run: cargo xtask ci owned --wall 900 --idle 300 -- cargo xtask ci seam "$NATIVE_SCOPE" test
+        run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 900 --idle 300 -- cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci seam "$NATIVE_SCOPE" test
         shell: bash
-      - run: cargo xtask ci owned --wall 900 --idle 300 -- cargo clippy --manifest-path engine-rust/Cargo.toml --locked --features native-product,native-browser,test-support --all-targets -- -D warnings
+      - run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 900 --idle 300 -- cargo clippy --manifest-path engine-rust/Cargo.toml --locked --features native-product,native-browser,test-support --all-targets -- -D warnings

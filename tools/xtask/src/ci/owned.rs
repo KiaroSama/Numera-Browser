@@ -26,6 +26,7 @@ pub fn run_streamed(
     limits: capture::Limits,
     mut on_chunk: impl FnMut(usize, &[u8]),
 ) -> Result<Output> {
+    super::command_capture::skip_cargo_driver_download(command);
     command.env_remove("NUMERA_UPDATE_ACTIVATION");
     let temporary = super::migration::Temporary::new(
         &super::root(),

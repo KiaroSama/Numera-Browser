@@ -7,6 +7,7 @@ permissions:
   contents: read
 
 env:
+  PLAYWRIGHT_SKIP_DRIVER_DOWNLOAD: "1"
   CARGO_BUILD_JOBS: "2"
   CARGO_INCREMENTAL: "0"
   CARGO_PROFILE_DEV_DEBUG: "0"
@@ -35,16 +36,16 @@ jobs:
       - name: Compile the native finite owner
         run: cargo build --manifest-path tools/xtask/Cargo.toml --locked
       - name: Provision the exact Rust WASM packaging tool
-        run: cargo xtask ci owned --wall 900 --idle 300 -- cargo install wasm-bindgen-cli --version 0.2.129 --locked
+        run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 900 --idle 300 -- cargo install wasm-bindgen-cli --version 0.2.129 --locked
       - name: Explicitly acquire and hash reviewed vendor resources
-        run: cargo xtask ci owned --wall 1800 --idle 300 -- cargo xtask provision-resources "$RUNNER_TEMP/numera-container-resources"
+        run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 1800 --idle 300 -- cargo run --manifest-path tools/xtask/Cargo.toml --locked -- provision-resources "$RUNNER_TEMP/numera-container-resources"
       - name: Build the native server and Rust dashboard from the exact source
-        run: cargo xtask ci owned --wall 1800 --idle 300 -- cargo xtask build-product build/container --resources "$RUNNER_TEMP/numera-container-resources" --server-only
+        run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 1800 --idle 300 -- cargo run --manifest-path tools/xtask/Cargo.toml --locked -- build-product build/container --resources "$RUNNER_TEMP/numera-container-resources" --server-only
       - name: Validate the actual generated Docker copy context
-        run: cargo xtask ci owned --wall 60 --idle 30 -- cargo xtask ci container-context
+        run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 60 --idle 30 -- cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci container-context
       - name: Build the image from the verified native installation
-        run: cargo xtask ci owned --wall 1200 --idle 150 -- docker build --pull --no-cache -t numera-browser:ci .
+        run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 1200 --idle 150 -- docker build --pull --no-cache -t numera-browser:ci .
       - name: Require native health, authentication and persistent profile writes
-        run: cargo xtask ci owned --wall 180 --idle 90 -- cargo xtask ci container-api numera-browser:ci
+        run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 180 --idle 90 -- cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci container-api numera-browser:ci
       - name: Require the real image browser without network or host cache
-        run: cargo xtask ci owned --wall 120 --idle 60 -- cargo xtask ci container-browser numera-browser:ci 1.65.1
+        run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 120 --idle 60 -- cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci container-browser numera-browser:ci 1.65.1

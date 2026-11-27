@@ -7,22 +7,53 @@ on:
 permissions:
   contents: read
 
+env:
+  PLAYWRIGHT_SKIP_DRIVER_DOWNLOAD: "1"
+
 jobs:
   review:
-    name: Public pull-request dependency delta
+    name: Public dependency delta
     runs-on: ubuntu-24.04
     timeout-minutes: 10
-    if: (github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main')) && github.event.repository.private == false
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
+          fetch-depth: 2
+      - name: Resolve comparison refs
+        id: refs
+        shell: bash
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          head="$GITHUB_SHA"
+          git cat-file -e "$head^{commit}"
+          if [[ "$GITHUB_EVENT_NAME" == pull_request && -n "$PR_BASE_SHA" ]]; then
+            base="$PR_BASE_SHA"
+          elif [[ -n "$PUSH_BEFORE" && "$PUSH_BEFORE" != 0000000000000000000000000000000000000000 ]]; then
+            base="$PUSH_BEFORE"
+          else
+            base=''
+          fi
+          if [[ -n "$base" ]] && ! git cat-file -e "$base^{commit}" 2>/dev/null; then
+            # A multi-commit push can put its previous tip beyond checkout depth.
+            if ! git fetch --no-tags --depth=1 origin "$base" || ! git cat-file -e "$base^{commit}" 2>/dev/null; then
+              printf '::warning::Could not fetch the event base; using the checkout parent.\n'
+              base=''
+            fi
+          fi
+          if [[ -z "$base" ]]; then
+            base=$(git rev-parse --verify HEAD~1 2>/dev/null) || base="$head"
+          fi
+          printf 'base=%s\nhead=%s\n' "$base" "$head" >> "$GITHUB_OUTPUT"
       - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294
         with:
           fail-on-severity: high
           comment-summary-in-pr: never
-          base-ref: main
-          head-ref: ${{ github.sha }}
+          base-ref: ${{ steps.refs.outputs.base }}
+          head-ref: ${{ steps.refs.outputs.head }}
 
   audit:
     name: Every authoritative Rust advisory gate
@@ -48,10 +79,10 @@ jobs:
         run: cargo build --manifest-path tools/xtask/Cargo.toml --locked
       - name: Audit all product, UI, desktop and tooling lockfiles
         run: |
-          cargo xtask ci owned --wall 180 --idle 90 -- cargo audit --file engine-rust/Cargo.lock
-          cargo xtask ci owned --wall 180 --idle 90 -- cargo audit --file dashboard/Cargo.lock
-          cargo xtask ci owned --wall 180 --idle 90 -- cargo audit --file desktop/src-tauri/Cargo.lock
-          cargo xtask ci owned --wall 180 --idle 90 -- cargo audit --file tools/xtask/Cargo.lock
-          cargo xtask ci owned --wall 180 --idle 90 -- cargo audit --file tools/xtask/lifecycle-tests/Cargo.lock
-          cargo xtask ci owned --wall 180 --idle 90 -- cargo audit --file tools/security-scan/Cargo.lock
-          cargo xtask ci owned --wall 180 --idle 90 -- cargo audit --file browser-page-rust/Cargo.lock
+          cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 180 --idle 90 -- cargo audit --file engine-rust/Cargo.lock
+          cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 180 --idle 90 -- cargo audit --file dashboard/Cargo.lock
+          cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 180 --idle 90 -- cargo audit --file desktop/src-tauri/Cargo.lock
+          cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 180 --idle 90 -- cargo audit --file tools/xtask/Cargo.lock
+          cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 180 --idle 90 -- cargo audit --file tools/xtask/lifecycle-tests/Cargo.lock
+          cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 180 --idle 90 -- cargo audit --file tools/security-scan/Cargo.lock
+          cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 180 --idle 90 -- cargo audit --file browser-page-rust/Cargo.lock

@@ -11,6 +11,9 @@ permissions:
   security-events: write
   checks: read
 
+env:
+  PLAYWRIGHT_SKIP_DRIVER_DOWNLOAD: "1"
+
 jobs:
   analyze:
     name: CodeQL (${{ matrix.language }})
@@ -113,7 +116,7 @@ jobs:
       - name: Require the independent analysis verdict before signing
         env:
           GH_TOKEN: ${{ github.token }}
-        run: cargo xtask ci owned --wall 60 --idle 45 -- cargo xtask ci codeql-verdict
+        run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 60 --idle 45 -- cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci codeql-verdict
       - name: Retain the authenticated build and analysis source subjects
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
