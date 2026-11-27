@@ -103,6 +103,37 @@ remote authenticated access. For direct CLI calls, use `--json` to receive a
 machine-readable result and check the process exit code. Some commands expose
 profile data or secrets, so keep raw output out of shared logs.
 
+### MCP Client Configuration (Project-Local Temp & Cache)
+
+Replace `<numera-dir>` with your local Numera Browser folder (use forward slashes
+or escaped backslashes on Windows; omit `.exe` on Linux). Setting these variables
+keeps data, logs, cache and temporary files inside that folder:
+
+```json
+{
+  "mcpServers": {
+    "numera-browser": {
+      "command": "<numera-dir>/bin/numera-engine.exe",
+      "args": ["mcp", "--bridge", "http://127.0.0.1:8787"],
+      "env": {
+        "NUMERA_DATA_DIR": "<numera-dir>/data",
+        "NUMERA_LOG_DIR": "<numera-dir>/logs",
+        "CLOAKBROWSER_CACHE_DIR": "<numera-dir>/cache/cloak",
+        "XDG_CACHE_HOME": "<numera-dir>/cache",
+        "TMP": "<numera-dir>/temp",
+        "TEMP": "<numera-dir>/temp",
+        "TMPDIR": "<numera-dir>/temp"
+      }
+    }
+  }
+}
+```
+
+For standalone stdio mode without an already running HTTP service, use
+`"args": ["mcp"]`. If your service requires authentication, append
+`"--token", "<bearer>"` to `args` (or supply it via a secret manager rather than
+committing credentials).
+
 ### CLI / MCP / GUI Feature Parity
 
 The GUI calls the same Rust manager as the CLI and MCP. That keeps profile edits,
