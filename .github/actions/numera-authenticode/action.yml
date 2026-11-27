@@ -43,7 +43,7 @@ runs:
         if (!$signtool) { throw 'Windows SDK SignTool is missing' }
         $thumbprint = $expected.Thumbprint
         if (Test-Path "$store/$thumbprint") { throw 'Refusing to replace a certificate in the runner store' }
-        $rootStore = 'Cert:\CurrentUser\Root'
+        $rootStore = 'Cert:\LocalMachine\Root'
         $trustedHere = $false
         try {
           $pfx = Join-Path $tmp 'identity.pfx'
@@ -52,7 +52,9 @@ runs:
           $identity = @($imported | Where-Object Thumbprint -EQ $thumbprint)
           if ($identity.Count -ne 1 -or !$identity[0].HasPrivateKey) { throw 'Signing identity does not match the pinned publisher' }
           if ($expected.Subject -eq $expected.Issuer -and !(Test-Path "$rootStore/$thumbprint")) {
-            Import-Certificate -FilePath (Resolve-Path 'docs/code-signing-cert.pem').Path -CertStoreLocation $rootStore | Out-Null
+            $cer = Join-Path $tmp 'publisher.cer'
+            [IO.File]::WriteAllBytes($cer, $expected.Export([System.Security.Cryptography.X509Certificates.X509ContentType]::Cert))
+            Import-Certificate -FilePath $cer -CertStoreLocation $rootStore | Out-Null
             $trustedHere = $true
           }
           foreach ($file in $files) {

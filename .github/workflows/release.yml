@@ -90,6 +90,12 @@ jobs:
           tar -xf "$archive" -C release-input
       - name: Build packaging and binary verification tools without signing credentials
         run: cargo build --manifest-path tools/xtask/Cargo.toml --locked
+      - name: Install Linux runtime shared libraries for binary identity verification
+        if: runner.os == 'Linux'
+        run: |
+          sudo rm -f /etc/apt/sources.list.d/microsoft*.list /etc/apt/sources.list.d/microsoft*.sources
+          sudo apt-get update -o Acquire::Retries=3
+          sudo apt-get install -y libwebkit2gtk-4.1-0 libayatana-appindicator3-1
       - name: Verify approved binary identity before signing
         shell: bash
         env:
