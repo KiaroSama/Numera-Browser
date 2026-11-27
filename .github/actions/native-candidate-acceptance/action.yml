@@ -11,7 +11,7 @@ runs:
       shell: bash
       run: cargo xtask ci counted-tests 1 build/selected-sdk.log -- cargo test --manifest-path engine-rust/Cargo.toml --locked --features native-product,native-browser,test-support --test browser_adapter_live -- --ignored --exact selected_sdk_opens_real_persistent_context_in_native_owned_tree --test-threads=1 --color=never
     - name: Use the dashboard from this exact verification batch
-      uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
       with:
         name: dashboard-dist
         path: dashboard/dist

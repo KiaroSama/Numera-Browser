@@ -1,9 +1,16 @@
 use super::*;
 
 pub(super) async fn copy(text: &str) -> Result<(), ApiError> {
-    JsFuture::from(window().navigator().clipboard().write_text(text))
-        .await
-        .map_err(network)?;
+    let unavailable = |_| fail("Clipboard unavailable. Select the text and copy it manually.");
+    let clipboard = Reflect::get(
+        window().navigator().as_ref(),
+        &JsValue::from_str("clipboard"),
+    )
+    .map_err(unavailable)?;
+    let pending = call(&clipboard, "writeText", &[JsValue::from_str(text)])
+        .and_then(JsValue::dyn_into::<js_sys::Promise>)
+        .map_err(unavailable)?;
+    JsFuture::from(pending).await.map_err(unavailable)?;
     change(|a| a.say("Copied.", false));
     Ok(())
 }

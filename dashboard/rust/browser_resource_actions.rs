@@ -2,6 +2,11 @@ use super::*;
 
 pub(super) async fn dispatch(act: &str, id: &str, a: &App) -> Result<bool, ApiError> {
     match act {
+        "copy-engine-install" => {
+            if let Some(command) = render::engine_install_command(id) {
+                copy(command).await?;
+            }
+        }
         "create-folder" => {
             let name = s(&a.form, "newFolder").trim();
             if !name.is_empty() && !a.folders().contains(&name.into()) {

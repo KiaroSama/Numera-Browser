@@ -21,6 +21,10 @@ updates:
       interval: daily
     open-pull-requests-limit: 5
     labels: [dependencies, browser]
+    groups:
+      oxc:
+        patterns:
+          - "oxc_*"
 
   - package-ecosystem: cargo
     directory: /desktop/src-tauri

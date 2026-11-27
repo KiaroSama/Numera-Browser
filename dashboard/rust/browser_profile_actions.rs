@@ -6,15 +6,18 @@ pub(super) async fn dispatch(act: &str, id: &str, a: &App) -> Result<bool, ApiEr
             release_icons();
             change(|a| {
                 a.view = id.into();
+                a.view_error = None;
                 a.modal.clear();
                 a.rename.clear();
             });
             draw();
-            let _ = load_view().await;
+            load_visible_view(false).await;
         }
+        "retry-view" => load_visible_view(true).await,
         "folder" => change(|a| {
             a.folder = id.into();
             a.view = "profiles".into();
+            a.view_error = None;
             a.page = 0;
             a.modal.clear();
         }),

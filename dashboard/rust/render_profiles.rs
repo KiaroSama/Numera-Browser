@@ -129,9 +129,26 @@ pub fn profiles(a: &App) -> String {
     }
     o.push_str(r#"</div></div><div class="ps-scroll">"#);
     if filtered.is_empty() {
-        o.push_str(r#"<div class="ps-empty">No profiles here yet."#);
-        o.push_str(&primary("new", "Create one", false));
-        o.push_str(&btn("clear-search", "", "Clear search and filters"));
+        o.push_str(r#"<div class="ps-empty">"#);
+        if !a.profiles.is_empty() && (active_filters > 0 || !a.query.is_empty()) {
+            let (criteria, clear) = match (active_filters > 0, a.query.is_empty()) {
+                (true, true) => ("filters", "Clear filters"),
+                (true, false) => ("search and filters", "Clear search and filters"),
+                _ => ("search", "Clear search"),
+            };
+            let _ = write!(o, "<p>No profiles match your {criteria}.</p>");
+            let _ = write!(
+                o,
+                r#"<button type="button" id="clear-profile-search" class="ps-btn ghost" data-action="clear-search">{clear}</button>"#
+            );
+        } else {
+            o.push_str(if a.profiles.is_empty() {
+                "<p>No profiles have been created yet.</p>"
+            } else {
+                "<p>No profiles in this folder.</p>"
+            });
+            o.push_str(&primary("new", "Create profile", false));
+        }
         o.push_str("</div>");
     } else {
         let all = filtered.iter().all(|p| a.selected.contains(s(p, "id")));

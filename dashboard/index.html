@@ -27,7 +27,49 @@
   <body>
     <div id="root"></div>
     <link rel="stylesheet" href="/assets/app.css" />
-    <!-- Generated wasm-bindgen bootstrap; application behavior lives in Rust. -->
-    <script type="module">import init from "/assets/numera_dashboard.js"; await init();</script>
+    <div id="dashboard-startup-error" class="ps-root" hidden>
+      <div class="ps-locked">
+        <div class="ps-locked-card">
+          <h1 role="alert">Numera Browser couldn't start</h1>
+          <p>Try starting the dashboard again.</p>
+          <button type="button" id="retry-dashboard" class="ps-btn ghost">Try again</button>
+        </div>
+      </div>
+    </div>
+    <script type="module">
+      const root = document.getElementById("root");
+      const error = document.getElementById("dashboard-startup-error");
+      const retry = document.getElementById("retry-dashboard");
+      let attempt = 0;
+
+      async function mount() {
+        retry.disabled = true;
+        let started;
+        try {
+          const module = await import(`/assets/numera_dashboard.js?attempt=${attempt++}`);
+          await module.default();
+          started = module;
+          module.start();
+          root.hidden = false;
+          if (!error.hidden) root.querySelector("button")?.focus();
+          error.hidden = true;
+        } catch (cause) {
+          try {
+            started?.shutdown();
+          } catch (cleanup) {
+            console.error("Numera dashboard startup cleanup failed", cleanup);
+          }
+          console.error("Numera dashboard startup failed", cause);
+          root.hidden = true;
+          error.hidden = false;
+        } finally {
+          retry.disabled = false;
+          if (!error.hidden) retry.focus();
+        }
+      }
+
+      retry.addEventListener("click", mount);
+      await mount();
+    </script>
   </body>
 </html>

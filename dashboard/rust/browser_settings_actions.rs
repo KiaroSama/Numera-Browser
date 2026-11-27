@@ -49,9 +49,10 @@ pub(super) async fn dispatch(act: &str, id: &str, a: &App) -> Result<bool, ApiEr
             });
             if state == "ok" {
                 change(|a| a.mode = "connecting".into());
-                connect().await;
+                connect(false).await;
             }
         }
+        "retry-startup" => connect(true).await,
         "cloak-review" => {
             if a.busy || !a.live() {
                 return Ok(true);

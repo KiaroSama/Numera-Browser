@@ -1,6 +1,6 @@
 use super::*;
 
-#[cfg_attr(not(test), wasm_bindgen(start))]
+#[wasm_bindgen]
 pub fn start() -> Result<(), JsValue> {
     shutdown();
     let mut state = App::default();
@@ -138,7 +138,13 @@ pub fn start() -> Result<(), JsValue> {
             draw();
         } else if key.key() == "Escape" {
             change(|a| {
-                if !a.update_approval.is_null() {
+                if a.editor
+                    .as_ref()
+                    .is_some_and(|ed| !ed.draft.is_object() && !ed.saving)
+                {
+                    a.editor = None;
+                    return;
+                } else if !a.update_approval.is_null() {
                     a.update_approval = Value::Null;
                 } else if a.modal == "commands" || !a.busy {
                     a.modal.clear();
@@ -204,7 +210,7 @@ pub fn start() -> Result<(), JsValue> {
     });
     draw();
     spawn_local(async {
-        connect().await;
+        connect(false).await;
     });
     let callback = Closure::wrap(Box::new(move || {
         if !alive() {
@@ -363,22 +369,32 @@ pub fn draw() {
             }
         }
     }
-    let target = if !focus.is_empty() {
-        doc.get_element_by_id(&focus)
-    } else {
-        None
-    }
-    .or_else(|| {
-        if commands {
-            doc.get_element_by_id("command-query")
-        } else if approval {
-            doc.query_selector(".ps-update-dialog button")
-                .ok()
-                .flatten()
-        } else {
-            None
-        }
-    });
+    let target = doc
+        .get_element_by_id("close-editor-error")
+        .or_else(|| {
+            if focus.is_empty() {
+                None
+            } else {
+                doc.get_element_by_id(&focus)
+            }
+        })
+        .or_else(|| {
+            if matches!(
+                focus.as_str(),
+                "close-editor-error" | "clear-profile-search" | "retry-view"
+            ) {
+                doc.get_element_by_id("profile-search")
+                    .or_else(|| doc.query_selector(".ps-navitem.active").ok().flatten())
+            } else if commands {
+                doc.get_element_by_id("command-query")
+            } else if approval {
+                doc.query_selector(".ps-update-dialog button")
+                    .ok()
+                    .flatten()
+            } else {
+                None
+            }
+        });
     if let Some(el) = target {
         if let Some(h) = el.dyn_ref::<HtmlElement>() {
             let _ = h.focus();
@@ -421,32 +437,56 @@ fn trap_focus(key: &KeyboardEvent) {
         let _ = target.focus();
     }
 }
-pub(super) async fn connect() {
+pub(super) async fn connect(retry: bool) {
+    if retry {
+        let a = snapshot();
+        if a.mode != "startup-error" || a.busy {
+            return;
+        }
+        change(|a| a.busy = true);
+        draw();
+    }
     let state = health().await;
-    if !alive() || snapshot().mode == "startup-error" {
+    if !alive() || (!retry && snapshot().mode == "startup-error") {
         return;
     }
     match state {
         "locked" => change(|a| {
             a.mode = "locked".into();
+            a.auth_error.clear();
             a.form = json!({"token":auth()});
         }),
-        "off" => change(|a| a.mode = "demo".into()),
-        _ => match refresh().await {
-            Ok(()) => {
+        "off" if !retry => change(|a| a.mode = "demo".into()),
+        "off" => {}
+        _ => {
+            if retry {
+                change(|a| {
+                    a.mode = "connecting".into();
+                    a.auth_error.clear();
+                });
+            }
+            let profiles = refresh().await;
+            if profiles
+                .as_ref()
+                .is_ok_and(|_| snapshot().mode != "startup-error")
+            {
                 if let Ok(e) = request("GET", "/api/engines", None).await {
                     change(|a| a.engines = e);
                 }
                 let _ = refresh_config().await;
-                change(|a| {
-                    if a.mode != "locked" {
-                        a.mode = "live".into();
-                    }
-                });
             }
-            Err(err) if err.status == 401 => {}
-            Err(_) => change(|a| a.mode = "demo".into()),
-        },
+            change(|a| {
+                if a.mode == "connecting" {
+                    a.mode = "live".into();
+                    if a.view == "profiles" {
+                        a.view_error = profiles.err().map(|err| err.message);
+                    }
+                }
+            });
+        }
+    }
+    if retry {
+        change(|a| a.busy = false);
     }
     draw();
 }

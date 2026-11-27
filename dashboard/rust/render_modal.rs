@@ -97,6 +97,17 @@ pub fn modal(a: &App) -> String {
                 b.randomize,
                 false,
             ));
+            let mut names = b.names();
+            let first = escape(&names.next().unwrap_or_default());
+            let range = names
+                .next_back()
+                .map_or(first.clone(), |last| format!("{first} … {}", escape(&last)));
+            let _ = write!(
+                body,
+                r#"<p class="ps-hint ps-batch-preview" role="status">Preview: <strong>{range}</strong> · OS: {} · Countries: {}</p>"#,
+                escape(&b.os.join(" / ")),
+                escape(&b.countries.join(" / "))
+            );
             body.push_str(&hint("These are created without a proxy. Attach real proxies in bulk from Proxies → Assign to profiles."));
             (
                 "Generate profiles at scale".into(),

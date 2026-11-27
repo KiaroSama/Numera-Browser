@@ -1,6 +1,6 @@
 //! Standalone Fernet-v2 verifier. It links neither numera_core nor fernet:
 //! authenticated framing, HMAC and CBC/PKCS7 handling are checked independently.
-use aes::cipher::{BlockDecrypt, KeyInit};
+use aes::cipher::{BlockCipherDecrypt, KeyInit};
 use base64::{
     Engine,
     engine::general_purpose::{STANDARD, URL_SAFE},

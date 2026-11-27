@@ -46,6 +46,7 @@ fn rejecting_proxy(socks4: bool) -> io::Result<(SocketAddr, ProxyWorker)> {
         while requests.len() < 6 && started.elapsed() < Duration::from_secs(10) {
             match listener.accept() {
                 Ok((mut stream, _)) => {
+                    stream.set_nonblocking(false)?;
                     stream.set_read_timeout(Some(Duration::from_secs(2)))?;
                     let mut request = Vec::new();
                     if socks4 {

@@ -129,6 +129,7 @@ pub async fn handle(act: &str, id: &str) -> Result<(), ApiError> {
             | "release-check"
             | "release-preference"
             | "release-retry"
+            | "retry-view"
             | "mcp-check"
             | "schedule"
     );

@@ -106,6 +106,22 @@ pub fn edit(scope: &str, key: &str, value: &str) -> Result<(), String> {
     });
     Ok(())
 }
+pub(super) async fn load_visible_view(retry: bool) {
+    let a = snapshot();
+    let result = match (retry && a.live(), a.view.as_str()) {
+        (true, "profiles") => refresh().await,
+        (true, "engines") => request("GET", "/api/engines", None)
+            .await
+            .map(|engines| change(|a| a.engines = engines)),
+        _ => load_view().await,
+    };
+    change(|current| {
+        if current.view == a.view {
+            current.view_error = result.err().map(|err| err.message);
+        }
+    });
+}
+
 pub(super) async fn load_view() -> Result<(), ApiError> {
     let a = snapshot();
     if !a.live() {

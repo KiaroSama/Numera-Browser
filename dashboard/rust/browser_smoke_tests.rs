@@ -365,3 +365,49 @@ async fn desktop_startup_error_hook_sanitizes_bounds_and_escapes_log() {
     assert!(!snapshot().auth_error.contains('\0'));
 }
 
+#[wasm_bindgen_test(async)]
+async fn view_retry_fetches_again_after_a_failed_load() {
+    let h = mount(Engine::default(), false).await;
+    h.engine.borrow_mut().errors.insert(
+        "/api/proxies".into(),
+        (503, "Proxy list unavailable".into(), String::new()),
+    );
+    click("[data-action=nav][data-id=proxies]").await;
+    until(|| exists("#retry-view")).await;
+    assert!(visible().contains("Proxy list unavailable"));
+    assert!(exists(".ps-nav"));
+    h.engine.borrow_mut().errors.remove("/api/proxies");
+    click("#retry-view").await;
+    until(|| !exists("#retry-view")).await;
+    assert_eq!(snapshot().view, "proxies");
+    assert!(h.engine.borrow().calls.iter().filter(|call| call.path == "/api/proxies").count() >= 2);
+}
+
+#[wasm_bindgen_test(async)]
+async fn closing_failed_editor_preserves_profiles_search() {
+    let _h = mount(Engine::default(), false).await;
+    input("#profile-search", "profile");
+    change(|a| a.open_editor(Value::Null));
+    draw();
+    assert_eq!(document().active_element().map(|element| element.id()).as_deref(), Some("close-editor-error"));
+    click("#close-editor-error").await;
+    assert!(snapshot().editor.is_none());
+    assert_eq!(snapshot().query, "profile");
+    assert!(exists("#profile-search"));
+}
+
+#[wasm_bindgen_test(async)]
+async fn startup_retry_preserves_error_offline_then_recovers_when_engine_returns() {
+    let h = mount(Engine::default(), false).await;
+    call(window().as_ref(), "numeraError", &[JsValue::from_str("Engine unavailable")]).unwrap();
+    h.engine.borrow_mut().offline = true;
+    click("#retry-startup").await;
+    until(|| !snapshot().busy).await;
+    assert!(visible().contains("Engine unavailable"));
+    h.engine.borrow_mut().offline = false;
+    click("#retry-startup").await;
+    until(|| snapshot().live() && !snapshot().busy).await;
+    assert!(!exists("#retry-startup"));
+    assert!(exists("#profile-search"));
+}
+

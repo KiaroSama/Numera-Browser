@@ -273,3 +273,79 @@ impl DriverRegistry {
         Ok(driver)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn driver(wire: &str) -> io::Result<DriverRegistration> {
+        DriverRegistration::native(
+            wire,
+            OptionsFamily::Chromium,
+            None,
+            |_| {
+                Err(io::Error::other(
+                    "Registry unit tests do not start a browser",
+                ))
+            },
+            || Ok(true),
+        )
+    }
+
+    #[test]
+    fn custom_drivers_stay_in_their_own_registry() -> io::Result<()> {
+        let registry = DriverRegistry::default();
+        let other = DriverRegistry::default();
+        let builtins = ["camoufox", "cloak", "patchright", "playwright"];
+        assert_eq!(registry.names()?, builtins);
+        assert!(
+            registry
+                .register("custom", driver("custom-wire")?)?
+                .is_none()
+        );
+        assert_eq!(
+            registry.names()?,
+            ["camoufox", "cloak", "custom", "patchright", "playwright"]
+        );
+        assert_eq!(
+            registry.resolve_for_launch("custom")?.wire_backend(),
+            "custom-wire"
+        );
+        assert_eq!(other.names()?, builtins);
+        assert!(
+            matches!(other.resolve_for_launch("custom"), Err(e) if e.kind() == io::ErrorKind::NotFound)
+        );
+        for name in builtins {
+            assert_eq!(registry.resolve_for_launch(name)?.wire_backend(), name);
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn concurrent_registration_preserves_an_already_resolved_driver() -> io::Result<()> {
+        let registry = DriverRegistry::default();
+        registry.register("custom", driver("first-wire")?)?;
+        let resolved = registry.resolve_for_launch("custom")?;
+        std::thread::scope(|scope| {
+            let writer = scope.spawn(|| registry.register("custom", driver("second-wire")?));
+            let during = registry.resolve_for_launch("custom")?;
+            assert!(matches!(
+                during.wire_backend(),
+                "first-wire" | "second-wire"
+            ));
+            assert!(
+                writer
+                    .join()
+                    .map_err(|_| io::Error::other("Registry writer panicked"))??
+                    .is_some()
+            );
+            Ok::<_, io::Error>(())
+        })?;
+        assert_eq!(resolved.wire_backend(), "first-wire");
+        assert_eq!(
+            registry.resolve_for_launch("custom")?.wire_backend(),
+            "second-wire"
+        );
+        Ok(())
+    }
+}

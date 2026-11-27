@@ -107,18 +107,24 @@ impl Default for Batch {
     }
 }
 impl Batch {
+    pub(crate) fn names(&self) -> impl DoubleEndedIterator<Item = String> + '_ {
+        let count = self.count.clamp(1, 10000);
+        let start = self.start as u128;
+        let pad = (start + count as u128 - 1).to_string().len().max(2);
+        (0..count).map(move |i| format!("{}-{:0pad$}", self.prefix, start + i as u128))
+    }
+
     pub fn build(&self, folder: &str, mut random: impl FnMut(usize) -> usize) -> Vec<Value> {
-        let n = self.count.clamp(1, 10000);
-        let pad = (self.start + n - 1).to_string().len().max(2);
-        (0..n)
-            .map(|i| {
+        self.names()
+            .enumerate()
+            .map(|(i, name)| {
                 let os = &self.os[i % self.os.len()];
                 let country = &self.countries[(i / self.os.len()) % self.countries.len()];
                 let version = &self.versions[random(self.versions.len()) % self.versions.len()];
                 let mut p = new_profile(folder, &self.engine);
                 change_os(&mut p, os);
                 change_locale(&mut p, country_locale(country));
-                p["name"] = json!(format!("{}-{:0pad$}", self.prefix, self.start + i));
+                p["name"] = json!(name);
                 p["tags"] = json!(split_tags(&self.tags));
                 p["browserVersion"] = json!(version);
                 p["userAgent"] = json!(ua(os, version));

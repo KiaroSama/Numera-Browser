@@ -21,16 +21,16 @@ pub const PATH_REMAPPING: [&str; 5] = [
 /// The lockfile/source receipt also pins every transitive host dependency.
 pub fn printer_policy() -> Value {
     json!({
-        "name":"oxc","version":"0.158.0",
+        "name":"oxc","version":"0.160.0",
         "mode":"parse_expression+CodegenOptions::minify+print_expression",
         "source_type":"cjs","preserve_parentheses":true,
         "regex_pattern_validation":true,"semantic_transforms":false,
         "identifier_mangling":false,"ascii_only":false,
         "crate_sha256":{
-            "oxc_allocator":"9f65d07f047239a6535aee5f9eb5f741ce9d7a19c13d3f5d68a507878368f847",
-            "oxc_codegen":"4e96b922b09e06196c28df4bc860b692957246ebf705fe1f49198871e0c91d81",
-            "oxc_parser":"7abfa2897dd082cd208a089692dd40e2e00166015de6993398689025ce8ea0ed",
-            "oxc_span":"ac083572f49ac3941fb954304666da42e44e9154abbdd32fd9b594fd269a952c"
+            "oxc_allocator":"fff8d79a61ccac3b777cc79317a3f1b8afdaa86489532d427c7eb42e1370790a",
+            "oxc_codegen":"bfd23bfa766e8f74bdd02783a09bc6bc8ad22bb11cb69b44969473cc40606576",
+            "oxc_parser":"2bba04afea1b900540dd4e2cd75d86ffff57f9e4c1dcfe68702314c9a81841da",
+            "oxc_span":"109cc73d34598dd5f93f5cfcbca2c4ab139b78aec59cece5ff65212ece878f92"
         }
     })
 }

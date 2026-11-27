@@ -1,4 +1,14 @@
 use super::*;
+
+pub(crate) fn engine_install_command(id: &str) -> Option<&'static str> {
+    match id {
+        "cloak" => Some("pip install cloakbrowser"),
+        "camoufox" => Some(r#"pip install "camoufox[geoip]" && camoufox fetch"#),
+        "patchright" => Some("pip install patchright && patchright install chromium"),
+        _ => None,
+    }
+}
+
 pub(super) fn engines(a: &App) -> String {
     let mut o = String::from(
         r#"<div class="ps-scroll"><div class="ps-eng-hero"><div class="ps-eng-hero-badge">Browser backends</div><h1 class="ps-eng-title">Manage profiles in Numera.<br><span class="grad">Launch them in a browser.</span></h1><p class="ps-eng-lead">Numera stores your profile settings and manages each session. The selected backend connects the manager to a compatible browser that opens your pages.</p><div class="ps-eng-flow"><span class="ps-flow-node">Profile manager</span> → <span class="ps-flow-node">Runtime adapter</span> → <span class="ps-flow-node">Browser</span></div></div>"#,
@@ -44,7 +54,7 @@ pub(super) fn engines(a: &App) -> String {
             };
             let _ = write!(
                 o,
-                r#"<div class="ps-eng-card{}"><div class="ps-eng-card-top"><div><div class="ps-eng-name">{label} {}</div><div class="ps-eng-kind">{kind}</div></div><span class="ps-eng-status">{installed}</span></div><div class="ps-strength">Stealth <div class="ps-strength-bars">{}</div></div><p class="ps-eng-desc">{desc}</p><div class="ps-eng-builtin">{}</div>{}</div>"#,
+                r#"<div class="ps-eng-card{}"><div class="ps-eng-card-top"><div><div class="ps-eng-name">{label} {}</div><div class="ps-eng-kind">{kind}</div></div><span class="ps-eng-status">{installed}</span></div><div class="ps-strength">Stealth <div class="ps-strength-bars">{}</div></div><p class="ps-eng-desc">{desc}</p><div class="ps-eng-builtin">{}</div>{}{}</div>"#,
                 if rec { " featured" } else { "" },
                 if rec {
                     r#"<span class="ps-rec">★ Recommended</span>"#
@@ -74,6 +84,12 @@ pub(super) fn engines(a: &App) -> String {
                 } else {
                     "The manager uses bundled browser resources or a compatible path configured through the CLI."
                 },
+                engine_install_command(id).map_or_else(String::new, |command| {
+                    format!(
+                        r#"<div class="ps-eng-install-label">Vendor SDK command (Python)</div><div class="ps-eng-install"><code>{}</code><button type="button" id="copy-engine-{id}" data-action="copy-engine-install" data-id="{id}" aria-label="Copy {label} SDK install command">Copy</button></div>"#,
+                        escape(command)
+                    )
+                }),
                 if docs.is_empty() {
                     String::new()
                 } else {

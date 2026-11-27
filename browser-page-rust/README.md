@@ -21,7 +21,7 @@ Generated output is not an alternative authored implementation. The controller
 keeps its existing 1 MiB serialized SDK request limit for initialization and
 probe requests.
 
-The host compiler then parses the generated factory with Oxc 0.158.0 and prints
+The host compiler then parses the generated factory with Oxc 0.160.0 and prints
 the expression with `CodegenOptions::minify()`. It explicitly validates regular
 expression patterns, preserves parentheses, and runs no semantic, scope or
 identifier-mangling passes. The original generated banner, named factory and
@@ -37,11 +37,11 @@ remain part of the full receipt and byte-for-byte rebuild comparison.
 Printer qualification includes actual-value controls for CR/CRLF, template
 delimiters and backticks, lone and paired UTF-16 surrogates, Unicode separators,
 negative zero, NaN, Infinity, numeric overflow, tagged-template raw values and
-strict directives. The pinned Oxc printer passed all 24 controls plus all twelve
-browser exports, strict CSP, five identity profiles and Unicode memory growth.
-This qualifies the pinned pipeline; a printer upgrade requires these controls
-and the existing native browser checks again. The evaluated minify-js 0.6.0
-printer was rejected after actual literal and directive failures.
+strict directives. Oxc 0.158.0 passed all 24 controls plus all twelve browser
+exports, strict CSP, five identity profiles and Unicode memory growth. Each
+printer upgrade requires these controls and the existing native browser checks
+again. The evaluated minify-js 0.6.0 printer was rejected after actual literal
+and directive failures.
 
 The compiler remaps each locked dependency's actual source directory to its
 crate name and version. Registry cache hashes and mirror directory names must

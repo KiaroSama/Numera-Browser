@@ -268,15 +268,19 @@ fn row(content: String) -> String {
 pub fn app(a: &App) -> String {
     if a.mode == "startup-error" {
         return format!(
-            r#"<div class="ps-root"><div class="ps-locked"><div class="ps-locked-card"><h1>The Numera engine did not start.</h1><pre class="ps-code" role="alert">{}</pre></div></div></div>"#,
-            escape(&a.auth_error)
+            r#"<div class="ps-root"><div class="ps-locked"><div class="ps-locked-card"><h1>The Numera engine did not start.</h1><pre class="ps-code" role="alert">{}</pre><button type="button" id="retry-startup" class="ps-btn ghost" data-action="retry-startup" {}>{}</button></div></div></div>"#,
+            escape(&a.auth_error),
+            if a.busy { "disabled" } else { "" },
+            if a.busy { "Connecting…" } else { "Try again" }
         );
     }
     if a.mode == "locked" {
         return locked(a);
     }
-    let mut o = String::from(
-        r#"<div class="ps-root"><div class="ps-shell"><aside class="ps-side"><div class="ps-brand"><div class="ps-logo"><img src="/logo-512.png" alt="" width="36" height="36"></div><div><div class="ps-brand-name">Numera</div><div class="ps-brand-sub">Browser</div></div></div><nav class="ps-nav">"#,
+    let editor_error = a.editor.as_ref().is_some_and(|ed| !ed.draft.is_object());
+    let inert = if editor_error { " inert" } else { "" };
+    let mut o = format!(
+        r#"<div class="ps-root"><div class="ps-shell"{inert}><aside class="ps-side"><div class="ps-brand"><div class="ps-logo"><img src="/logo-512.png" alt="" width="36" height="36"></div><div><div class="ps-brand-name">Numera</div><div class="ps-brand-sub">Browser</div></div></div><nav class="ps-nav">"#,
     );
     for (key, label) in VIEWS {
         let _ = write!(
@@ -412,14 +416,18 @@ pub fn app(a: &App) -> String {
     }
     o.push_str(&view(a));
     o.push_str("</main></div>");
-    if let Some(editor) = &a.editor {
-        o.push_str(&editor_view(a, editor));
-    }
-    if !a.modal.is_empty() {
-        o.push_str(&modal(a));
-    }
-    if !a.update_approval.is_null() {
-        o.push_str(&update_approval(a));
+    if editor_error {
+        o.push_str(r#"<div class="ps-overlay center"><div class="ps-modal ps-recovery" role="dialog" aria-modal="true" aria-labelledby="editor-error-title"><h2 id="editor-error-title">This profile couldn't be opened</h2><p>The editor couldn't read the profile. Close the editor to return to your current view.</p><button type="button" id="close-editor-error" class="ps-btn ghost" data-action="close-editor">Close editor</button></div></div>"#);
+    } else {
+        if let Some(editor) = &a.editor {
+            o.push_str(&editor_view(a, editor));
+        }
+        if !a.modal.is_empty() {
+            o.push_str(&modal(a));
+        }
+        if !a.update_approval.is_null() {
+            o.push_str(&update_approval(a));
+        }
     }
     o.push_str(r#"<div class="ps-toaster" aria-live="polite">"#);
     for toast in &a.toasts {
@@ -456,6 +464,17 @@ fn locked(a: &App) -> String {
     )
 }
 pub fn view(a: &App) -> String {
+    if let Some(message) = a.view_error.as_deref().or_else(|| {
+        (a.view == "profiles" && a.profiles.iter().any(|profile| !profile.is_object()))
+            .then_some("The profile list contains a record this dashboard cannot read.")
+    }) {
+        return format!(
+            r#"<div class="ps-empty ps-recovery"><div role="alert"><h2>This view couldn't be displayed</h2><p>{}</p></div><button type="button" id="retry-view" class="ps-btn ghost" data-action="retry-view" {}>{}</button></div>"#,
+            escape(message),
+            if a.busy { "disabled" } else { "" },
+            if a.busy { "Retrying…" } else { "Try again" }
+        );
+    }
     match a.view.as_str() {
         "profiles" => profiles(a),
         "health" => health(a),
@@ -487,6 +506,8 @@ use health::{folders, health};
 
 #[path = "render_resources.rs"]
 mod resources;
+#[cfg(target_arch = "wasm32")]
+pub(crate) use resources::engine_install_command;
 pub use resources::{cloak, proxies};
 use resources::{engines, extensions};
 

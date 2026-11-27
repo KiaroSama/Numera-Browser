@@ -31,7 +31,7 @@ fn binding(source: &str) -> io::Result<()> {
     }
     let transformed = source.replace(MARKER, &format!("<dir>{PROBE}</dir>"));
     let mut reader = Reader::from_str(&transformed);
-    let mut stack = Vec::<(Vec<u8>, bool)>::new();
+    let mut stack = Vec::<(String, bool)>::new();
     let mut completed = false;
     let mut found = false;
     loop {
@@ -40,13 +40,13 @@ fn binding(source: &str) -> io::Result<()> {
                 if stack.len() >= 128 {
                     return Err(bad());
                 }
-                let name = element.name().as_ref().to_vec();
+                let name = element.name().as_ref().to_owned();
                 let mut attributes = 0;
                 for attribute in element.attributes() {
                     attribute.map_err(|_| bad())?;
                     attributes += 1;
                 }
-                if stack.is_empty() && (completed || name != b"fontconfig") {
+                if stack.is_empty() && (completed || name != "fontconfig") {
                     return Err(bad());
                 }
                 stack.push((name, attributes == 0));
@@ -56,7 +56,7 @@ fn binding(source: &str) -> io::Result<()> {
                     attribute.map_err(|_| bad())?;
                 }
                 if stack.is_empty() {
-                    if completed || element.name().as_ref() != b"fontconfig" {
+                    if completed || element.name().as_ref() != "fontconfig" {
                         return Err(bad());
                     }
                     completed = true;
@@ -72,8 +72,8 @@ fn binding(source: &str) -> io::Result<()> {
                 }
             }
             Event::Text(text) => {
-                let text = text.decode().map_err(|_| bad())?;
-                if stack.len() == 2 && stack[1].0 == b"dir" && stack[1].1 && text == PROBE {
+                let text = text.as_ref();
+                if stack.len() == 2 && stack[1].0 == "dir" && stack[1].1 && text == PROBE {
                     found = true;
                 }
                 if stack.is_empty() && !text.trim().is_empty() {

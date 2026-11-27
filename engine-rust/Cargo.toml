@@ -124,23 +124,23 @@ reqwest = { version = "0.13.5", default-features = false, features = ["rustls", 
 hickory-resolver = { version = "0.26.3", default-features = false, features = ["system-config", "tokio"] }
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = { version = "1.0.154", features = ["preserve_order", "arbitrary_precision"] }
-quick-xml = "=0.41.0"
+quick-xml = "=0.42.0"
 sha2 = "0.11.2"
 subtle = "2.6.1"
 getrandom = "0.4.3"
 base64 = "0.23.1"
 pbkdf2 = { version = "0.13.0", features = ["sha2"] }
 fernet = { version = "0.2.2", default-features = false, features = ["rustcrypto"] }
-aes = "=0.8.4"
-cbc = { version = "=0.1.2", features = ["alloc"] }
+aes = "=0.9.4"
+cbc = { version = "=0.2.1", features = ["alloc"] }
 hmac = "=0.13.0"
-zeroize = "=1.9.1"
+zeroize = "=1.9.2"
 zip = { version = "9.8.2", default-features = false, features = ["deflate-flate2-zlib-rs"] }
 playwright-rs = { version = "=0.21.1", default-features = false, features = ["aws-lc"], optional = true }
 ruzstd = { version = "=0.9.1", optional = true }
-maxminddb = { version = "0.27", optional = true }
+maxminddb = { version = "0.33", optional = true }
 serde_yaml = { version = "0.9.34", optional = true }
-num-bigint = "0.4"
+num-bigint = "0.5"
 ed25519-dalek = "3.0.0"
 tar = { version = "0.4.46", default-features = false }
 flate2 = "1.1.10"

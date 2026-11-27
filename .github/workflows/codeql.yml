@@ -37,7 +37,7 @@ jobs:
           printf 'github.sha=%s\npr.head.sha=%s\npr.merge.sha=%s\nworkflow.sha=%s\ngithub.ref=%s\nevent=%s\nrepository=%s\nrun.id=%s\nrun.attempt=%s\n' "$GITHUB_SHA" "$PR_HEAD_SHA" "$PR_MERGE_SHA" "$WORKFLOW_SHA" "$GITHUB_REF" "$GITHUB_EVENT_NAME" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" > "$RUNNER_TEMP/numera-codeql-evidence/workflow-subjects.txt"
       - name: Initialize supported language analysis without duplicate builds
         id: init
-        uses: github/codeql-action/init@cee97f86b972a3ded3c58d04148362b193ddc518 # v4.38.3
+        uses: github/codeql-action/init@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
         with:
           languages: ${{ matrix.language }}
           build-mode: none
@@ -47,7 +47,7 @@ jobs:
           db-location: ${{ runner.temp }}/numera-codeql-databases
           # Use the action's cgroup-aware RAM sizing, including its OS reserve.
       - name: Analyze the checkout and retain every result
-        uses: github/codeql-action/analyze@cee97f86b972a3ded3c58d04148362b193ddc518 # v4.38.3
+        uses: github/codeql-action/analyze@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
         with:
           category: /language:${{ matrix.language }}
           output: ${{ runner.temp }}/numera-codeql-results
@@ -104,7 +104,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249
         with:
           toolchain: 1.100.0
-      - uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c
+      - uses: Swatinem/rust-cache@eedcf2fb1c22f010a0eb66b92f378c110977f266
         with:
           workspaces: tools/xtask
       - name: Compile read-only native verdict tooling
