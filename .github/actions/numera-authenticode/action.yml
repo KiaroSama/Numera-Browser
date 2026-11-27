@@ -96,6 +96,7 @@ runs:
             }
             & $signtool verify /pa /all $tampered *> $null
             if ($LASTEXITCODE -eq 0 -or (Get-AuthenticodeSignature -LiteralPath $tampered).Status -eq 'Valid') { throw 'SignTool accepted a modified release file' }
+            $global:LASTEXITCODE = 0
             Remove-Item -LiteralPath $tampered
           }
         } finally {
@@ -105,3 +106,4 @@ runs:
           $secret.Dispose()
           Remove-Item -LiteralPath $tmp -Recurse -Force
         }
+        $global:LASTEXITCODE = 0
