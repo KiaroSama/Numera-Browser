@@ -11,6 +11,7 @@ pub mod collision;
 mod common;
 pub mod conversion;
 mod cookie_export;
+mod credential_envelope;
 mod decimal;
 pub mod devices;
 pub mod fingerprint;

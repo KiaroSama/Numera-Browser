@@ -450,7 +450,10 @@ fn log_retention_callers(
         root,
         case,
         path,
-        "b409dc9fcd5a22554dd84e97bb6400aff4c9481320f2966f46c700f9d1d9fa7c",
+        // The reviewed current caller adds private argument/framing modules;
+        // the selected historical runtime log bytes and constructor bridge
+        // remain exact and unchanged.
+        "1c5dbfb990b5641338332a2d87371ac6b13e0582ab50092b9d42c2b0575098b5",
     )?;
     let current = fs::read(root.join(RUNTIME_LOG))?;
     let current_sha = super::sha(&current);
@@ -478,6 +481,8 @@ fn log_retention_callers(
     replacement.receipt["selected_primary_bytes_unchanged"] = true.into();
     replacement.receipt["included_source_sha256"] = current_sha.into();
     replacement.receipt["included_fragment_sha256"] = super::sha(constructor.as_bytes()).into();
+    replacement.receipt["reviewed_current_caller_change"] =
+        "Private detached argument and generic credential framing modules were added; no runtime log bridge or historical assertion was changed.".into();
     replacement.receipt["reason"] = "The original retention fixture opens files through the exact frozen module. Only later recovery callers use the current fileless constructor.".into();
     Ok((path.into(), replacement))
 }

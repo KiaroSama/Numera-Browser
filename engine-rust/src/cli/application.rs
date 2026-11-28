@@ -38,8 +38,8 @@ pub fn open_store(
     args: &Map<String, Value>,
     inherited_password: Option<&str>,
 ) -> Result<ProfileRepo, RepoError> {
-    let password =
-        master_password(args).or_else(|| inherited_password.filter(|value| !value.is_empty()));
+    let password = crate::native_password::master_password(args)
+        .or_else(|| inherited_password.filter(|value| !value.is_empty()));
     if text(args, "vault_command") == Some("resume") {
         // Source resume asks for the old key when the global option is absent;
         // unlike ordinary store opening, it does not use the inherited key here.
@@ -52,16 +52,6 @@ pub fn open_store(
     } else {
         ProfileRepo::open(root.into(), password.map(str::to_owned), None)
     }
-}
-
-pub(crate) fn master_password(args: &Map<String, Value>) -> Option<&str> {
-    let key = if text(args, "command") == Some("pool") && text(args, "pool_command") == Some("edit")
-    {
-        "master_password"
-    } else {
-        "password"
-    };
-    text(args, key).filter(|password| !password.is_empty())
 }
 
 fn text<'a>(args: &'a Map<String, Value>, key: &str) -> Option<&'a str> {

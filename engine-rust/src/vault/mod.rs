@@ -2,7 +2,6 @@
 pub mod completion;
 pub mod durability;
 mod encryption;
-pub(crate) use encryption::seal as seal_ephemeral;
 pub mod journal;
 pub mod migration;
 pub mod policy;

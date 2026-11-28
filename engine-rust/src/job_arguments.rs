@@ -112,7 +112,7 @@ pub(crate) fn seal(id: &str, root: &Path, argv: &[String]) -> io::Result<Sealed>
         .duration_since(UNIX_EPOCH)
         .map_err(|_| io::Error::other("Detached argument timestamp is invalid"))?
         .as_secs();
-    let ciphertext = crate::vault::seal_ephemeral(&key, &plaintext, timestamp)
+    let ciphertext = crate::credential_envelope::seal(&key, &plaintext, timestamp)
         .map_err(|_| io::Error::other("Detached argument encryption failed"))?;
     Ok(Sealed {
         envelope: json!({"version":VERSION,"ciphertext":ciphertext}),
@@ -252,7 +252,8 @@ mod tests {
             json!({"version":1,"id":"job-a","root":root,"argv":[12]}),
         ] {
             let ciphertext =
-                crate::vault::seal_ephemeral(&key, &serde_json::to_vec(&plaintext)?, 0)?;
+                crate::credential_envelope::seal(&key, &serde_json::to_vec(&plaintext)?, 0)
+                    .map_err(|_| io::Error::other("Fixture argument encryption failed"))?;
             let request =
                 json!({"argv":["list"],"privateArgv":{"version":1,"ciphertext":ciphertext}});
             assert!(open(&request, "job-a", root, Some(&encoded)).is_err());

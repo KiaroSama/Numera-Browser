@@ -292,7 +292,7 @@ pub fn dispatch(
             let args = crate::native_password::prepare(args, cancelled.clone())?;
             let repo = match opened {
                 Some(mut repo) => {
-                    if let Some(password) = application::master_password(&args) {
+                    if let Some(password) = crate::native_password::master_password(&args) {
                         repo.password = Some(password.into());
                     }
                     repo

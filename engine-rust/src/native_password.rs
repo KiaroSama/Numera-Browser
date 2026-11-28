@@ -1,4 +1,4 @@
-//! Bounded terminal-only password input; echo is restored on every return path.
+//! Native vault credential selection and bounded terminal-only password input.
 #[cfg(unix)]
 use crate::native_input::Input;
 #[cfg(unix)]
@@ -8,6 +8,17 @@ use std::{
     io::{self, Write},
     sync::{Arc, atomic::AtomicBool},
 };
+
+/// Resolve the invocation's vault credential without selecting a proxy password.
+pub(crate) fn master_password(args: &serde_json::Map<String, serde_json::Value>) -> Option<&str> {
+    let text = |key: &str| args.get(key).and_then(serde_json::Value::as_str);
+    let key = if text("command") == Some("pool") && text("pool_command") == Some("edit") {
+        "master_password"
+    } else {
+        "password"
+    };
+    text(key).filter(|password| !password.is_empty())
+}
 
 pub fn read(prompt: &str, cancelled: Arc<AtomicBool>) -> io::Result<String> {
     let terminal = OpenOptions::new()
