@@ -17,11 +17,13 @@ use std::{
     io::{self, Write},
     path::{Path, PathBuf},
     process::{Command, Stdio},
-    sync::{Arc, Barrier, OnceLock, mpsc},
+    sync::{Arc, Barrier, mpsc},
     thread,
     time::{Duration, Instant},
 };
 mod common;
+#[path = "common/ownership_fixture.rs"]
+mod ownership_fixture;
 use crate::common::cargo_artifacts::Artifacts;
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 macro_rules! source_test {
@@ -77,75 +79,7 @@ fn wait_file(path: &Path) -> io::Result<()> {
     Ok(())
 }
 fn fixture() -> io::Result<PathBuf> {
-    static BINARY: OnceLock<Result<PathBuf, String>> = OnceLock::new();
-    BINARY
-        .get_or_init(|| {
-            let artifacts = Artifacts::current().map_err(|error| error.to_string())?;
-            let directory = artifacts
-                .output_directory()
-                .join(format!("source-ownership-fixture-{}", std::process::id()));
-            fs::create_dir(&directory).map_err(|error| error.to_string())?;
-            let binary = directory.join(if cfg!(windows) {
-                "helper.exe"
-            } else {
-                "helper"
-            });
-            let mut command =
-                Command::new(std::env::var_os("RUSTC").unwrap_or_else(|| "rustc".into()));
-            command
-                .arg("--edition=2024")
-                .arg("--crate-name=source_ownership_helper")
-                .arg("-Cdebuginfo=0")
-                .arg(Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/source_ownership/helper.rs"))
-                .arg("--extern")
-                .arg(format!(
-                    "numera_core={}",
-                    artifacts
-                        .library("numera_core")
-                        .map_err(|error| error.to_string())?
-                        .display()
-                ))
-                .arg("--extern")
-                .arg(format!(
-                    "serde_json={}",
-                    artifacts
-                        .library("serde_json")
-                        .map_err(|error| error.to_string())?
-                        .display()
-                ))
-                .arg("-o")
-                .arg(&binary);
-            artifacts
-                .add_dependency_search_paths(&mut command, &directory.join("rustc-search.args"))
-                .map_err(|error| error.to_string())?;
-            #[cfg(windows)]
-            command.arg("--extern").arg(format!(
-                "getrandom={}",
-                artifacts
-                    .library("getrandom")
-                    .map_err(|error| error.to_string())?
-                    .display()
-            ));
-            #[cfg(unix)]
-            command.arg("--extern").arg(format!(
-                "libc={}",
-                artifacts
-                    .library("libc")
-                    .map_err(|error| error.to_string())?
-                    .display()
-            ));
-            let output = capture::run(&mut command, limit(Duration::from_secs(60)))
-                .map_err(|error| error.to_string())?;
-            if output.exit != 0 {
-                return Err(format!(
-                    "Rust fixture compile failed: {}",
-                    String::from_utf8_lossy(&output.stderr)
-                ));
-            }
-            Ok(binary)
-        })
-        .clone()
-        .map_err(io::Error::other)
+    ownership_fixture::binary()
 }
 fn command(mode: &str) -> io::Result<Command> {
     let mut command = Command::new(fixture()?);

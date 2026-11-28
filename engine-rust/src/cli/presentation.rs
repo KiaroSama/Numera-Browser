@@ -203,7 +203,7 @@ impl Application<'_> {
         }
         if matches!(
             command,
-            "page" | "workflow" | "fleet" | "profile" | "capabilities"
+            "page" | "workflow" | "fleet" | "profile" | "update" | "capabilities"
         ) {
             let outcome = self.execute_controlled(args, time, confirm, cancelled)?;
             if !output.json_mode() {

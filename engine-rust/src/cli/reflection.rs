@@ -238,7 +238,19 @@ pub(crate) fn argv_with_path(
     Ok((path, argv))
 }
 
-/// Canonical parse view for source comparison and service dispatch.
+/// Keep the root vault credential separate from a command's proxy credential.
+/// The public pool tool still calls its replacement field `password`.
+pub(crate) fn invocation_values(command: &Command, matches: &ArgMatches) -> Value {
+    let mut parsed = values(command, matches);
+    if parsed["command"] == "pool" && parsed["pool_command"] == "edit" {
+        parsed["master_password"] = matches
+            .get_one::<String>("password")
+            .map_or(Value::Null, |password| password.clone().into());
+    }
+    parsed
+}
+
+/// Canonical parse view for source comparison and individual command dispatch.
 pub fn values(command: &Command, matches: &ArgMatches) -> Value {
     let mut object = Map::new();
     for arg in command

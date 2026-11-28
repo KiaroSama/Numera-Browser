@@ -38,8 +38,7 @@ pub fn open_store(
     args: &Map<String, Value>,
     inherited_password: Option<&str>,
 ) -> Result<ProfileRepo, RepoError> {
-    let password = text(args, "password")
-        .filter(|value| !value.is_empty())
+    let password = crate::native_password::master_password(args)
         .or_else(|| inherited_password.filter(|value| !value.is_empty()));
     if text(args, "vault_command") == Some("resume") {
         // Source resume asks for the old key when the global option is absent;

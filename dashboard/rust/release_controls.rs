@@ -20,13 +20,19 @@ pub(crate) fn preferences(v: &Value) -> bool {
 
 pub(crate) fn can_apply(status: &Value, channel: &str) -> bool {
     status["channel"] == channel
+        && status["offerId"].as_str().is_some_and(|id| {
+            id.len() == 64
+                && id
+                    .bytes()
+                    .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+        })
         && match channel {
-            "app" | "all" => {
-                status["app"]["verified"] == true && status["app"]["update_available"] == true
+            "app" => {
+                status["requiresCombined"] == false
+                    && status["app"]["verified"] == true
+                    && status["app"]["update_available"] == true
             }
-            "browsers" => status["browsers"]
-                .as_array()
-                .is_some_and(|cores| cores.iter().any(|core| core["update_available"] == true)),
+            "all" => status["app"]["verified"] == true && status["app"]["update_available"] == true,
             _ => false,
         }
 }
@@ -84,20 +90,34 @@ mod tests {
 
     #[test]
     fn app_apply_requires_verified_offer_for_the_requested_channel() {
-        let mut app = json!({"channel":"app","app":{"verified":false,"update_available":true}});
+        let mut app = json!({"channel":"app","offerId":"1".repeat(64),"requiresCombined":false,"app":{"verified":false,"update_available":true}});
         assert!(!can_apply(&app, "app"));
         app["app"]["verified"] = true.into();
         assert!(can_apply(&app, "app"));
+        app["requiresCombined"] = true.into();
+        assert!(!can_apply(&app, "app"));
         assert!(!can_apply(&app, "browsers"));
         assert!(!can_apply(&app, "all"));
         app["channel"] = json!("all");
         assert!(can_apply(&app, "all"));
         app["app"]["verified"] = json!(false);
         assert!(!can_apply(&app, "all"));
-        assert!(can_apply(
-            &json!({"channel":"browsers","browsers":[{"update_available":true}]}),
+        assert!(!can_apply(
+            &json!({"channel":"browsers","offerId":"1".repeat(64),"browsers":[{"update_available":true}]}),
             "browsers"
         ));
+    }
+
+    #[test]
+    fn app_apply_requires_the_reviewed_manifest_identity() {
+        let mut app = json!({"channel":"app","requiresCombined":false,"app":{"verified":true,"update_available":true}});
+        assert!(!can_apply(&app, "app"));
+        for id in ["", "not-a-manifest", &"A".repeat(64), &"1".repeat(63)] {
+            app["offerId"] = json!(id);
+            assert!(!can_apply(&app, "app"));
+        }
+        app["offerId"] = json!("1".repeat(64));
+        assert!(can_apply(&app, "app"));
     }
 
     #[test]

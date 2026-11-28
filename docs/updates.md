@@ -4,6 +4,13 @@
 
 The updater handles complete, signed portable release generations. A generation contains the shell, Rust manager, browser worker, dashboard and notices. Available browser resources vary by platform. Source checkouts, containers, installer-based deployments and CLI-only archives update through their own installation routes.
 
+`numera-engine update config` reads or changes local update preferences. Standalone
+`update check` reports `state: unavailable`, `checked: false`, unknown remote
+versions, and exit code `1`; it does not discover or authenticate releases. Use
+the portable desktop's Software updates screen for a signed remote check.
+`update apply` also requires the desktop updater bridge or the verified local
+release installer. These commands do not bypass download or restart approval.
+
 The [Rust verification record](rust-rewrite.md) tracks CI acceptance. Published portable releases carry the signed manifests and artifacts described below.
 
 ## End-user flow

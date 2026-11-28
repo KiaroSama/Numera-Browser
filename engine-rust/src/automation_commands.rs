@@ -94,16 +94,20 @@ pub(super) fn run(
                                 "id": provider.id(),
                                 "display_name": provider.display_name(),
                                 "capabilities": provider.capabilities(),
-                                "update_available": false,
+                                "update_available": Value::Null,
                             })
                         })
                         .collect();
                     json!({
+                        "ok": false,
+                        "state": "unavailable",
+                        "checked": false,
+                        "message": "Use Software updates in the portable desktop to check and review signed releases. Standalone CLI discovery is unavailable; no remote check was performed.",
                         "channel": channel,
                         "app": {
                             "current": env!("CARGO_PKG_VERSION"),
-                            "latest": env!("CARGO_PKG_VERSION"),
-                            "update_available": false,
+                            "latest": Value::Null,
+                            "update_available": Value::Null,
                             "verified": false,
                         },
                         "browsers": browsers,
@@ -158,7 +162,14 @@ pub(super) fn run(
         })
     })();
     Ok(match result {
-        Ok(value) => Outcome::success(value),
+        Ok(value) => Outcome {
+            exit: i32::from(
+                text("command") == Some("update")
+                    && text("update_command") == Some("check")
+                    && value["checked"] != true,
+            ),
+            payload: value,
+        },
         Err(error) => Outcome {
             exit: 1,
             payload: json!({"ok":false,"error":error.to_string(),"hint":"Check the command help, profile ID, and local fixture. Use the running service for persistent windows."}),

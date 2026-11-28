@@ -19,12 +19,14 @@ struct Engine {
     profiles: Vec<Value>,
     config: Value,
     pool: Vec<Value>,
+    schedules: Vec<Value>,
     calls: Vec<Recorded>,
     errors: BTreeMap<String, (u16, String, String)>,
     tokens: Vec<Value>,
     offer: Value,
     update: Value,
     preferences: Value,
+    release_offer_id: String,
     update_http_status: u16,
     offline: bool,
     hold: String,
@@ -58,12 +60,14 @@ impl Default for Engine {
             pool: vec![
                 json!({"id":"pool1","type":"SOCKS5","host":"pool.example","port":"1080","user":"pu","pass":"pooled","country":"GB"}),
             ],
+            schedules: vec![],
             calls: vec![],
             errors: BTreeMap::new(),
             tokens: vec![],
             offer: offer(),
             update: update(),
             preferences: json!({"app_auto_update":false,"browser_core_auto_update":false,"clean_old_versions_on_update":true}),
+            release_offer_id: "1".repeat(64),
             update_http_status: 200,
             offline: false,
             hold: String::new(),
@@ -108,15 +112,21 @@ impl Engine {
                 self.preferences.clone()
             }
             ("GET", "/api/updates/check?channel=app") => {
-                json!({"channel":"app","app":{"current":"1.0.0","latest":"1.1.0","update_available":true,"verified":true}})
+                json!({"channel":"app","offerId":self.release_offer_id,"requiresCombined":false,"app":{"current":"1.0.0","latest":"1.1.0","update_available":true,"verified":true}})
             }
             ("GET", "/api/updates/check?channel=browsers") => {
-                json!({"channel":"browsers","browsers":[{"id":"chromium","current":"158","latest":"159","update_available":true},{"id":"camoufox","current":"1","latest":"1","update_available":false}]})
+                json!({"channel":"browsers","offerId":self.release_offer_id,"browsers":[{"id":"chromium","current":"158","latest":"159","update_available":true},{"id":"camoufox","current":"1","latest":"1","update_available":false}]})
             }
             ("GET", "/api/updates/check?channel=all") => {
-                json!({"channel":"all","app":{"current":"1.0.0","latest":"1.1.0","update_available":true,"verified":true},"browsers":[{"id":"chromium","current":"158","latest":"159","update_available":true}]})
+                json!({"channel":"all","offerId":self.release_offer_id,"requiresCombined":true,"app":{"current":"1.0.0","latest":"1.1.0","update_available":true,"verified":true},"browsers":[{"id":"chromium","current":"158","latest":"159","update_available":true}]})
             }
             ("POST", "/api/updates/apply") => {
+                if body["offerId"] != self.release_offer_id {
+                    return response(
+                        json!({"detail":"The reviewed update offer changed. Check again."}),
+                        409,
+                    );
+                }
                 json!({"ok":call.update_approval == "a".repeat(64),"channel":body["channel"],"data_preserved":true,"message":"Applied fixture update."})
             }
             ("POST", "/api/mcp") => json!({"jsonrpc":"2.0","id":body["id"],"result":{}}),
@@ -148,7 +158,13 @@ impl Engine {
             }
             ("GET", "/api/profiles") => json!(self.profiles),
             ("GET", "/api/proxies") => json!(self.pool),
-            ("GET", "/api/schedules") => json!([]),
+            ("GET", "/api/schedules") => json!(self.schedules),
+            ("POST", "/api/schedules") => {
+                let mut schedule = body.clone();
+                schedule["id"] = json!(format!("schedule-{}", self.schedules.len() + 1));
+                self.schedules.push(schedule.clone());
+                schedule
+            }
             ("POST", "/api/profiles") => {
                 let mut p = body.clone();
                 p["id"] = json!(format!("created-{}", self.profiles.len()));
@@ -290,6 +306,21 @@ impl Engine {
                     .retain(|t| s(t, "id") != p.rsplit('/').next().unwrap());
                 return response(Value::Null, 204);
             }
+            _ if p.starts_with("/api/schedules/") && method == "PUT" => {
+                let id = p.rsplit('/').next().unwrap();
+                let Some(schedule) = self.schedules.iter_mut().find(|s| s["id"] == id) else {
+                    return response(json!({"detail":"schedule not found"}), 404);
+                };
+                for (key, value) in body.as_object().unwrap() {
+                    schedule[key] = value.clone();
+                }
+                schedule.clone()
+            }
+            _ if p.starts_with("/api/schedules/") && method == "DELETE" => {
+                self.schedules
+                    .retain(|s| s["id"] != p.rsplit('/').next().unwrap());
+                json!({"ok":true})
+            }
             _ if p.starts_with("/api/profiles/") && method == "PUT" => {
                 let Some(profile) = self
                     .profiles
@@ -330,6 +361,14 @@ impl Engine {
                     for (k, v) in body.as_object().unwrap() {
                         p[k] = v.clone();
                     }
+                    if ["host", "port", "user", "pass", "type"]
+                        .iter()
+                        .any(|field| body.get(field).is_some())
+                    {
+                        p["status"] = json!("untested");
+                        p["lastCheck"] = Value::Null;
+                        p["checkedAt"] = Value::Null;
+                    }
                 }
                 json!({"ok":true})
             }
@@ -351,6 +390,7 @@ impl Engine {
                 json!({"rotated":true,"previousIp":"192.0.2.1","ip":"192.0.2.2"})
             }
             _ if p.ends_with("/cookies") && method == "GET" => json!({"cookies":[]}),
+            _ if p.ends_with("/cookies") && method == "POST" => json!({"imported":1}),
             _ => json!({"ok":true}),
         };
         response(
@@ -639,6 +679,10 @@ fn writes(h: &Harness) -> Vec<Recorded> {
 }
 
 include!("browser_smoke_tests.rs");
+#[path = "browser_api_contract_tests.rs"]
+mod api_contract_tests;
+#[path = "browser_async_scope_tests.rs"]
+mod async_scope_tests;
 #[path = "browser_cases.rs"]
 mod cases;
 #[path = "browser_release_tests.rs"]

@@ -84,21 +84,39 @@ pub fn edit(scope: &str, key: &str, value: &str) -> Result<(), String> {
             _ => {}
         },
         "schedule" => {
+            if a.busy || !a.schedule.is_object() {
+                return;
+            }
             let id = s(&a.schedule, "id").to_owned();
+            let profile_id = s(&a.schedule, "profileId").to_owned();
+            let editor_session = a.editor_session;
             let key = key.to_owned();
             let value = if key == "everyHours" {
-                json!(value.parse::<u64>().unwrap_or(1).max(1))
+                json!(value.parse::<f64>().unwrap_or(0.))
             } else {
                 json!(value)
             };
+            a.busy = true;
             spawn_local(async move {
-                let _ = request(
+                let result = request(
                     "PUT",
                     &format!("/api/schedules/{id}"),
                     Some(json!({key:value})),
                 )
-                .await
-                .map(|s| change(|a| a.schedule = s));
+                .await;
+                change(|a| {
+                    a.busy = false;
+                    match result {
+                        Ok(schedule)
+                            if a.editor_matches(editor_session, &profile_id)
+                                && s(&a.schedule, "id") == id =>
+                        {
+                            a.schedule = schedule
+                        }
+                        Err(error) => a.say(format!("Schedule failed: {error}"), true),
+                        _ => {}
+                    }
+                });
                 draw();
             });
         }
@@ -218,21 +236,24 @@ pub(super) fn release_icons() {
 pub(super) async fn open_editor(p: Value) {
     change(|a| a.open_editor(p));
     draw();
-    if snapshot().live() {
+    let opened = snapshot();
+    let profile_id = opened
+        .editor
+        .as_ref()
+        .map(|ed| s(&ed.draft, "id").to_owned())
+        .unwrap_or_default();
+    if opened.live() {
         if let Ok(pool) = request("GET", "/api/proxies", None).await {
             change(|a| a.pool = list(&pool));
         }
         if let Ok(schedules) = request("GET", "/api/schedules", None).await {
-            let id = snapshot()
-                .editor
-                .as_ref()
-                .map(|e| s(&e.draft, "id").to_owned())
-                .unwrap_or_default();
             change(|a| {
-                a.schedule = list(&schedules)
-                    .into_iter()
-                    .find(|p| s(p, "profileId") == id)
-                    .unwrap_or(Value::Null)
+                if a.editor_matches(opened.editor_session, &profile_id) {
+                    a.schedule = list(&schedules)
+                        .into_iter()
+                        .find(|p| s(p, "profileId") == profile_id)
+                        .unwrap_or(Value::Null);
+                }
             });
         }
     }
@@ -399,7 +420,7 @@ pub(super) async fn bulk_sessions(warm: bool) -> Result<(), ApiError> {
     if warm && !a.live() {
         change(|a| {
             a.say(
-                "Warm-up runs against the live engine — start `numera serve` first.",
+                "Warm-up runs against the live engine — start `numera-engine serve` first.",
                 false,
             )
         });

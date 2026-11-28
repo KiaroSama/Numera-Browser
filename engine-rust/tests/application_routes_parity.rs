@@ -10,6 +10,8 @@ use std::{
 };
 use tower::ServiceExt;
 mod common;
+#[path = "application_routes_parity/native_documentation.rs"]
+mod native_documentation;
 
 #[test]
 fn documentation_routes_match_source_without_sdk_or_api_unlock()
@@ -84,12 +86,29 @@ fn documentation_routes_match_source_without_sdk_or_api_unlock()
                 case["method"],
                 case["path"]
             );
+            let expected_length = if case["name"] == "openapi.json"
+                && matches!(case["method"].as_str(), Some("GET" | "HEAD"))
+            {
+                assert_eq!(
+                    case["content_length"].as_str(),
+                    Some(
+                        include_str!("../src/http/documentation-assets/openapi.json")
+                            .len()
+                            .to_string()
+                            .as_str()
+                    ),
+                    "The frozen source length no longer matches its unchanged asset"
+                );
+                Some(native_documentation::served_length()?)
+            } else {
+                case["content_length"].as_str().map(str::to_owned)
+            };
             assert_eq!(
                 response
                     .headers()
                     .get("content-length")
                     .and_then(|v| v.to_str().ok()),
-                case["content_length"].as_str(),
+                expected_length.as_deref(),
                 "{} {} content length",
                 case["method"],
                 case["path"]
@@ -106,7 +125,12 @@ fn documentation_routes_match_source_without_sdk_or_api_unlock()
                 let mut expected_json = serde_json::from_str::<Value>(expected)?;
                 assert_eq!(actual["info"]["version"], env!("CARGO_PKG_VERSION"));
                 expected_json["info"]["version"] = env!("CARGO_PKG_VERSION").into();
-                assert_eq!(actual, expected_json);
+                // Native route additions are checked exactly before removing
+                // them; every frozen historical field still compares in full.
+                assert_eq!(
+                    native_documentation::historical_projection(actual, &expected_json)?,
+                    expected_json
+                );
             } else {
                 assert_eq!(text, expected, "{} {}", case["method"], case["path"]);
             }

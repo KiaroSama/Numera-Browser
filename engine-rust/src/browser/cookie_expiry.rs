@@ -1,4 +1,4 @@
-use chrono::{Datelike, Local, LocalResult, NaiveDate, NaiveDateTime, TimeZone, Weekday};
+use chrono::{Datelike, Local, NaiveDate, NaiveDateTime, TimeZone, Weekday};
 use serde_json::Value;
 use std::io;
 
@@ -131,17 +131,40 @@ fn iso(text: &str) -> Option<f64> {
     let value = day.and_hms_micro_opt(hour, minute, second, micro)?;
     match offset {
         Some(offset) => Some(epoch(value) - offset),
-        None => match Local.from_local_datetime(&value) {
-            LocalResult::Single(value) => {
-                Some(value.timestamp() as f64 + f64::from(micro) / 1_000_000.0)
-            }
-            LocalResult::Ambiguous(first, _) => {
-                Some(first.timestamp() as f64 + f64::from(micro) / 1_000_000.0)
-            }
-            LocalResult::None => None,
-        },
+        None => local_epoch(value),
     }
 }
+
+fn local_epoch(value: NaiveDateTime) -> Option<f64> {
+    // Match Python's naive datetime.timestamp() with fold=0. Solve the inverse
+    // local-time conversion using both offsets around a change: the earlier
+    // valid instant wins in a fold, and the pre-change offset wins in a gap.
+    // A full-day lookback also covers half-hour and date-line transitions.
+    let wanted = value.and_utc().timestamp();
+    let local_at = |seconds| {
+        let local = Local.timestamp_opt(seconds, 0).single()?;
+        Some(local.naive_local().and_utc().timestamp())
+    };
+    let first_offset = local_at(wanted)?.checked_sub(wanted)?;
+    let first = wanted.checked_sub(first_offset)?;
+    let first_local = local_at(first)?;
+    let second_offset = if first_local == wanted {
+        let prior = first.checked_sub(86_400)?;
+        local_at(prior)?.checked_sub(prior)?
+    } else {
+        first_local.checked_sub(first)?
+    };
+    let second = wanted.checked_sub(second_offset)?;
+    let seconds = if local_at(second)? == wanted {
+        second
+    } else if first_local == wanted {
+        first
+    } else {
+        first.max(second)
+    };
+    Some(seconds as f64 + f64::from(value.and_utc().timestamp_subsec_micros()) / 1_000_000.0)
+}
+
 fn epoch(value: NaiveDateTime) -> f64 {
     value.and_utc().timestamp() as f64
         + f64::from(value.and_utc().timestamp_subsec_micros()) / 1_000_000.0

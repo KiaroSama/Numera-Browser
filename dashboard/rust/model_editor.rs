@@ -187,7 +187,7 @@ pub fn export_profiles(profiles: &[Value]) -> (Value, String) {
     (
         json!({"numeraProfiles":1,"profiles":profiles}),
         format!(
-            "Exported {} profile configuration{}. Browser sessions — cookies and logins — are not included; use `numera backup` for those.{}",
+            "Exported {} profile configuration{}. Browser sessions — cookies and logins — are not included; use `numera-engine backup` for those.{}",
             profiles.len(),
             if profiles.len() == 1 { "" } else { "s" },
             if withheld > 0 {

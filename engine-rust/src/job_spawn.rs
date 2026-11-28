@@ -1,6 +1,7 @@
 //! Detached startup ownership and child reaping for short and long-lived callers.
 use crate::job_supervisor::{read, record_location, remove};
 use crate::{
+    job_arguments,
     jobs::{JobStore, child_argv},
     ownership::{identity, recorded_tree},
     storage::{atomic::write_json, paths::safe_id},
@@ -256,7 +257,7 @@ impl JobStore {
             .into());
         }
         let argv = child_argv(options.argv, &root);
-        let request = json!({"id":id,"root":root,"executable":executable,"argv":argv,
+        let mut request = json!({"id":id,"root":root,"executable":executable,"argv":argv,
             "command":options.command,"profile":options.profile,"started":now()?});
         if serde_json::to_vec(&request)
             .map_err(io::Error::other)?
@@ -269,11 +270,22 @@ impl JobStore {
             )
             .into());
         }
-        write_json(&record.with_extension("launch"), &request)?;
+        let private = job_arguments::seal(&id, &root, &argv)?;
+        request["argv"] = json!(private.public);
+        request["privateArgv"] = private.envelope;
+        let launch = serde_json::to_vec(&request).map_err(io::Error::other)?;
+        if launch.len() as u64 > job_arguments::MAX_LAUNCH {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Job request exceeds its size limit",
+            )
+            .into());
+        }
+        crate::storage::atomic::write_bytes(&record.with_extension("launch"), &launch)?;
         crate::ownership::unit_report::initialize(&record.with_extension("units"))?;
         write_json(
             &record,
-            &json!({"id":id,"argv":argv,"command":options.command,
+            &json!({"id":id,"argv":request["argv"],"command":options.command,
             "profile":options.profile,"log":record.with_extension("log"),"started":request["started"],
             "pid":Value::Null,"units":record.with_extension("units")}),
         )?;
@@ -285,6 +297,7 @@ impl JobStore {
             .env("NUMERA_NATIVE_SUPERVISE", &record)
             .env("NUMERA_JOB_PARENT_PID", parent_pid.to_string())
             .env("NUMERA_JOB_PARENT_TOKEN", parent_token.to_string())
+            .env(job_arguments::KEY_ENV, private.key.as_str())
             .env_remove("NUMERA_HELPER_UNITS")
             .env_remove("NUMERA_NATIVE_JOB_GATE")
             .env_remove("NUMERA_JOB_FILE")

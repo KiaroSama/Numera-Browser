@@ -122,7 +122,7 @@ pub(super) fn health(a: &App) -> String {
     o.push_str(&btn("refresh-view", "", "Refresh"));
     o.push_str("</div>");
     if !a.live() {
-        o.push_str(&hint("Start the engine (numera serve) for live trust grades, DNS/proxy status and warm-up schedules. Showing coherence and fingerprint collisions derived from the sample profiles."));
+        o.push_str(&hint("Start the engine (numera-engine serve) for live trust grades, DNS/proxy status and warm-up schedules. Showing coherence and fingerprint collisions derived from the sample profiles."));
     }
     o.push_str(r#"<table class="ps-table"><thead><tr><th>Profile</th><th>Engine</th><th>Coherence</th><th>Proxy</th><th>Trust</th><th>Warm-up</th><th>Last active</th><th>Actions</th></tr></thead><tbody>"#);
     for p in rows {

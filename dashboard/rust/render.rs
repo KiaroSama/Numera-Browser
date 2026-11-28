@@ -267,11 +267,18 @@ fn row(content: String) -> String {
 }
 pub fn app(a: &App) -> String {
     if a.mode == "startup-error" {
+        let recovery = if a.startup_reconnect {
+            format!(
+                r#"<button type="button" id="retry-startup" class="ps-btn ghost" data-action="retry-startup" {}>{}</button>"#,
+                if a.busy { "disabled" } else { "" },
+                if a.busy { "Connecting…" } else { "Try again" }
+            )
+        } else {
+            "<p>Fix the startup issue shown above, then close Numera Browser and open it again to start the engine.</p>".into()
+        };
         return format!(
-            r#"<div class="ps-root"><div class="ps-locked"><div class="ps-locked-card"><h1>The Numera engine did not start.</h1><pre class="ps-code" role="alert">{}</pre><button type="button" id="retry-startup" class="ps-btn ghost" data-action="retry-startup" {}>{}</button></div></div></div>"#,
-            escape(&a.auth_error),
-            if a.busy { "disabled" } else { "" },
-            if a.busy { "Connecting…" } else { "Try again" }
+            r#"<div class="ps-root"><div class="ps-locked"><div class="ps-locked-card"><h1>The Numera engine did not start.</h1><pre class="ps-code" role="alert">{}</pre>{recovery}</div></div></div>"#,
+            escape(&a.auth_error)
         );
     }
     if a.mode == "locked" {
@@ -445,7 +452,7 @@ pub fn app(a: &App) -> String {
 }
 fn locked(a: &App) -> String {
     format!(
-        r#"<div class="ps-root"><div class="ps-locked"><form class="ps-locked-card" data-form="unlock"><div class="ps-locked-ic">{}</div><h1>This engine needs a token</h1><p>It is running and reachable — it just will not answer without one. Create a token with <code>numera token create "dashboard"</code>, or use the value of <code>NUMERA_API_TOKEN</code>.</p>{}<div class="ps-locked-err" role="alert">{}</div>{}<div class="ps-locked-note">Stored in this browser only. It is never sent anywhere but this engine.</div></form></div></div>"#,
+        r#"<div class="ps-root"><div class="ps-locked"><form class="ps-locked-card" data-form="unlock"><div class="ps-locked-ic">{}</div><h1>This engine needs a token</h1><p>It is running and reachable — it just will not answer without one. Create a token with <code>numera-engine token create "dashboard"</code>, or use the value of <code>NUMERA_API_TOKEN</code>. In a desktop package, the CLI is in <code>engine/</code>; add <code>.exe</code> on Windows and select the same data directory as this installation.</p>{}<div class="ps-locked-err" role="alert">{}</div>{}<div class="ps-locked-note">Stored in this browser only. It is never sent anywhere but this engine.</div></form></div></div>"#,
         icon("key"),
         input(
             "form",

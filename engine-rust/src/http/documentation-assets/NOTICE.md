@@ -2,14 +2,22 @@
 
 These HTML templates are generated from FastAPI 0.142.3 through the retained
 Numera application by `scripts/migration/documentation_cases.py`. The OpenAPI
-schema is the original application's route contract, not an invented replacement
-schema. `provenance.json` records framework versions and generated asset hashes.
-The native server substitutes only the package version in `info.version`.
+schema in `openapi.json` is the original application's frozen route contract.
+`provenance.json` records framework versions and generated asset hashes; these
+historical assets and their hashes remain unchanged.
 
-The differential documentation test compares the retained application's GET,
-HEAD and POST responses and rejects generated asset drift. Refresh the assets
-with the pinned source environment when the original route contracts change.
-No Python application is invoked when the Rust server serves these assets.
+`openapi-native.json` is an authored additive contract for public routes mounted
+by the native application after that historical snapshot. The build combines
+it with the frozen contract and substitutes the current package version in
+`info.version`. It refuses to replace any historical route, parameterized route
+shape or component. Shell-private update transaction routes remain excluded.
+
+The differential test preserves the historical GET, HEAD and POST cases, exact
+asset bytes and complete historical schema projection. Native additions are
+checked exactly, and GET/HEAD retain exact content-length checks for the
+composed document. A separate served-router regression checks the known public
+native routes, their actual allowed methods, references, approval contracts and
+private-route exclusions. No Python application runs to serve these assets.
 
 The HTML templates include material from FastAPI's `fastapi/openapi/docs.py`:
 https://github.com/fastapi/fastapi/blob/0.142.3/fastapi/openapi/docs.py

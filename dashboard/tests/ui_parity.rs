@@ -13,17 +13,8 @@ fn engine_cards_show_copyable_sdk_commands_only_for_optional_engines() {
         ..App::default()
     };
     let html = render::view(&app);
-    for (engine, command) in [
-        ("cloak", "pip install cloakbrowser"),
-        (
-            "camoufox",
-            "pip install &quot;camoufox[geoip]&quot; &amp;&amp; camoufox fetch",
-        ),
-        (
-            "patchright",
-            "pip install patchright &amp;&amp; patchright install chromium",
-        ),
-    ] {
+    let command = "cargo run --manifest-path tools/xtask/Cargo.toml --locked -- provision-resources build/vendor-resources";
+    for engine in ["cloak", "camoufox", "patchright"] {
         assert!(
             html.contains(&format!("<code>{command}</code>")),
             "{engine}"
@@ -33,6 +24,8 @@ fn engine_cards_show_copyable_sdk_commands_only_for_optional_engines() {
         )));
     }
     assert!(!html.contains(r#"data-action="copy-engine-install" data-id="playwright""#));
+    assert!(!html.contains("pip install"));
+    assert!(html.contains("docs/setup.md#explicit-browser-resources"));
     assert!(html.contains("Portable packages include the matched SDK and Chromium."));
 }
 
@@ -66,16 +59,25 @@ fn failed_editor_can_close_without_losing_the_view() {
 
 #[test]
 fn startup_error_escapes_details_and_provides_retry() {
-    let app = App {
-        mode: "startup-error".into(),
-        auth_error: "<script>failure</script>".into(),
-        ..App::default()
-    };
+    let mut app = App::default();
+    app.startup_failed("<script>failure</script>", "http://127.0.0.1:8787/");
     let html = render::app(&app);
     assert!(html.contains("The Numera engine did not start."));
     assert!(html.contains("&lt;script&gt;failure&lt;/script&gt;"));
     assert!(html.contains(r#"data-action="retry-startup""#));
     assert!(!html.contains(r#"data-action="close-editor""#));
+    for embedded in [
+        "tauri://localhost/",
+        "http://tauri.localhost/",
+        "https://tauri.localhost/",
+    ] {
+        app.startup_failed("<script>failure</script>\0", embedded);
+        let html = render::app(&app);
+        assert!(html.contains("close Numera Browser and open it again"));
+        assert!(html.contains("&lt;script&gt;failure&lt;/script&gt;"));
+        assert!(!html.contains(r#"data-action="retry-startup""#));
+        assert!(!app.auth_error.contains('\0'));
+    }
 }
 
 #[test]

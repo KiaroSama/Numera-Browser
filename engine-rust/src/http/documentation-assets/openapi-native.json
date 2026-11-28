@@ -1,0 +1,1363 @@
+{
+  "paths": {
+    "/api/profiles/{id}/cookies/export": {
+      "get": {
+        "summary": "Export cookie content",
+        "description": "Return JSON or Netscape content with a suggested filename. Requires an idle profile and never writes a caller-chosen server file.",
+        "operationId": "native_cookie_export",
+        "security": [
+          {},
+          {
+            "NativeApiBearer": []
+          },
+          {
+            "NativeApiHeader": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NativeCookieExport"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/NativeError400"
+          },
+          "401": {
+            "$ref": "#/components/responses/NativeError401"
+          },
+          "404": {
+            "$ref": "#/components/responses/NativeError404"
+          },
+          "409": {
+            "$ref": "#/components/responses/NativeError409"
+          },
+          "500": {
+            "$ref": "#/components/responses/NativeError500"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/NativePortableId"
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "json",
+                "netscape"
+              ],
+              "default": "json"
+            }
+          }
+        ]
+      }
+    },
+    "/api/profiles/{id}/page/{action}": {
+      "post": {
+        "summary": "Run an owned page action",
+        "description": "Use a Playwright QA profile without a proxy, extensions or custom launch arguments. URLs must point to a loopback fixture. Action-specific required fields are described in the request schema.",
+        "operationId": "native_page_action",
+        "security": [
+          {},
+          {
+            "NativeApiBearer": []
+          },
+          {
+            "NativeApiHeader": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/NativeError400"
+          },
+          "401": {
+            "$ref": "#/components/responses/NativeError401"
+          },
+          "404": {
+            "$ref": "#/components/responses/NativeError404"
+          },
+          "409": {
+            "$ref": "#/components/responses/NativeError409"
+          },
+          "500": {
+            "$ref": "#/components/responses/NativeError500"
+          },
+          "504": {
+            "$ref": "#/components/responses/NativeError504"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NativePageParameters"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/NativePortableId"
+            }
+          },
+          {
+            "name": "action",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "navigate",
+                "click",
+                "fill",
+                "snapshot",
+                "console",
+                "network",
+                "eval",
+                "screenshot",
+                "wait"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "/api/workflows": {
+      "get": {
+        "summary": "List local workflows",
+        "description": "Return locally saved reusable QA workflows.",
+        "operationId": "native_workflow_list",
+        "security": [
+          {},
+          {
+            "NativeApiBearer": []
+          },
+          {
+            "NativeApiHeader": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "workflows"
+                  ],
+                  "properties": {
+                    "workflows": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/NativeWorkflow"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/NativeError400"
+          },
+          "401": {
+            "$ref": "#/components/responses/NativeError401"
+          },
+          "409": {
+            "$ref": "#/components/responses/NativeError409"
+          },
+          "500": {
+            "$ref": "#/components/responses/NativeError500"
+          }
+        }
+      },
+      "post": {
+        "summary": "Save a local workflow",
+        "description": "Create or replace a validated workflow. The JSON document is limited to 128 KiB and contains 1-16 steps.",
+        "operationId": "native_workflow_save",
+        "security": [
+          {},
+          {
+            "NativeApiBearer": []
+          },
+          {
+            "NativeApiHeader": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "workflow"
+                  ],
+                  "properties": {
+                    "workflow": {
+                      "$ref": "#/components/schemas/NativeWorkflow"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/NativeError400"
+          },
+          "401": {
+            "$ref": "#/components/responses/NativeError401"
+          },
+          "413": {
+            "$ref": "#/components/responses/NativeError413"
+          },
+          "422": {
+            "$ref": "#/components/responses/NativeError422"
+          },
+          "500": {
+            "$ref": "#/components/responses/NativeError500"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NativeWorkflow"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/workflows/{id}": {
+      "delete": {
+        "summary": "Delete a local workflow",
+        "description": "Remove the stored workflow identified by its lowercase portable ID.",
+        "operationId": "native_workflow_delete",
+        "security": [
+          {},
+          {
+            "NativeApiBearer": []
+          },
+          {
+            "NativeApiHeader": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/NativeError400"
+          },
+          "401": {
+            "$ref": "#/components/responses/NativeError401"
+          },
+          "404": {
+            "$ref": "#/components/responses/NativeError404"
+          },
+          "409": {
+            "$ref": "#/components/responses/NativeError409"
+          },
+          "500": {
+            "$ref": "#/components/responses/NativeError500"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/NativeWorkflowId"
+            }
+          }
+        ]
+      }
+    },
+    "/api/workflows/{id}/run": {
+      "post": {
+        "summary": "Run a local workflow",
+        "description": "Run the saved workflow on 1-4 distinct QA profiles within a shared finite budget. Return per-profile outcomes and generated artifacts.",
+        "operationId": "native_workflow_run",
+        "security": [
+          {},
+          {
+            "NativeApiBearer": []
+          },
+          {
+            "NativeApiHeader": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/NativeError400"
+          },
+          "401": {
+            "$ref": "#/components/responses/NativeError401"
+          },
+          "404": {
+            "$ref": "#/components/responses/NativeError404"
+          },
+          "409": {
+            "$ref": "#/components/responses/NativeError409"
+          },
+          "413": {
+            "$ref": "#/components/responses/NativeError413"
+          },
+          "422": {
+            "$ref": "#/components/responses/NativeError422"
+          },
+          "500": {
+            "$ref": "#/components/responses/NativeError500"
+          },
+          "504": {
+            "$ref": "#/components/responses/NativeError504"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NativeWorkflowRun"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/NativeWorkflowId"
+            }
+          }
+        ]
+      }
+    },
+    "/api/fleet/sync": {
+      "post": {
+        "summary": "Apply a fleet action",
+        "description": "Launch, stop or navigate 1-4 distinct QA profiles. Navigation requires a loopback fixture URL; launch and stop do not accept a URL.",
+        "operationId": "native_fleet_sync",
+        "security": [
+          {},
+          {
+            "NativeApiBearer": []
+          },
+          {
+            "NativeApiHeader": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/NativeError400"
+          },
+          "401": {
+            "$ref": "#/components/responses/NativeError401"
+          },
+          "404": {
+            "$ref": "#/components/responses/NativeError404"
+          },
+          "409": {
+            "$ref": "#/components/responses/NativeError409"
+          },
+          "413": {
+            "$ref": "#/components/responses/NativeError413"
+          },
+          "422": {
+            "$ref": "#/components/responses/NativeError422"
+          },
+          "500": {
+            "$ref": "#/components/responses/NativeError500"
+          },
+          "504": {
+            "$ref": "#/components/responses/NativeError504"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NativeFleetSync"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/profiles/{id}/ip-check": {
+      "get": {
+        "summary": "Check the configured profile proxy",
+        "description": "Report proxy IP and country observations plus profile timezone and WebRTC policy. A profile without a proxy performs no external IP probe.",
+        "operationId": "native_profile_ip_check",
+        "security": [
+          {},
+          {
+            "NativeApiBearer": []
+          },
+          {
+            "NativeApiHeader": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/NativeError400"
+          },
+          "401": {
+            "$ref": "#/components/responses/NativeError401"
+          },
+          "404": {
+            "$ref": "#/components/responses/NativeError404"
+          },
+          "409": {
+            "$ref": "#/components/responses/NativeError409"
+          },
+          "500": {
+            "$ref": "#/components/responses/NativeError500"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/NativePortableId"
+            }
+          }
+        ]
+      }
+    },
+    "/api/engines/cloak/acquisition": {
+      "get": {
+        "summary": "Review a Cloak acquisition offer",
+        "description": "Read local vendor metadata and return an exact offer identity. Reading the offer does not download or acquire a license.",
+        "operationId": "native_cloak_acquisition_offer",
+        "security": [
+          {},
+          {
+            "NativeApiBearer": []
+          },
+          {
+            "NativeApiHeader": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NativeCloakOffer"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NativeError401"
+          },
+          "500": {
+            "$ref": "#/components/responses/NativeError500"
+          }
+        }
+      },
+      "post": {
+        "summary": "Acquire the reviewed Cloak browser",
+        "description": "Approve the exact current offer_id. Missing consent, changed offers, active acquisition or closed update admission refuse startup.",
+        "operationId": "native_cloak_acquisition_approve",
+        "security": [
+          {},
+          {
+            "NativeApiBearer": []
+          },
+          {
+            "NativeApiHeader": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/NativeError400"
+          },
+          "401": {
+            "$ref": "#/components/responses/NativeError401"
+          },
+          "409": {
+            "$ref": "#/components/responses/NativeError409"
+          },
+          "500": {
+            "$ref": "#/components/responses/NativeError500"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NativeCloakApproval"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/updates/preferences": {
+      "get": {
+        "summary": "Read update preferences",
+        "description": "Read local automatic-update and old-version cleanup settings.",
+        "operationId": "native_update_preferences_get",
+        "security": [
+          {},
+          {
+            "NativeApiBearer": []
+          },
+          {
+            "NativeApiHeader": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NativeUpdatePreferences"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NativeError401"
+          },
+          "409": {
+            "$ref": "#/components/responses/NativeError409"
+          }
+        }
+      },
+      "put": {
+        "summary": "Replace update preferences",
+        "description": "Replace all update preferences; omitted fields use their documented defaults. Enabling either automatic-update setting requires approval from the local desktop.",
+        "operationId": "native_update_preferences_put",
+        "security": [
+          {},
+          {
+            "NativeApiBearer": []
+          },
+          {
+            "NativeApiHeader": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NativeUpdatePreferences"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/NativeError400"
+          },
+          "401": {
+            "$ref": "#/components/responses/NativeError401"
+          },
+          "403": {
+            "$ref": "#/components/responses/NativeError403"
+          },
+          "409": {
+            "$ref": "#/components/responses/NativeError409"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NativeUpdatePreferences"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "x-numera-update-approval",
+            "in": "header",
+            "required": false,
+            "description": "Local desktop approval to enable automatic-update policy. No checked release offer is required; disabling automatic updates does not require this header.",
+            "schema": {
+              "type": "string",
+              "minLength": 64,
+              "maxLength": 64,
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        ]
+      }
+    },
+    "/api/updates/check": {
+      "get": {
+        "summary": "Check signed updates",
+        "description": "Ask the local desktop for signed update availability. Retain the returned offerId with the review; availability may change before approval. Without the desktop bridge, the response reports unavailable.",
+        "operationId": "native_update_check",
+        "security": [
+          {},
+          {
+            "NativeApiBearer": []
+          },
+          {
+            "NativeApiHeader": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NativeUpdateStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/NativeError400"
+          },
+          "401": {
+            "$ref": "#/components/responses/NativeError401"
+          },
+          "502": {
+            "$ref": "#/components/responses/NativeError502"
+          },
+          "503": {
+            "$ref": "#/components/responses/NativeError503"
+          }
+        },
+        "parameters": [
+          {
+            "name": "channel",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "app",
+                "browsers",
+                "all"
+              ],
+              "default": "all"
+            }
+          }
+        ]
+      }
+    },
+    "/api/updates/apply": {
+      "post": {
+        "summary": "Apply the reviewed signed update",
+        "description": "Queue only the exact reviewed offerId with local desktop approval. A later check cannot substitute another offer. Stale offers and unsupported channel combinations return conflict.",
+        "operationId": "native_update_apply",
+        "security": [
+          {},
+          {
+            "NativeApiBearer": []
+          },
+          {
+            "NativeApiHeader": []
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/NativeError400"
+          },
+          "401": {
+            "$ref": "#/components/responses/NativeError401"
+          },
+          "403": {
+            "$ref": "#/components/responses/NativeError403"
+          },
+          "409": {
+            "$ref": "#/components/responses/NativeError409"
+          },
+          "502": {
+            "$ref": "#/components/responses/NativeError502"
+          },
+          "503": {
+            "$ref": "#/components/responses/NativeError503"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NativeUpdateApply"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "x-numera-update-approval",
+            "in": "header",
+            "required": true,
+            "description": "Approval supplied by the local desktop after the exact offer is reviewed. An ordinary API token does not grant this approval.",
+            "schema": {
+              "type": "string",
+              "minLength": 64,
+              "maxLength": 64,
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        ]
+      }
+    },
+    "/api/mcp": {
+      "post": {
+        "summary": "Call the HTTP MCP transport",
+        "description": "Send one JSON-RPC request for initialization, tool discovery or an allowed inline tool call. Bearer authentication is mandatory even when other API routes are unprotected; the alternate token header is not accepted. HTTP exposes 22 approved tools, refuses detached execution, and cookie export returns content without writing server files.",
+        "operationId": "native_mcp_http",
+        "security": [
+          {
+            "NativeApiBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/NativeError400"
+          },
+          "401": {
+            "$ref": "#/components/responses/NativeError401"
+          },
+          "413": {
+            "$ref": "#/components/responses/NativeError413"
+          },
+          "415": {
+            "$ref": "#/components/responses/NativeError415"
+          },
+          "500": {
+            "$ref": "#/components/responses/NativeError500"
+          },
+          "204": {
+            "description": "No response: the method is unrecognized and id is missing or null"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NativeJsonRpcRequest"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "NativePortableId": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 64,
+        "pattern": "^[A-Za-z0-9_-]+$",
+        "description": "Portable profile or workflow identifier. Windows reserved device names are refused."
+      },
+      "NativeWorkflowId": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/NativePortableId"
+          },
+          {
+            "pattern": "^[a-z0-9_-]+$"
+          }
+        ],
+        "description": "Workflow identifiers use lowercase portable slugs."
+      },
+      "NativeCloakApproval": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "offer_id",
+          "approve"
+        ],
+        "properties": {
+          "offer_id": {
+            "type": "string",
+            "minLength": 64,
+            "maxLength": 64,
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "approve": {
+            "type": "boolean",
+            "const": true
+          }
+        }
+      },
+      "NativeCloakOffer": {
+        "type": "object",
+        "required": [
+          "engine",
+          "available",
+          "installed",
+          "offer_id",
+          "reason"
+        ],
+        "properties": {
+          "engine": {
+            "const": "cloak"
+          },
+          "available": {
+            "type": "boolean"
+          },
+          "installed": {
+            "type": "boolean"
+          },
+          "offer_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 64,
+            "maxLength": 64,
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sdk": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "platform": {
+            "type": "string"
+          },
+          "provider": {
+            "type": "string"
+          },
+          "keyed": {
+            "type": "boolean"
+          },
+          "notice": {
+            "type": "string"
+          }
+        }
+      },
+      "NativeUpdatePreferences": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "app_auto_update": {
+            "type": "boolean",
+            "default": false
+          },
+          "browser_core_auto_update": {
+            "type": "boolean",
+            "default": false
+          },
+          "clean_old_versions_on_update": {
+            "type": "boolean",
+            "default": true
+          }
+        }
+      },
+      "NativeUpdateApply": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "offerId"
+        ],
+        "properties": {
+          "channel": {
+            "type": "string",
+            "enum": [
+              "app",
+              "browsers",
+              "all"
+            ],
+            "default": "all"
+          },
+          "clean_old": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Use the saved cleanup preference when omitted or null."
+          },
+          "offerId": {
+            "type": "string",
+            "minLength": 64,
+            "maxLength": 64,
+            "pattern": "^[0-9a-f]{64}$",
+            "description": "The exact offerId from the update check the user reviewed. A replaced or stale offer is refused."
+          }
+        }
+      },
+      "NativeUpdateStatus": {
+        "type": "object",
+        "required": [
+          "channel",
+          "state",
+          "message",
+          "app",
+          "browsers"
+        ],
+        "properties": {
+          "channel": {
+            "type": "string",
+            "enum": [
+              "app",
+              "browsers",
+              "all"
+            ],
+            "default": "all"
+          },
+          "state": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "offerId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 64,
+            "maxLength": 64,
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "requiresCombined": {
+            "type": "boolean"
+          },
+          "app": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "browsers": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        }
+      },
+      "NativeCookieExport": {
+        "type": "object",
+        "required": [
+          "profile_id",
+          "format",
+          "count",
+          "filename",
+          "content"
+        ],
+        "properties": {
+          "profile_id": {
+            "$ref": "#/components/schemas/NativePortableId"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "json",
+              "netscape"
+            ]
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "filename": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          }
+        }
+      },
+      "NativePageParameters": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Loopback HTTP(S) fixture URL; required for navigate."
+          },
+          "timeout_ms": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 10000,
+            "default": 3000
+          },
+          "selector": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Nonblank selector up to 16384 UTF-8 bytes; required for click and fill."
+          },
+          "value": {
+            "type": "string",
+            "description": "Fill text up to 16384 UTF-8 bytes; may be empty."
+          },
+          "expression": {
+            "type": "string",
+            "description": "Nonblank expression up to 16384 UTF-8 bytes; required for eval."
+          },
+          "ms": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10000,
+            "description": "For wait, supply selector or ms, not both; ms cannot exceed timeout_ms."
+          }
+        }
+      },
+      "NativeWorkflowStep": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "action"
+        ],
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "navigate",
+              "click",
+              "fill",
+              "wait_ms",
+              "wait-ms",
+              "wait_selector",
+              "wait-selector",
+              "snapshot",
+              "screenshot"
+            ]
+          },
+          "target": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Loopback URL for navigate or selector for click, fill and wait_selector."
+          },
+          "value": {
+            "description": "Text for fill, or 1-3000 milliseconds as an integer or decimal string for wait_ms."
+          }
+        }
+      },
+      "NativeWorkflow": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "steps"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/NativeWorkflowId"
+          },
+          "name": {
+            "type": "string",
+            "description": "Nonblank name, at most 128 UTF-8 bytes."
+          },
+          "steps": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 16,
+            "items": {
+              "$ref": "#/components/schemas/NativeWorkflowStep"
+            },
+            "prefixItems": [
+              {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/NativeWorkflowStep"
+                  },
+                  {
+                    "properties": {
+                      "action": {
+                        "const": "navigate"
+                      }
+                    }
+                  }
+                ]
+              }
+            ],
+            "description": "The first step navigates to a loopback fixture. Eval and cookie export remain explicit profile operations."
+          }
+        }
+      },
+      "NativeWorkflowRun": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "profile_ids"
+        ],
+        "properties": {
+          "profile_ids": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NativePortableId"
+            },
+            "minItems": 1,
+            "maxItems": 4,
+            "uniqueItems": true
+          }
+        }
+      },
+      "NativeFleetSync": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "profile_ids",
+          "action"
+        ],
+        "properties": {
+          "profile_ids": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NativePortableId"
+            },
+            "minItems": 1,
+            "maxItems": 4,
+            "uniqueItems": true
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "launch",
+              "stop",
+              "navigate"
+            ]
+          },
+          "url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Required loopback fixture URL for navigate; absent or null for launch and stop."
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "action": {
+                  "const": "navigate"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "url"
+              ],
+              "properties": {
+                "url": {
+                  "type": "string"
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "url": {
+                  "type": "null"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "NativeJsonRpcRequest": {
+        "type": "object",
+        "required": [
+          "method"
+        ],
+        "properties": {
+          "jsonrpc": {
+            "type": "string",
+            "const": "2.0"
+          },
+          "id": {
+            "type": [
+              "string",
+              "integer",
+              "null"
+            ]
+          },
+          "method": {
+            "type": "string"
+          },
+          "params": {
+            "type": "object"
+          }
+        },
+        "description": "One JSON-RPC message, at most 1 MiB. Batch arrays are refused. Unrecognized methods, including notification method names, return no response body when id is missing or null. Supported request methods may return id:null when id is omitted."
+      }
+    },
+    "responses": {
+      "NativeError400": {
+        "description": "Invalid input or malformed request"
+      },
+      "NativeError401": {
+        "description": "Missing or invalid configured API credential"
+      },
+      "NativeError403": {
+        "description": "Local desktop approval is required"
+      },
+      "NativeError404": {
+        "description": "The selected profile or workflow was not found"
+      },
+      "NativeError409": {
+        "description": "The reviewed offer changed, the resource is busy, or safe admission was refused"
+      },
+      "NativeError413": {
+        "description": "Request or result exceeds its transport size limit"
+      },
+      "NativeError415": {
+        "description": "JSON content type is required"
+      },
+      "NativeError422": {
+        "description": "Request fields do not match the required JSON shape"
+      },
+      "NativeError500": {
+        "description": "The operation could not complete"
+      },
+      "NativeError502": {
+        "description": "The local desktop returned an invalid response"
+      },
+      "NativeError503": {
+        "description": "The local desktop update bridge is unavailable"
+      },
+      "NativeError504": {
+        "description": "The finite operation exceeded its time budget"
+      }
+    },
+    "securitySchemes": {
+      "NativeApiBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Configured environment token or a valid named API token."
+      },
+      "NativeApiHeader": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Numera-Token",
+        "description": "Alternate API token header; not accepted by HTTP MCP."
+      }
+    }
+  }
+}

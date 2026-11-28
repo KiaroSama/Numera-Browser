@@ -67,6 +67,7 @@ fn settings_distinguish_app_and_browser_updates_without_a_precheck_apply() {
         "Automatically update the app",
         "Automatically update browser cores",
         "Clean old versions after updating",
+        "Automatic browser updates apply as part of automatic app updates",
         "MCP bridge",
     ] {
         assert!(html.contains(label), "Missing settings control: {label}");
@@ -81,4 +82,28 @@ fn reduced_motion_never_shows_the_silver_canvas() {
         .split_once("@media (prefers-reduced-motion: reduce)")
         .expect("Reduced-motion rules");
     assert!(reduced.contains(".ps-theme-sweep { display: none; }"));
+}
+
+#[test]
+fn bundled_browser_changes_direct_review_to_the_complete_signed_generation() {
+    let mut app = App {
+        view: "settings".into(),
+        mode: "live".into(),
+        ..App::default()
+    };
+    app.update_bridge = Some(numera_dashboard::updates::Bridge {
+        endpoint: "http://127.0.0.1:19999".into(),
+        token: "a".repeat(64),
+    });
+    app.mcp_bridge_command = Some("numera-engine mcp --bridge http://127.0.0.1:8787".into());
+    app.release_preferences = json!({"app_auto_update":false,"browser_core_auto_update":false,"clean_old_versions_on_update":true});
+    app.release_status = json!({"channel":"app","offerId":"1".repeat(64),"requiresCombined":true,
+        "app":{"current":"0.37.0","latest":"0.38.0","verified":true,"update_available":true}});
+    let html = render::view(&app);
+    assert!(html.contains("also changes browser resources"));
+    assert!(!html.contains("data-action=\"release-apply\""));
+    app.release_status = json!({"channel":"browsers","offerId":"1".repeat(64),"browsers":[{"id":"chromium","current":"158","latest":"159","update_available":true}]});
+    let html = render::view(&app);
+    assert!(html.contains("complete signed app generation"));
+    assert!(!html.contains("data-action=\"release-apply\""));
 }

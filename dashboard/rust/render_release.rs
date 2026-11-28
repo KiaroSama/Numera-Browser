@@ -103,6 +103,25 @@ pub(super) fn update_controls(a: &App) -> String {
                 out.push_str(&version_status(label, &core));
             }
         }
+        let combined = channel == "app" && a.release_status["requiresCombined"] == true
+            || channel == "browsers"
+                && list(&a.release_status["browsers"])
+                    .iter()
+                    .any(|core| core["update_available"] == true);
+        if combined {
+            out.push_str(&hint(if channel == "app" {
+                "This signed app generation also changes browser resources. Check App + Browsers to review and approve both."
+            } else {
+                "Browser updates are delivered with a complete signed app generation. Check App + Browsers to review the compatible update."
+            }));
+            out.push_str(&button(
+                "release-check",
+                "all",
+                "Check App + Browsers",
+                "ps-btn ghost sm",
+                a.busy || !a.live(),
+            ));
+        }
         if a.live() && can_apply(&a.release_status, channel) {
             let label = match channel {
                 "all" => "Review App + Browsers update",
@@ -136,6 +155,7 @@ pub(super) fn update_controls(a: &App) -> String {
         out.push_str(&hint("Loading update preferences…"));
     }
     out.push_str(r#"<div class="ps-release-preferences">"#);
+    out.push_str(&hint("Automatic browser updates apply as part of automatic app updates. Enable both to install signed generations that change bundled browser resources."));
     let desktop = a.update_bridge.is_some() && a.mcp_bridge_command.is_some();
     if a.live() && !desktop {
         out.push_str(&hint("Open the desktop app to enable automatic updates."));

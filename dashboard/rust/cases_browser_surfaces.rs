@@ -400,7 +400,7 @@ mod native_export_round_trip {
         click("[data-action=export-profiles]").await;
         assert!(!h.blobs.borrow().is_empty());
         assert!(visible().contains("cookies and logins — are not included"));
-        assert!(visible().contains("numera backup"));
+        assert!(visible().contains("numera-engine backup"));
     });
     case!(withheld_vault_password_is_named, {
         let mut e = Engine::default();
