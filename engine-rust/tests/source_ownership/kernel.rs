@@ -820,63 +820,6 @@ source_test!(
         Ok(())
     }
 );
-
-#[test]
-fn detached_arguments_preserve_execution_without_inheriting_the_handoff_key() -> TestResult {
-    let temporary = temp("detached-private-arguments")?;
-    let store = numera_core::jobs::JobStore::new(temporary.path().into());
-    let observation = temporary.path().join("child-environment.json");
-    let executable = fixture()?;
-    let argv = vec![
-        "job-environment".into(),
-        observation.to_string_lossy().into_owned(),
-        "--pass".into(),
-        "synthetic-private-child-argument".into(),
-    ];
-    let record = store.spawn_detached(numera_core::jobs::SpawnOptions {
-        executable: &executable,
-        argv: &argv,
-        command: "fixture",
-        profile: None,
-        password: None,
-    })?;
-    let id = record["id"].as_str().ok_or("Detached job ID missing")?;
-    let owner = Detached {
-        root: temporary.path().into(),
-        id: id.into(),
-    };
-    let deadline = Instant::now() + Duration::from_secs(10);
-    loop {
-        let outcome = store.get(id, now())?.ok_or("Detached job disappeared")?;
-        if outcome["running"] == false {
-            assert_eq!(outcome["exit"], 0);
-            break;
-        }
-        if Instant::now() >= deadline {
-            return Err("Detached argument fixture exceeded its deadline".into());
-        }
-        thread::sleep(Duration::from_millis(10));
-    }
-    let observed: Value = serde_json::from_slice(&fs::read(&observation)?)?;
-    assert_eq!(observed["argument_key"], false);
-    assert_eq!(observed["arguments_preserved"], true);
-    for entry in fs::read_dir(temporary.path().join("jobs"))? {
-        let path = entry?.path();
-        if path.is_file() {
-            let bytes = fs::read(path)?;
-            assert!(
-                !bytes
-                    .windows("synthetic-private-child-argument".len())
-                    .any(|window| { window == b"synthetic-private-child-argument" }),
-                "A private child argument entered a public job artifact"
-            );
-        }
-    }
-    drop(owner);
-    temporary.cleanup()?;
-    Ok(())
-}
-
 source_test!(
     owned_tree_a_child_that_exits_before_it_can_be_named_records_its_outcome,
     "tests/test_owned_tree.py::test_a_child_that_exits_before_it_can_be_named_records_its_outcome",

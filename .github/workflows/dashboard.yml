@@ -47,7 +47,11 @@ jobs:
       - name: Require all 71 native dashboard source cases
         run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci counted-tests 71 build/dashboard-native.log -- cargo test --manifest-path dashboard/Cargo.toml --locked --test regression -- --test-threads=2 --color=never
       - name: Require all 19 supplemental native dashboard cases
-        run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci counted-tests 19 build/dashboard-native-supplemental.log -- cargo test --manifest-path dashboard/Cargo.toml --locked --lib --test api_contract_regressions --test release_dashboard --test ui_parity -- --test-threads=2 --color=never
+        run: |
+          cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci counted-tests 5 build/dashboard-native-library.log -- cargo test --manifest-path dashboard/Cargo.toml --locked --lib -- --test-threads=2 --color=never
+          cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci counted-tests 2 build/dashboard-native-api.log -- cargo test --manifest-path dashboard/Cargo.toml --locked --test api_contract_regressions -- --test-threads=2 --color=never
+          cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci counted-tests 6 build/dashboard-native-release.log -- cargo test --manifest-path dashboard/Cargo.toml --locked --test release_dashboard -- --test-threads=2 --color=never
+          cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci counted-tests 6 build/dashboard-native-parity.log -- cargo test --manifest-path dashboard/Cargo.toml --locked --test ui_parity -- --test-threads=2 --color=never
       - name: Select the hosted native WebDriver
         run: |
           set -euo pipefail

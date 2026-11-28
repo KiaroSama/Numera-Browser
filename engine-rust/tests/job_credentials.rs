@@ -19,6 +19,9 @@ use std::{
     time::{Duration, Instant},
 };
 mod common;
+#[cfg(feature = "test-support")]
+#[path = "common/ownership_fixture.rs"]
+mod ownership_fixture;
 
 const OLD: &str = "synthetic-detached-old-master";
 const NEW: &str = "synthetic-detached-new-master";
@@ -167,4 +170,73 @@ fn detached_request_without_ephemeral_key_refuses_before_child_spawn()
 fn detached_request_with_tampered_arguments_refuses_before_child_spawn()
 -> Result<(), Box<dyn std::error::Error>> {
     rejected_handoff(Some("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="))
+}
+
+#[cfg(feature = "test-support")]
+#[test]
+fn detached_arguments_preserve_execution_without_inheriting_the_handoff_key()
+-> Result<(), Box<dyn std::error::Error>> {
+    let temporary = common::TempDirectory::new("detached-private-arguments")?;
+    let store = numera_core::jobs::JobStore::new(temporary.path().into());
+    let observation = temporary.path().join("child-environment.json");
+    let executable = ownership_fixture::binary()?;
+    let argv = vec![
+        "job-environment".into(),
+        observation.to_string_lossy().into_owned(),
+        "--pass".into(),
+        "synthetic-private-child-argument".into(),
+    ];
+    let record = store.spawn_detached(numera_core::jobs::SpawnOptions {
+        executable: &executable,
+        argv: &argv,
+        command: "fixture",
+        profile: None,
+        password: None,
+    })?;
+    let id = record["id"].as_str().ok_or("Detached job ID missing")?;
+    struct Detached<'a> {
+        store: &'a JobStore,
+        id: String,
+    }
+    impl Drop for Detached<'_> {
+        fn drop(&mut self) {
+            if let Ok(timestamp) = now() {
+                let _ = self.store.stop(&self.id, "fixture-host", timestamp);
+            }
+        }
+    }
+    let owner = Detached {
+        store: &store,
+        id: id.into(),
+    };
+    let deadline = Instant::now() + Duration::from_secs(10);
+    loop {
+        let outcome = store.get(id, now()?)?.ok_or("Detached job disappeared")?;
+        if outcome["running"] == false {
+            assert_eq!(outcome["exit"], 0);
+            break;
+        }
+        if Instant::now() >= deadline {
+            return Err("Detached argument fixture exceeded its deadline".into());
+        }
+        thread::sleep(Duration::from_millis(10));
+    }
+    let observed: Value = serde_json::from_slice(&fs::read(&observation)?)?;
+    assert_eq!(observed["argument_key"], false);
+    assert_eq!(observed["arguments_preserved"], true);
+    for entry in fs::read_dir(temporary.path().join("jobs"))? {
+        let path = entry?.path();
+        if path.is_file() {
+            let bytes = fs::read(path)?;
+            assert!(
+                !bytes
+                    .windows("synthetic-private-child-argument".len())
+                    .any(|window| { window == b"synthetic-private-child-argument" }),
+                "A private child argument entered a public job artifact"
+            );
+        }
+    }
+    drop(owner);
+    temporary.cleanup()?;
+    Ok(())
 }
