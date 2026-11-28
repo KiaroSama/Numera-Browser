@@ -1,4 +1,4 @@
-//! Source-generated documentation contracts, served without a Python application.
+//! Historical contracts plus additive native routes, served without Python.
 use axum::{Router, http::header, response::Html, routing::get};
 
 pub fn routes() -> Router {

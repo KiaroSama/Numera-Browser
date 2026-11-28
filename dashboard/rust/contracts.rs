@@ -126,7 +126,7 @@ fn check(v: &Value, kind: &str) -> Result<(), String> {
         }
         "proxy" => fields(
             v,
-            "id?:text type:text host:text port:port user?:~text pass?:~text country?:~text label?:~text rotateUrl?:~text archived?:bool profiles?:number status?:text lastCheck?:proxyCheck",
+            "id?:text type:text host:text port:port user?:~text pass?:~text country?:~text label?:~text rotateUrl?:~text archived?:bool profiles?:number status?:text lastCheck?:~proxyCheck",
         ),
         "proxyCheck" => fields(v, "ip?:text country?:~text latencyMs?:number error?:text"),
         "profile" => {

@@ -344,7 +344,7 @@ impl Pool<'_> {
         mut event: impl FnMut(&Value, Option<&str>) -> Result<(), RepoError>,
     ) -> Result<Outcome, RepoError> {
         let ids = strings(args, "proxy_id");
-        let rows = if ids.is_empty() {
+        let mut rows = if ids.is_empty() {
             self.store.list()?
         } else {
             ids.iter()
@@ -354,8 +354,16 @@ impl Pool<'_> {
                 .flatten()
                 .collect()
         };
+        let had_proxies = !rows.is_empty();
+        if ids.is_empty() {
+            rows.retain(|row| !truth(&row["archived"]));
+        }
         if rows.is_empty() {
-            return Ok(Outcome::failed("the proxy pool is empty"));
+            return Ok(Outcome::failed(if had_proxies {
+                "every proxy in the pool is archived"
+            } else {
+                "the proxy pool is empty"
+            }));
         }
         if let Some(refusal) = self.locked(&rows)? {
             return Ok(refusal);

@@ -42,18 +42,10 @@ pub fn start() -> Result<(), JsValue> {
     }));
     RUNTIME.with(|global| *global.borrow_mut() = Some(r));
     let startup_error = Closure::wrap(Box::new(move |message: JsValue| {
-        let message = message
-            .as_string()
-            .unwrap_or_default()
-            .chars()
-            .filter(|c| *c == '\n' || *c == '\t' || !c.is_control())
-            .take(16384)
-            .collect::<String>();
+        let message = message.as_string().unwrap_or_default();
+        let location = window().location().href().unwrap_or_default();
         if alive() {
-            change(|a| {
-                a.mode = "startup-error".into();
-                a.auth_error = message;
-            });
+            change(|a| a.startup_failed(&message, &location));
             draw();
         }
     }) as Box<dyn FnMut(JsValue)>);
@@ -440,7 +432,7 @@ fn trap_focus(key: &KeyboardEvent) {
 pub(super) async fn connect(retry: bool) {
     if retry {
         let a = snapshot();
-        if a.mode != "startup-error" || a.busy {
+        if a.mode != "startup-error" || !a.startup_reconnect || a.busy {
             return;
         }
         change(|a| a.busy = true);

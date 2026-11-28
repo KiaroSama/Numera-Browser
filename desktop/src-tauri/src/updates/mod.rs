@@ -172,6 +172,19 @@ impl Service {
         self: &Arc<Self>,
         action: impl FnOnce(Arc<Self>) -> io::Result<()> + Send + 'static,
     ) -> io::Result<()> {
+        self.start_operation(false, action)
+    }
+    fn start_check(
+        self: &Arc<Self>,
+        action: impl FnOnce(Arc<Self>) -> io::Result<()> + Send + 'static,
+    ) -> io::Result<()> {
+        self.start_operation(true, action)
+    }
+    fn start_operation(
+        self: &Arc<Self>,
+        checking: bool,
+        action: impl FnOnce(Arc<Self>) -> io::Result<()> + Send + 'static,
+    ) -> io::Result<()> {
         let mut owner = self
             .operation
             .lock()
@@ -188,8 +201,20 @@ impl Service {
                 .map_err(|_| io::Error::other("Update operation failed"))?;
         }
         self.cancelled.store(false, Ordering::Release);
+        if checking {
+            let mut state = self
+                .state
+                .lock()
+                .map_err(|_| io::Error::other("Update state poisoned"))?;
+            state.status.state = "checking".into();
+            state.status.message = "Checking signed release generations.".into();
+            state.status.can_cancel = true;
+            state.status.offer = None;
+            state.offer = None;
+            self.log.event("INFO", "State changed state=checking");
+        }
         let service = self.clone();
-        *owner = Some(thread::spawn(move || {
+        let spawned = thread::Builder::new().name("numera-updates".into()).spawn(move || {
             if let Err(error) = action(service.clone()) {
                 service.log.event(
                     "ERROR",
@@ -197,14 +222,24 @@ impl Service {
                 );
                 service.set(if error.kind()==io::ErrorKind::ConnectionAborted{"cancelled"}else{"error"},if error.kind()==io::ErrorKind::ConnectionAborted{"Update cancelled; the current installation is unchanged."}else{"Update could not complete safely. The current generation or its recovery journal is retained."});
             }
-        }));
+        });
+        match spawned {
+            Ok(worker) => *owner = Some(worker),
+            Err(error) => {
+                self.set(
+                    "error",
+                    "The update worker could not start. The current installation is unchanged.",
+                );
+                return Err(error);
+            }
+        }
         Ok(())
     }
     pub fn check(self: &Arc<Self>) -> io::Result<()> {
         if !self.status().current.portable {
             return Ok(());
         }
-        self.start(|service| service.check_now())
+        self.start_check(|service| service.check_now())
     }
     pub fn download(self: &Arc<Self>, offer_id: &str, approve: bool) -> io::Result<()> {
         if !approve {

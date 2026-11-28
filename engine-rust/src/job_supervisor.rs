@@ -1,6 +1,7 @@
 //! Detached command ownership stays in a supervisor, never in an exited CLI.
 pub use crate::job_spawn::{SpawnFailure, SpawnOptions, retry_retained};
 use crate::{
+    job_arguments,
     jobs::{JobStore, child_argv},
     native_entry::now,
     ownership::{identity, recorded_tree, tree::OwnedTree},
@@ -29,18 +30,19 @@ fn unsupported() -> io::Error {
 }
 
 pub(crate) fn read(path: &Path) -> io::Result<Value> {
+    read_limited(path, MAX_REQUEST)
+}
+fn read_limited(path: &Path, limit: u64) -> io::Result<Value> {
     let mut file = fs::File::open(path)?;
-    if file.metadata()?.len() > MAX_REQUEST {
+    if file.metadata()?.len() > limit {
         return Err(io::Error::new(
             io::ErrorKind::InvalidData,
             "Job request exceeds its size limit",
         ));
     }
     let mut bytes = Vec::new();
-    file.by_ref()
-        .take(MAX_REQUEST + 1)
-        .read_to_end(&mut bytes)?;
-    if bytes.len() as u64 > MAX_REQUEST {
+    file.by_ref().take(limit + 1).read_to_end(&mut bytes)?;
+    if bytes.len() as u64 > limit {
         return Err(io::Error::new(
             io::ErrorKind::InvalidData,
             "Job request exceeds its size limit",
@@ -174,7 +176,7 @@ pub fn run_internal(path: &Path) -> io::Result<i32> {
         crate::ownership::update_admission::Reservation::begin(&store.root, "native-job")?;
     let log = RuntimeLog::new(&store.root.join("logs"), "native-job-supervisor");
     log.event("INFO", "supervisor", "Startup requested");
-    let request = read(&record.with_extension("launch"))?;
+    let request = read_limited(&record.with_extension("launch"), job_arguments::MAX_LAUNCH)?;
     if request["id"] != id || Path::new(request["root"].as_str().unwrap_or("")) != store.root {
         return Err(io::Error::new(
             io::ErrorKind::PermissionDenied,
@@ -192,17 +194,16 @@ pub fn run_internal(path: &Path) -> io::Result<i32> {
             "Supervisor executable does not match the native entrypoint",
         ));
     }
-    let argv = request["argv"]
-        .as_array()
-        .ok_or_else(|| io::Error::other("Job arguments missing"))?
-        .iter()
-        .map(|value| {
-            value
-                .as_str()
-                .map(String::from)
-                .ok_or_else(|| io::Error::other("Job argument is not text"))
-        })
-        .collect::<io::Result<Vec<_>>>()?;
+    let argument_key = std::env::var(job_arguments::KEY_ENV)
+        .ok()
+        .map(zeroize::Zeroizing::new);
+    let argv = job_arguments::open(
+        &request,
+        &id,
+        &store.root,
+        argument_key.as_deref().map(String::as_str),
+    )?;
+    drop(argument_key);
     if child_argv(&argv, &store.root) != argv {
         return Err(io::Error::new(
             io::ErrorKind::InvalidInput,
@@ -252,6 +253,7 @@ pub fn run_internal(path: &Path) -> io::Result<i32> {
         .args(&argv)
         .env_remove("NUMERA_NATIVE_SUPERVISE")
         .env_remove("NUMERA_JOB_FILE")
+        .env_remove(job_arguments::KEY_ENV)
         .stdin(Stdio::null())
         .stderr(Stdio::from(output.try_clone()?))
         .stdout(Stdio::from(output));
@@ -279,7 +281,7 @@ pub fn run_internal(path: &Path) -> io::Result<i32> {
         let supervisor_pid = std::process::id();
         let supervisor_token = identity::started_at(supervisor_pid)?
             .ok_or_else(|| io::Error::other("Supervisor birth identity missing"))?;
-        let identity = json!({"id":id,"argv":argv,"command":request["command"],"profile":request["profile"],
+        let identity = json!({"id":id,"argv":request["argv"],"command":request["command"],"profile":request["profile"],
         "pid":actual["pid"],"pidToken":actual["token"],"tree":actual["tree"],"verified":true,
         "log":record.with_extension("log"),"started":request["started"],"units":units,
         "supervisorPid":supervisor_pid,"supervisorToken":supervisor_token});

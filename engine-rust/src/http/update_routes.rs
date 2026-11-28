@@ -144,6 +144,8 @@ struct Apply {
     #[serde(default)]
     channel: Channel,
     clean_old: Option<bool>,
+    #[serde(rename = "offerId")]
+    offer_id: String,
 }
 struct Desktop {
     token: String,
@@ -325,6 +327,17 @@ async fn apply(
         Ok(value) => value,
         Err(error) => return *error,
     };
+    if request.offer_id.len() != 64
+        || !request
+            .offer_id
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+    {
+        return detail(
+            StatusCode::BAD_REQUEST,
+            "A valid reviewed update offer is required",
+        );
+    }
     let clean_old = if let Some(clean_old) = request.clean_old {
         clean_old
     } else {
@@ -338,7 +351,7 @@ async fn apply(
             }
         }
     };
-    let body = json!({"channel":request.channel,"clean_old":clean_old,"approval":approve});
+    let body = json!({"channel":request.channel,"clean_old":clean_old,"offerId":request.offer_id,"approval":approve});
     match desktop.call("apply", &body).await {
         Ok((status, value)) => (status, Json(value)).into_response(),
         Err(status) => (
@@ -434,6 +447,10 @@ async fn resume(State(state): State<Arc<Updates>>, request: Request) -> Response
         Err(_) => failed(io::Error::other("Update worker failed")),
     }
 }
+
+#[cfg(test)]
+#[path = "update_offer_tests.rs"]
+mod offer_tests;
 
 #[cfg(test)]
 mod tests {

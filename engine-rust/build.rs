@@ -1,5 +1,8 @@
 //! Embed the same product/source identity in Windows version resources as in
 //! the native --build-info receipt. No signing key or certificate is read here.
+#[path = "build_support/openapi.rs"]
+mod openapi;
+
 fn main() {
     println!("cargo:rerun-if-env-changed=GITHUB_SHA");
     println!("cargo:rerun-if-env-changed=GITHUB_RUN_ID");
@@ -12,9 +15,17 @@ fn openapi_schema() {
     use std::{env, fs, path::PathBuf};
 
     println!("cargo:rerun-if-changed=src/http/documentation-assets/openapi.json");
-    let mut schema: serde_json::Value =
+    println!("cargo:rerun-if-changed=src/http/documentation-assets/openapi-native.json");
+    println!("cargo:rerun-if-changed=build_support/openapi.rs");
+    let schema: serde_json::Value =
         serde_json::from_str(include_str!("src/http/documentation-assets/openapi.json"))
             .expect("Embedded HTTP documentation schema is invalid");
+    let additions: serde_json::Value = serde_json::from_str(include_str!(
+        "src/http/documentation-assets/openapi-native.json"
+    ))
+    .expect("Native HTTP documentation additions are invalid");
+    let mut schema = openapi::extend(schema, &additions)
+        .expect("Native HTTP documentation must preserve the historical contract");
     schema["info"]["version"] = env!("CARGO_PKG_VERSION").into();
     let path = PathBuf::from(env::var_os("OUT_DIR").expect("Cargo output directory missing"));
     let schema =

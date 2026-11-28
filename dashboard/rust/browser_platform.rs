@@ -43,6 +43,21 @@ pub(super) fn download(name: &str, text: &str, mime: &str) -> Result<(), ApiErro
     web_sys::Url::revoke_object_url(&url).map_err(network)
 }
 pub(super) fn pick_file(kind: &str, accept: &str) -> Result<(), ApiError> {
+    let cookie_target = if kind == "cookies" {
+        let a = snapshot();
+        let profile = a
+            .editor
+            .as_ref()
+            .filter(|ed| a.live() && ed.draft["_new"] != true)
+            .ok_or_else(|| {
+                fail("Save this profile and connect the engine before importing cookies.")
+            })?;
+        let path = crate::release_controls::profile_path(s(&profile.draft, "id"), "/cookies")
+            .ok_or_else(|| fail("Invalid profile ID."))?;
+        Some((path, a.form["replaceCookies"] == true))
+    } else {
+        None
+    };
     let input = document()
         .create_element("input")
         .map_err(network)?
@@ -63,6 +78,7 @@ pub(super) fn pick_file(kind: &str, accept: &str) -> Result<(), ApiError> {
         selected.remove();
         if let Some(file) = selected.files().and_then(|files| files.get(0)) {
             let kind = kind.clone();
+            let cookie_target = cookie_target.clone();
             spawn_local(async move {
                 if kind == "cookies" {
                     change(|a| a.busy = true);
@@ -84,14 +100,11 @@ pub(super) fn pick_file(kind: &str, accept: &str) -> Result<(), ApiError> {
                         }
                         "proxies" => change(|a| a.form["text"] = json!(text)),
                         "cookies" => {
-                            let a = snapshot();
-                            let id = a.editor.as_ref().map(|e| s(&e.draft, "id")).unwrap_or("");
-                            let r = request(
-                                "POST",
-                                &format!("/api/profiles/{id}/cookies"),
-                                Some(json!({"text":text,"clear":a.form["replaceCookies"]==true})),
-                            )
-                            .await?;
+                            let (path, clear) = cookie_target
+                                .as_ref()
+                                .ok_or_else(|| fail("Cookie import target is unavailable."))?;
+                            let r = request("POST", path, Some(json!({"text":text,"clear":clear})))
+                                .await?;
                             change(|a| {
                                 a.say(
                                     format!(

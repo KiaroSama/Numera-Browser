@@ -23,7 +23,7 @@ pub(super) fn automation(a: &App) -> String {
         s(&a.form, "lang")
     };
     if !a.live() {
-        o.push_str(r#"<div class="ps-cdp"><div class="ps-cdp-h">Start the engine, then attach</div><pre class="ps-code">numera attach acct-01 --port 9222</pre>"#);
+        o.push_str(r#"<div class="ps-cdp"><div class="ps-cdp-h">Start the engine, then attach</div><pre class="ps-code">numera-engine attach acct-01 --port 9222</pre>"#);
         o.push_str(&seg(
             "form",
             "lang",
@@ -125,7 +125,7 @@ pub(super) fn settings(a: &App) -> String {
         if a.live() {
             e(&a.config["root"])
         } else {
-            "Connect the engine (numera serve) to see where your data is stored. In demo mode nothing is written to disk.".into()
+            "Connect the engine (numera-engine serve) to see where your data is stored. In demo mode nothing is written to disk.".into()
         },
         a.profiles.len(),
         a.folders().len(),
@@ -139,7 +139,7 @@ pub(super) fn settings(a: &App) -> String {
     o.push_str(r#"<div class="ps-set-card"><div class="ps-set-h">API tokens</div>"#);
     if !a.live() {
         o.push_str(&hint(
-            "Connect the engine (numera serve) to mint and revoke tokens.",
+            "Connect the engine (numera-engine serve) to mint and revoke tokens.",
         ));
     } else {
         if a.minted.is_object() {
@@ -193,7 +193,7 @@ pub(super) fn settings(a: &App) -> String {
         if a.live() {
             "Manager connected."
         } else {
-            "Running in demo mode — start numera serve to go live."
+            "Running in demo mode — start numera-engine serve to go live."
         }
     );
     o

@@ -121,7 +121,7 @@ pub(crate) fn tool(
             .map_err(Failure::from);
         }
     };
-    let values = reflection::values(&registry, &matches);
+    let values = reflection::invocation_values(&registry, &matches);
     let args = values
         .as_object()
         .ok_or_else(|| io::Error::other("Native CLI values missing"))?;

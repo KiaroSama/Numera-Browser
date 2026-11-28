@@ -524,14 +524,23 @@ pub fn editor_view(a: &App, ed: &Editor) -> String {
                 !a.live() || p["_new"] == true || a.busy,
             ));
             if a.schedule.is_object() {
-                o.push_str(&input(
-                    "schedule",
-                    "everyHours",
-                    "Every (hours)",
-                    &a.schedule["everyHours"],
-                    "number",
-                    "",
-                ));
+                o.push_str(
+                    &input(
+                        "schedule",
+                        "everyHours",
+                        "Every (hours)",
+                        &a.schedule["everyHours"],
+                        "number",
+                        "",
+                    )
+                    .replace(
+                        "type=\"number\"",
+                        &format!(
+                            "type=\"number\" min=\"0.25\" max=\"720\" step=\"0.25\" {}",
+                            if a.busy { "disabled" } else { "" }
+                        ),
+                    ),
+                );
                 o.push_str(&select(
                     "schedule",
                     "preset",

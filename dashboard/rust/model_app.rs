@@ -11,6 +11,7 @@ pub struct Toast {
 pub struct App {
     pub mode: String,
     pub auth_error: String,
+    pub startup_reconnect: bool,
     pub ip_checks: BTreeMap<String, Value>,
     pub release_status: Value,
     pub release_preferences: Value,
@@ -28,6 +29,7 @@ pub struct App {
     pub page: usize,
     pub filter_open: bool,
     pub editor: Option<Editor>,
+    pub editor_session: u64,
     pub modal: String,
     pub form: Value,
     pub batch: Batch,
@@ -66,6 +68,7 @@ impl Default for App {
         Self {
             mode: "connecting".into(),
             auth_error: String::new(),
+            startup_reconnect: true,
             ip_checks: BTreeMap::new(),
             release_status: Value::Null,
             release_preferences: Value::Null,
@@ -83,6 +86,7 @@ impl Default for App {
             page: 0,
             filter_open: false,
             editor: None,
+            editor_session: 0,
             modal: String::new(),
             form: json!({}),
             batch: Batch::default(),
@@ -297,10 +301,30 @@ impl App {
         self.live() && self.editor.is_none() && !["bulk", "sync"].contains(&self.modal.as_str())
     }
     pub fn open_editor(&mut self, p: Value) {
+        self.editor_session = self.editor_session.wrapping_add(1);
         self.editor = Some(Editor::new(p));
         self.schedule = Value::Null;
         self.form["preset"] = json!("general");
         self.form["replaceCookies"] = json!(false);
+    }
+    pub fn startup_failed(&mut self, message: &str, location: &str) {
+        self.mode = "startup-error".into();
+        self.auth_error = message
+            .chars()
+            .filter(|c| *c == '\n' || *c == '\t' || !c.is_control())
+            .take(16384)
+            .collect();
+        self.startup_reconnect = url::Url::parse(location).is_ok_and(|url| {
+            matches!(url.scheme(), "http" | "https")
+                && url.host_str().is_some_and(|host| host != "tauri.localhost")
+        });
+    }
+    pub fn editor_matches(&self, session: u64, id: &str) -> bool {
+        self.editor_session == session
+            && self
+                .editor
+                .as_ref()
+                .is_some_and(|ed| s(&ed.draft, "id") == id)
     }
     pub fn launch_ids(&self) -> Vec<String> {
         self.selected_profiles()

@@ -45,6 +45,13 @@ impl Service {
             .map_err(|_| io::Error::other("Update state poisoned"))?;
         let current = &state.status.current;
         let offer = state.offer.as_ref();
+        let installed = if current.portable {
+            transaction::installed(&self.root, &self.key, &self.platform)?.components
+        } else {
+            Value::Null
+        };
+        let requires_combined = offer
+            .is_some_and(|offer| offer.manifest.components.get(&self.platform) != Some(&installed));
         let app = (channel != Channel::Browsers).then(|| {
             json!({
                 "current": current.version,
@@ -57,11 +64,6 @@ impl Service {
         let browsers = if channel == Channel::App {
             Vec::new()
         } else {
-            let installed = if current.portable {
-                transaction::installed(&self.root, &self.key, &self.platform)?.components
-            } else {
-                Value::Null
-            };
             let latest = offer
                 .and_then(|offer| offer.manifest.components.get(&self.platform))
                 .unwrap_or(&Value::Null);
@@ -71,8 +73,11 @@ impl Service {
                 json!({"id":id,"current":current,"latest":latest,"update_available":latest.is_some() && latest != current})
             }).collect()
         };
-        Ok(json!({"channel":channel, "app":app, "browsers":browsers,
-            "state":state.status.state, "message":state.status.message}))
+        Ok(
+            json!({"channel":channel, "offerId":offer.map(|offer| offer.id.as_str()),
+            "requiresCombined":requires_combined, "app":app, "browsers":browsers,
+            "state":state.status.state, "message":state.status.message}),
+        )
     }
 
     pub(super) fn preferences(&self) -> io::Result<Preferences> {
@@ -96,7 +101,7 @@ impl Service {
         if !self.status().current.portable {
             return Ok(());
         }
-        self.start(|service| {
+        self.start_check(|service| {
             let prefs = service.preferences();
             service.check_now()?;
             let Ok(prefs) = prefs else { return Ok(()) };
@@ -128,7 +133,9 @@ impl Service {
         self: &Arc<Self>,
         channel: Channel,
         clean_old: bool,
+        offer_id: &str,
     ) -> io::Result<()> {
+        manifest::decode_hex::<32>(offer_id)?;
         if channel == Channel::Browsers {
             return Err(io::Error::new(io::ErrorKind::Unsupported, "No signed standalone browser-core update is available. Select all channels to install a compatible full generation."));
         }
@@ -141,6 +148,11 @@ impl Service {
                 .offer
                 .as_ref()
                 .ok_or_else(|| manifest::error("Check for a verified application update first"))?;
+            if offer.id != offer_id {
+                return Err(manifest::error(
+                    "The reviewed update offer changed. Check for updates and approve the new offer.",
+                ));
+            }
             if channel == Channel::App {
                 let current = transaction::installed(&self.root, &self.key, &self.platform)?;
                 if offer.manifest.components.get(&self.platform) != Some(&current.components) {
@@ -158,15 +170,6 @@ impl Service {
     }
 
     pub(super) fn check_now(&self) -> io::Result<()> {
-        self.set("checking", "Checking signed release generations.");
-        {
-            let mut state = self
-                .state
-                .lock()
-                .map_err(|_| io::Error::other("Update state poisoned"))?;
-            state.status.offer = None;
-            state.offer = None;
-        }
         let current = self.status().current;
         let generation = transaction::generation_floor(&self.root, current.generation)?;
         let offer = download::discover(

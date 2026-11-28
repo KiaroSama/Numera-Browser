@@ -255,6 +255,7 @@ fn answer(
                 let clean_old = payload["clean_old"]
                     .as_bool()
                     .ok_or_else(|| io::Error::other("Missing cleanup preference"))?;
+                let offer_id = payload["offerId"].as_str().unwrap_or("");
                 let approved = payload["approval"]
                     .as_str()
                     .is_some_and(|approval| equal(approval, token));
@@ -264,7 +265,7 @@ fn answer(
                         "Approve installation from the local desktop to continue.".into(),
                     )
                 } else {
-                    match service.queue_apply(channel, clean_old) {
+                    match service.queue_apply(channel, clean_old, offer_id) {
                         Ok(()) => (202, "Update queued. The desktop will verify the archive and restart only after it is safe to install.".into()),
                         Err(error) => (409, error.to_string()),
                     }
@@ -273,7 +274,8 @@ fn answer(
                     stream,
                     code,
                     None,
-                    &json!({"ok":code == 202,"channel":channel,"cleaned_bytes":0,"data_preserved":true,"message":message}),
+                    &json!({"ok":code == 202,"channel":channel,"cleaned_bytes":0,"data_preserved":true,
+                        "detail":(code != 202).then_some(&message),"message":message}),
                 )
             }
             _ => response(

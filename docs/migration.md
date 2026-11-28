@@ -4,8 +4,8 @@ The selected application is Rust: `numera-engine` provides the CLI, MCP and Axum
 HTTP API, and `numera-browser-runtime` owns browser SDK operations. The dashboard
 is Rust compiled to WebAssembly; the desktop shell uses Rust and Tauri.
 
-[PR #76](https://github.com/KiaroSama/Numera-Browser/pull/76) continues native
-checkpoint `3bf1d839fd33e42a10b982bd8607a7052ea7c4cd`. It remains unmerged.
+[PR #76](https://github.com/KiaroSama/Numera-Browser/pull/76), merged on November 26,
+2026, continued native checkpoint `3bf1d839fd33e42a10b982bd8607a7052ea7c4cd`.
 The earlier Python-default and React/TypeScript plan is superseded by the owner's
 request for a complete Rust rewrite. There is no interpreter fallback in the
 selected runtime.

@@ -58,7 +58,7 @@ pub fn run(argv: Vec<String>) -> i32 {
                 return code;
             }
         };
-    let values = cli::reflection::values(&command, &matches);
+    let values = cli::reflection::invocation_values(&command, &matches);
     let Some(args) = values.as_object() else {
         return 1;
     };
@@ -292,11 +292,7 @@ pub fn dispatch(
             let args = crate::native_password::prepare(args, cancelled.clone())?;
             let repo = match opened {
                 Some(mut repo) => {
-                    if let Some(password) = args
-                        .get("password")
-                        .and_then(Value::as_str)
-                        .filter(|value| !value.is_empty())
-                    {
+                    if let Some(password) = application::master_password(&args) {
                         repo.password = Some(password.into());
                     }
                     repo

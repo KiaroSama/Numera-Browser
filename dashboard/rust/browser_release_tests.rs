@@ -96,7 +96,10 @@ async fn release_mutations_send_the_shell_approval_and_apply_requires_review() {
         .iter()
         .find(|c| c.path == "/api/updates/apply")
         .expect("update apply call");
-    assert_eq!(apply.body, json!({"channel":"app", "clean_old":true}));
+    assert_eq!(
+        apply.body,
+        json!({"channel":"app", "clean_old":true,"offerId":"1".repeat(64)})
+    );
     assert_eq!(apply.update_approval, "a".repeat(64));
     assert_eq!(apply.redirect, "error");
     let saved = engine
@@ -148,7 +151,10 @@ async fn combined_update_shows_both_versions_and_sends_approved_all_channel() {
         .iter()
         .find(|call| call.method == "POST" && call.path == "/api/updates/apply")
         .expect("combined update apply request");
-    assert_eq!(apply.body, json!({"channel":"all","clean_old":false}));
+    assert_eq!(
+        apply.body,
+        json!({"channel":"all","clean_old":false,"offerId":"1".repeat(64)})
+    );
     assert_eq!(apply.update_approval, "a".repeat(64));
     assert_eq!(apply.redirect, "error");
 }
@@ -169,4 +175,31 @@ async fn mcp_connection_check_sends_only_a_loopback_ping() {
         && c.body == json!({"jsonrpc":"2.0","id":"dashboard-ping","method":"ping"})
         && c.bearer == "fixture-token"
         && c.redirect == "error"));
+}
+
+#[wasm_bindgen_test]
+async fn channel_update_approval_cannot_authorize_a_replacement_offer() {
+    let h = mount(Engine::default(), true).await;
+    change(|a| {
+        a.mcp_bridge_command = Some("numera-engine mcp --bridge http://127.0.0.1:17654".into());
+    });
+    click("[data-action=nav][data-id=settings]").await;
+    until(|| snapshot().release_preferences.is_object()).await;
+    click("[data-action=release-check][data-id=all]").await;
+    click("[data-action=release-apply][data-id=all]").await;
+    assert!(exists("[data-action=confirm]"));
+
+    h.engine.borrow_mut().release_offer_id = "2".repeat(64);
+    click("[data-action=confirm]").await;
+    until(|| !snapshot().busy).await;
+    assert!(visible().contains("reviewed update offer changed"));
+    assert!(!visible().contains("Applied fixture update"));
+    let engine = h.engine.borrow();
+    let apply = engine
+        .calls
+        .iter()
+        .find(|call| call.path == "/api/updates/apply")
+        .unwrap();
+    assert_eq!(apply.body["offerId"], "1".repeat(64));
+    assert_ne!(apply.body["offerId"], engine.release_offer_id);
 }

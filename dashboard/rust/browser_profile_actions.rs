@@ -251,7 +251,12 @@ pub(super) async fn dispatch(act: &str, id: &str, a: &App) -> Result<bool, ApiEr
         }
         "import-profiles" => {
             if !a.live() {
-                change(|a| a.say("Start the engine (numera serve) to import profiles.", false));
+                change(|a| {
+                    a.say(
+                        "Start the engine (numera-engine serve) to import profiles.",
+                        false,
+                    )
+                });
             } else {
                 pick_file("profiles", ".json,application/json")?;
             }

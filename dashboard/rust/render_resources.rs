@@ -2,9 +2,9 @@ use super::*;
 
 pub(crate) fn engine_install_command(id: &str) -> Option<&'static str> {
     match id {
-        "cloak" => Some("pip install cloakbrowser"),
-        "camoufox" => Some(r#"pip install "camoufox[geoip]" && camoufox fetch"#),
-        "patchright" => Some("pip install patchright && patchright install chromium"),
+        "cloak" | "camoufox" | "patchright" => Some(
+            "cargo run --manifest-path tools/xtask/Cargo.toml --locked -- provision-resources build/vendor-resources",
+        ),
         _ => None,
     }
 }
@@ -86,7 +86,7 @@ pub(super) fn engines(a: &App) -> String {
                 },
                 engine_install_command(id).map_or_else(String::new, |command| {
                     format!(
-                        r#"<div class="ps-eng-install-label">Vendor SDK command (Python)</div><div class="ps-eng-install"><code>{}</code><button type="button" id="copy-engine-{id}" data-action="copy-engine-install" data-id="{id}" aria-label="Copy {label} SDK install command">Copy</button></div>"#,
+                        r#"<div class="ps-eng-install-label">Native resources (source checkout)</div><div class="ps-eng-install"><code>{}</code><button type="button" id="copy-engine-{id}" data-action="copy-engine-install" data-id="{id}" aria-label="Copy {label} native resource setup command">Copy</button></div><p class="ps-set-note">Run from the repository root, then configure the resource paths in the <a href="https://github.com/KiaroSama/Numera-Browser/blob/main/docs/setup.md#explicit-browser-resources" target="_blank" rel="noreferrer">Numera setup guide</a>. This prepares the matched drivers and available bundled browsers. Cloak's browser needs separate approval above.</p>"#,
                         escape(command)
                     )
                 }),
@@ -94,7 +94,7 @@ pub(super) fn engines(a: &App) -> String {
                     String::new()
                 } else {
                     format!(
-                        r#"<a class="ps-eng-docs" href="{docs}" target="_blank" rel="noreferrer">Setup guide →</a>"#
+                        r#"<a class="ps-eng-docs" href="{docs}" target="_blank" rel="noreferrer">Vendor documentation →</a>"#
                     )
                 }
             );
@@ -243,7 +243,7 @@ pub fn proxies(a: &App) -> String {
         "Import a list, test which are live, then assign proxies round-robin across profiles.",
     ));
     if !a.live() {
-        o.push_str(&hint("Start the engine (numera serve) to import, test and assign a real proxy pool. Showing proxies in use by current profiles."));
+        o.push_str(&hint("Start the engine (numera-engine serve) to import, test and assign a real proxy pool. Showing proxies in use by current profiles."));
         o.push_str(r#"<table class="ps-table"><thead><tr><th>Host</th><th>Type</th><th>Country</th><th>Used by</th></tr></thead><tbody>"#);
         let mut seen = std::collections::BTreeSet::new();
         for p in &a.profiles {

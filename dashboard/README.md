@@ -24,7 +24,7 @@ public images. `ci-source.json` records the source revision, version and runtime
 The native engine serves this directory at its own origin. A portable desktop
 package uses the same files under `web/`.
 
-For development, run the native engine with `numera serve`, then:
+For development, run the native engine with `numera-engine serve`, then:
 
 ```sh
 cargo run --locked --manifest-path dashboard/Cargo.toml --bin dashboard-dev

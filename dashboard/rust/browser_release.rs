@@ -148,7 +148,7 @@ pub(super) async fn apply_release(a: &App, channel: &str) -> Result<(), ApiError
             "Check for updates and load preferences before applying an update.",
         ));
     }
-    let body = json!({"channel":channel,"clean_old":a.release_preferences["clean_old_versions_on_update"]});
+    let body = json!({"channel":channel,"clean_old":a.release_preferences["clean_old_versions_on_update"],"offerId":a.release_status["offerId"]});
     change(|a| a.release_status = Value::Null);
     let result = request("POST", "/api/updates/apply", Some(body)).await?;
     if result["ok"] != true || result["data_preserved"] != true || result["channel"] != channel {

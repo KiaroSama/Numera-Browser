@@ -901,6 +901,18 @@ fn run() -> Result<i32, Box<dyn std::error::Error>> {
         return adapter(&std::env::current_dir()?);
     }
     match args[0].as_str() {
+        "job-environment" => {
+            numera_core::storage::atomic::write_json(
+                Path::new(&args[1]),
+                &serde_json::json!({
+                    "argument_key":std::env::var_os("NUMERA_JOB_ARGUMENT_KEY").is_some(),
+                    "arguments_preserved":args.get(2).map(String::as_str)==Some("--pass")
+                        && args.get(3).map(String::as_str)==Some("synthetic-private-child-argument")
+                        && args.len()==4,
+                }),
+            )?;
+            Ok(0)
+        }
         "--metadata" => {
             println!(
                 "{}",

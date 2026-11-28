@@ -100,7 +100,7 @@ pub(super) async fn dispatch(act: &str, id: &str, a: &App) -> Result<bool, ApiEr
                 change(|a| {
                     a.config["default_engine"] = json!(id);
                     a.say(
-                        "Connect the engine (numera serve) to save this setting.",
+                        "Connect the engine (numera-engine serve) to save this setting.",
                         false,
                     );
                 });
@@ -235,24 +235,29 @@ pub(super) async fn dispatch(act: &str, id: &str, a: &App) -> Result<bool, ApiEr
             };
             change(|a| {
                 a.busy = true;
-                if let Some(ed) = a.editor.as_mut() {
+                if !is_health && let Some(ed) = a.editor.as_mut() {
                     ed.probe = json!({"state":"running"});
                 }
             });
             draw();
             let result = request("POST", &format!("/api/profiles/{pid}/{kind}"), None).await;
+            let editor_session = a.editor_session;
             change(|a| {
                 a.busy = false;
+                let editor = if !is_health && a.editor_session == editor_session {
+                    a.editor.as_mut().filter(|ed| s(&ed.draft, "id") == pid)
+                } else {
+                    None
+                };
                 match &result {
                     Ok(v) => {
-                        if let Some(ed) = a.editor.as_mut() {
+                        if let Some(ed) = editor {
                             ed.probe = v.clone();
-                            if v["profile"].is_object()
-                                && let Some(fields) = v["profile"].as_object()
+                            if !ed.saving
+                                && v["profile"].is_object()
+                                && s(&v["profile"], "id") == pid
                             {
-                                for (k, v) in fields {
-                                    ed.draft[k] = v.clone();
-                                }
+                                ed.stale(v["profile"].clone());
                             }
                         }
                         if is_health {
@@ -266,7 +271,7 @@ pub(super) async fn dispatch(act: &str, id: &str, a: &App) -> Result<bool, ApiEr
                         }
                     }
                     Err(e) => {
-                        if let Some(ed) = a.editor.as_mut() {
+                        if let Some(ed) = editor {
                             ed.probe = json!({"state":"error","error":e.message});
                         }
                         a.say(
@@ -304,6 +309,7 @@ pub(super) async fn dispatch(act: &str, id: &str, a: &App) -> Result<bool, ApiEr
             });
         }
         "schedule" => {
+            let pid = a.editor.as_ref().map(|e| s(&e.draft, "id")).unwrap_or("");
             if a.schedule.is_object() {
                 request(
                     "DELETE",
@@ -311,16 +317,23 @@ pub(super) async fn dispatch(act: &str, id: &str, a: &App) -> Result<bool, ApiEr
                     None,
                 )
                 .await?;
-                change(|a| a.schedule = Value::Null);
+                change(|current| {
+                    if current.editor_matches(a.editor_session, pid) {
+                        current.schedule = Value::Null;
+                    }
+                });
             } else {
-                let pid = a.editor.as_ref().map(|e| s(&e.draft, "id")).unwrap_or("");
                 let result = request(
                     "POST",
                     "/api/schedules",
                     Some(json!({"profileId":pid,"everyHours":12,"minutes":5,"preset":preset()})),
                 )
                 .await?;
-                change(|a| a.schedule = result);
+                change(|current| {
+                    if current.editor_matches(a.editor_session, pid) {
+                        current.schedule = result;
+                    }
+                });
             }
         }
         "replace-cookies" => {

@@ -6,7 +6,7 @@ use base64::{Engine, engine::general_purpose::URL_SAFE};
 use hmac::{KeyInit, Mac};
 use pbkdf2::sha2::Sha256;
 
-pub(super) fn seal(key: &[u8; 32], plaintext: &[u8], timestamp: u64) -> Result<String, VaultError> {
+pub(crate) fn seal(key: &[u8; 32], plaintext: &[u8], timestamp: u64) -> Result<String, VaultError> {
     let mut iv = [0u8; 16];
     #[cfg(feature = "test-support")]
     super::testing::event("before-vault-iv-randomness", std::path::Path::new("")).map_err(

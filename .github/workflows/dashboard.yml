@@ -46,6 +46,8 @@ jobs:
         run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 600 --idle 120 -- cargo clippy --manifest-path dashboard/Cargo.toml --locked --all-targets --target wasm32-unknown-unknown -- -D warnings
       - name: Require all 71 native dashboard source cases
         run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci counted-tests 71 build/dashboard-native.log -- cargo test --manifest-path dashboard/Cargo.toml --locked --test regression -- --test-threads=2 --color=never
+      - name: Require all 19 supplemental native dashboard cases
+        run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci counted-tests 19 build/dashboard-native-supplemental.log -- cargo test --manifest-path dashboard/Cargo.toml --locked --lib --test api_contract_regressions --test release_dashboard --test ui_parity -- --test-threads=2 --color=never
       - name: Select the hosted native WebDriver
         run: |
           set -euo pipefail
@@ -53,12 +55,12 @@ jobs:
           if [ -z "$driver" ] && [ -n "${CHROMEWEBDRIVER:-}" ]; then driver="$CHROMEWEBDRIVER/chromedriver"; fi
           test -x "$driver"
           echo "CHROMEDRIVER=$driver" >> "$GITHUB_ENV"
-      - name: Require all 132 actual Chromium WASM source cases
+      - name: Require all 140 actual Chromium WASM source and regression cases
         env:
           CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER: wasm-bindgen-test-runner
           WASM_BINDGEN_TEST_WEBDRIVER_JSON: dashboard/tests/webdriver.json
           WASM_BINDGEN_TEST_TIMEOUT: "180"
-        run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci counted-wasm-tests 132 build/dashboard-wasm.log -- cargo test --manifest-path dashboard/Cargo.toml --locked --color=never --lib --target wasm32-unknown-unknown
+        run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci counted-wasm-tests 140 build/dashboard-wasm.log -- cargo test --manifest-path dashboard/Cargo.toml --locked --color=never --lib --target wasm32-unknown-unknown
       - name: Build and bind the dashboard to this exact source
         run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 600 --idle 120 -- cargo run --manifest-path dashboard/Cargo.toml --locked --bin dashboard-build
       - name: Preserve exact source dashboard and test evidence

@@ -314,6 +314,155 @@ fn accepted_cancellation_cannot_become_an_installable_ready_state(
     assert_ne!(service.status().state, "ready");
     Ok(())
 }
+
+fn signed_offer(
+    generation: u64,
+    components: Value,
+) -> Result<download::Offer, Box<dyn std::error::Error>> {
+    let platform = manifest::platform()?;
+    let value = json!({"schema":1,"repository":manifest::REPOSITORY,"product":manifest::PRODUCT,
+            "version":"0.37.0","source_sha":format!("{generation:040x}"),"generation":generation,
+            "created_at":1000,"expires_at":2000,"minimum_protocol":1,
+            "components":{(platform):components},
+            "assets":[{"platform":platform,"name":"numera-fixture.zip","size":10,
+                "sha256":"b".repeat(64),"expanded_size":20,"max_members":4,
+                "archive_root":manifest::PRODUCT,"build_manifest_sha256":"c".repeat(64)}]});
+    let bytes = serde_json::to_vec(&value)?;
+    let signature = key().sign(&bytes).to_bytes().to_vec();
+    let manifest = manifest::signed_manifest(
+        &bytes,
+        &signature,
+        &key().verifying_key().to_bytes(),
+        platform,
+        1,
+        1200,
+    )?;
+    Ok(download::Offer {
+        id: manifest::digest(&bytes),
+        asset: manifest.assets[0].clone(),
+        manifest,
+        bytes,
+        signature,
+        notes: String::new(),
+        #[cfg(not(feature = "update-acceptance"))]
+        tag: "v0.37.0".into(),
+    })
+}
+
+#[test]
+fn channel_approval_is_bound_to_the_reviewed_signed_manifest(
+) -> Result<(), Box<dyn std::error::Error>> {
+    let fixture = Scratch::new();
+    let installed = build(&fixture.0, 1, b"installed fixture shell");
+    let mut service = Service::new(fixture.0.clone(), 1, "fixture".into(), Arc::new(|| {}))?;
+    Arc::get_mut(&mut service)
+        .ok_or("Fixture service is shared")?
+        .key = key().verifying_key().to_bytes();
+    service.state.lock().unwrap().status.current.portable = true;
+    service.state.lock().unwrap().offer = Some(signed_offer(2, installed.components)?);
+    let review = service.channel_view(channels::Channel::All)?;
+    assert_eq!(review["requiresCombined"], false);
+    assert_eq!(
+        service.channel_view(channels::Channel::App)?["requiresCombined"],
+        false
+    );
+    let approved = review["offerId"].as_str().ok_or("Missing offer identity")?;
+    assert_eq!(
+        approved,
+        service.state.lock().unwrap().offer.as_ref().unwrap().id
+    );
+
+    service.state.lock().unwrap().offer = Some(signed_offer(
+        3,
+        json!({"sdk":{},"browsers":{"playwright":{"version":"159"}}}),
+    )?);
+    let current = service.channel_view(channels::Channel::All)?;
+    assert_eq!(current["requiresCombined"], true);
+    assert_eq!(
+        service.channel_view(channels::Channel::App)?["requiresCombined"],
+        true
+    );
+    assert_ne!(review["offerId"], current["offerId"]);
+    for channel in [channels::Channel::All, channels::Channel::App] {
+        let error = service.queue_apply(channel, true, approved).unwrap_err();
+        assert!(error.to_string().contains("reviewed update offer changed"));
+        assert!(service.operation.lock().unwrap().is_none());
+    }
+    assert!(service
+        .queue_apply(channels::Channel::All, true, "")
+        .is_err());
+    assert!(
+        !fs::read_dir(&fixture.0)?.any(|entry| entry.is_ok_and(|entry| entry
+            .file_name()
+            .to_string_lossy()
+            .starts_with(".numera-update-")))
+    );
+    Ok(())
+}
+
+#[test]
+fn accepted_check_clears_the_previous_offer_before_a_gated_worker_can_run(
+) -> Result<(), Box<dyn std::error::Error>> {
+    let fixture = Scratch::new();
+    let service = Service::new(fixture.0.clone(), 1, "fixture".into(), Arc::new(|| {}))?;
+    let offer = signed_offer(2, json!({"sdk":{},"browsers":{}}))?;
+    {
+        let mut state = service.state.lock().unwrap();
+        state.status.state = "available".into();
+        state.status.offer = Some(OfferView {
+            id: offer.id.clone(),
+            version: offer.manifest.version.clone(),
+            source_sha: offer.manifest.source_sha.clone(),
+            generation: offer.manifest.generation,
+            download_bytes: offer.asset.size,
+            expanded_bytes: offer.asset.expanded_size,
+            components: offer.manifest.components[&service.platform].clone(),
+            restart_required: true,
+        });
+        state.offer = Some(offer);
+    }
+    let (release, blocked) = std::sync::mpsc::channel();
+    service.start_check(move |_| {
+        blocked
+            .recv_timeout(Duration::from_secs(5))
+            .map_err(io::Error::other)?;
+        Err(io::Error::other("Synthetic discovery failure"))
+    })?;
+
+    let checking = service.channel_view(channels::Channel::All)?;
+    assert_eq!(checking["state"], "checking");
+    assert!(checking["offerId"].is_null());
+    assert_eq!(checking["app"]["update_available"], false);
+    assert!(service.status().offer.is_none());
+    assert!(service.status().can_cancel);
+    let error = service.start_check(|_| Ok(())).unwrap_err();
+    assert_eq!(error.kind(), io::ErrorKind::WouldBlock);
+    assert_eq!(service.channel_view(channels::Channel::All)?, checking);
+
+    release.send(())?;
+    service.shutdown();
+    assert_eq!(service.status().state, "error");
+    assert!(!service.status().can_cancel);
+    assert!(service.state.lock().unwrap().offer.is_none());
+
+    service.state.lock().unwrap().offer = Some(signed_offer(3, json!({"sdk":{},"browsers":{}}))?);
+    service.set("downloading", "Synthetic active download");
+    let (release, blocked) = std::sync::mpsc::channel();
+    service.start(move |_| {
+        blocked
+            .recv_timeout(Duration::from_secs(5))
+            .map_err(io::Error::other)
+    })?;
+    let active = service.channel_view(channels::Channel::All)?;
+    assert_eq!(
+        service.start_check(|_| Ok(())).unwrap_err().kind(),
+        io::ErrorKind::WouldBlock
+    );
+    assert_eq!(service.channel_view(channels::Channel::All)?, active);
+    release.send(())?;
+    service.shutdown();
+    Ok(())
+}
 #[test]
 fn free_space_query_preserves_path_errors_without_writing_to_the_installation(
 ) -> Result<(), Box<dyn std::error::Error>> {
