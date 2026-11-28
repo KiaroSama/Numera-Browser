@@ -438,7 +438,7 @@ fn receipt_tokens_callers(
         root,
         case,
         path,
-        "74ab71be3892332d2ed10d1432dd0db9fb4b9e29cf27fe1abdf45b414cecd757",
+        "d4a85fad416a4db9b8684c67f8b8a49eda1a88aad64fb029a3b0cc716b295e2a",
     )?;
     let current = fs::read(root.join(UNIT_REPORT))?;
     let current_sha = super::sha(&current);

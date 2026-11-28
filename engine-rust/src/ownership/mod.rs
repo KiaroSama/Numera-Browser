@@ -10,6 +10,8 @@ pub mod memory;
 pub mod observation;
 pub mod parent;
 mod pending_spawn;
+#[cfg(target_os = "linux")]
+mod procfs;
 pub mod ready;
 pub mod recorded_tree;
 pub mod registry;

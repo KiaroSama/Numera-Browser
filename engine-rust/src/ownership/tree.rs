@@ -645,10 +645,9 @@ fn group_empty(group: i32) -> io::Result<bool> {
                 super::test_support::stat(&path).unwrap_or_else(|| std::fs::read_to_string(&path));
             #[cfg(not(feature = "test-support"))]
             let text = std::fs::read_to_string(&path);
-            match text {
-                Ok(text) => super::observation::procfs_process(pid, &text),
-                Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(None),
-                Err(error) => Err(error),
+            match super::procfs::stat_text(text)? {
+                Some(text) => super::observation::procfs_process(pid, &text),
+                None => Ok(None),
             }
         }
     }

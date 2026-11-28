@@ -219,7 +219,7 @@ fn retained_primary_resume_preserves_other_thread_suspension() -> io::Result<()>
         current, 1,
         "Only the retained primary thread may be released"
     );
-    println!(
+    eprintln!(
         "{} [INFO] [ownership-test] legacy_secondary_suspend_count={old} retained_primary_secondary_suspend_count={current}",
         chrono::Utc::now().format("%Y-%m-%dT%H:%M:%S%.3fZ")
     );
