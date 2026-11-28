@@ -58,7 +58,6 @@ jobs:
           - {platform: windows-arm64, os: windows-11-arm, triple: aarch64-pc-windows-msvc}
           - {platform: linux-x64, os: ubuntu-24.04, triple: x86_64-unknown-linux-gnu}
           - {platform: linux-arm64, os: ubuntu-24.04-arm, triple: aarch64-unknown-linux-gnu}
-          - {platform: macos-arm64, os: macos-15, triple: aarch64-apple-darwin}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -190,14 +189,6 @@ jobs:
             image="$PWD/dist/$base.AppImage"
             mkdir "$RUNNER_TEMP/numera-appimage-icon"
             (cd "$RUNNER_TEMP/numera-appimage-icon"; "$image" --appimage-extract .DirIcon; test -e squashfs-root/.DirIcon || test -L squashfs-root/.DirIcon)
-          elif [[ "$RUNNER_OS" == macOS ]]; then
-            apps=(release-input/*.app.zip); images=(release-input/*.dmg)
-            test "${#apps[@]}" -eq 1 && test "${#images[@]}" -eq 1
-            cp -- "${apps[0]}" "dist/$base.app.zip"
-            cp -- "${images[0]}" "dist/$base.dmg"
-            hdiutil verify "dist/$base.dmg"
-            unzip -Z1 "dist/$base.app.zip" > "$RUNNER_TEMP/numera-app-files"
-            grep -Eq '\.app/Contents/Resources/[^/]+\.icns$' "$RUNNER_TEMP/numera-app-files"
           fi
           cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci release-portable-archive "$stage" "dist/$base-portable.zip"
           cargo run --manifest-path tools/xtask/Cargo.toml --locked -- cli-package --target "$PLATFORM" --version "$RELEASE_VERSION" --bin-dir "$stage/engine" --out dist
@@ -235,27 +226,26 @@ jobs:
           pattern: release-signed-*-${{ github.sha }}
           path: dist
           merge-multiple: true
-      - name: Require the exact asset set from all five targets
+      - name: Require the exact asset set from all four targets
         shell: bash
         run: |
           set -euo pipefail
           version=$(jq -er '.version' desktop/src-tauri/tauri.conf.json)
           test "$GITHUB_REF_NAME" = "v$version"
           cd dist
-          for platform in windows-x64 windows-arm64 linux-x64 linux-arm64 macos-arm64; do
+          for platform in windows-x64 windows-arm64 linux-x64 linux-arm64; do
             base="numera-browser-$version-$platform"
             cli="numera-browser-cli-$version-$platform"
             case "$platform" in
               windows-*) extras=("$base.msi" "$cli.zip") ;;
               linux-*) extras=("$base.AppImage" "$base.deb" "$cli.tar.gz") ;;
-              macos-*) extras=("$base.app.zip" "$base.dmg" "$cli.tar.gz") ;;
             esac
             for file in "$base-portable.zip" "$base-source.zip" "${extras[@]}"; do
               test -s "$file"
               test -s "$file.sig"
             done
           done
-          test "$(find . -maxdepth 1 -type f | wc -l)" -eq 46
+          test "$(find . -maxdepth 1 -type f | wc -l)" -eq 36
       - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249
         with:
           toolchain: 1.100.0

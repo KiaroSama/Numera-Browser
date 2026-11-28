@@ -158,7 +158,7 @@ rollback boundaries.
 ## Builds and verification
 
 [Native CI](../.github/workflows/native-ci.yml) builds the engine and worker
-independently on Windows/Linux x64 and arm64, and macOS arm64. Product jobs build the
+independently on Windows and Linux, on x64 and arm64. Product jobs build the
 Rust/WASM dashboard, Tauri installers and portable archives. A CLI-only archive
 contains the manager and browser worker without desktop or dashboard assets.
 Full product packages record their source, generation, components, resources,

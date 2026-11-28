@@ -439,11 +439,7 @@ pub(super) fn macos_controls() -> TestResult {
     let tmp = Temp::new("release-macos")?;
     let stage = tmp.0.join("portable path with spaces");
     fs::create_dir_all(stage.join("engine"))?;
-    let paths = [
-        stage.join("numera"),
-        stage.join("engine/numera-engine"),
-        stage.join("engine/numera-browser-runtime"),
-    ];
+    let paths = [stage.join("numera"), stage.join("engine/numera-engine")];
     let content = macho();
     for p in &paths {
         fs::write(p, &content)?;
@@ -589,7 +585,7 @@ pub(super) fn macos_controls() -> TestResult {
                         .file_name()
                         .is_some_and(|s| s.to_string_lossy().starts_with("tampered-"))))
                     .count(),
-                paths.len()
+                2
             );
         } else {
             let error = result.expect_err("failed native control must refuse");

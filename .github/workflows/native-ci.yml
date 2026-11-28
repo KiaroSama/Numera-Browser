@@ -51,9 +51,6 @@ jobs:
           - platform: linux-arm64
             os: ubuntu-24.04-arm
             arch: ARM64
-          - platform: macos-arm64
-            os: macos-15
-            arch: ARM64
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -108,14 +105,14 @@ jobs:
       - name: Install reviewed native desktop packaging tools
         uses: ./.github/actions/native-packaging-tools
       - name: Explicitly acquire the reviewed vendor resources and source offers
-        if: runner.arch == 'X64' || runner.os == 'macOS'
+        if: runner.arch == 'X64'
         run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 1800 --idle 300 -- cargo run --manifest-path tools/xtask/Cargo.toml --locked -- provision-resources "${{ runner.temp }}/numera-resources"
       - name: Build unsigned native desktop installers and portable server
         shell: bash
         run: |
           set -euo pipefail
           args=(--no-bundled-browsers)
-          if [[ "$RUNNER_ARCH" == X64 || "$RUNNER_OS" == macOS ]]; then args=(--resources "$RUNNER_TEMP/numera-resources"); fi
+          if [[ "$RUNNER_ARCH" == X64 ]]; then args=(--resources "$RUNNER_TEMP/numera-resources"); fi
           cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall ${{ runner.os == 'Windows' && 2400 || 1800 }} --idle ${{ runner.os == 'Windows' && 960 || 300 }} -- cargo run --manifest-path tools/xtask/Cargo.toml --locked -- build-product build/native-product "${args[@]}"
       - name: Package the CLI for this host without the desktop runtime
         shell: bash
@@ -167,8 +164,6 @@ jobs:
             build/native-product/*.msi
             build/native-product/*.deb
             build/native-product/*.AppImage
-            build/native-product/*.app.zip
-            build/native-product/*.dmg
             build/native-product/SHA256SUMS
           compression-level: 0
           if-no-files-found: error
@@ -183,8 +178,6 @@ jobs:
           items=('Numera Browser' numera-source-*.zip)
           if [[ "$RUNNER_OS" == Linux ]]; then
             items+=( *.deb *.AppImage )
-          elif [[ "$RUNNER_OS" == macOS ]]; then
-            items+=( *.app.zip *.dmg )
           fi
           archive="$RUNNER_TEMP/native-signing-input.tar"
           if command -v cygpath >/dev/null 2>&1; then
@@ -285,9 +278,9 @@ jobs:
             browser-page-rust/target/browser-page-generated/compiled.js
           if-no-files-found: error
           retention-days: 7
-      - run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci counted-tests 10 build/xtask-unit.log -- cargo test --manifest-path tools/xtask/Cargo.toml --locked --bin numera-xtask -- --test-threads=2 --color=never
-      - run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 900 --idle 180 -- cargo test --manifest-path tools/xtask/Cargo.toml --locked --test platform_restore -- --test-threads=2 --color=never
+      - run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci counted-tests 9 build/xtask-unit.log -- cargo test --manifest-path tools/xtask/Cargo.toml --locked --bin numera-xtask -- --test-threads=2 --color=never
       - run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 900 --idle 180 -- cargo test --manifest-path tools/xtask/Cargo.toml --locked --test dependency_update_regressions -- --test-threads=2 --color=never
+      - run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 900 --idle 180 -- cargo test --manifest-path tools/xtask/Cargo.toml --locked --test signing_inventory_regressions -- --test-threads=2 --color=never
       - run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci counted-tests 643 build/source-ci.log -- cargo test --manifest-path tools/xtask/Cargo.toml --locked --test source_ci -- --test-threads=2 --color=never
       - run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci counted-tests 123 build/source-acceptance.log -- cargo test --manifest-path tools/xtask/Cargo.toml --locked --test source_acceptance -- --test-threads=2 --color=never
 
@@ -303,7 +296,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, windows-latest, macos-15]
+        os: [ubuntu-24.04, windows-latest]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -419,53 +412,6 @@ jobs:
             ${{ runner.temp }}/numera-native-checkpoint.target/release/*.build.json
           if-no-files-found: error
 
-  macos-live:
-    name: Required real macOS SDK (${{ matrix.engine }})
-    needs: [coverage, dashboard]
-    runs-on: macos-15
-    timeout-minutes: 35
-    strategy:
-      fail-fast: false
-      max-parallel: 2
-      matrix:
-        engine: [playwright, patchright, camoufox]
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          persist-credentials: false
-      - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249
-        with:
-          toolchain: 1.100.0
-      - uses: Swatinem/rust-cache@eedcf2fb1c22f010a0eb66b92f378c110977f266
-        with:
-          workspaces: |
-            engine-rust
-            tools/xtask
-      - name: Require an Apple Silicon native runner
-        shell: bash
-        run: test "$RUNNER_ARCH" = ARM64
-      - name: Compile the real native engine and browser worker
-        run: cargo build --manifest-path engine-rust/Cargo.toml --locked --release --no-default-features --features native-product,native-browser --bin numera-engine --bin numera-browser-runtime
-      - run: cargo build --manifest-path tools/xtask/Cargo.toml --locked
-      - name: Explicitly provision reviewed Mac drivers and matching browsers
-        run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 1800 --idle 300 -- cargo run --manifest-path tools/xtask/Cargo.toml --locked -- provision-resources "${{ runner.temp }}/numera-macos-live-resources"
-      - name: Bind the selected backend to its verified Mac resources
-        run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 1200 --idle 180 -- cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci prepare-live engine-rust/target/release/numera-browser-runtime engine-rust/target/release/numera-engine "${{ runner.temp }}/numera-macos-live-resources" "${{ matrix.engine }}" "${{ runner.temp }}/numera-macos-live-data" "${{ github.env }}"
-      - name: Require real persistent context behavior and owned cleanup on Mac
-        run: cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci counted-tests 1 build/selected-sdk.log -- cargo test --manifest-path engine-rust/Cargo.toml --locked --features native-product,native-browser,test-support --test browser_adapter_live -- --ignored --exact selected_sdk_opens_real_persistent_context_in_native_owned_tree --test-threads=1 --color=never
-      - name: Preserve complete Mac SDK evidence
-        if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
-        with:
-          name: native-live-macos-15-${{ matrix.engine }}-${{ github.sha }}
-          path: |
-            build/selected-sdk.log
-            build/selected-sdk.stderr.log
-            build/owned-command-failure-*.log
-            build/owned-members-*.json
-            .ci-work/logs/ci-owned_*.log
-          if-no-files-found: error
-
   history:
     name: Exact historical native negative controls (${{ matrix.os }})
     needs: coverage
@@ -561,7 +507,7 @@ jobs:
   required:
     name: Required native verification
     if: ${{ !cancelled() }}
-    needs: [build, coverage, static, functional, live, macos-live, history, secrets, dashboard, docker, desktop-contracts, codeql, dependencies]
+    needs: [build, coverage, static, functional, live, history, secrets, dashboard, docker, desktop-contracts, codeql, dependencies]
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:

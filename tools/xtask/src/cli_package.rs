@@ -28,9 +28,8 @@ impl Target {
                 Some("windows-arm64") => ("windows-arm64", true, 0xaa64),
                 Some("linux-x64") => ("linux-x64", false, 62),
                 Some("linux-arm64") => ("linux-arm64", false, 183),
-                Some("macos-arm64") => ("macos-arm64", false, 0),
                 _ => return Err(
-                    "unsupported target; use windows-x64, windows-arm64, linux-x64, linux-arm64, or macos-arm64"
+                    "unsupported target; use windows-x64, windows-arm64, linux-x64, or linux-arm64"
                         .into(),
                 ),
             };
@@ -181,8 +180,6 @@ fn check_binary(bytes: &[u8], target: Target) -> Result<()> {
         if !resources.has_approved_icon().unwrap_or(false) {
             return Err("Windows executable is missing its approved icon resource".into());
         }
-    } else if target.name == "macos-arm64" {
-        macho_arm64(bytes).ok_or("expected a bounded thin ARM64 Mach-O executable")?;
     } else if bytes.len() < 64
         || !bytes.starts_with(b"\x7fELF\x02\x01\x01")
         || !matches!(word(bytes, 16), Some(2 | 3))
@@ -193,78 +190,6 @@ fn check_binary(bytes: &[u8], target: Target) -> Result<()> {
         return Err("expected a matching little-endian ELF64 executable".into());
     }
     Ok(())
-}
-
-// Release binaries are native thin ARM64 executables. Universal containers,
-// dylibs and truncated load commands must not pass an architecture-only check.
-fn macho_arm64(bytes: &[u8]) -> Option<()> {
-    if bytes.len() < 32
-        || long(bytes, 0)? != 0xfeedfacf
-        || long(bytes, 4)? != 0x0100000c
-        || long(bytes, 8)? != 0
-        || long(bytes, 12)? != 2
-        || long(bytes, 28)? != 0
-    {
-        return None;
-    }
-    let count = usize::try_from(long(bytes, 16)?).ok()?;
-    let size = usize::try_from(long(bytes, 20)?).ok()?;
-    let end = 32usize.checked_add(size)?;
-    if count == 0 || count > 4096 || size > 1024 * 1024 || count > size / 8 || end > bytes.len() {
-        return None;
-    }
-    let mut cursor = 32usize;
-    let mut entry = None;
-    let mut executable_ranges = Vec::new();
-    for _ in 0..count {
-        let kind = long(bytes, cursor)?;
-        let length = usize::try_from(long(bytes, cursor.checked_add(4)?)?).ok()?;
-        let next = cursor.checked_add(length)?;
-        if length < 8 || !length.is_multiple_of(8) || next > end {
-            return None;
-        }
-        match kind {
-            0x19 => {
-                if length < 72 {
-                    return None;
-                }
-                let sections = usize::try_from(long(bytes, cursor + 64)?).ok()?;
-                if 72usize.checked_add(sections.checked_mul(80)?)? != length {
-                    return None;
-                }
-                let file_offset = quad(bytes, cursor + 40)?;
-                let file_size = quad(bytes, cursor + 48)?;
-                let file_end = file_offset.checked_add(file_size)?;
-                if file_end > bytes.len() as u64 || file_size > quad(bytes, cursor + 32)? {
-                    return None;
-                }
-                if long(bytes, cursor + 60)? & 4 != 0 {
-                    executable_ranges.push((file_offset, file_end));
-                }
-            }
-            0x80000028 => {
-                if length != 24 || entry.is_some() {
-                    return None;
-                }
-                entry = Some(quad(bytes, cursor + 8)?);
-            }
-            _ => {}
-        }
-        cursor = next;
-    }
-    let entry = entry?;
-    (cursor == end
-        && entry >= end as u64
-        && executable_ranges
-            .iter()
-            .any(|(start, end)| *start <= entry && entry < *end))
-    .then_some(())
-}
-
-fn quad(bytes: &[u8], offset: usize) -> Option<u64> {
-    Some(u64::from_le_bytes(
-        bytes.get(offset..offset.checked_add(8)?)?.try_into().ok()?,
-    ))
 }
 
 fn word(bytes: &[u8], offset: usize) -> Option<u16> {
@@ -422,63 +347,6 @@ mod tests {
             wrong_class[4] = 1;
             assert!(check_binary(&wrong_class, target).is_err());
         }
-        Ok(())
-    }
-
-    #[test]
-    fn verifies_thin_macos_arm64_executables_and_rejects_malformed_commands() -> Result<()> {
-        let target = Target::parse(&"macos-arm64".into())?;
-        let mut bytes = vec![0u8; 192];
-        for (offset, value) in [
-            (0, 0xfeedfacfu32),
-            (4, 0x0100000c),
-            (12, 2),
-            (16, 2),
-            (20, 96),
-            (32, 0x19),
-            (36, 72),
-            (64, 192),
-            (80, 192),
-            (92, 5),
-            (104, 0x80000028),
-            (108, 24),
-            (112, 128),
-        ] {
-            bytes[offset..offset + 4].copy_from_slice(&value.to_le_bytes());
-        }
-        check_binary(&bytes, target)?;
-        for (offset, value) in [
-            (0, 0xcafebabeu32),
-            (4, 0x01000007),
-            (8, 2),
-            (12, 6),
-            (16, 0),
-            (16, 4097),
-            (20, u32::MAX),
-            (28, 1),
-            (36, 7),
-            (36, 80),
-            (80, 193),
-            (92, 1),
-            (96, 1),
-            (108, 32),
-            (112, 192),
-        ] {
-            let mut damaged = bytes.clone();
-            damaged[offset..offset + 4].copy_from_slice(&value.to_le_bytes());
-            assert!(
-                check_binary(&damaged, target).is_err(),
-                "field {offset}={value}"
-            );
-        }
-        for len in [0, 31, 63, 127, 191] {
-            assert!(
-                check_binary(&bytes[..len], target).is_err(),
-                "truncated at {len}"
-            );
-        }
-        assert!(Target::parse(&"macos-x64".into()).is_err());
-        assert_eq!(target.names(), ["numera-engine", "numera-browser-runtime"]);
         Ok(())
     }
 

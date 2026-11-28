@@ -3,31 +3,6 @@ use super::{Result, fail};
 use serde_json::Value;
 
 pub fn release_workflows(workflows: &Value) -> Result<()> {
-    if let Some(build) = workflows.get("build-desktop") {
-        let rows = build["jobs"]["desktop"]["strategy"]["matrix"]["include"]
-            .as_array()
-            .ok_or("Manual signing matrix missing")?;
-        let actual = rows
-            .iter()
-            .filter_map(|row| {
-                Some((
-                    row["platform"].as_str()?,
-                    row["os"].as_str()?,
-                    row["arch"].as_str()?,
-                ))
-            })
-            .collect::<std::collections::BTreeSet<_>>();
-        if rows.len() != 3
-            || actual
-                != std::collections::BTreeSet::from([
-                    ("linux-x64", "ubuntu-24.04", "X64"),
-                    ("windows-x64", "windows-2025", "X64"),
-                    ("macos-arm64", "macos-15", "ARM64"),
-                ])
-        {
-            return fail("Manual signed artifact review requires Linux, Windows and macOS hosts");
-        }
-    }
     let ci = &workflows["ci"];
     let release = workflows
         .get("release-review")

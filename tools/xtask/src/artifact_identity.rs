@@ -50,17 +50,13 @@ pub struct BuildIdentity {
 }
 
 impl BuildIdentity {
-    pub fn supported_host(os: &str, arch: &str) -> bool {
-        matches!(
-            (os, arch),
-            ("linux" | "windows", "x86_64" | "aarch64") | ("macos", "aarch64")
-        )
-    }
-
     pub fn from_environment() -> Result<Self, Box<dyn Error>> {
-        if !Self::supported_host(env::consts::OS, env::consts::ARCH) {
+        if !matches!(
+            (env::consts::OS, env::consts::ARCH),
+            ("linux" | "windows", "x86_64" | "aarch64")
+        ) {
             return Err(
-                "native distributions require Linux/Windows x86_64 or aarch64, or macOS aarch64"
+                "native distributions require a 64-bit Linux or Windows build host (x86_64 or aarch64)"
                     .into(),
             );
         }

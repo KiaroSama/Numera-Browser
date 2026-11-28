@@ -29,8 +29,7 @@ runs:
         trap 'rm -f -- "$work/identity.pfx" "$work/private.pem" "$work/public.pem" "$work/publisher.json" "$work/verify.err"; rmdir -- "$work"' EXIT
         printf '%s' "$NUMERA_SIGNING_PFX_BASE64" | base64 -d > "$work/identity.pfx"
         unset NUMERA_SIGNING_PFX_BASE64
-        # -nodes supports both the macOS runner's OpenSSL 1.1 and OpenSSL 3.
-        openssl pkcs12 -in "$work/identity.pfx" -nocerts -nodes -passin env:NUMERA_SIGNING_PASSWORD -out "$work/private.pem"
+        openssl pkcs12 -in "$work/identity.pfx" -nocerts -noenc -passin env:NUMERA_SIGNING_PASSWORD -out "$work/private.pem"
         unset NUMERA_SIGNING_PASSWORD
         cd "$GITHUB_WORKSPACE"
         openssl x509 -in docs/code-signing-cert.pem -pubkey -noout > "$work/public.pem"
@@ -46,14 +45,14 @@ runs:
         }
         cd dist
         shopt -s nullglob
-        assets=(numera-browser-*.zip numera-browser-*.tar.gz numera-browser-*.msi numera-browser-*.deb numera-browser-*.AppImage numera-browser-*.dmg)
+        assets=(numera-browser-*.zip numera-browser-*.tar.gz numera-browser-*.msi numera-browser-*.deb numera-browser-*.AppImage)
         case "$OPERATION" in
           assets)
             test "${#assets[@]}" -ge 4
             for file in "${assets[@]}"; do sign "$file"; done
             ;;
           checksums)
-            test "${#assets[@]}" -eq 23
+            test "${#assets[@]}" -eq 18
             for file in "${assets[@]}"; do check "$file"; done
             test -s update-manifest.json && test -s update-manifest.sig
             sha256sum -- "${assets[@]}" update-manifest.json update-manifest.sig > SHA256SUMS

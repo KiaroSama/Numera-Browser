@@ -135,8 +135,8 @@ A durable admission commit is a one-way boundary: after it, recovery validates a
 ## Maintainer publication
 
 The [release workflow](../.github/workflows/release.yml) runs Native CI on the
-exact version tag before signing. All five native build legs must pass:
-Windows/Linux x64 and arm64, and macOS arm64. The protected `numera-signing` environment provides
+exact version tag before signing. All four Windows and Linux build legs must
+pass. The protected `numera-signing` environment provides
 `NUMERA_SIGNING_PFX_BASE64`, `NUMERA_SIGNING_PASSWORD` and
 `NUMERA_RELEASE_SIGNING_KEY`. The publisher verifies the complete asset set
 before creating the release. Manual artifact review cannot publish.
@@ -146,7 +146,7 @@ From the repository root, run `cargo run --manifest-path tools/xtask/Cargo.toml 
 with the required subcommand for local build review. See [the build-tool guide](../tools/xtask/README.md).
 Local artifacts do not substitute for protected workflow signing.
 
-Production-feature shell formatting, lint and unit contracts run in a separate Linux/Windows x86-64 and macOS ARM64 hosted tier before signing/distribution, without release keys. Mac also requires its retained ownership proof and real Playwright, Patchright and Camoufox SDK lifecycle jobs. Required verification and distribution depend on those tiers; shell unit tests are not repeated during packaging. Actual desktop activation/recovery and signing still require every original pre-distribution gate, including the public CodeQL verdict.
+Production-feature shell formatting, lint and unit contracts run in a separate Linux and Windows x86-64 hosted tier before signing/distribution, without release keys. Required verification and distribution both depend on that tier; those unit tests are not repeated during packaging. Actual desktop activation/recovery and signing still require every original pre-distribution gate, including the public CodeQL verdict.
 
 Hosted updater acceptance compiles two separate shell and frozen-engine generations with an immutable synthetic verification key. Those binaries explicitly identify themselves as acceptance-only; production identity verification and packaging reject them. The test uses the actual hidden desktop, private engine bridge, copied worker and interruption recovery, not a rewritten manifest around one unchanged executable. To fit bounded hosted storage it carries the real browser compatibility manifest and one hashed bundled resource, not duplicate full browser installations. Full browser packaging/launch is a separate product check; the compact updater fixture does not prove full-browser archive space or performance. A staged-substitution case re-signs only a synthetic BUILD version after download and invokes the actual worker after quiescence; it requires refusal before replacement while retaining the matching recovery journal/admission and old files/data. That refusal is not evidence of completed recovery or a usable resumed application. Linux uses an isolated virtual display; missing platform WebView capability fails acceptance rather than being replaced by a mock.
 

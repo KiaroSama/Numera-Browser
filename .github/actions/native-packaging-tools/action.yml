@@ -1,5 +1,5 @@
 name: Install native packaging tools
-description: Install the checksum-pinned upstream Rust tools for Linux, Windows and macOS ARM64.
+description: Install the checksum-pinned upstream Rust tools for 64-bit Linux and Windows.
 runs:
   using: composite
   steps:
@@ -7,12 +7,6 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
-        log() {
-          case "$1" in INFO|WARNING|ERROR|DEBUG) ;; *) return 2 ;; esac
-          printf '%s [%s] %s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" "$1" "$2"
-        }
-        trap 'log ERROR "Native packaging tool installation failed"' ERR
-        log INFO "Installing checksum-pinned native packaging tools"
         directory="$RUNNER_TEMP/numera-packaging-tools"
         mkdir -p "$directory/bin"
 
@@ -43,13 +37,6 @@ runs:
             bindgen_sha=79e348c169d0c10c0b287647f1e753d0985353ca96800bc29be8f4261baf13e6
             suffix=.exe
             ;;
-          macOS/ARM64)
-            tauri_archive=cargo-tauri-aarch64-apple-darwin.zip
-            tauri_sha=bae2db07d3962d096acdb758b0e35f93e3e6b6db5443cea370b2718a907a5216
-            bindgen_target=aarch64-apple-darwin
-            bindgen_sha=81d4a23d56b3c3eb8187658329116d50e0b228a93b343825fb71f70179051cd1
-            suffix=
-            ;;
           *) exit 1 ;;
         esac
         bindgen_directory="wasm-bindgen-0.2.129-$bindgen_target"
@@ -60,21 +47,13 @@ runs:
           curl --fail --location --proto '=https' --proto-redir '=https' \
             --connect-timeout 10 --max-time 90 --retry 2 --retry-max-time 120 \
             "$1/$2" --output "$2"
-          if [[ "$RUNNER_OS" == macOS ]]; then
-            printf '%s  %s\n' "$3" "$2" | shasum --algorithm 256 --check --strict
-          else
-            printf '%s  %s\n' "$3" "$2" | sha256sum --check --strict
-          fi
-          log DEBUG "Verified the downloaded tool archive checksum"
+          printf '%s  %s\n' "$3" "$2" | sha256sum --check --strict
         }
         download 'https://github.com/tauri-apps/tauri/releases/download/tauri-cli-v2.12.5' "$tauri_archive" "$tauri_sha"
         download 'https://github.com/wasm-bindgen/wasm-bindgen/releases/download/0.2.129' "$bindgen_archive" "$bindgen_sha"
 
         if [[ "$RUNNER_OS" == Windows ]]; then
           7z x -so "$tauri_archive" cargo-tauri.exe > bin/cargo-tauri.exe
-        elif [[ "$RUNNER_OS" == macOS ]]; then
-          unzip -p "$tauri_archive" cargo-tauri > bin/cargo-tauri
-          chmod 755 bin/cargo-tauri
         else
           tar -xzf "$tauri_archive" -C bin cargo-tauri
         fi
@@ -82,4 +61,3 @@ runs:
         test "$(bin/cargo-tauri"$suffix" tauri --version)" = 'tauri-cli 2.12.5'
         test "$(bin/wasm-bindgen"$suffix" --version)" = 'wasm-bindgen 0.2.129'
         printf '%s\n' "$directory/bin" >> "$GITHUB_PATH"
-        log INFO "Verified native packaging tool versions and installed them"

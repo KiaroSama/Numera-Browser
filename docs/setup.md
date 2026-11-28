@@ -4,7 +4,7 @@ Choose a desktop package, a CLI-only server archive, a container or a source che
 
 ## Desktop packages
 
-Select a completed [GitHub Release](https://github.com/KiaroSama/Numera-Browser/releases) with a Windows/Linux x64 or arm64 asset, or a macOS arm64 asset for Apple Silicon. [Verify its signature and checksum](updates.md#verify-a-versioned-download) before installing or unpacking it. If there is no matching asset, that release has no ready-to-use package for your machine.
+Select a completed [GitHub Release](https://github.com/KiaroSama/Numera-Browser/releases) with a Windows or Linux x64 or arm64 asset. [Verify its signature and checksum](updates.md#verify-a-versioned-download) before installing or unpacking it. If there is no matching asset, that release has no ready-to-use package for your machine.
 
 ### Windows MSI (PowerShell 7)
 
@@ -31,31 +31,13 @@ chmod +x ./numera-browser-0.37.0-linux-x64.AppImage
 ./numera-browser-0.37.0-linux-x64.AppImage
 ```
 
-### macOS Apple Silicon
-
-Use `numera-browser-0.37.0-macos-arm64.dmg` or the matching `.app.zip` after
-verifying its detached signature and checksum. Open the DMG and copy
-**Numera Browser.app** to Applications, or extract the App ZIP. The desktop uses
-the system WebKit. Intel Mac and universal binaries are not release targets.
-
-Versioned Mac app and DMG downloads carry detached publisher signatures. They
-are not Apple-notarized and do not claim publicly trusted Developer ID signing.
-Follow your Mac's application approval policy. The separate manual owner-review
-workflow can apply the pinned private-trust codesigning identity to its portable
-executables; those review outputs are not published releases or notarized apps.
-
-For portable use, extract the matching `-portable.zip` and run `./numera` from
-the extracted **Numera Browser** folder. App/DMG installations update by replacing
-the installed app; authenticated in-app generation updates apply to signed
-portable installations.
-
 ### Portable desktop
 
 Extract the whole `Numera Browser` folder into a writable location. Keep the engine, resources, notices and manifests beside the shell. Run `.\numera.exe` in PowerShell 7 or `./numera` in Bash from that folder. Closing the window shuts down the owned manager and its sessions.
 
-A complete portable package needs no separate Python or Node installation. The OS still supplies the WebView and system libraries. Windows/Linux ARM64 packages do not include vendor browsers. Install only SDK and browser builds that support your target.
+A complete portable package needs no separate Python or Node installation. The OS still supplies the WebView and system libraries. ARM64 packages do not include vendor browsers. Install only SDK and browser builds that support your target.
 
-Full x64 and macOS ARM64 desktop packages bundle the reviewed Playwright, Patchright and Camoufox SDK/browser generations. CloakBrowser's proprietary browser binary is **not redistributed**: its acquisition is a separate end-user, consent-gated vendor operation, subject to its license and version availability. An installed SDK is not proof that its browser binary is ready.
+Full x64 desktop packages bundle the reviewed Playwright, Patchright and Camoufox SDK/browser generations. CloakBrowser's proprietary browser binary is **not redistributed**: its acquisition is a separate end-user, consent-gated vendor operation, subject to its license and version availability. An installed SDK is not proof that its browser binary is ready.
 
 ### First profile
 
@@ -77,8 +59,7 @@ Stop owned sessions before copying live browser storage. Protect backups like cr
 Requirements: Rust **1.100.0** (pinned by `rust-toolchain.toml`), the
 `wasm32-unknown-unknown` target and `wasm-bindgen-cli` **0.2.129**. Desktop
 builds also require Tauri CLI **2.12.5** and the platform's WebView development
-libraries. macOS builds require Xcode Command Line Tools on an Apple Silicon host.
-Complete portable bundles include their vendor driver executables
+libraries. Complete portable bundles include their vendor driver executables
 and serve the prebuilt dashboard.
 
 From the repository root in Bash:
@@ -176,7 +157,7 @@ checks are diagnostics; browser capabilities still differ by backend.
 ## CLI-only headless server
 
 Download and [verify](updates.md#verify-a-versioned-download) the CLI-only ZIP
-for Windows or tar.gz for Linux/macOS. Keep both executables in the same directory.
+for Windows or tar.gz for Linux. Keep both executables in the same directory.
 The archive has no desktop, WebView dependency or dashboard assets. Install
 compatible vendor resources separately if you need to launch browsers.
 
@@ -259,16 +240,10 @@ The native engine writes UTF-8 run logs under the actual data root's `logs/`. Ch
 ## Building distributions
 
 [Native CI](../.github/workflows/native-ci.yml) runs automatic independent
-Linux and Windows x64 and arm64 builds, plus macOS arm64 builds. Rust tooling
-produces portable bundles, CLI-only archives, Linux AppImages and DEBs, Windows
-MSIs, and macOS app ZIPs and DMGs. Each platform
+Linux and Windows x64 and arm64 builds. Rust tooling produces portable bundles,
+CLI-only archives, Linux AppImages and DEBs, and Windows MSIs. Each platform
 uploads an installer artifact and a separate portable archive artifact with
 distribution checksums.
-
-MSI is the default Windows distribution because full browser bundles can exceed
-the NSIS installer size limit. An explicit native source build can still request
-`--bundles nsis` with a suitably sized resource set; NSIS is not a default release
-asset. macOS builds default to both `app` and `dmg` bundles.
 
 Unsigned CI artifacts are review outputs. A completed signed release requires its
 separate protected signing workflow. See

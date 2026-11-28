@@ -12,7 +12,7 @@
 [![Latest release](https://img.shields.io/github/v/release/KiaroSama/Numera-Browser?style=flat-square&color=a21caf)](https://github.com/KiaroSama/Numera-Browser/releases)
 [![Native tests](https://img.shields.io/github/actions/workflow/status/KiaroSama/Numera-Browser/rust-candidate.yml?style=flat-square&color=65a30d)](#development-and-verification)
 [![Rust 1.100.0](https://img.shields.io/badge/Rust-1.100.0-8b5cf6?style=flat-square)](rust-toolchain.toml)
-[![Windows and Linux x64/arm64; macOS arm64](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-0891b2?style=flat-square)](#install)
+[![Windows and Linux: x64 and arm64](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%28x64%20%26%20arm64%29-0891b2?style=flat-square)](#install)
 [![MSI, AppImage, DEB and CLI-only](https://img.shields.io/badge/Installer-MSI%20%7C%20AppImage%20%7C%20DEB%20%7C%20CLI--only-ea580c?style=flat-square)](#install)
 [![Documentation](https://img.shields.io/badge/Docs-setup-0d9488?style=flat-square)](docs/setup.md)
 [![Repository size](https://img.shields.io/github/repo-size/KiaroSama/Numera-Browser?style=flat-square&color=ca8a04)](https://github.com/KiaroSama/Numera-Browser)
@@ -50,11 +50,9 @@ extracting it. A CI artifact is not a signed release.
 | Windows arm64 (`windows-arm64`) | MSI or portable ZIP | CLI-only ZIP |
 | Linux x64 (`linux-x64`) | AppImage, DEB or portable ZIP | CLI-only tar.gz |
 | Linux arm64 (`linux-arm64`) | AppImage, DEB or portable ZIP | CLI-only tar.gz |
-| macOS arm64 (`macos-arm64`) | App ZIP, DMG or portable ZIP | CLI-only tar.gz |
 
 Windows desktop builds need WebView2. Linux desktop builds need WebKitGTK 4.1
-and GTK 3. macOS packages target Apple Silicon and use the system WebKit.
-Before installing, follow the [signature and checksum checks](docs/updates.md#verify-a-versioned-download).
+and GTK 3. Before installing, follow the [signature and checksum checks](docs/updates.md#verify-a-versioned-download).
 The Windows publisher certificate is self-signed. Do not disable platform security
 or install an unknown root to bypass a warning.
 
@@ -75,12 +73,6 @@ chmod +x ./numera-browser-0.37.0-linux-x64.AppImage
 ./numera-browser-0.37.0-linux-x64.AppImage
 ```
 
-On macOS, open the verified DMG and copy **Numera Browser.app** to Applications,
-or extract the App ZIP. Versioned Mac packages have detached publisher signatures;
-Apple notarization and publicly trusted Developer ID signing are not claimed.
-The [setup guide](docs/setup.md#macos-apple-silicon) distinguishes these packages
-from the separately signed manual review artifacts.
-
 For a portable ZIP, extract the whole `Numera Browser` directory and leave the
 adjacent `engine/` folder in place. For a CLI-only ZIP or tar.gz, keep `numera-engine`
 and `numera-browser-runtime` together. See the [setup guide](docs/setup.md) for extraction,
@@ -91,7 +83,7 @@ platform prerequisites and Docker.
 ### Desktop GUI
 
 Start Numera Browser from the installed app menu, or run `numera.exe` on Windows
-or `./numera` on Linux or macOS from the portable folder. The app starts its own loopback
+or `./numera` on Linux from the portable folder. The app starts its own loopback
 manager. Check that the footer says **Engine online**, then create and launch a
 profile. See [browser backends](#browser-backends) if the selected browser is missing.
 
@@ -228,7 +220,7 @@ call `tools/list` on the transport you plan to use.
 Replace `<numera-dir>` with an absolute path to a writable Numera folder. Set
 `command` to the actual engine path: the extracted CLI-only directory or the
 desktop bundle's `engine/` directory, for example. Use forward slashes or escaped
-backslashes in JSON. Omit `.exe` on Linux and macOS. Create the cache and temp directories
+backslashes in JSON. Omit `.exe` on Linux. Create the cache and temp directories
 before starting the client:
 
 ```json
@@ -290,8 +282,7 @@ both against the same profile while it is in use.
 | `camoufox` | Firefox build, add-ons and data. Camoufox generates parts of its own identity. |
 | `cloak` | Native preparation plus a separately licensed vendor browser. Public packages exclude the proprietary binary. |
 
-Full x64 and macOS ARM64 desktop packages include reviewed browser resources;
-Windows/Linux ARM64 desktop packages and CLI-only archives do not. Use the
+Full x64 desktop packages include reviewed browser resources; ARM64 desktop packages and CLI-only archives do not. Use the
 [setup guide](docs/setup.md) for platform-specific prerequisites. Cloak requires
 explicit consent, a license and access to the selected vendor generation.
 
@@ -369,9 +360,7 @@ Review and redact copies before sharing. Never attach raw cookies, tokens or pro
 | [`tools/xtask/`](tools/xtask/) | CI, resource provisioning, package and signature tools |
 
 [Native CI](.github/workflows/native-ci.yml) builds the desktop and CLI-only
-packages on all five 64-bit targets. macOS ARM64 also runs the native functional
-suite, desktop/ownership contracts and real Playwright/Patchright/Camoufox SDK lifecycle
-checks. Its required checks cover the maintained
+packages on all four 64-bit targets. Its required checks cover the maintained
 suite inventory, CLI/MCP/dashboard contracts, real browser behavior, relocation,
 process ownership, dependencies and CodeQL (`actions` and `rust`). Live Cloak
 needs the vendor license; its offline and contract tests do not. Hosted timing
