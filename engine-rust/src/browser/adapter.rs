@@ -290,11 +290,17 @@ pub fn restrict_environment(command: &mut Command) {
     for key in [
         "NUMERA_API_TOKEN",
         "NUMERA_PASSWORD",
+        "NUMERA_JOB_ARGUMENT_KEY",
         "NUMERA_UPDATE_TOKEN",
         "NUMERA_UPDATE_TICKET",
         "NUMERA_UPDATE_ACTIVATION",
         "NUMERA_TREE",
         "NUMERA_READY_FILE",
+        "NUMERA_BROWSER_UNITS",
+        "NUMERA_BROWSER_EXECUTABLE",
+        "NUMERA_BROWSER_EXEC_OWNER",
+        "NUMERA_BROWSER_PARENT_UNITS",
+        "NUMERA_BROWSER_PARENT_SCOPE",
     ] {
         command.env_remove(key);
     }
@@ -323,6 +329,8 @@ impl Adapter {
             .stdout(Stdio::piped())
             .stderr(Stdio::null());
         restrict_environment(command);
+        #[cfg(unix)]
+        session.own_browser_units(command)?;
         let log = command
             .get_envs()
             .find(|(key, _)| *key == "NUMERA_ADAPTER_LOG_DIR")

@@ -3,6 +3,7 @@ use super::*;
 pub(super) fn verify() -> TestResult {
     const TREE: &str = "engine-rust/src/ownership/tree.rs";
     const SESSION: &str = "engine-rust/src/ownership/session.rs";
+    const REPORT: &str = "engine-rust/src/ownership/unit_report.rs";
     const TESTS: &str = "engine-rust/src/ownership/macos_tests.rs";
     let cases = history::macos_cases();
     let case = cases
@@ -12,9 +13,11 @@ pub(super) fn verify() -> TestResult {
     let temporary = Temp::new("macos-session-source-bridge")?;
     let tree = fs::read(root().join(TREE))?;
     let session = fs::read(root().join(SESSION))?;
+    let report = fs::read(root().join(REPORT))?;
     let tests = fs::read(root().join(TESTS))?;
     temporary.write(TREE, &tree)?;
     temporary.write(SESSION, &session)?;
+    temporary.write(REPORT, &report)?;
     temporary.write(TESTS, &tests)?;
     let old = ci::git(&root(), &["show", &format!("{}:{TREE}", case.commit)])?;
     let mut cache = BTreeMap::new();
@@ -46,7 +49,7 @@ pub(super) fn verify() -> TestResult {
     assert_eq!(receipts.len(), 1);
     let receipts: Value = serde_json::from_slice(&fs::read(&receipts[0])?)?;
     let receipts = receipts.as_array().expect("caller receipts");
-    assert_eq!(receipts.len(), 1);
+    assert_eq!(receipts.len(), 2);
     let receipt = &receipts[0];
     assert_eq!(receipt["source_path"], SESSION);
     assert_eq!(receipt["historical_source_path"], TREE);
@@ -59,9 +62,29 @@ pub(super) fn verify() -> TestResult {
         receipt["status"].is_null(),
         "materialization is not semantic verification"
     );
+    let changed_report = fs::read(temporary.0.join(REPORT))?;
+    assert_eq!(
+        String::from_utf8(changed_report.clone())?,
+        String::from_utf8(report.clone())?.replace(
+            "super::tree::primary_record_empty(&owner_group)?",
+            "super::tree::record_empty(&owner_group)?"
+        )
+    );
+    let receipt = &receipts[1];
+    assert_eq!(receipt["source_path"], REPORT);
+    assert_eq!(receipt["historical_source_path"], TREE);
+    assert_eq!(receipt["historical_source_commit"], case.commit);
+    assert_eq!(receipt["historical_source_sha256"], case.files[TREE]);
+    assert_eq!(receipt["before_sha256"], ci::sha(&report));
+    assert_eq!(receipt["after_sha256"], ci::sha(&changed_report));
+    assert_eq!(receipt["selected_primary_bytes_unchanged"], true);
+    assert_eq!(receipt["browser_publication_executed"], false);
+    assert_eq!(receipt["literal_historical_execution"], false);
+    assert!(receipt["status"].is_null());
     swapped.restore()?;
     assert_eq!(fs::read(temporary.0.join(TREE))?, tree);
     assert_eq!(fs::read(temporary.0.join(SESSION))?, session);
+    assert_eq!(fs::read(temporary.0.join(REPORT))?, report);
     assert_eq!(fs::read(temporary.0.join(TESTS))?, tests);
     assert!(ci::history_compat::additional_callers(&temporary.0, &cases[0])?.is_empty());
     for damage in [
@@ -71,6 +94,7 @@ pub(super) fn verify() -> TestResult {
         "commit",
         "platform",
         "selected-caller",
+        "selected-receipt-caller",
     ] {
         let mut wrong = case.clone();
         match damage {
@@ -79,8 +103,11 @@ pub(super) fn verify() -> TestResult {
             "symptom" => wrong.symptom = "unreviewed failure".into(),
             "commit" => wrong.commit = "0".repeat(40),
             "platform" => wrong.platform = Some("linux".into()),
-            _ => {
+            "selected-caller" => {
                 wrong.files.insert(SESSION.into(), ci::sha(&session));
+            }
+            _ => {
+                wrong.files.insert(REPORT.into(), ci::sha(&report));
             }
         }
         assert!(
@@ -89,11 +116,18 @@ pub(super) fn verify() -> TestResult {
         );
         assert_eq!(fs::read(temporary.0.join(TREE))?, tree);
         assert_eq!(fs::read(temporary.0.join(SESSION))?, session);
+        assert_eq!(fs::read(temporary.0.join(REPORT))?, report);
         assert_eq!(fs::read(temporary.0.join(TESTS))?, tests);
     }
     fs::write(
         temporary.0.join(SESSION),
         [session.as_slice(), b"\n// unreviewed caller\n"].concat(),
+    )?;
+    assert!(ci::history_compat::additional_callers(&temporary.0, case).is_err());
+    fs::write(temporary.0.join(SESSION), &session)?;
+    fs::write(
+        temporary.0.join(REPORT),
+        [report.as_slice(), b"\n// unreviewed caller\n"].concat(),
     )?;
     assert!(ci::history_compat::additional_callers(&temporary.0, case).is_err());
     Ok(())

@@ -1,10 +1,12 @@
 use super::*;
+#[path = "../common/worker_claim.rs"]
+mod worker_claim;
 
 fn owned_claim(root: &Path, id: &str) -> io::Result<Value> {
     match claims::read(root, id) {
         claims::Claim::Record(mut record) => {
             record["pidToken"] = record["token"].take();
-            Ok(record)
+            worker_claim::capture(record)
         }
         _ => Err(io::Error::other("owned claim absent")),
     }

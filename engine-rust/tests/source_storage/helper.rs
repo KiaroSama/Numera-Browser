@@ -43,6 +43,7 @@ fn adapter(root: &Path) -> Result<i32, Box<dyn std::error::Error>> {
             "open" => {
                 let claims = fs::read_dir(root.join("sessions"))?
                     .filter_map(Result::ok)
+                    .filter(|entry| entry.path().extension().is_some_and(|ext| ext == "json"))
                     .filter_map(|entry| fs::read(entry.path()).ok())
                     .filter_map(|bytes| serde_json::from_slice::<serde_json::Value>(&bytes).ok())
                     .collect::<Vec<_>>();

@@ -98,6 +98,12 @@ not prove that its descendants have exited. Linux observations distinguish live
 members from zombies. macOS observations use the platform's native process
 information rather than inventing Linux `/proc` results.
 
+On POSIX, a vendor SDK's detached browser enters through the native worker's
+exec entry. It records its PID, birth identity and process group in the session
+receipt before executing the browser. Settlement stops the worker first, then
+the recorded browser groups. Incomplete evidence retains the claim. Windows
+continues to use the original retained Job handles.
+
 Durable claims include tree identity and session ownership. An unreadable claim,
 unknown tree kind or uncertain observation remains owned. Status, stop, deletion,
 background jobs and updater admission use that same rule. The project never

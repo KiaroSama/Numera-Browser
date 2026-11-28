@@ -19,6 +19,8 @@ mod browser_logs;
 #[path = "common/cloak.rs"]
 mod cloak;
 mod common;
+#[path = "common/worker_claim.rs"]
+mod worker_claim;
 
 fn adapter_logs(root: &Path) -> std::io::Result<String> {
     let mut text = String::new();
@@ -269,7 +271,7 @@ fn fixed_adapter_observes_first_page_close_without_inventing_a_new_page()
     let result = (|| -> Result<(), Box<dyn std::error::Error>> {
         sdk.open(
             "playwright",
-            json!({"user_data_dir":root.join("profile"),"headless":true})
+            json!({"user_data_dir":root.join("profile"),"headless":true,"channel":"chromium"})
                 .as_object()
                 .cloned()
                 .ok_or("Options missing")?,
@@ -978,6 +980,7 @@ fn native_transport_refuses_wrong_envelope_partial_frame_and_unresponsive_writer
             claims::state(&claims::read(root, "a"), "fixture-host"),
             claims::State::Busy
         );
+        let record = worker_claim::capture(record)?;
         adapter.finish(Duration::from_secs(3))?;
         assert!(core::ownership::tree::record_empty(&record)?);
         assert!(matches!(claims::read(root, "a"), claims::Claim::Absent));

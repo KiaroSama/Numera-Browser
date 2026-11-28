@@ -41,7 +41,20 @@ pub fn read(root: &Path, id: &str) -> Claim {
         Err(_) => return Claim::Unreadable,
     };
     match serde_json::from_slice::<Value>(&bytes) {
-        Ok(value) if value.is_object() => Claim::Record(value),
+        Ok(value) if value.is_object() => {
+            if let Some(receipt) = value.get("browserUnits") {
+                let valid = receipt.as_str().is_some_and(|path| {
+                    let path = Path::new(path);
+                    crate::storage::locks::resolved(&root.join("sessions"))
+                        .is_ok_and(|parent| path.parent() == Some(parent.as_path()))
+                        && super::unit_report::validate(path).is_ok()
+                });
+                if !valid {
+                    return Claim::Unreadable;
+                }
+            }
+            Claim::Record(value)
+        }
         _ => Claim::Unreadable,
     }
 }
@@ -118,6 +131,16 @@ pub fn refuse_if_busy(root: &Path, id: &str, host: &str) -> io::Result<()> {
 
 /// The caller holds the source-compatible session lease through this lifetime.
 pub fn take(root: &Path, id: &str, tree: &OwnedTree, host: &str, what: &str) -> io::Result<String> {
+    take_with_browser_units(root, id, tree, host, what, None)
+}
+pub(crate) fn take_with_browser_units(
+    root: &Path,
+    id: &str,
+    tree: &OwnedTree,
+    host: &str,
+    what: &str,
+    units: Option<&Path>,
+) -> io::Result<String> {
     let lock = DataLock::transaction(root)?;
     let _guard = lock.acquire_configured()?;
     super::update_admission::assert_open_locked(root)?;
@@ -133,6 +156,9 @@ pub fn take(root: &Path, id: &str, tree: &OwnedTree, host: &str, what: &str) -> 
     bytes[8] = (bytes[8] & 0x3f) | 0x80;
     let session = bytes.iter().map(|b| format!("{b:02x}")).collect::<String>();
     let mut record = tree.record();
+    if let Some(path) = units {
+        record["browserUnits"] = path.to_string_lossy().into_owned().into();
+    }
     let fields = json!({"session":session,"host":host,"what":what,"started":SystemTime::now().duration_since(UNIX_EPOCH).map_err(io::Error::other)?.as_secs_f64()});
     record
         .as_object_mut()

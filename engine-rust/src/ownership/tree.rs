@@ -215,6 +215,7 @@ impl OwnedTree {
             let job = Job::new().map_err(SpawnFailure::BeforeBirth)?;
             command.creation_flags(0x0000_0004 | 0x0800_0000); // suspended, no console
             let child = command.spawn().map_err(|error| {
+                super::windows::diagnostic("CreateProcessW/suspended", &error);
                 // Windows std returns the owned process directly after a successful
                 // CreateProcessW. A missing executable leaves no child to transfer.
                 if error.kind() == io::ErrorKind::NotFound {
@@ -233,7 +234,7 @@ impl OwnedTree {
                     ));
                 }
             };
-            if let Err(error) = job.assign(&child).and_then(|_| resume(child.id())) {
+            if let Err(error) = job.assign(&child).and_then(|_| resume(&child)) {
                 return Err(SpawnFailure::born(
                     error,
                     child,
@@ -383,7 +384,8 @@ impl OwnedTree {
                 .checked_add(budget)
                 .ok_or_else(|| io::Error::other("Invalid tree cleanup budget"))?;
             let owner = self.windows.as_mut().expect("Live owned Windows state");
-            settle_windows_with(deadline, owner)?;
+            settle_windows_with(deadline, owner)
+                .inspect_err(|error| super::windows::diagnostic("settle_tree", error))?;
             owner.witnesses.clear_proved();
             self.settled = true;
             Ok(())
@@ -545,6 +547,18 @@ impl Drop for OwnedTree {
 }
 
 pub fn record_empty(record: &serde_json::Value) -> io::Result<bool> {
+    if !primary_record_empty(record)? {
+        return Ok(false);
+    }
+    if let Some(path) = record.get("browserUnits") {
+        let path = path
+            .as_str()
+            .ok_or_else(|| io::Error::other("Browser ownership receipt is invalid"))?;
+        return super::unit_report::empty(std::path::Path::new(path));
+    }
+    Ok(true)
+}
+pub(super) fn primary_record_empty(record: &serde_json::Value) -> io::Result<bool> {
     #[cfg(windows)]
     {
         let tree = &record["tree"];
@@ -631,10 +645,9 @@ fn group_empty(group: i32) -> io::Result<bool> {
                 super::test_support::stat(&path).unwrap_or_else(|| std::fs::read_to_string(&path));
             #[cfg(not(feature = "test-support"))]
             let text = std::fs::read_to_string(&path);
-            match text {
-                Ok(text) => super::observation::procfs_process(pid, &text),
-                Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(None),
-                Err(error) => Err(error),
+            match super::procfs::stat_text(text)? {
+                Some(text) => super::observation::procfs_process(pid, &text),
+                None => Ok(None),
             }
         }
     }

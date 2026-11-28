@@ -25,10 +25,10 @@ pub fn started_at(pid: u32) -> io::Result<Option<u64>> {
     if let Some(result) = super::test_support::birth(pid) {
         return result;
     }
-    let text = match std::fs::read_to_string(format!("/proc/{pid}/stat")) {
-        Ok(value) => value,
-        Err(e) if e.kind() == io::ErrorKind::NotFound => return Ok(None),
-        Err(e) => return Err(e),
+    let Some(text) =
+        super::procfs::stat_text(std::fs::read_to_string(format!("/proc/{pid}/stat")))?
+    else {
+        return Ok(None);
     };
     let (_, fields) = text
         .rsplit_once(") ")

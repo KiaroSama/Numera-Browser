@@ -1,20 +1,23 @@
 #![allow(unsafe_code)]
 use std::{
-    io, mem,
-    os::windows::io::{AsHandle, AsRawHandle, BorrowedHandle, FromRawHandle, OwnedHandle},
+    io::{self, Write},
+    mem,
+    os::windows::{
+        io::{AsHandle, AsRawHandle, BorrowedHandle, FromRawHandle, OwnedHandle},
+        process::ChildExt,
+    },
     process::Child,
     ptr,
     time::Instant,
 };
 use windows_sys::Win32::{
     Foundation::{
-        CloseHandle, ERROR_NO_MORE_FILES, HANDLE, INVALID_HANDLE_VALUE, WAIT_FAILED, WAIT_OBJECT_0,
-        WAIT_TIMEOUT,
+        ERROR_NO_MORE_FILES, HANDLE, INVALID_HANDLE_VALUE, WAIT_FAILED, WAIT_OBJECT_0, WAIT_TIMEOUT,
     },
     System::{
         Diagnostics::ToolHelp::{
             CreateToolhelp32Snapshot, PROCESSENTRY32W, Process32FirstW, Process32NextW,
-            TH32CS_SNAPPROCESS, TH32CS_SNAPTHREAD, THREADENTRY32, Thread32First, Thread32Next,
+            TH32CS_SNAPPROCESS,
         },
         JobObjects::{
             AssignProcessToJobObject, CreateJobObjectW, IsProcessInJob,
@@ -25,14 +28,33 @@ use windows_sys::Win32::{
         },
         SystemServices::{JOB_OBJECT_QUERY, JOB_OBJECT_TERMINATE},
         Threading::{
-            GetCurrentProcess, OpenProcess, OpenThread, PROCESS_QUERY_LIMITED_INFORMATION,
-            PROCESS_SYNCHRONIZE, QueryFullProcessImageNameW, ResumeThread, THREAD_SUSPEND_RESUME,
-            WaitForSingleObject,
+            GetCurrentProcess, OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION, PROCESS_SYNCHRONIZE,
+            QueryFullProcessImageNameW, ResumeThread, WaitForSingleObject,
         },
     },
 };
 
 pub struct Job(OwnedHandle, String);
+
+pub(super) fn diagnostic(operation: &'static str, error: &io::Error) {
+    if std::env::var_os("NUMERA_WINDOWS_OWNERSHIP_DIAGNOSTICS").is_some_and(|value| value == "1") {
+        // Emit only fixed operation names and numeric OS provenance. Returning
+        // the original error preserves both ErrorKind and raw_os_error.
+        let _ = writeln!(
+            io::stderr().lock(),
+            "{} [ERROR] [ownership] operation={operation} winerror={:?} kind={:?}",
+            chrono::Utc::now().format("%Y-%m-%dT%H:%M:%S%.3fZ"),
+            error.raw_os_error(),
+            error.kind()
+        );
+    }
+}
+
+fn syscall_error(operation: &'static str) -> io::Error {
+    let error = io::Error::last_os_error();
+    diagnostic(operation, &error);
+    error
+}
 
 struct ProcessWitness {
     pid: u32,
@@ -230,7 +252,7 @@ impl Job {
         let wide: Vec<u16> = name.encode_utf16().chain(Some(0)).collect();
         let handle = unsafe { CreateJobObjectW(ptr::null(), wide.as_ptr()) };
         if handle.is_null() {
-            return Err(io::Error::last_os_error());
+            return Err(syscall_error("CreateJobObjectW"));
         }
         // SAFETY: non-null uniquely owned job handle requires CloseHandle;
         // OwnedHandle supplies that lifetime and safe Send/Sync semantics.
@@ -248,7 +270,7 @@ impl Job {
             )
         } == 0
         {
-            return Err(io::Error::last_os_error());
+            return Err(syscall_error("SetInformationJobObject"));
         }
         Ok(job)
     }
@@ -262,7 +284,7 @@ impl Job {
             AssignProcessToJobObject(self.0.as_raw_handle(), child.as_raw_handle() as HANDLE)
         } == 0
         {
-            return Err(io::Error::last_os_error());
+            return Err(syscall_error("AssignProcessToJobObject"));
         }
         Ok(())
     }
@@ -289,7 +311,7 @@ impl Job {
             )
         } == 0
         {
-            return Err(io::Error::last_os_error());
+            return Err(syscall_error("QueryInformationJobObject/accounting"));
         }
         Ok(info)
     }
@@ -601,48 +623,25 @@ pub fn settle_named(name: &str, end: std::time::Instant, pid: Option<u32>) -> io
     }
 }
 
-pub fn resume(pid: u32) -> io::Result<()> {
-    // SAFETY: read-only kernel thread snapshot, handle closed on all paths.
-    let snapshot = unsafe { CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0) };
-    if snapshot == INVALID_HANDLE_VALUE {
-        return Err(io::Error::last_os_error());
+pub fn resume(child: &Child) -> io::Result<()> {
+    // CREATE_SUSPENDED applies to the primary thread. Retain the exact handle
+    // returned by CreateProcessW instead of reopening recyclable snapshot IDs
+    // or consuming suspensions belonging to other threads in this process.
+    // SAFETY: Child owns this primary-thread handle throughout the syscall.
+    let count = unsafe { ResumeThread(child.main_thread_handle().as_raw_handle()) };
+    match count {
+        1 => Ok(()),
+        u32::MAX => Err(syscall_error("ResumeThread/primary")),
+        _ => {
+            let error = io::Error::other(format!(
+                "Owned primary thread had an unexpected suspend count: {count}"
+            ));
+            diagnostic("primary_suspend_count", &error);
+            Err(error)
+        }
     }
-    let result = (|| {
-        // SAFETY: required POD entry size set before enumeration.
-        let mut entry: THREADENTRY32 = unsafe { mem::zeroed() };
-        entry.dwSize = mem::size_of_val(&entry) as u32;
-        let mut present = unsafe { Thread32First(snapshot, &mut entry) } != 0;
-        let mut resumed = false;
-        while present {
-            if entry.th32OwnerProcessID == pid {
-                // SAFETY: targeted thread from snapshot; no other access rights.
-                let handle = unsafe { OpenThread(THREAD_SUSPEND_RESUME, 0, entry.th32ThreadID) };
-                if handle.is_null() {
-                    return Err(io::Error::last_os_error());
-                }
-                let count = unsafe { ResumeThread(handle) };
-                let error = if count == u32::MAX {
-                    Some(io::Error::last_os_error())
-                } else {
-                    None
-                };
-                unsafe { CloseHandle(handle) };
-                if let Some(error) = error {
-                    return Err(error);
-                }
-                resumed = true;
-            }
-            present = unsafe { Thread32Next(snapshot, &mut entry) } != 0;
-        }
-        let error = io::Error::last_os_error();
-        if !resumed {
-            return Err(io::Error::other("Suspended child has no resumable thread"));
-        }
-        if error.raw_os_error() != Some(ERROR_NO_MORE_FILES as i32) {
-            return Err(error);
-        }
-        Ok(())
-    })();
-    unsafe { CloseHandle(snapshot) };
-    result
 }
+
+#[cfg(test)]
+#[path = "windows_resume_tests.rs"]
+mod tests;

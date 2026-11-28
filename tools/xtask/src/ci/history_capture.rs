@@ -167,7 +167,9 @@ pub(super) fn additional(root: &Path, case: &Case) -> Result<Vec<(String, Replac
         root,
         case,
         ADAPTER,
-        "49ddb95a5d79b60af81c43f0f81fb493b6fb12e8c999f59061987060ce334fc6",
+        // Reviewed current adapter adds private environment stripping and
+        // browser receipt preparation. Its historical pipe alias is unchanged.
+        "8bfdeba7ceb6efc410f07fa3281132930b55eb5798d623dec01f15afde01c685",
     )?;
     let mut adapter = caller_replacement(
         case,
@@ -186,7 +188,7 @@ pub(super) fn additional(root: &Path, case: &Case) -> Result<Vec<(String, Replac
         ],
     )?;
     if super::sha(&adapter.bytes)
-        != "47198bed13ee1cb1e61670157dc36d2964b36a99b6c2d8df47a3666f3c0bd164"
+        != "4f20c0337252486895624c94b6530853f1917440f4b0b45530d1d391f1e801cc"
     {
         return fail("Historical capture pipe alias differs from its actual proof");
     }
@@ -195,6 +197,7 @@ pub(super) fn additional(root: &Path, case: &Case) -> Result<Vec<(String, Replac
         replacement.receipt["selected_primary_bytes_unchanged"] = true.into();
         replacement.receipt["caller_only_current_green_probe_sha256"] =
             "a7b104c8ab212a471a8fe64be3712e3f4507e724f97d458ecf64d97fc59b1924".into();
+        replacement.receipt["reviewed_current_caller_change"] = "The current adapter adds private environment stripping and browser receipt preparation. The two pipe aliases and Units bridge are unchanged; the retained green-probe digest identifies the original bridge proof, not a new execution receipt.".into();
         replacement.receipt["reason"] = "The exact direct-capture target and fixture compiler call original run/run_controlled. Only later unselected observer adapters are unavailable; the pipe alias is the same capture_pipe::Pipe enum. Preserve limits, cancellation, mandatory receipt settlement and actual retained producer ownership; synthesize no observations.".into();
         replacement.receipt["secondary_diagnostic_limitation"] = "Old Failure has no context API. If capture and receipt settlement both fail, the original capture error remains fatal and Units Drop retains the unsettled receipt; secondary error attachment and modern before-EOF settlement are not claimed for this exact historical graph.".into();
     }

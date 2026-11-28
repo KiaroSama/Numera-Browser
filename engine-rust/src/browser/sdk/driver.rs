@@ -1,5 +1,6 @@
-//! Native transport ownership. No Python imports, implicit acquisition, process
-//! group escape, or SDK-installed signal handlers are involved.
+//! Native transport ownership without Python imports or implicit acquisition.
+//! Detached vendor browser groups publish
+//! native ownership receipts before executing browser code.
 use playwright_rs::server::{
     channel_owner::ChannelOwner,
     connection::{Connection, ConnectionExt, ConnectionLike},
@@ -261,6 +262,7 @@ impl Driver {
             .env("CLOAKBROWSER_AUTO_UPDATE", "false")
             .env_remove("NUMERA_PASSWORD")
             .env_remove("NUMERA_API_TOKEN")
+            .env_remove("NUMERA_JOB_ARGUMENT_KEY")
             .env_remove("NUMERA_UPDATE_TOKEN")
             .env_remove("NUMERA_UPDATE_TICKET")
             .env_remove("NUMERA_UPDATE_ACTIVATION")
@@ -418,6 +420,12 @@ impl Driver {
             playwright.firefox()
         } else {
             playwright.chromium()
+        };
+        #[cfg(unix)]
+        let request = {
+            let mut request = request;
+            super::owned_exec::prepare(&mut request.options, browser.executable_path())?;
+            request
         };
         // Use the protocol without the Rust binding's test-only Windows launch
         // flags, which would otherwise disable web security in user profiles.

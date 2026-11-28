@@ -90,6 +90,31 @@ pub fn empty(record: &Value) -> io::Result<bool> {
     }
 }
 pub fn settle(record: &Value, budget: Duration) -> io::Result<bool> {
+    let end = Instant::now()
+        .checked_add(budget)
+        .ok_or_else(|| io::Error::other("Invalid job stop budget"))?;
+    let Some(receipt) = record.get("browserUnits") else {
+        return settle_primary(record, budget);
+    };
+    let receipt = receipt
+        .as_str()
+        .ok_or_else(|| io::Error::other("Browser ownership receipt is invalid"))?;
+    let mut primary = record.clone();
+    primary
+        .as_object_mut()
+        .ok_or_else(|| io::Error::other("Owned record is invalid"))?
+        .remove("browserUnits");
+    if !settle_primary(&primary, budget / 2)? {
+        return Ok(false);
+    }
+    let remaining = end.saturating_duration_since(Instant::now());
+    if remaining.is_zero() {
+        super::unit_report::empty_before(std::path::Path::new(receipt), end)
+    } else {
+        super::unit_report::settle(std::path::Path::new(receipt), remaining)
+    }
+}
+fn settle_primary(record: &Value, budget: Duration) -> io::Result<bool> {
     if !verified(record) {
         return Err(io::Error::other(
             "Stored job has no verified process identity",
@@ -149,7 +174,9 @@ pub fn settle(record: &Value, budget: Duration) -> io::Result<bool> {
 #[cfg(unix)]
 #[allow(unsafe_code)]
 fn signal(record: &Value, force: bool) -> io::Result<()> {
-    struct Native;
+    struct Native {
+        failure: Option<(io::ErrorKind, String)>,
+    }
     impl super::observation::SignalSource for Native {
         fn birth(&mut self, pid: u32) -> io::Result<Option<u64>> {
             identity::started_at(pid)
@@ -159,6 +186,15 @@ fn signal(record: &Value, force: bool) -> io::Result<()> {
             unsafe { libc::getpgrp() }
         }
         fn deliver(&mut self, target: i32, force: bool) -> io::Result<()> {
+            let result = self.deliver_once(target, force);
+            if let Err(error) = &result {
+                self.failure = Some((error.kind(), error.to_string()));
+            }
+            result
+        }
+    }
+    impl Native {
+        fn deliver_once(&mut self, target: i32, force: bool) -> io::Result<()> {
             #[cfg(feature = "test-support")]
             if let Some(result) = super::test_support::signal(target, force) {
                 return result;
@@ -184,6 +220,7 @@ fn signal(record: &Value, force: bool) -> io::Result<()> {
     } else {
         None
     };
+    let mut native = Native { failure: None };
     let attempt = super::observation::attempt_signal(
         super::observation::SignalIdentity {
             pid: pid(record)?,
@@ -191,12 +228,12 @@ fn signal(record: &Value, force: bool) -> io::Result<()> {
             group,
         },
         force,
-        &mut Native,
+        &mut native,
     );
     if attempt.delivered || attempt.errno == Some(libc::ESRCH) {
         return Ok(());
     }
-    Err(io::Error::other(super::observation::diagnostic(
+    let diagnostic = super::observation::diagnostic(
         group.unwrap_or_else(|| {
             record["pid"]
                 .as_i64()
@@ -206,7 +243,13 @@ fn signal(record: &Value, force: bool) -> io::Result<()> {
         !force,
         false,
         true,
-    )))
+    );
+    // Preserve the original syscall cause without retaining arbitrary text in
+    // the bounded numeric observation cache or issuing another signal/query.
+    Err(match native.failure {
+        Some((kind, cause)) => io::Error::new(kind, format!("{diagnostic}; {cause}")),
+        None => io::Error::other(diagnostic),
+    })
 }
 
 #[cfg(unix)]

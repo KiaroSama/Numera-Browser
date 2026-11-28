@@ -223,6 +223,14 @@ pub fn dependency_updates(document: &Value) -> Result<()> {
         ("cargo", "/tools/xtask/lifecycle-tests"),
         ("cargo", "/tools/security-scan"),
         ("github-actions", "/"),
+        (
+            "github-actions",
+            "/.github/actions/native-candidate-acceptance",
+        ),
+        (
+            "github-actions",
+            "/.github/actions/source-module-checkpoints",
+        ),
         ("docker", "/"),
     ]);
     let actual = updates
@@ -240,8 +248,16 @@ pub fn dependency_updates(document: &Value) -> Result<()> {
         .collect::<Result<BTreeSet<_>>>()?;
     if document["version"] != 2 || actual != expected || actual.len() != updates.len() {
         return fail(
-            "Dependency updates must cover all seven Cargo crates, Actions and Docker exactly once",
+            "Dependency updates must cover all seven Cargo crates, workflows, external composite actions and Docker exactly once",
         );
+    }
+    for row in updates {
+        if row["package-ecosystem"] == "github-actions"
+            && row["directory"] != "/"
+            && (row["schedule"]["interval"] != "weekly" || row["open-pull-requests-limit"] == 0)
+        {
+            return fail("Composite action updates must remain enabled on the weekly schedule");
+        }
     }
     Ok(())
 }

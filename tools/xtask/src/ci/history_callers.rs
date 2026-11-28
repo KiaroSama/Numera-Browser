@@ -12,7 +12,12 @@ use std::{fs, path::Path};
 const HTTP: &str = "engine-rust/src/http/profile_routes.rs";
 const TREE: &str = "engine-rust/src/ownership/tree.rs";
 const SESSION: &str = "engine-rust/src/ownership/session.rs";
-const SESSION_CLASSIFIED: &str = "c35c543c0a84f47c8567ea32a921840ab1bd69a8592c0e8227fa74f44d71737d";
+// Reviewed current callers retain separately grouped browser receipts and
+// retry dropped sessions with their original tree and update reservation.
+// Historical tree/claim/parser blobs and their named assertions stay frozen.
+const SESSION_CLASSIFIED: &str = "eaa81b9ae06b3bdc1ca89bca2deaced4bca94aa3e4eb40b54c6d3fe0abdfe363";
+const UNIT_REPORT_CURRENT: &str =
+    "11032b8cd83cca03b9a36d820c20be5e3f1375d38c0342a8b497d1beedb6c778";
 const MACOS_TREE: &str = "201260e01da09fea13951ba61ab0265faa68499554d4cfefaf712a179dc8b36b";
 const SETTINGS: &str = "engine-rust/src/cli/settings_commands.rs";
 const CONFIG: &str = "engine-rust/src/storage/config.rs";
@@ -39,20 +44,24 @@ const LOCKS: &str = "engine-rust/src/storage/locks.rs";
 const EXTENSION_ICON_CASE: &str =
     "icons::extension_icon_http_matches_original_known_folder_and_file_contracts";
 
-/// The separate owning-host Mac proof may adapt only this later Session
-/// caller. Its exact selected tree/test/commit never become a canonical99 row.
-pub(super) fn macos_session_caller(
+/// The separate owning-host Mac proof may adapt only these pinned later
+/// callers. Its exact selected tree/test/commit never become a canonical99 row.
+pub(super) fn macos_ownership_caller(
     case: &Case,
     path: &str,
     source: &Source,
     current: &[u8],
 ) -> bool {
-    path == SESSION
-        && source.commit == "897caadef85053d6d74896e901fc9a21f7baa6dd"
+    let expected = match path {
+        SESSION => SESSION_CLASSIFIED,
+        UNIT_REPORT => UNIT_REPORT_CURRENT,
+        _ => return false,
+    };
+    source.commit == "897caadef85053d6d74896e901fc9a21f7baa6dd"
         && source.sha256 == MACOS_TREE
         && case.files.get(TREE) == Some(&source.sha256)
         && super::history::macos_cases().contains(case)
-        && super::sha(current) == SESSION_CLASSIFIED
+        && super::sha(current) == expected
 }
 const CLOCK_FIXTURE: &str = "engine-rust/tests/profile_read_parity.rs";
 const CLOCK_CASE: &str = "relative_activity_http_matches_original_without_rewriting_storage";
@@ -147,15 +156,23 @@ pub fn additional(root: &Path, case: &Case) -> Result<Vec<(String, Replacement)>
             SESSION,
             &bytes,
             source,
-            &[(
-                "claims::release_before(&self.root, &self.id, claim, tree, deadline)?",
-                "claims::release(&self.root, &self.id, claim, tree)?",
-            )],
+            &[
+                (
+                    "claims::release_before(&self.root, &self.id, claim, tree, deadline)?",
+                    "claims::release(&self.root, &self.id, claim, tree)?",
+                ),
+                (
+                    "claims::take_with_browser_units(\n            &self.root,\n            &self.id,\n            tree,\n            &self.host,\n            what,\n            self.browser_units.as_deref(),\n        )",
+                    "claims::take(&self.root, &self.id, tree, &self.host, what)",
+                ),
+            ],
         )?;
         replacement.receipt["historical_source_path"] = CLAIMS.into();
         replacement.receipt["selected_primary_bytes_unchanged"] = true.into();
         replacement.receipt["session_cleanup_executed"] = false.into();
-        replacement.receipt["reason"] = "The frozen claims API exposes release, so the unexecuted later Session caller uses that signature. The original diagnostic assertions call describe directly and retain the exact selected source.".into();
+        replacement.receipt["session_spawn_executed"] = false.into();
+        replacement.receipt["reviewed_current_caller_change"] = "Session now retains browser receipts and passes their capability when taking claims; the original diagnostic fixture never starts or finishes a Session.".into();
+        replacement.receipt["reason"] = "The frozen claims API exposes take and release, so only the unexecuted later Session caller uses those signatures. The original diagnostic assertions call describe directly and retain the exact selected source.".into();
         result.push((SESSION.into(), replacement));
     }
     if case.target == "ownership_receipt_parity"
@@ -292,9 +309,28 @@ pub fn additional(root: &Path, case: &Case) -> Result<Vec<(String, Replacement)>
                 caller_replacement(case, path, &bytes, source, &[(before, after)])?;
             replacement.receipt["historical_source_path"] =
                 "engine-rust/src/ownership/tree.rs".into();
+            replacement.receipt["selected_primary_bytes_unchanged"] = true.into();
+            replacement.receipt["reviewed_current_caller_change"] = "Session now retains separately grouped browser receipts; the same classified-spawn block alone uses the reviewed historical signature.".into();
             replacement.receipt["reason"] = "Only the later Session caller reverts to the exact old public spawn API. Every error conservatively retains admission; no error-kind exemption or selected tree mutation is permitted.".into();
             result.push((path.into(), replacement));
         }
+        let bytes = checked_caller(root, case, UNIT_REPORT, UNIT_REPORT_CURRENT)?;
+        let mut replacement = caller_replacement(
+            case,
+            UNIT_REPORT,
+            &bytes,
+            source,
+            &[(
+                "super::tree::primary_record_empty(&owner_group)?",
+                "super::tree::record_empty(&owner_group)?",
+            )],
+        )?;
+        replacement.receipt["historical_source_path"] = TREE.into();
+        replacement.receipt["selected_primary_bytes_unchanged"] = true.into();
+        replacement.receipt["browser_publication_executed"] = false.into();
+        replacement.receipt["reviewed_current_caller_change"] = "The new inert-browser publisher checks the worker's captured process group. Its locally constructed owner_group has no nested browser receipt.".into();
+        replacement.receipt["reason"] = "Only an unexecuted later browser publication caller uses the frozen public record_empty signature for a primary-only group. Original process observation, signaling and settlement remain in the exact selected tree blob.".into();
+        result.push((UNIT_REPORT.into(), replacement));
     }
     if case.target == "profile_read_parity"
         && sources.contains_key(HTTP)
@@ -402,16 +438,25 @@ fn receipt_tokens_callers(
         root,
         case,
         path,
-        "74ab71be3892332d2ed10d1432dd0db9fb4b9e29cf27fe1abdf45b414cecd757",
+        "d4a85fad416a4db9b8684c67f8b8a49eda1a88aad64fb029a3b0cc716b295e2a",
     )?;
     let current = fs::read(root.join(UNIT_REPORT))?;
     let current_sha = super::sha(&current);
-    if current_sha != "ec8ad2618dd65545d84af424f83de3e1deaa14586e7478bb3d8964d92898fbfb" {
+    if current_sha != UNIT_REPORT_CURRENT {
         return fail("Current receipt transfer and diagnostic support changed");
     }
-    let (support, _) = std::str::from_utf8(&current)?
+    let current = std::str::from_utf8(&current)?;
+    let (prefix, _) = current
         .split_once("\npub fn for_job(")
         .ok_or("Current receipt support boundary changed")?;
+    let empty_start = current
+        .find("\npub fn empty(path:")
+        .ok_or("Current receipt empty-proof support is absent")?;
+    let empty_end = current[empty_start..]
+        .find("\npub fn settle(")
+        .map(|end| empty_start + end)
+        .ok_or("Current receipt empty-proof support boundary changed")?;
+    let support = format!("{prefix}{}", &current[empty_start..empty_end]);
     let wrapper = format!(
         r#"#[path = "unit_report.rs"]
 mod frozen_unit_report;
@@ -421,8 +466,10 @@ mod later_receipt_support {{
 }}
 pub mod unit_report {{
     pub use super::frozen_unit_report::*;
-    pub use super::later_receipt_support::diagnostic;
-    pub(crate) use super::later_receipt_support::{{SpawnIntent, begin_transfer}};
+    pub use super::later_receipt_support::{{diagnostic, read_before}};
+    #[cfg(unix)]
+    pub use super::later_receipt_support::{{record_browser_for_owner, record_browser_scoped_for_owner}};
+    pub(crate) use super::later_receipt_support::{{SpawnIntent, begin_transfer, empty_before}};
 }}"#
     );
     let mut replacement = caller_replacement(
@@ -436,7 +483,8 @@ pub mod unit_report {{
     replacement.receipt["selected_primary_bytes_unchanged"] = true.into();
     replacement.receipt["included_source_sha256"] = current_sha.into();
     replacement.receipt["included_fragment_sha256"] = super::sha(support.as_bytes()).into();
-    replacement.receipt["reason"] = "Only the later transfer capability and diagnostic symbols come from current source. The original fixture's read, read_scoped and record_at use the exact frozen module.".into();
+    replacement.receipt["reviewed_current_caller_change"] = "New browser publication and bounded receipt-pruning callers require additional APIs that the original receipt-token fixture never invokes.".into();
+    replacement.receipt["reason"] = "Only later transfer, diagnostic, browser-publication and deadline-observer symbols come from pinned current fragments. The original fixture's read, read_scoped and record_at, and all original empty/settle entry points, still resolve to the exact frozen module.".into();
     Ok((path.into(), replacement))
 }
 

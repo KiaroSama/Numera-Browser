@@ -13,6 +13,8 @@ pub mod container_smoke;
 mod driver;
 pub mod fingerprint;
 mod options;
+#[cfg(unix)]
+mod owned_exec;
 mod page_automation;
 mod policy;
 #[cfg(feature = "test-support")]
@@ -634,6 +636,10 @@ async fn run() -> io::Result<()> {
 }
 
 pub fn main() -> ExitCode {
+    #[cfg(unix)]
+    if let Some(code) = owned_exec::enter() {
+        return code;
+    }
     let arguments: Vec<_> = std::env::args_os().skip(1).collect();
     if arguments.len() == 1 && arguments[0] == "--build-info" {
         let result = crate::native_build::identity().and_then(|mut identity| {

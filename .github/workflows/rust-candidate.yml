@@ -110,7 +110,41 @@ jobs:
       - name: Verify build tooling on the native host
         if: always()
         shell: bash
+        env:
+          NUMERA_WINDOWS_OWNERSHIP_DIAGNOSTICS: "1"
         run: GITHUB_SHA="$CANDIDATE_SOURCE_SHA" cargo test --manifest-path tools/xtask/Cargo.toml --locked --no-fail-fast
+      - name: Verify Linux procfs disappearance and refusal boundaries
+        if: ${{ !cancelled() && runner.os == 'Linux' }}
+        shell: bash
+        run: |
+          cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci counted-tests 3 build/linux-procfs-disappearance.log -- cargo test --manifest-path engine-rust/Cargo.toml --locked --no-default-features --features test-support --lib ownership::procfs::tests:: -- --test-threads=1 --nocapture --color=never
+      - name: Preserve Linux procfs regression evidence
+        if: ${{ !cancelled() && runner.os == 'Linux' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: linux-procfs-disappearance-${{ matrix.platform }}-${{ env.CANDIDATE_SOURCE_SHA }}
+          path: |
+            build/linux-procfs-disappearance.log
+            build/linux-procfs-disappearance.stderr.log
+          if-no-files-found: error
+          retention-days: 7
+      - name: Verify retained Windows primary-thread ownership
+        if: ${{ !cancelled() && runner.os == 'Windows' }}
+        shell: bash
+        env:
+          NUMERA_WINDOWS_OWNERSHIP_DIAGNOSTICS: "1"
+        run: |
+          cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci counted-tests 2 build/windows-retained-primary.log -- cargo test --manifest-path engine-rust/Cargo.toml --locked --no-default-features --lib ownership::windows::tests:: -- --test-threads=1 --nocapture --color=never
+      - name: Preserve Windows primary-thread regression evidence
+        if: ${{ !cancelled() && runner.os == 'Windows' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: windows-retained-primary-${{ matrix.platform }}-${{ env.CANDIDATE_SOURCE_SHA }}
+          path: |
+            build/windows-retained-primary.log
+            build/windows-retained-primary.stderr.log
+          if-no-files-found: error
+          retention-days: 7
       - name: Preserve candidate, matching tracked source and checksums
         if: ${{ !cancelled() && steps.candidate.outcome == 'success' }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

@@ -71,8 +71,23 @@ fn records(directory: &Path, job_sidecars: bool) -> io::Result<Vec<PathBuf>> {
     }
     let mut paths = Vec::new();
     let mut count = 0usize;
+    let session_receipts = directory.file_name().is_some_and(|name| name == "sessions");
     for entry in fs::read_dir(directory)? {
         let path = entry?.path();
+        count += 1;
+        if count > MAX_RECORDS {
+            return Err(busy());
+        }
+        if (job_sidecars || session_receipts)
+            && path.file_name().is_some_and(|name| name == ".locks")
+        {
+            // Receipt locks survive their records. Only this managed, real
+            // directory is metadata; linked or other directories stay unknown.
+            if !regular_directory(&path)? {
+                return Err(busy());
+            }
+            continue;
+        }
         let metadata = fs::symlink_metadata(&path)?;
         if !metadata.is_file() || metadata.file_type().is_symlink() {
             return Err(busy());
@@ -84,12 +99,15 @@ fn records(directory: &Path, job_sidecars: bool) -> io::Result<Vec<PathBuf>> {
                 return Err(busy());
             }
         }
-        count += 1;
-        if count > MAX_RECORDS {
-            return Err(busy());
-        }
         match path.extension().and_then(|value| value.to_str()) {
             Some("json") => paths.push(path),
+            Some("units") if session_receipts => {
+                // A unique session receipt can outlive its claim while a job
+                // still references it. Every captured group must be empty.
+                if !super::unit_report::empty(&path)? {
+                    return Err(busy());
+                }
+            }
             Some("log" | "exit") if job_sidecars => {}
             Some("units") if job_sidecars => {
                 // Native receipts are durable ownership too, even if their
@@ -182,9 +200,16 @@ impl Admission {
         }
         for path in records(&self.root.join("sessions"), false)? {
             let record = read_record(&path)?;
+            let id = path
+                .file_stem()
+                .and_then(|value| value.to_str())
+                .ok_or_else(busy)?;
+            // Preserve the bounded file checks above, then apply the same
+            // receipt capability validation used by session admission.
+            let claim = super::claims::read(&self.root, id);
             if record["session"].as_str().is_none_or(str::is_empty)
-                || super::claims::state(&super::claims::Claim::Record(record), &self.host)
-                    != super::claims::State::Free
+                || !matches!(&claim, super::claims::Claim::Record(_))
+                || super::claims::state(&claim, &self.host) != super::claims::State::Free
             {
                 return Err(io::Error::new(
                     io::ErrorKind::WouldBlock,

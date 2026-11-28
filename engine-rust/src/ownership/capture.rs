@@ -314,6 +314,7 @@ pub fn retry_retained(budget: Duration) -> Vec<String> {
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner)
         .extend(pending);
+    failures.extend(super::session::retry_retained(end));
     failures.extend(super::pending_spawn::retry_retained(
         end.saturating_duration_since(Instant::now()),
     ));

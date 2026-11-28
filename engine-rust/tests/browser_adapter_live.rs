@@ -16,6 +16,9 @@ use numera_core::{
 use serde_json::{Map, Value, json};
 use std::{collections::BTreeMap, process::Command, sync::Arc, time::Duration};
 use tower::ServiceExt;
+#[cfg(target_os = "linux")]
+#[path = "common/browser_forced_shutdown.rs"]
+mod browser_forced_shutdown;
 #[path = "common/browser_logs.rs"]
 mod browser_logs;
 mod common;
@@ -124,6 +127,12 @@ fn selected_sdk_opens_real_persistent_context_in_native_owned_tree()
         })
         .ok_or("Native Rust SDK runtime is required")?;
     let uses_page_script = matches!(backend.as_str(), "playwright" | "patchright");
+    #[cfg(target_os = "linux")]
+    if uses_page_script {
+        browser_forced_shutdown::forced_shutdown_does_not_release_claim_while_browser_survives(
+            &backend, &script,
+        )?;
+    }
     let document: Value = serde_json::from_str(include_str!("fixtures/init-script.json"))?;
     let cases = document["cases"]
         .as_array()
