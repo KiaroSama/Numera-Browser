@@ -455,6 +455,8 @@ source_test!(
             "build/native-product/*.msi",
             "build/native-product/*.deb",
             "build/native-product/*.AppImage",
+            "build/native-product/*.app.zip",
+            "build/native-product/*.dmg",
         ] {
             assert!(paths.lines().any(|line| line == path));
         }

@@ -118,7 +118,11 @@ where
             argv.push(path.as_os_str().into());
             request("codesign", argv, env)
         };
-        let paths = [stage.join("numera"), stage.join("engine/numera-engine")];
+        let paths = [
+            stage.join("numera"),
+            stage.join("engine/numera-engine"),
+            stage.join("engine/numera-browser-runtime"),
+        ];
         for path in &paths {
             regular(path, false)?;
             let mut sign = args(&["--force", "--sign", &certificate.sha1, "--keychain"]);

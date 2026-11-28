@@ -391,6 +391,7 @@ source_test!(
 fn caller_bridge_controls() -> TestResult {
     clock_and_pool_caller_controls()?;
     capture_caller_controls()?;
+    browser_receipt_caller_controls()?;
     let root = root();
     let cases = history::Registry::read()?.cases()?;
     let config = cases
@@ -607,7 +608,7 @@ fn caller_bridge_controls() -> TestResult {
     let current_session = fs::read(root.join(path))?;
     let primary_before = fs::read(root.join("engine-rust/src/ownership/tree.rs"))?;
     let bridges = ci::history_callers::additional(&root, tree)?;
-    assert_eq!(bridges.len(), 1);
+    assert_eq!(bridges.len(), 2);
     let (name, bridge) = &bridges[0];
     assert_eq!(name, path);
     assert!(!tree.files.contains_key(path) && !tree.companions.contains_key(path));
@@ -623,6 +624,23 @@ fn caller_bridge_controls() -> TestResult {
     assert!(changed.contains(
         "if let Some(admission) = &mut self.admission {\n                    admission.retain();"
     ));
+    let receipt_path = "engine-rust/src/ownership/unit_report.rs";
+    let current_receipt = fs::read(root.join(receipt_path))?;
+    let (name, bridge) = &bridges[1];
+    assert_eq!(name, receipt_path);
+    assert!(!tree.files.contains_key(receipt_path) && !tree.companions.contains_key(receipt_path));
+    assert_eq!(bridge.receipt["before_sha256"], ci::sha(&current_receipt));
+    assert_eq!(bridge.receipt["after_sha256"], ci::sha(&bridge.bytes));
+    assert_eq!(bridge.receipt["selected_primary_bytes_unchanged"], true);
+    assert_eq!(bridge.receipt["browser_publication_executed"], false);
+    assert_eq!(
+        String::from_utf8(bridge.bytes.clone())?,
+        String::from_utf8(current_receipt.clone())?.replace(
+            "super::tree::primary_record_empty(&owner_group)?",
+            "super::tree::record_empty(&owner_group)?"
+        )
+    );
+    assert_eq!(fs::read(root.join(receipt_path))?, current_receipt);
     assert_eq!(fs::read(root.join(path))?, current_session);
     assert_eq!(
         fs::read(root.join("engine-rust/src/ownership/tree.rs"))?,
@@ -708,7 +726,9 @@ fn capture_caller_controls() -> TestResult {
     );
     assert_eq!(
         ci::sha(&bridges[1].1.bytes),
-        "47198bed13ee1cb1e61670157dc36d2964b36a99b6c2d8df47a3666f3c0bd164"
+        // Only the reviewed current adapter's receipt/environment additions
+        // changed these bytes; both exact historical pipe aliases remain.
+        "4f20c0337252486895624c94b6530853f1917440f4b0b45530d1d391f1e801cc"
     );
     assert_eq!(fs::read(root.join(PRIMARY))?, primary_before);
     assert_eq!(ci::sha(&selected), case.files[PRIMARY]);
@@ -767,6 +787,117 @@ fn capture_caller_controls() -> TestResult {
             wrong.write(path, &bytes)?;
         }
         assert!(ci::history_compat::additional_callers(&wrong.0, case).is_err());
+    }
+    Ok(())
+}
+fn browser_receipt_caller_controls() -> TestResult {
+    const CLAIMS: &str = "engine-rust/src/ownership/claims.rs";
+    const SESSION: &str = "engine-rust/src/ownership/session.rs";
+    const REPORT: &str = "engine-rust/src/ownership/unit_report.rs";
+    const MODULE: &str = "engine-rust/src/ownership/mod.rs";
+    let root = root();
+    let cases = history::Registry::read()?.cases()?;
+    for (test, primary, caller) in [
+        (
+            "diagnostics::claim_diagnostics_match_original_truth_and_display_without_changing_records",
+            CLAIMS,
+            SESSION,
+        ),
+        (
+            "receipt_tokens_match_original_without_resolving_invalid_transfers",
+            REPORT,
+            MODULE,
+        ),
+    ] {
+        let case = cases
+            .iter()
+            .find(|case| case.test == test)
+            .ok_or("Ownership history case absent")?;
+        let selected = ci::git(&root, &["show", &format!("{}:{primary}", case.commit)])?;
+        assert_eq!(ci::sha(&selected), case.files[primary]);
+        let primary_before = fs::read(root.join(primary))?;
+        let caller_before = fs::read(root.join(caller))?;
+        let bridges = ci::history_callers::additional(&root, case)?;
+        assert_eq!(bridges.len(), 1);
+        let (path, bridge) = &bridges[0];
+        assert_eq!(path, caller);
+        assert!(!case.files.contains_key(caller) && !case.companions.contains_key(caller));
+        assert_eq!(bridge.receipt["before_sha256"], ci::sha(&caller_before));
+        assert_eq!(bridge.receipt["after_sha256"], ci::sha(&bridge.bytes));
+        assert_eq!(bridge.receipt["selected_primary_bytes_unchanged"], true);
+        let changed = std::str::from_utf8(&bridge.bytes)?;
+        if primary == CLAIMS {
+            assert_eq!(bridge.receipt["session_spawn_executed"], false);
+            assert_eq!(bridge.receipt["session_cleanup_executed"], false);
+            assert!(!changed.contains("claims::take_with_browser_units("));
+            assert!(!changed.contains("claims::release_before("));
+            assert!(changed.contains("claims::take(&self.root, &self.id, tree, &self.host, what)"));
+            assert!(changed.contains("claims::release(&self.root, &self.id, claim, tree)?"));
+        } else {
+            assert_eq!(
+                bridge.receipt["included_source_sha256"],
+                ci::sha(&primary_before)
+            );
+            let parsed = syn::parse_file(changed)?;
+            let module = parsed
+                .items
+                .iter()
+                .find_map(|item| match item {
+                    syn::Item::Mod(module) if module.ident == "unit_report" => Some(module),
+                    _ => None,
+                })
+                .ok_or("Historical receipt public wrapper absent")?;
+            let (_, exports) = module
+                .content
+                .as_ref()
+                .ok_or("Historical receipt wrapper is not inline")?;
+            fn names(tree: &syn::UseTree, result: &mut Vec<String>) {
+                match tree {
+                    syn::UseTree::Path(path) => names(&path.tree, result),
+                    syn::UseTree::Name(name) => result.push(name.ident.to_string()),
+                    syn::UseTree::Group(group) => {
+                        for item in &group.items {
+                            names(item, result);
+                        }
+                    }
+                    syn::UseTree::Glob(_) => result.push("*".into()),
+                    syn::UseTree::Rename(_) => panic!("Unreviewed historical receipt alias"),
+                }
+            }
+            let mut actual = Vec::new();
+            for item in exports {
+                let syn::Item::Use(item) = item else {
+                    panic!("Historical receipt wrapper adds a replacement implementation")
+                };
+                names(&item.tree, &mut actual);
+            }
+            actual.sort();
+            let mut expected = [
+                "*",
+                "diagnostic",
+                "read_before",
+                "record_browser_for_owner",
+                "record_browser_scoped_for_owner",
+                "SpawnIntent",
+                "begin_transfer",
+                "empty_before",
+            ];
+            expected.sort();
+            assert_eq!(actual.as_slice(), expected.as_slice());
+            assert!(changed.contains("pub use super::frozen_unit_report::*;"));
+            assert!(!changed.contains("pub use super::later_receipt_support::*;"));
+        }
+        assert_eq!(fs::read(root.join(primary))?, primary_before);
+        assert_eq!(fs::read(root.join(caller))?, caller_before);
+        let wrong = Temp::new("unknown-browser-receipt-history-caller")?;
+        wrong.write(
+            caller,
+            &[caller_before.as_slice(), b"\n// unreviewed"].concat(),
+        )?;
+        if primary == REPORT {
+            wrong.write(REPORT, &primary_before)?;
+        }
+        assert!(ci::history_callers::additional(&wrong.0, case).is_err());
     }
     Ok(())
 }

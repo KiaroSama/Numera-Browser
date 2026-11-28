@@ -545,6 +545,18 @@ impl Drop for OwnedTree {
 }
 
 pub fn record_empty(record: &serde_json::Value) -> io::Result<bool> {
+    if !primary_record_empty(record)? {
+        return Ok(false);
+    }
+    if let Some(path) = record.get("browserUnits") {
+        let path = path
+            .as_str()
+            .ok_or_else(|| io::Error::other("Browser ownership receipt is invalid"))?;
+        return super::unit_report::empty(std::path::Path::new(path));
+    }
+    Ok(true)
+}
+pub(super) fn primary_record_empty(record: &serde_json::Value) -> io::Result<bool> {
     #[cfg(windows)]
     {
         let tree = &record["tree"];

@@ -46,7 +46,7 @@ pub(super) fn caller_replacement(
     patches: &[(&str, &str)],
 ) -> Result<Replacement> {
     if !super::history::Registry::read()?.cases()?.contains(case)
-        && !super::history_callers::macos_session_caller(case, path, source, bytes)
+        && !super::history_callers::macos_ownership_caller(case, path, source, bytes)
     {
         return fail("Unreviewed historical caller bridge case");
     }
@@ -342,7 +342,8 @@ fn vault_callers(root: &Path, case: &Case) -> Result<Vec<(String, Replacement)>>
         root,
         case,
         path,
-        "f144654df8ca9ae3d2339f11860672ae49f35e6c92740f9ab65b02304e1c9719",
+        // Reviewed session-receipt and claim validation add no durability calls.
+        "5d49b85a1dc81e345a3f7b7e881cfc743f1a49331469c6fffe327e1b8df4592d",
     )?;
     let native = std::str::from_utf8(&bytes)?;
     let durability_hash = super::digest(&root.join("engine-rust/src/vault/durability.rs"))?;
@@ -376,6 +377,8 @@ fn vault_callers(root: &Path, case: &Case) -> Result<Vec<(String, Replacement)>>
     bridge.receipt["included_source_sha256"] = durability_hash.into();
     bridge.receipt["historical_source_path"] = "engine-rust/src/vault/mod.rs".into();
     bridge.receipt["included_source_path"] = "engine-rust/src/vault/durability.rs".into();
+    bridge.receipt["selected_primary_bytes_unchanged"] = true.into();
+    bridge.receipt["reviewed_current_caller_change"] = "Update admission now accepts proved-empty managed session receipts and their real lock directory, and applies claims::read validation to session capabilities. The exact six native durability calls and pinned implementation are unchanged.".into();
     result.push((path.into(), bridge));
     Ok(result)
 }

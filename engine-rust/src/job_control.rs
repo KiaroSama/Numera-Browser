@@ -5,7 +5,9 @@ use crate::{
     storage::{atomic::write_json, locks::DataLock},
 };
 use serde_json::{Value, json};
-use std::{fs, io, path::PathBuf, time::Duration};
+use std::{collections::BTreeSet, fs, io, path::PathBuf, time::Duration};
+
+mod receipts;
 
 impl JobStore {
     fn log_path(&self, record: &Value) -> io::Result<Option<PathBuf>> {
@@ -123,6 +125,18 @@ impl JobStore {
         Ok(stopped)
     }
     pub fn prune(&self, now: f64) -> io::Result<usize> {
+        let mut browser_receipts = BTreeSet::new();
+        let result = self.prune_records(now, &mut browser_receipts);
+        // A single final scan handles shared references and also runs after a
+        // later job refuses pruning, so earlier retired owners are not lost.
+        receipts::retire(&self.root, &browser_receipts)?;
+        result
+    }
+    fn prune_records(
+        &self,
+        now: f64,
+        browser_receipts: &mut BTreeSet<PathBuf>,
+    ) -> io::Result<usize> {
         let mut count = 0;
         for job in self.listing(now)? {
             let id = job["id"]
@@ -140,6 +154,24 @@ impl JobStore {
             // Validate every path before deleting any part of this job.
             let log = self.log_path(&current)?;
             let units = crate::ownership::unit_report::for_job(&current, &self.root, id)?;
+            let transaction = units
+                .as_ref()
+                .map(|_| DataLock::transaction(&self.root))
+                .transpose()?;
+            let _transaction = transaction
+                .as_ref()
+                .map(|lock| lock.acquire(Duration::from_secs(10)))
+                .transpose()?;
+            let receipt_lock = units.as_deref().map(DataLock::for_file).transpose()?;
+            let _receipt_guard = receipt_lock
+                .as_ref()
+                .map(|lock| lock.acquire(Duration::from_secs(10)))
+                .transpose()?;
+            let nominated = units
+                .as_deref()
+                .map(|path| receipts::collect(&self.root, path))
+                .transpose()?
+                .unwrap_or_default();
             let mut sidecars = Vec::new();
             if units.is_some() {
                 for extension in ["launch", "ready", "go", "admitted", "cancel"] {
@@ -157,6 +189,7 @@ impl JobStore {
                     }
                 }
             }
+            browser_receipts.extend(nominated);
             remove(&path)?;
             remove(&path.with_extension("exit"))?;
             if let Some(units) = units {

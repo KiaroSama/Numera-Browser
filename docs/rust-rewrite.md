@@ -58,7 +58,9 @@ fresh hosted Windows execution remains part of acceptance.
 kinds. The counts are **3,418 backend/tooling source cases**, **195 dashboard
 cases**, and **294 preexisting native cases on Linux**, including a separately
 executed live-browser case. The current Windows inventory is 286. The
-295-case macOS inventory remains available as historical baseline data.
+295-case macOS inventory is retained unchanged and its owning native functional
+and desktop/ownership CI jobs run on macOS ARM64. Restoring a job does not itself
+establish a passing hosted result; consult the exact revision's run evidence.
 
 Each `source-*-test-map.json` maps an individual source case to an individually
 reported Rust case, its original kind and platform. Mapping is not an execution
@@ -88,8 +90,18 @@ during the rewrite; it does not substitute mapping counts for test execution.
 ## Build and resource provenance
 
 [Native CI](../.github/workflows/native-ci.yml) builds the application and browser
-worker independently on Windows and Linux x64 and arm64. Full-product builds
+worker independently on Windows and Linux x64 and arm64, and macOS arm64. Full-product builds
 include the Rust/WASM dashboard, Tauri installers and portable archives.
+
+macOS produces app ZIP, DMG, portable and CLI archives on a native Apple Silicon
+runner. The protected versioned-release flow adds detached signatures and a
+signed portable update-feed entry; it makes no Apple notarization or publicly
+trusted Developer ID claim. The separate manual review flow retains the existing
+private-trust native codesigning checks for the shell, manager and browser worker.
+Required Mac live jobs exercise Playwright, Patchright and Camoufox with their real SDKs
+and matching browsers. Linux/Windows retain the four-backend live acceptance and
+their supported lifetime-memory benchmarks; no Mac benchmark or licensed-backend
+acceptance is implied by the Mac SDK jobs.
 
 From the repository root, run `cargo run --manifest-path tools/xtask/Cargo.toml --locked --`
 followed by the build-tool command and arguments. `provision-resources` fetches

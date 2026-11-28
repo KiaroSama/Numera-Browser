@@ -269,7 +269,7 @@ fn fixed_adapter_observes_first_page_close_without_inventing_a_new_page()
     let result = (|| -> Result<(), Box<dyn std::error::Error>> {
         sdk.open(
             "playwright",
-            json!({"user_data_dir":root.join("profile"),"headless":true})
+            json!({"user_data_dir":root.join("profile"),"headless":true,"channel":"chromium"})
                 .as_object()
                 .cloned()
                 .ok_or("Options missing")?,

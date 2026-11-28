@@ -60,6 +60,19 @@ updates:
       interval: weekly
     labels: [dependencies, ci]
 
+  # The root Actions scan does not recurse into local composite manifests.
+  - package-ecosystem: github-actions
+    directory: /.github/actions/native-candidate-acceptance
+    schedule:
+      interval: weekly
+    labels: [dependencies, ci]
+
+  - package-ecosystem: github-actions
+    directory: /.github/actions/source-module-checkpoints
+    schedule:
+      interval: weekly
+    labels: [dependencies, ci]
+
   - package-ecosystem: docker
     directory: /
     schedule:

@@ -35,8 +35,9 @@ jobs:
       max-parallel: 2
       matrix:
         include:
-          - {platform: linux-x64, os: ubuntu-24.04}
-          - {platform: windows-x64, os: windows-2025}
+          - {platform: linux-x64, os: ubuntu-24.04, arch: X64}
+          - {platform: windows-x64, os: windows-2025, arch: X64}
+          - {platform: macos-arm64, os: macos-15, arch: ARM64}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -51,9 +52,9 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libxdo-dev libssl-dev build-essential file patchelf
-      - name: Require an x86-64 native runner
+      - name: Require the matching native runner architecture
         shell: bash
-        run: test "$RUNNER_ARCH" = X64
+        run: test "$RUNNER_ARCH" = "${{ matrix.arch }}"
       - run: cargo build --manifest-path tools/xtask/Cargo.toml --locked
       - uses: ./.github/actions/native-packaging-tools
       - name: Require the independent successful CodeQL verdict for this SHA

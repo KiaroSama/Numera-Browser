@@ -90,6 +90,31 @@ pub fn empty(record: &Value) -> io::Result<bool> {
     }
 }
 pub fn settle(record: &Value, budget: Duration) -> io::Result<bool> {
+    let end = Instant::now()
+        .checked_add(budget)
+        .ok_or_else(|| io::Error::other("Invalid job stop budget"))?;
+    let Some(receipt) = record.get("browserUnits") else {
+        return settle_primary(record, budget);
+    };
+    let receipt = receipt
+        .as_str()
+        .ok_or_else(|| io::Error::other("Browser ownership receipt is invalid"))?;
+    let mut primary = record.clone();
+    primary
+        .as_object_mut()
+        .ok_or_else(|| io::Error::other("Owned record is invalid"))?
+        .remove("browserUnits");
+    if !settle_primary(&primary, budget / 2)? {
+        return Ok(false);
+    }
+    let remaining = end.saturating_duration_since(Instant::now());
+    if remaining.is_zero() {
+        super::unit_report::empty_before(std::path::Path::new(receipt), end)
+    } else {
+        super::unit_report::settle(std::path::Path::new(receipt), remaining)
+    }
+}
+fn settle_primary(record: &Value, budget: Duration) -> io::Result<bool> {
     if !verified(record) {
         return Err(io::Error::other(
             "Stored job has no verified process identity",

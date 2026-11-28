@@ -30,11 +30,7 @@ pub fn sign(root: &Path, output: &Path, platform: &str) -> Result<PathBuf> {
         &private,
         &environment,
     )?;
-    crate::product::inventory(&signed.join("engine"))
-        .map_err(|e| std::io::Error::other(e.to_string()))?;
-    // The root signed BUILD inventory contains engine/FILES. Keeping a second
-    // exhaustive root FILES would create a cyclic inventory after BUILD signing.
-    fs::remove_file(signed.join("FILES.json"))?;
+    refresh_inventory(&signed)?;
     let mut sdks = serde_json::Map::new();
     for backend in ["playwright", "patchright", "camoufox", "cloak"] {
         let package = super::decode(&fs::read(
@@ -86,6 +82,23 @@ pub fn sign(root: &Path, output: &Path, platform: &str) -> Result<PathBuf> {
     )?;
     Ok(destination)
 }
+
+/// Refresh only an exclusively owned signed copy; the original unsigned stage
+/// remains intact. Product inventory uses create_new to protect existing data.
+pub fn refresh_inventory(signed: &Path) -> Result<()> {
+    let engine_inventory = signed.join("engine/FILES.json");
+    let root_inventory = signed.join("FILES.json");
+    super::regular(&engine_inventory, false)?;
+    super::regular(&root_inventory, false)?;
+    fs::remove_file(engine_inventory)?;
+    crate::product::inventory(&signed.join("engine"))
+        .map_err(|e| std::io::Error::other(e.to_string()))?;
+    // BUILD includes engine/FILES; retaining a second exhaustive root FILES
+    // would create a cyclic inventory after BUILD signing.
+    fs::remove_file(root_inventory)?;
+    Ok(())
+}
+
 pub fn verify(root: &Path, directory: &Path, source: &str) -> Result<()> {
     let key = super::release_signing::public_key(&root.join("docs/release-signing-key.pem"))?;
     for platform in super::release::RELEASE_PLATFORMS {

@@ -239,7 +239,7 @@ fn vendor(root: &Path) -> io::Result<()> {
                         "",
                         "BrowserType",
                         name,
-                        json!({"name":name,"executablePath":"fixture"}),
+                        json!({"name":name,"executablePath":std::env::current_exe()?}),
                     )?;
                 }
                 create(
@@ -251,7 +251,41 @@ fn vendor(root: &Path) -> io::Result<()> {
                 json!({"playwright":{"guid":"pw"}})
             }
             "launchPersistentContext" => {
-                let child = Command::new(std::env::current_exe()?)
+                let mut command = Command::new(std::env::current_exe()?);
+                #[cfg(unix)]
+                if let Some(environment) = r["params"]["env"].as_array()
+                    && environment
+                        .iter()
+                        .any(|entry| entry["name"] == "NUMERA_BROWSER_EXECUTABLE")
+                {
+                    command = Command::new(
+                        r["params"]["executablePath"]
+                            .as_str()
+                            .ok_or_else(|| io::Error::other("Owned fixture executable missing"))?,
+                    );
+                    command.env_clear();
+                    for entry in environment {
+                        let name = entry["name"]
+                            .as_str()
+                            .ok_or_else(|| io::Error::other("Fixture environment name missing"))?;
+                        let value = entry["value"]
+                            .as_str()
+                            .ok_or_else(|| io::Error::other("Fixture environment value missing"))?;
+                        command.env(name, value);
+                    }
+                    // The vendor fixture models a browser process with this
+                    // native leaf; the actual worker wrapper still publishes
+                    // ownership and execs that leaf before the fixture replies.
+                    command.env("NUMERA_BROWSER_EXECUTABLE", std::env::current_exe()?);
+                }
+                #[cfg(unix)]
+                {
+                    use std::os::unix::process::CommandExt;
+                    // Match the vendor SDK's detached POSIX spawn, including
+                    // when exercising a direct worker without a Session owner.
+                    command.process_group(0);
+                }
+                let child = command
                     .arg("leaf")
                     .arg(root)
                     .stdin(Stdio::null())
@@ -691,9 +725,29 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             Ok(())
         }
-        Some("leaf") => loop {
-            std::thread::park_timeout(Duration::from_secs(60));
-        },
+        Some("leaf") => {
+            let controls = [
+                "NUMERA_BROWSER_EXECUTABLE",
+                "NUMERA_BROWSER_EXEC_OWNER",
+                "NUMERA_BROWSER_UNITS",
+                "NUMERA_BROWSER_PARENT_UNITS",
+                "NUMERA_BROWSER_PARENT_SCOPE",
+                "NUMERA_HELPER_UNITS",
+                "NUMERA_JOB_ARGUMENT_KEY",
+                "NUMERA_PASSWORD",
+            ];
+            fs::write(
+                Path::new(&args[1]).join("leaf-controls.json"),
+                serde_json::to_vec(&controls.map(|name| std::env::var_os(name).is_some()))?,
+            )?;
+            fs::write(
+                Path::new(&args[1]).join("leaf-running"),
+                std::process::id().to_string(),
+            )?;
+            loop {
+                std::thread::park_timeout(Duration::from_secs(60));
+            }
+        }
         Some("emit") => {
             let text = args[1].to_str().expect("browser contract");
             print!("{text}");

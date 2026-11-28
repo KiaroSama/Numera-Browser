@@ -8,8 +8,6 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-const PLATFORMS: [&str; 4] = ["windows-x64", "windows-arm64", "linux-x64", "linux-arm64"];
-
 pub(in crate::ci) fn run(root: &Path, args: &[std::ffi::OsString]) -> Result<()> {
     let sha = std::env::var("GITHUB_SHA")?;
     let version = env!("CARGO_PKG_VERSION");
@@ -32,7 +30,7 @@ pub(in crate::ci) fn run(root: &Path, args: &[std::ffi::OsString]) -> Result<()>
             let stage = Path::new(stage);
             let platform = platform
                 .to_str()
-                .filter(|target| PLATFORMS.contains(target))
+                .filter(|target| release::NATIVE_PLATFORMS.contains(target))
                 .ok_or("Invalid portable update target")?;
             let mut sdks = serde_json::Map::new();
             for backend in ["playwright", "patchright", "camoufox", "cloak"] {
@@ -84,7 +82,7 @@ pub(in crate::ci) fn run(root: &Path, args: &[std::ffi::OsString]) -> Result<()>
             let directory = Path::new(directory);
             let mut assets = Vec::new();
             let mut components = BTreeMap::new();
-            for platform in PLATFORMS {
+            for platform in release::NATIVE_PLATFORMS {
                 let name = format!("numera-browser-{version}-{platform}-portable.zip");
                 let path = directory.join(&name);
                 let (mut metadata, component) = portable_metadata(&path)?;

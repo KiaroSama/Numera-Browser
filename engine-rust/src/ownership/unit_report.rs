@@ -61,12 +61,14 @@ pub fn validate(path: &Path) -> io::Result<PathBuf> {
     let parent = path
         .parent()
         .ok_or_else(|| io::Error::other("Ownership report directory missing"))?;
-    if parent.file_name().is_none_or(|name| name != "jobs")
+    if parent
+        .file_name()
+        .is_none_or(|name| name != "jobs" && name != "sessions")
         || fs::symlink_metadata(parent)?.is_symlink()
     {
         return Err(io::Error::new(
             io::ErrorKind::PermissionDenied,
-            "Ownership report is outside its job directory",
+            "Ownership report is outside its managed owner directory",
         ));
     }
     if fs::symlink_metadata(path)?.is_symlink() || !fs::metadata(path)?.is_file() {
@@ -84,6 +86,14 @@ fn append(path: &Path, value: &Value) -> io::Result<()> {
     append_before(path, value, None)
 }
 fn append_before(path: &Path, value: &Value, deadline: Option<Instant>) -> io::Result<()> {
+    append_checked(path, value, deadline, || Ok(()))
+}
+fn append_checked(
+    path: &Path,
+    value: &Value,
+    deadline: Option<Instant>,
+    check: impl FnOnce() -> io::Result<()>,
+) -> io::Result<()> {
     let path = validate(path)?;
     let lock = DataLock::for_file(&path)?;
     let _guard = lock.acquire(deadline.map_or(Duration::from_secs(5), |end| {
@@ -95,6 +105,7 @@ fn append_before(path: &Path, value: &Value, deadline: Option<Instant>) -> io::R
             "Ownership transfer receipt deadline expired",
         ));
     }
+    check()?;
     let mut bytes = serde_json::to_vec(value).map_err(io::Error::other)?;
     bytes.push(b'\n');
     let mut file = OpenOptions::new().append(true).open(&path)?;
@@ -153,6 +164,55 @@ pub(crate) fn begin_transfer() -> io::Result<Option<SpawnIntent>> {
 pub fn begin_at(path: &Path) -> io::Result<String> {
     begin_scoped(path, None)
 }
+/// Publish a complete inert-browser identity under the same lock used by the
+/// owner after stopping its worker. A late wrapper cannot activate after that
+/// proof, and no browser code executes before the complete record is synced.
+#[cfg(unix)]
+pub fn record_browser_for_owner(
+    path: &Path,
+    tree: &Value,
+    pid: u32,
+    birth: u64,
+    group: u32,
+) -> io::Result<()> {
+    record_browser_scoped_for_owner(path, tree, pid, birth, group, None)
+}
+#[cfg(unix)]
+pub fn record_browser_scoped_for_owner(
+    path: &Path,
+    tree: &Value,
+    pid: u32,
+    birth: u64,
+    group: u32,
+    scope: Option<&str>,
+) -> io::Result<()> {
+    if scope.is_some_and(|scope| scope.is_empty() || scope.len() > 128) {
+        return Err(io::Error::other("Browser ownership scope is invalid"));
+    }
+    let mut nonce = [0u8; 16];
+    getrandom::fill(&mut nonce).map_err(io::Error::other)?;
+    let attempt = nonce
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<String>();
+    let value = json!({"event":"browser-unit","attempt":attempt,"scope":scope,"pid":tree["pid"],
+        "pidToken":tree["token"],"tree":tree["tree"]});
+    validate_unit(&value)?;
+    append_checked(path, &value, None, || {
+        // kill(pid, 0) also accepts an unreaped zombie. Group settlement
+        // excludes corpses, so a completed owner proof must also close
+        // admission while that zombie still retains its birth token.
+        let owner_group = json!({"tree":{"kind":"pgid","group":group}});
+        if birth > 0
+            && super::identity::alive(pid, Some(birth))?
+            && !super::tree::primary_record_empty(&owner_group)?
+        {
+            Ok(())
+        } else {
+            Err(io::Error::other("Browser exec owner has ended"))
+        }
+    })
+}
 fn begin_scoped(path: &Path, scope: Option<&str>) -> io::Result<String> {
     let mut nonce = [0u8; 16];
     getrandom::fill(&mut nonce)
@@ -184,8 +244,11 @@ pub fn record(tree: &Value, attempt: Option<&str>) -> io::Result<()> {
     Ok(())
 }
 pub fn record_at(path: &Path, tree: &Value, attempt: &str) -> io::Result<()> {
-    let value = json!({"event":"unit","attempt":attempt,"pid":tree["pid"],
+    let mut value = json!({"event":"unit","attempt":attempt,"pid":tree["pid"],
         "pidToken":tree["token"],"tree":tree["tree"]});
+    if let Some(receipt) = tree.get("browserUnits") {
+        value["browserUnits"] = receipt.clone();
+    }
     validate_unit(&value)?;
     append(path, &value)
 }
@@ -335,18 +398,65 @@ fn read_parsed(
                     invalid_events += 1;
                 }
             }
-            Some("cancelled" | "unit") if pending.contains_key(attempt) => {
-                if value["event"] == "unit" {
+            Some("cancelled" | "unit" | "browser-unit")
+                if (value["event"] != "browser-unit" && pending.contains_key(attempt))
+                    || (value["event"] == "browser-unit"
+                        && !pending.contains_key(attempt)
+                        && !resolved.contains(attempt)) =>
+            {
+                let selected_scope = if value["event"] == "browser-unit" {
+                    match value.get("scope") {
+                        None | Some(Value::Null) => None,
+                        Some(Value::String(value)) if !value.is_empty() && value.len() <= 128 => {
+                            Some(value.as_str())
+                        }
+                        _ => {
+                            damaged = true;
+                            invalid_events += 1;
+                            continue;
+                        }
+                    }
+                } else {
+                    pending.get(attempt).and_then(Option::as_deref)
+                };
+                if value["event"] != "cancelled" {
                     if validate_unit(&value).is_err() {
                         damaged = true;
                         invalid_units += 1;
                         continue;
                     }
                     unit_events += 1;
-                    let unit = json!({"pid":value["pid"],"pidToken":value["pidToken"],"tree":value["tree"]});
-                    if scope.is_none_or(|scope| {
-                        pending.get(attempt).and_then(Option::as_deref) == Some(scope)
-                    }) && !trees.contains(&unit)
+                    let mut unit = json!({"pid":value["pid"],"pidToken":value["pidToken"],"tree":value["tree"]});
+                    if let Some(receipt) = value.get("browserUnits") {
+                        // Session receipts contain only browser groups. Only a
+                        // job may reference one, preventing recursive receipts.
+                        if path
+                            .parent()
+                            .and_then(Path::file_name)
+                            .is_none_or(|name| name != "jobs")
+                        {
+                            damaged = true;
+                            invalid_units += 1;
+                            continue;
+                        }
+                        let Some(receipt) = receipt.as_str().map(Path::new) else {
+                            damaged = true;
+                            invalid_units += 1;
+                            continue;
+                        };
+                        let expected_parent = path
+                            .parent()
+                            .and_then(Path::parent)
+                            .map(|root| root.join("sessions"));
+                        if expected_parent.as_deref() != receipt.parent() {
+                            damaged = true;
+                            invalid_units += 1;
+                            continue;
+                        }
+                        unit["browserUnits"] = value["browserUnits"].clone();
+                    }
+                    if scope.is_none_or(|scope| selected_scope == Some(scope))
+                        && !trees.contains(&unit)
                     {
                         trees.push(unit);
                     }
@@ -436,6 +546,9 @@ pub fn for_job(record: &Value, root: &Path, id: &str) -> io::Result<Option<PathB
 }
 pub fn empty(path: &Path) -> io::Result<bool> {
     empty_scoped(path, None)
+}
+pub(crate) fn empty_before(path: &Path, deadline: Instant) -> io::Result<bool> {
+    empty_scoped_deadline(path, None, Some(deadline))
 }
 pub fn empty_scoped(path: &Path, scope: Option<&str>) -> io::Result<bool> {
     empty_scoped_deadline(path, scope, None)

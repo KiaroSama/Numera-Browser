@@ -8,8 +8,11 @@ generated browser assets and reviewed vendor SDKs.
 
 Use `--server-only` to omit the desktop build and its SDK requirement, or
 `--bundles none` to package the portable desktop and server without installers.
-The Windows release uses MSI; Linux uses AppImage and DEB. Build each x64 and
-arm64 target on a matching native CI runner.
+The Windows release uses MSI; Linux uses AppImage and DEB; macOS ARM64 uses
+app ZIP and DMG. Build each target on its matching native CI runner. Linux and
+Windows support x64 and arm64; macOS supports arm64. `--bundles nsis` remains
+available for Windows source builds with a resource set below the NSIS size
+limit; complete browser bundles use MSI by default.
 
 ## Provision the build host
 
@@ -19,6 +22,7 @@ arm64 target on a matching native CI runner.
   WebKitGTK 4.1/GTK3 development packages and AppImage/deb prerequisites.
   Windows MSI builds require MSVC and the Tauri WiX prerequisites. Tauri may
   acquire verified installer build tools while building a requested bundle.
+  macOS ARM64 builds require Xcode Command Line Tools and the system WebKit.
 - Provision vendor browser/SDK artifacts and their licenses/corresponding source
   explicitly. No browser, SDK, Cloak binary, license or source archive is acquired
   by this command. The separate build-host preparation step owns acquisition and

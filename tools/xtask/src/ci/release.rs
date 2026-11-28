@@ -3,7 +3,14 @@
 use super::{Result, canonical_sha, digest, fail, regular};
 use serde_json::Value;
 use std::{collections::BTreeSet, fs, path::Path};
-pub const RELEASE_PLATFORMS: [&str; 2] = ["linux-x64", "windows-x64"];
+pub const RELEASE_PLATFORMS: [&str; 3] = ["linux-x64", "windows-x64", "macos-arm64"];
+pub const NATIVE_PLATFORMS: [&str; 5] = [
+    "windows-x64",
+    "windows-arm64",
+    "linux-x64",
+    "linux-arm64",
+    "macos-arm64",
+];
 
 pub fn public_path(name: &str, vendor: bool) -> Result<()> {
     let parts = name.split('/').collect::<Vec<_>>();

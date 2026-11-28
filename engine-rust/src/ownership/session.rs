@@ -20,6 +20,8 @@ pub struct Session {
     tree: Option<OwnedTree>,
     claim: Option<String>,
     admission: Option<super::update_admission::Reservation>,
+    browser_units: Option<PathBuf>,
+    shared_browser_units: bool,
 }
 
 impl Session {
@@ -53,7 +55,36 @@ impl Session {
             tree: None,
             claim: None,
             admission: Some(admission),
+            browser_units: None,
+            shared_browser_units: false,
         })
+    }
+
+    #[cfg(unix)]
+    pub(crate) fn own_browser_units(&mut self, command: &mut Command) -> io::Result<()> {
+        if self.tree.is_some() || self.browser_units.is_some() {
+            return Err(io::Error::other("Browser ownership was already prepared"));
+        }
+        let directory = self.root.join("sessions");
+        if std::fs::symlink_metadata(&directory).is_ok_and(|metadata| metadata.is_symlink()) {
+            return Err(io::Error::other("Browser ownership directory is linked"));
+        }
+        std::fs::create_dir_all(&directory)?;
+        let mut nonce = [0; 16];
+        getrandom::fill(&mut nonce).map_err(io::Error::other)?;
+        let receipt = format!(
+            "browser-{}",
+            nonce
+                .iter()
+                .map(|byte| format!("{byte:02x}"))
+                .collect::<String>()
+        );
+        let path = crate::storage::paths::id_path(&directory, &receipt, ".units")
+            .map_err(io::Error::other)?;
+        super::unit_report::initialize(&path)?;
+        self.browser_units = Some(path.clone());
+        command.env("NUMERA_BROWSER_UNITS", path);
+        Ok(())
     }
 
     /// Start an inert adapter, not an arbitrary browser-capable command. The
@@ -89,7 +120,14 @@ impl Session {
             .tree
             .as_ref()
             .ok_or_else(|| io::Error::other("Session tree was not retained"))?;
-        match claims::take(&self.root, &self.id, tree, &self.host, what) {
+        match claims::take_with_browser_units(
+            &self.root,
+            &self.id,
+            tree,
+            &self.host,
+            what,
+            self.browser_units.as_deref(),
+        ) {
             Ok(claim) => self.claim = Some(claim),
             Err(error) => {
                 // Retain the owned tree if cleanup fails; Drop retries rather
@@ -101,6 +139,22 @@ impl Session {
                         "Session claim could not be published: {error}; helper cleanup failed: {cleanup}"
                     )),
                 });
+            }
+        }
+        // Detached job supervisors also need the session's browser receipts if
+        // this manager dies before it can settle its own SDK worker.
+        if let Some(session) = &self.browser_units {
+            let inherited = std::env::var_os(super::unit_report::ENV)
+                .map(|path| super::unit_report::validate(Path::new(&path)))
+                .transpose()?;
+            if inherited.as_ref().is_some_and(|parent| {
+                session.parent().and_then(Path::parent) == parent.parent().and_then(Path::parent)
+            }) {
+                let attempt = super::unit_report::begin_spawn()?;
+                self.shared_browser_units = attempt.is_some();
+                if let Some(record) = self.tree_record() {
+                    super::unit_report::record(&record, attempt.as_deref())?;
+                }
             }
         }
         self.tree
@@ -171,7 +225,13 @@ impl Session {
     }
 
     pub fn tree_record(&self) -> Option<serde_json::Value> {
-        self.tree.as_ref().map(OwnedTree::record)
+        self.tree.as_ref().map(|tree| {
+            let mut record = tree.record();
+            if let Some(path) = &self.browser_units {
+                record["browserUnits"] = path.to_string_lossy().into_owned().into();
+            }
+            record
+        })
     }
 
     pub fn finish(&mut self, budget: Duration) -> io::Result<()> {
@@ -183,13 +243,40 @@ impl Session {
             .checked_add(budget)
             .ok_or_else(|| io::Error::other("Invalid session cleanup budget"))?;
         let Some(tree) = self.tree.as_mut() else {
+            if let Some(path) = &self.browser_units {
+                if !super::unit_report::empty(path)? {
+                    return Err(io::Error::other("Browser ownership receipt is not empty"));
+                }
+                if !self.shared_browser_units {
+                    std::fs::remove_file(path)?;
+                }
+                self.browser_units = None;
+            }
             if let Some(admission) = &mut self.admission {
                 admission.release()?;
                 self.admission = None;
             }
             return Ok(None);
         };
-        tree.settle(deadline.saturating_duration_since(std::time::Instant::now()))?;
+        let remaining = deadline.saturating_duration_since(std::time::Instant::now());
+        tree.settle(if self.browser_units.is_some() {
+            remaining / 2
+        } else {
+            remaining
+        })?;
+        if let Some(path) = &self.browser_units {
+            let remaining = deadline.saturating_duration_since(std::time::Instant::now());
+            let empty = if remaining.is_zero() {
+                super::unit_report::empty_before(path, deadline)?
+            } else {
+                super::unit_report::settle(path, remaining)?
+            };
+            if !empty {
+                return Err(io::Error::other(
+                    "Browser groups remain owned or their transfer is incomplete",
+                ));
+            }
+        }
         let code = tree
             .child_mut()
             .try_wait()?
@@ -202,6 +289,12 @@ impl Session {
             ));
         }
         self.claim = None;
+        if let Some(path) = &self.browser_units {
+            if !self.shared_browser_units {
+                std::fs::remove_file(path)?;
+            }
+            self.browser_units = None;
+        }
         self.tree = None;
         if let Some(admission) = &mut self.admission {
             admission.release()?;

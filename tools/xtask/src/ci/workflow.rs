@@ -109,19 +109,21 @@ pub fn native_automatic(workflow: &Value) -> Result<()> {
             Some((
                 row["platform"].as_str()?,
                 row.get("os").or_else(|| row.get("runner"))?.as_str()?,
+                row["arch"].as_str()?,
             ))
         })
         .collect::<BTreeSet<_>>();
-    if matrix.len() != 4
+    if matrix.len() != 5
         || platforms
             != BTreeSet::from([
-                ("windows-x64", "windows-2025"),
-                ("windows-arm64", "windows-11-arm"),
-                ("linux-x64", "ubuntu-24.04"),
-                ("linux-arm64", "ubuntu-24.04-arm"),
+                ("windows-x64", "windows-2025", "X64"),
+                ("windows-arm64", "windows-11-arm", "ARM64"),
+                ("linux-x64", "ubuntu-24.04", "X64"),
+                ("linux-arm64", "ubuntu-24.04-arm", "ARM64"),
+                ("macos-arm64", "macos-15", "ARM64"),
             ])
     {
-        return fail("Automatic native build requires the four approved 64-bit runners");
+        return fail("Automatic native build requires all five approved native runners");
     }
     if build.to_string().contains("secrets.") {
         return fail("Independent compilation cannot receive signing credentials");
@@ -188,6 +190,35 @@ pub fn versioned_release(workflow: &Value) -> Result<()> {
         );
     }
     bounded_jobs(workflow)?;
+    let matrix = signing["strategy"]["matrix"]["include"]
+        .as_array()
+        .ok_or("Versioned signing matrix missing")?;
+    let platforms = matrix
+        .iter()
+        .filter_map(|row| {
+            Some((
+                row["platform"].as_str()?,
+                row["os"].as_str()?,
+                row["triple"].as_str()?,
+            ))
+        })
+        .collect::<BTreeSet<_>>();
+    if matrix.len() != 5
+        || platforms
+            != BTreeSet::from([
+                ("windows-x64", "windows-2025", "x86_64-pc-windows-msvc"),
+                ("windows-arm64", "windows-11-arm", "aarch64-pc-windows-msvc"),
+                ("linux-x64", "ubuntu-24.04", "x86_64-unknown-linux-gnu"),
+                (
+                    "linux-arm64",
+                    "ubuntu-24.04-arm",
+                    "aarch64-unknown-linux-gnu",
+                ),
+                ("macos-arm64", "macos-15", "aarch64-apple-darwin"),
+            ])
+    {
+        return fail("Versioned signing must preserve all five native platform/architecture pairs");
+    }
     ordered(
         &publish["steps"],
         &[
@@ -223,6 +254,14 @@ pub fn dependency_updates(document: &Value) -> Result<()> {
         ("cargo", "/tools/xtask/lifecycle-tests"),
         ("cargo", "/tools/security-scan"),
         ("github-actions", "/"),
+        (
+            "github-actions",
+            "/.github/actions/native-candidate-acceptance",
+        ),
+        (
+            "github-actions",
+            "/.github/actions/source-module-checkpoints",
+        ),
         ("docker", "/"),
     ]);
     let actual = updates
@@ -240,8 +279,16 @@ pub fn dependency_updates(document: &Value) -> Result<()> {
         .collect::<Result<BTreeSet<_>>>()?;
     if document["version"] != 2 || actual != expected || actual.len() != updates.len() {
         return fail(
-            "Dependency updates must cover all seven Cargo crates, Actions and Docker exactly once",
+            "Dependency updates must cover all seven Cargo crates, workflows, external composite actions and Docker exactly once",
         );
+    }
+    for row in updates {
+        if row["package-ecosystem"] == "github-actions"
+            && row["directory"] != "/"
+            && (row["schedule"]["interval"] != "weekly" || row["open-pull-requests-limit"] == 0)
+        {
+            return fail("Composite action updates must remain enabled on the weekly schedule");
+        }
     }
     Ok(())
 }
@@ -377,6 +424,11 @@ pub fn live_license_concurrency(workflow: &Value) -> Result<()> {
 
 pub fn native_functional_fixture(workflow: &Value) -> Result<()> {
     let job = &workflow["jobs"]["functional"];
+    if job["strategy"]["matrix"]["os"]
+        != serde_json::json!(["ubuntu-24.04", "windows-latest", "macos-15"])
+    {
+        return fail("Native functional verification requires Linux, Windows and macOS");
+    }
     let engine = "${{ github.workspace }}/engine-rust/target/debug/numera-engine${{ matrix.os == 'windows-latest' && '.exe' || '' }}";
     let worker = "${{ github.workspace }}/engine-rust/target/debug/numera-browser-runtime${{ matrix.os == 'windows-latest' && '.exe' || '' }}";
     if job["env"]["NUMERA_NATIVE_CANDIDATE"] != engine
@@ -405,6 +457,39 @@ pub fn native_functional_fixture(workflow: &Value) -> Result<()> {
     Ok(())
 }
 
+pub fn macos_live_sdk(workflow: &Value) -> Result<()> {
+    let job = &workflow["jobs"]["macos-live"];
+    if job["runs-on"] != "macos-15"
+        || job["needs"] != serde_json::json!(["coverage", "dashboard"])
+        || job["timeout-minutes"] != 35
+        || job.get("if").is_some()
+        || job["strategy"]
+            != serde_json::json!({"fail-fast":false,"max-parallel":2,"matrix":{"engine":["playwright","patchright","camoufox"]}})
+        || job.to_string().contains("secrets.")
+    {
+        return fail(
+            "macOS live verification requires Playwright, Patchright and Camoufox on its native ARM64 host",
+        );
+    }
+    let steps = &job["steps"];
+    let compile = step_once(
+        steps,
+        "--bin numera-engine --bin numera-browser-runtime",
+        true,
+    )?;
+    let provision = step_once(steps, "provision-resources", true)?;
+    let prepare = step_once(steps, "ci prepare-live", true)?;
+    let test = step_once(steps, "ci counted-tests 1 build/selected-sdk.log", true)?;
+    if !(compile < provision && provision < prepare && prepare < test)
+        || !steps[test]["run"].as_str().is_some_and(|run| {
+            run.contains("--test browser_adapter_live -- --ignored --exact selected_sdk_opens_real_persistent_context_in_native_owned_tree --test-threads=1 --color=never")
+        })
+    {
+        return fail("macOS live verification must run the exact real SDK lifecycle case after resource admission");
+    }
+    Ok(())
+}
+
 pub fn coverage(root: &Path) -> Result<()> {
     super::coverage_inventory::validate(root)?;
     let native = parse(&fs::read_to_string(
@@ -413,6 +498,7 @@ pub fn coverage(root: &Path) -> Result<()> {
     native_automatic(&native)?;
     native_failure_evidence(&native)?;
     native_functional_fixture(&native)?;
+    macos_live_sdk(&native)?;
     super::history::workflow_contract(&native)?;
     live_license_concurrency(&native)?;
     browser_page_compiler(
@@ -486,9 +572,9 @@ pub fn desktop_contracts(workflows: &Value) -> Result<()> {
         || contract.get("if").is_some()
         || contract["timeout-minutes"] != 45
         || contract["strategy"]
-            != serde_json::json!({"fail-fast":false,"max-parallel":2,"matrix":{"os":["ubuntu-latest","windows-latest"]}})
+            != serde_json::json!({"fail-fast":false,"max-parallel":2,"matrix":{"os":["ubuntu-latest","windows-latest","macos-15"]}})
     {
-        return fail("Desktop contract verification requires the two supported hosted platforms");
+        return fail("Desktop contract verification requires all three supported hosted platforms");
     }
     let steps = &contract["steps"];
     for command in [
@@ -506,7 +592,7 @@ pub fn desktop_contracts(workflows: &Value) -> Result<()> {
     let history = step_once(steps, "ci desktop-history", false)
         .map_err(|_| std::io::Error::other("Desktop contract history must remain unique"))?;
     let history_step = &steps[history];
-    if history_step["if"] != "runner.os == 'Linux'"
+    if history_step["if"] != "runner.os != 'Windows'"
         || history_step["run"]
             != "cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci owned --wall 900 --idle 300 -- cargo run --manifest-path tools/xtask/Cargo.toml --locked -- ci desktop-history"
         || history >= step_once(steps, "--no-default-features --no-run", true)?
@@ -552,6 +638,7 @@ pub fn desktop_contracts(workflows: &Value) -> Result<()> {
     {
         return fail("Container verification must remain required through same-commit workflow");
     }
+    macos_contract(child)?;
     Ok(())
 }
 
