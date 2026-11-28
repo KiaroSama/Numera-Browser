@@ -1,4 +1,6 @@
 use super::*;
+#[path = "../common/worker_claim.rs"]
+mod worker_claim;
 source_test!(
     add_and_list_round_trip,
     "tests/test_scheduler.py::test_add_and_list_round_trip",
@@ -541,7 +543,8 @@ source_test!(
         assert!(
             process_identity::alive(browser_pid, Some(browser_token)).expect("live leaf control")
         );
-        let tree = raw(root, &format!("sessions/{}.json", p.id));
+        let tree = worker_claim::capture(raw(root, &format!("sessions/{}.json", p.id)))
+            .expect("captured fixture group");
         assert!(!numera_core::ownership::recorded_tree::empty(&tree).expect("live owned tree"));
         fs::write(root.join("adapter-exit"), b"3").expect("actual adapter exit");
         process::wait(&root.join("adapter-exiting"));

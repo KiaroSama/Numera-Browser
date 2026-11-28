@@ -160,6 +160,102 @@ fn detached_browser_groups_remain_owned_through_stop_drop_and_damaged_receipts()
 }
 
 struct OwnedChild(Child);
+
+#[cfg(feature = "test-support")]
+#[test]
+fn failed_drop_retains_browser_receipts_and_releases_admission_only_after_retry()
+-> Result<(), Box<dyn std::error::Error>> {
+    use numera_core::ownership::{capture, test_support};
+    use std::sync::{
+        Arc,
+        atomic::{AtomicUsize, Ordering},
+    };
+    struct Refuse(AtomicUsize);
+    impl test_support::Backend for Refuse {
+        fn signal(&self, _target: i32, _force: bool) -> Option<io::Result<()>> {
+            self.0.fetch_add(1, Ordering::SeqCst);
+            Some(Err(io::Error::new(
+                io::ErrorKind::PermissionDenied,
+                "Controlled dropped-session signal refusal",
+            )))
+        }
+    }
+
+    let temporary = common::TempDirectory::new("browser-retained-drop")?;
+    let root = temporary.path();
+    let mut command = fixture::worker(root, "playwright", "cleanup-hang")?;
+    let mut adapter = Adapter::spawn(
+        root,
+        "a",
+        "fixture-host",
+        &mut command,
+        Duration::from_secs(5),
+    )?;
+    adapter.open(
+        "playwright",
+        json!({"user_data_dir":root.join("profile"), "headless":true,"channel":"chromium"})
+            .as_object()
+            .cloned()
+            .ok_or("Fixture options missing")?,
+        Vec::new(),
+        Duration::from_secs(5),
+    )?;
+    let browser = await_leaf(root)?;
+    let claims::Claim::Record(claim) = claims::read(root, "a") else {
+        return Err("Session claim missing".into());
+    };
+    let path = std::path::Path::new(
+        claim["browserUnits"]
+            .as_str()
+            .ok_or("Browser receipt missing")?,
+    );
+    let intact = fs::read(path)?;
+    let refusal = Arc::new(Refuse(AtomicUsize::new(0)));
+    test_support::with_backend(refusal.clone(), || drop(adapter));
+    assert!(refusal.0.load(Ordering::SeqCst) > 0);
+    assert!(!recorded_tree::empty(&browser.0)?);
+    assert_ne!(
+        claims::state(&claims::read(root, "a"), "fixture-host"),
+        claims::State::Free
+    );
+
+    fs::OpenOptions::new()
+        .append(true)
+        .open(path)?
+        .write_all(b"{\"event\":")?;
+    let started = Instant::now();
+    assert!(
+        !capture::retry_retained(Duration::from_millis(50)).is_empty(),
+        "Retry discarded a dropped session's damaged browser receipt"
+    );
+    assert!(started.elapsed() < Duration::from_secs(1));
+    // Known groups may already be stopped; incomplete evidence still cannot
+    // release the claim or the reservation for unknown transferred groups.
+    assert!(!unit_report::read(path)?.complete);
+    assert_ne!(
+        claims::state(&claims::read(root, "a"), "fixture-host"),
+        claims::State::Free
+    );
+    let admission = numera_core::ownership::update_admission::Admission::new(root, "fixture-host")?;
+    assert!(admission.quiesce(None, || Ok(false)).is_err());
+
+    // Restore only the fixture's interrupted write. Production never repairs
+    // unknown ownership bytes or treats a missing receipt as an empty tree.
+    fs::write(path, intact)?;
+    assert!(capture::retry_retained(Duration::from_secs(3)).is_empty());
+    assert!(recorded_tree::empty(&browser.0)?);
+    assert!(unit_report::empty(path)?);
+    assert_eq!(
+        claims::state(&claims::read(root, "a"), "fixture-host"),
+        claims::State::Free
+    );
+    assert!(numera_core::browser::adapter::retry_retained(Duration::from_secs(2)).is_empty());
+    assert!(claims::clear(root, "a", "fixture-host")?);
+    let ticket = admission.quiesce(None, || Ok(false))?;
+    admission.resume(&ticket)?;
+    Ok(())
+}
+
 impl Drop for OwnedChild {
     fn drop(&mut self) {
         let _ = self.0.kill();

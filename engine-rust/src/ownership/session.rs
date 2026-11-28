@@ -7,7 +7,7 @@ use std::{
     io,
     path::{Path, PathBuf},
     process::Command,
-    time::Duration,
+    time::{Duration, Instant},
 };
 
 /// Admission owns the non-reentrant lease before any session helper is born.
@@ -258,25 +258,7 @@ impl Session {
             }
             return Ok(None);
         };
-        let remaining = deadline.saturating_duration_since(std::time::Instant::now());
-        tree.settle(if self.browser_units.is_some() {
-            remaining / 2
-        } else {
-            remaining
-        })?;
-        if let Some(path) = &self.browser_units {
-            let remaining = deadline.saturating_duration_since(std::time::Instant::now());
-            let empty = if remaining.is_zero() {
-                super::unit_report::empty_before(path, deadline)?
-            } else {
-                super::unit_report::settle(path, remaining)?
-            };
-            if !empty {
-                return Err(io::Error::other(
-                    "Browser groups remain owned or their transfer is incomplete",
-                ));
-            }
-        }
+        settle_owned(tree, self.browser_units.as_deref(), deadline)?;
         let code = tree
             .child_mut()
             .try_wait()?
@@ -304,18 +286,102 @@ impl Session {
     }
 }
 
+fn settle_owned(
+    tree: &mut OwnedTree,
+    browser_units: Option<&Path>,
+    deadline: Instant,
+) -> io::Result<()> {
+    let remaining = deadline.saturating_duration_since(Instant::now());
+    tree.settle(if browser_units.is_some() {
+        remaining / 2
+    } else {
+        remaining
+    })?;
+    if let Some(path) = browser_units {
+        let remaining = deadline.saturating_duration_since(Instant::now());
+        let empty = if remaining.is_zero() {
+            super::unit_report::empty_before(path, deadline)?
+        } else {
+            super::unit_report::settle(path, remaining)?
+        };
+        if !empty {
+            return Err(io::Error::other(
+                "Browser groups remain owned or their transfer is incomplete",
+            ));
+        }
+    }
+    Ok(())
+}
+
+struct Retained {
+    root: PathBuf,
+    tree: OwnedTree,
+    browser_units: Option<PathBuf>,
+    admission: Option<super::update_admission::Reservation>,
+}
+impl Retained {
+    fn settle(&mut self, deadline: Instant) -> io::Result<()> {
+        settle_owned(&mut self.tree, self.browser_units.as_deref(), deadline)?;
+        if let Some(admission) = &mut self.admission {
+            // Bound the outer acquisition. Reservation::release reenters this
+            // same transaction while checking its exact original work record.
+            let lock = DataLock::transaction(&self.root)?;
+            let _guard = lock.acquire(deadline.saturating_duration_since(Instant::now()))?;
+            admission.release()?;
+            self.admission = None;
+        }
+        // Keep the durable claim and receipt available for explicit claim
+        // clearing and independently retained adapter I/O completion proofs.
+        Ok(())
+    }
+}
+fn retained() -> &'static std::sync::Mutex<Vec<Retained>> {
+    static OWNERS: std::sync::OnceLock<std::sync::Mutex<Vec<Retained>>> =
+        std::sync::OnceLock::new();
+    OWNERS.get_or_init(|| std::sync::Mutex::new(Vec::new()))
+}
+pub(super) fn retry_retained(deadline: Instant) -> Vec<String> {
+    let owners = std::mem::take(
+        &mut *retained()
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner),
+    );
+    let mut pending = Vec::new();
+    let mut failures = Vec::new();
+    for mut owner in owners {
+        if let Err(error) = owner.settle(deadline) {
+            failures.push(error.to_string());
+            pending.push(owner);
+        }
+    }
+    retained()
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+        .extend(pending);
+    failures
+}
+
 impl Drop for Session {
     fn drop(&mut self) {
         // A failed cleanup leaves both durable owners, never an invented free slot.
         if self.finish(Duration::from_secs(2)).is_err() {
-            if let Some(admission) = &mut self.admission {
-                admission.retain();
-            }
-            // Keep the original kernel owner as well as its durable claim.
+            // Keep the original kernel owner and every settlement capability.
             // In particular, a retained Windows Job must not be replaced by
             // reopening a PID or a name after its last owned handle is lost.
             if let Some(tree) = self.tree.take() {
-                super::capture::retain_tree(tree);
+                retained()
+                    .lock()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner)
+                    .push(Retained {
+                        root: self.root.clone(),
+                        tree,
+                        browser_units: self.browser_units.take(),
+                        admission: self.admission.take(),
+                    });
+            } else if let Some(admission) = &mut self.admission {
+                // An uncertain unpublished spawn has no complete owner to
+                // transfer here. Its durable admission must remain blocked.
+                admission.retain();
             }
         }
     }

@@ -12,9 +12,10 @@ use std::{fs, path::Path};
 const HTTP: &str = "engine-rust/src/http/profile_routes.rs";
 const TREE: &str = "engine-rust/src/ownership/tree.rs";
 const SESSION: &str = "engine-rust/src/ownership/session.rs";
-// Reviewed current callers now retain separately grouped browser receipts.
+// Reviewed current callers retain separately grouped browser receipts and
+// retry dropped sessions with their original tree and update reservation.
 // Historical tree/claim/parser blobs and their named assertions stay frozen.
-const SESSION_CLASSIFIED: &str = "23f8560186d0952fa15ffb932bb7175f5c39837bfcc8bf6dadce3169e2bc4d2a";
+const SESSION_CLASSIFIED: &str = "eaa81b9ae06b3bdc1ca89bca2deaced4bca94aa3e4eb40b54c6d3fe0abdfe363";
 const UNIT_REPORT_CURRENT: &str =
     "11032b8cd83cca03b9a36d820c20be5e3f1375d38c0342a8b497d1beedb6c778";
 const MACOS_TREE: &str = "201260e01da09fea13951ba61ab0265faa68499554d4cfefaf712a179dc8b36b";
