@@ -726,24 +726,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             Ok(())
         }
         Some("leaf") => {
-            let controls = [
-                "NUMERA_BROWSER_EXECUTABLE",
-                "NUMERA_BROWSER_EXEC_OWNER",
-                "NUMERA_BROWSER_UNITS",
-                "NUMERA_BROWSER_PARENT_UNITS",
-                "NUMERA_BROWSER_PARENT_SCOPE",
-                "NUMERA_HELPER_UNITS",
-                "NUMERA_JOB_ARGUMENT_KEY",
-                "NUMERA_PASSWORD",
-            ];
-            fs::write(
-                Path::new(&args[1]).join("leaf-controls.json"),
-                serde_json::to_vec(&controls.map(|name| std::env::var_os(name).is_some()))?,
-            )?;
-            fs::write(
-                Path::new(&args[1]).join("leaf-running"),
-                std::process::id().to_string(),
-            )?;
+            if let Some(root) = args.get(1) {
+                let root = Path::new(root);
+                let controls = [
+                    "NUMERA_BROWSER_EXECUTABLE",
+                    "NUMERA_BROWSER_EXEC_OWNER",
+                    "NUMERA_BROWSER_UNITS",
+                    "NUMERA_BROWSER_PARENT_UNITS",
+                    "NUMERA_BROWSER_PARENT_SCOPE",
+                    "NUMERA_HELPER_UNITS",
+                    "NUMERA_JOB_ARGUMENT_KEY",
+                    "NUMERA_PASSWORD",
+                ];
+                fs::write(
+                    root.join("leaf-controls.json"),
+                    serde_json::to_vec(&controls.map(|name| std::env::var_os(name).is_some()))?,
+                )?;
+                fs::write(root.join("leaf-running"), std::process::id().to_string())?;
+            }
             loop {
                 std::thread::park_timeout(Duration::from_secs(60));
             }

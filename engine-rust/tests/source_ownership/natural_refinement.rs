@@ -260,6 +260,13 @@ fn capture_controls() -> TestResult {
         command.arg("tree").arg(root.path()).arg("release");
         let wall = Duration::from_secs(2);
         let latest = Instant::now() + wall + Duration::from_millis(50);
+        let mut capture_limits = limit(wall);
+        if mode == "expired" {
+            // This observer deliberately consumes the command's wall budget.
+            // Keep a separate finite cleanup allowance so that a fast leader
+            // reaching the callback within 50 ms cannot exhaust both budgets.
+            capture_limits.cleanup = wall + Duration::from_secs(2);
+        }
         let mut initial = None;
         let mut final_sample = None;
         let mut callback_error = None;
@@ -267,7 +274,7 @@ fn capture_controls() -> TestResult {
         let mut phases = Vec::new();
         let output = capture::run_observed(
             &mut command,
-            limit(wall),
+            capture_limits,
             || false,
             |event, tree| match event {
                 capture::Observation::BeforeCleanupSample {
@@ -310,9 +317,11 @@ fn capture_controls() -> TestResult {
             return Err(error.into());
         }
         if mode == "expired" {
+            let failure = output.err();
             assert_eq!(
-                output.err().map(|error| error.kind()),
-                Some(io::ErrorKind::TimedOut)
+                failure.as_ref().map(|error| error.kind()),
+                Some(io::ErrorKind::TimedOut),
+                "mode={mode} phases={phases:?} initial={initial:?} final={final_sample:?} failure={failure:?}"
             );
         } else {
             assert_eq!(output?.exit, 0);

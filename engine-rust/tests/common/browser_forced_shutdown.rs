@@ -81,6 +81,7 @@ pub fn forced_shutdown_does_not_release_claim_while_browser_survives(
     let root = common::TempDirectory::new("browser-owned-stop")?;
     let profile = root.path().join("exclusive-browser-profile");
     let mut command = Command::new(runtime);
+    command.env("NUMERA_ADAPTER_LOG_DIR", root.path().join("logs"));
     let mut adapter = Adapter::spawn(
         root.path(),
         "owned",
